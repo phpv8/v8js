@@ -3,7 +3,7 @@
 <package version="1.0" packagerversion="1.9.1">
  <name>v8js</name>
  <summary>V8 Javascript Engine for PHP</summary>
- <description>This extension embeds the Google&apos;s open source JavaScript engine V8 in PHP.
+ <description>This extension embeds the Google&apos;s V8 Javascript Engine into PHP.
  </description>
  <maintainers>
   <maintainer>
