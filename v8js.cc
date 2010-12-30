@@ -275,7 +275,7 @@ static HashTable *php_v8js_v8_get_debug_info(zval *object, int *is_temp TSRMLS_D
 	return php_v8js_v8_get_properties(object TSRMLS_CC);
 }
 /* }}} */
-                        
+
 static zend_function *php_v8js_v8_get_method(zval **object_ptr, char *method, int method_len TSRMLS_DC) /* {{{ */
 {
 	zend_function *f;
@@ -323,7 +323,7 @@ static int php_v8js_v8_call_method(char *method, INTERNAL_FUNCTION_PARAMETERS) /
 		cb = v8::Local<v8::Function>::Cast(v8obj);
 	} else {
 		cb = v8::Local<v8::Function>::Cast(v8obj->Get(method_name));
-	} 
+	}
 
 	v8::Local<v8::Value> *jsArgv = new v8::Local<v8::Value>[argc];
 	v8::Local<v8::Value> js_retval;
@@ -814,7 +814,7 @@ static int php_v8js_register_extension(char *name, uint name_len, char *source, 
 
 	jsext->auto_enable = auto_enable;
 	jsext->name = zend_strndup(name, name_len);
-              	jsext->source = zend_strndup(source, source_len);
+	jsext->source = zend_strndup(source, source_len);
 
 	if (jsext->deps) {
 		jsext->deps_ht = (HashTable *) malloc(sizeof(HashTable));
@@ -846,6 +846,11 @@ static PHP_METHOD(V8Js, registerExtension)
 	zval *deps_arr = NULL;
 	int ext_name_len, script_len;
 	zend_bool auto_enable = 0;
+
+	if (V8JSG(v8_initialized)) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "V8 engine already initialized. Cannot register extension");
+		RETURN_FALSE;
+	}
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss|ab", &ext_name, &ext_name_len, &script, &script_len, &deps_arr, &auto_enable) == FAILURE) {
 		return;
