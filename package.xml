@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE package SYSTEM "http://pear.php.net/dtd/package-1.0">
+<package version="1.0" packagerversion="1.9.1">
+ <name>v8js</name>
+ <summary>V8 Javascript Engine for PHP</summary>
+ <description>This extension embeds the Google&apos;s open source JavaScript engine V8 in PHP.
+ </description>
+ <maintainers>
+  <maintainer>
+   <user>jani</user>
+   <name>Jani Taskinen</name>
+   <email>jani@php.net</email>
+   <role>lead</role>
+  </maintainer>
+  </maintainers>
+ <release>
+  <version>0.1.0</version>
+  <date>2010-12-02</date>
+  <license>PHP</license>
+  <state>beta</state>
+  <notes>- Initial PECL release
+  </notes>
+  <deps>
+   <dep type="php" rel="ge" version="5.3.3"/>
+  </deps>
+  <configureoptions>
+   <configureoption name="with-v8js" default="autodetect" prompt="Please provide the installation prefix of libv8"/>
+  </configureoptions>
+  <filelist>
+   <file role="src" name="config.m4"/>
+   <file role="doc" name="CREDITS"/>
+   <file role="src" name="Makefile.frag"/>
+   <file role="src" name="php_v8js.h"/>
+   <file role="src" name="php_v8js_macros.h"/>
+   <file role="src" name="v8js.cc"/>
+   <file role="src" name="v8js_convert.cc"/>
+   <file role="src" name="v8js_methods.cc"/>
+   <file role="src" name="v8js_variables.cc"/>
+  </filelist>
+ </release>
+</package>
