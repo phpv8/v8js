@@ -15,7 +15,7 @@
   </maintainers>
  <release>
   <version>0.1.0</version>
-  <date>2010-12-02</date>
+  <date>2010-12-30</date>
   <license>PHP</license>
   <state>beta</state>
   <notes>- Initial PECL release
