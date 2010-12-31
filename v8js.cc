@@ -845,11 +845,6 @@ static PHP_METHOD(V8Js, registerExtension)
 	int ext_name_len, script_len;
 	zend_bool auto_enable = 0;
 
-	if (V8JSG(v8_initialized)) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "V8 engine already initialized. Cannot register extension");
-		RETURN_FALSE;
-	}
-
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss|ab", &ext_name, &ext_name_len, &script, &script_len, &deps_arr, &auto_enable) == FAILURE) {
 		return;
 	}
@@ -922,8 +917,9 @@ ZEND_BEGIN_ARG_INFO(arginfo_v8js_getpendingexception, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_registerextension, 0, 0, 2)
-	ZEND_ARG_INFO(0, ext_name)
+	ZEND_ARG_INFO(0, extension_name)
 	ZEND_ARG_INFO(0, script)
+	ZEND_ARG_INFO(0, dependencies)
 	ZEND_ARG_INFO(0, auto_enable)
 ZEND_END_ARG_INFO()
 
