@@ -60,7 +60,7 @@ V8JS_METHOD(print) /* {{{ */
 }
 /* }}} */
 
-static void _php_v8js_dumper(v8::Local<v8::Value> var, int level TSRMLS_CC) /* {{{ */
+static void _php_v8js_dumper(v8::Local<v8::Value> var, int level TSRMLS_DC) /* {{{ */
 {
 	v8::String::Utf8Value str(var->ToDetailString());
 	const char *valstr = ToCString(str);
