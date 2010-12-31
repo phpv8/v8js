@@ -49,7 +49,7 @@ ZEND_BEGIN_MODULE_GLOBALS(v8js)
 	int disposed_contexts; /* Disposed contexts since last time V8 did GC */
 
 	/* Ini globals */
-	zval *v8_flags; /* V8 command line flags */
+	char *v8_flags; /* V8 command line flags */
 	int max_disposed_contexts; /* Max disposed context allowed before forcing V8 GC */
 ZEND_END_MODULE_GLOBALS(v8js)
 
@@ -81,16 +81,14 @@ static ZEND_INI_MH(v8js_OnUpdateV8Flags) /* {{{ */
 {
 	if (new_value) {
 		if (V8JSG(v8_flags)) {
-			zval_ptr_dtor(&V8JSG(v8_flags));
+			free(V8JSG(v8_flags));
 			V8JSG(v8_flags) = NULL;
 		}
 		if (!new_value[0]) {
 			return FAILURE;
 		}
+		V8JSG(v8_flags) = zend_strndup(new_value, new_value_length);
 	}
-
-	MAKE_STD_ZVAL(V8JSG(v8_flags));
-	ZVAL_STRINGL(V8JSG(v8_flags), new_value, new_value_length, 1);
 
 	return SUCCESS;
 }
@@ -98,7 +96,7 @@ static ZEND_INI_MH(v8js_OnUpdateV8Flags) /* {{{ */
 
 ZEND_INI_BEGIN() /* {{{ */
 	ZEND_INI_ENTRY("v8js.max_disposed_contexts", "25", ZEND_INI_ALL, v8js_OnUpdateMaxDisposedContexts)
-	ZEND_INI_ENTRY("v8js.flags", "", ZEND_INI_ALL, v8js_OnUpdateV8Flags)
+	ZEND_INI_ENTRY("v8js.flags", NULL, ZEND_INI_ALL, v8js_OnUpdateV8Flags)
 ZEND_INI_END()
 /* }}} */
 
@@ -535,7 +533,7 @@ static void php_v8js_init(TSRMLS_D) /* {{{ */
 
 	/* Set V8 command line flags (must be done before V8::Initialize()!) */
 	if (V8JSG(v8_flags)) {
-		v8::V8::SetFlagsFromString(Z_STRVAL_P(V8JSG(v8_flags)), Z_STRLEN_P(V8JSG(v8_flags)));
+		v8::V8::SetFlagsFromString(V8JSG(v8_flags), strlen(V8JSG(v8_flags)));
 	}
 
 	/* Initialize V8 */
@@ -1193,6 +1191,11 @@ static PHP_MSHUTDOWN_FUNCTION(v8js)
 		zend_hash_destroy(V8JSG(extensions));
 		free(V8JSG(extensions));
 		V8JSG(extensions) = NULL;
+	}
+
+	if (V8JSG(v8_flags)) {
+		free(V8JSG(v8_flags));
+		V8JSG(v8_flags) = NULL;
 	}
 
 	return SUCCESS;

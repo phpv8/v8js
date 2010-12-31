@@ -1,41 +1,77 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE package SYSTEM "http://pear.php.net/dtd/package-1.0">
-<package version="1.0" packagerversion="1.9.1">
+<?xml version="1.0" encoding="UTF-8"?>
+<package packagerversion="1.4.11" version="2.0" xmlns="http://pear.php.net/dtd/package-2.0" xmlns:tasks="http://pear.php.net/dtd/tasks-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0
+http://pear.php.net/dtd/tasks-1.0.xsd
+http://pear.php.net/dtd/package-2.0
+http://pear.php.net/dtd/package-2.0.xsd">
  <name>v8js</name>
+ <channel>pecl.php.net</channel>
  <summary>V8 Javascript Engine for PHP</summary>
- <description>This extension embeds the Google&apos;s V8 Javascript Engine into PHP.
+ <description>
+  This extension embeds the Google&apos;s V8 Javascript Engine into PHP.
  </description>
- <maintainers>
-  <maintainer>
-   <user>jani</user>
-   <name>Jani Taskinen</name>
-   <email>jani@php.net</email>
-   <role>lead</role>
-  </maintainer>
-  </maintainers>
- <release>
-  <version>0.1.0</version>
-  <date>2010-12-30</date>
-  <license>PHP</license>
-  <state>beta</state>
-  <notes>- Initial PECL release
-  </notes>
-  <deps>
-   <dep type="php" rel="ge" version="5.3.3"/>
-  </deps>
-  <configureoptions>
-   <configureoption name="with-v8js" default="autodetect" prompt="Please provide the installation prefix of libv8"/>
-  </configureoptions>
-  <filelist>
-   <file role="src" name="config.m4"/>
-   <file role="doc" name="CREDITS"/>
-   <file role="src" name="Makefile.frag"/>
-   <file role="src" name="php_v8js.h"/>
-   <file role="src" name="php_v8js_macros.h"/>
-   <file role="src" name="v8js.cc"/>
-   <file role="src" name="v8js_convert.cc"/>
-   <file role="src" name="v8js_methods.cc"/>
-   <file role="src" name="v8js_variables.cc"/>
-  </filelist>
- </release>
+ <lead>
+  <name>Jani Taskinen</name>
+  <user>jani</user>
+  <email>jani@php.net</email>
+  <active>yes</active>
+ </lead>
+ <date>2010-12-30</date>
+ <time>12:12:12</time>
+ <version>
+  <release>0.1.0</release>
+  <api>0.1.0</api>
+ </version>
+ <stability>
+  <release>beta</release>
+  <api>beta</api>
+ </stability>
+ <license uri="http://www.php.net/license">PHP</license>
+ <notes>- Initial PECL release
+ </notes>
+ <contents>
+  <dir name="/">
+   <file name="CREDITS" role="doc" />
+   <file name="config.m4" role="src" />
+   <file name="Makefile.frag" role="src" />
+   <file name="v8js.cc" role="src" />
+   <file name="v8js_convert.cc" role="src" />
+   <file name="v8js_methods.cc" role="src" />
+   <file name="v8js_variables.cc" role="src" />
+   <file name="php_v8js.h" role="src" />
+   <file name="php_v8js_macros.h" role="src" />
+  </dir> <!-- / -->
+ </contents>
+ <dependencies>
+  <required>
+   <php>
+    <min>5.3.3</min>
+   </php>
+   <pearinstaller>
+    <min>1.4.0</min>
+   </pearinstaller>
+  </required>
+ </dependencies>
+ <providesextension>v8js</providesextension>
+ <extsrcrelease>
+  <configureoption default="autodetect" name="with-v8js" prompt="Please provide the installation prefix of libv8" />
+ </extsrcrelease>
+ <changelog>
+  <release>
+   <version><release>0.1.1</release><api>0.1.1</api></version>
+   <stability><release>beta</release><api>beta</api></stability>
+   <date>2010-12-31</date>
+   <notes>
+- Fixed crash bug in setting v8.flags ini directive.
+- Added notice to registerExtension() if trying to use it when V8 is already initialized.
+   </notes>
+  </release>
+  <release>
+   <version><release>0.1.0</release><api>0.1.0</api></version>
+   <stability><release>beta</release><api>beta</api></stability>
+   <date>2010-12-30</date>
+   <notes>
+- Initial PECL release.
+   </notes>
+  </release>
+ </changelog>
 </package>
