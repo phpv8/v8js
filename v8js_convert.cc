@@ -41,11 +41,11 @@ static v8::Handle<v8::Value> php_v8js_php_callback(const v8::Arguments &args) /*
 	zend_fcall_info fci;
 	zend_fcall_info_cache fcc;
 	zval fname, *retval_ptr = NULL, **argv = NULL;
+	TSRMLS_FETCH();
 	zend_class_entry *ce = Z_OBJCE_P(value);
 	zend_uint argc = args.Length(), min_num_args = 0, max_num_args = 0;
 	char *error;
 	int error_len, i, flags = V8JS_FLAG_NONE;
-	TSRMLS_FETCH();
 
 	/* Set method_ptr from v8::External or fetch the closure invoker */
 	if (!args.Data().IsEmpty() && args.Data()->IsExternal()) {
@@ -569,7 +569,7 @@ int v8js_to_zval(v8::Handle<v8::Value> jsValue, zval *return_value, int flags TS
 	else if (jsValue->IsObject())
 	{
 		if ((flags & V8JS_FLAG_FORCE_ARRAY) || jsValue->IsArray()) {
-			array_init(return_value TSRMLS_CC);
+			array_init(return_value);
 			return php_v8js_v8_get_properties_hash(jsValue, Z_ARRVAL_P(return_value), flags TSRMLS_CC);
 		} else {
 			php_v8js_create_v8(return_value, jsValue, flags TSRMLS_CC);
