@@ -15,19 +15,16 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>jani@php.net</email>
   <active>yes</active>
  </lead>
- <date>2010-12-30</date>
- <time>12:12:12</time>
- <version>
-  <release>0.1.1</release>
-  <api>0.1.1</api>
- </version>
- <stability>
-  <release>beta</release>
-  <api>beta</api>
- </stability>
+
+ <date>2010-12-31</date>
+ <version><release>0.1.1</release><api>0.1.1</api></version>
+ <stability><release>beta</release><api>beta</api></stability>
  <license uri="http://www.php.net/license">PHP</license>
- <notes>- Initial PECL release
+ <notes>
+- Fixed crash bug in setting v8.flags ini directive.
+- Added notice to registerExtension() if trying to use it when V8 is already initialized.
  </notes>
+
  <contents>
   <dir name="/">
    <file name="CREDITS" role="doc" />
@@ -57,18 +54,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </extsrcrelease>
  <changelog>
   <release>
-   <version><release>0.1.1</release><api>0.1.1</api></version>
-   <stability><release>beta</release><api>beta</api></stability>
-   <date>2010-12-31</date>
-   <notes>
-- Fixed crash bug in setting v8.flags ini directive.
-- Added notice to registerExtension() if trying to use it when V8 is already initialized.
-   </notes>
-  </release>
-  <release>
+   <date>2010-12-30</date>
    <version><release>0.1.0</release><api>0.1.0</api></version>
    <stability><release>beta</release><api>beta</api></stability>
-   <date>2010-12-30</date>
+   <license uri="http://www.php.net/license">PHP</license>
    <notes>
 - Initial PECL release.
    </notes>
