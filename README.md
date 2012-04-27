@@ -7,7 +7,15 @@ This is a PHP extension for Google's V8 Javascript engine
 Minimum requirements
 --------------------
 
-- V8 library version 2.5.8 <http://code.google.com/p/v8/> (trunk)
+- V8 JavaScript Engine library version 2.5.8 <http://code.google.com/p/v8/> (trunk)
+
+	V8 is Google's open source JavaScript engine.
+	V8 is written in C++ and is used in Google Chrome, the open source browser from Google.
+	V8 implements ECMAScript as specified in ECMA-262, 5th edition, and runs on Windows (XP or newer), 
+	Mac OS X (10.5 or newer), and Linux systems that use IA-32, x64, or ARM processors.
+	V8 can run standalone, or can be embedded into any C++ application.
+	You can find more information here:
+	<http://code.google.com/p/v8/>
 
 - PHP 5.3.3+ (non-ZTS build preferred)
   Note: V8 engine is not natively thread safe and this extension
