@@ -51,7 +51,7 @@ int main ()
 		return 0;
 	}
 	return 1;
-}], [ac_cv_v8_version=`cat ./conftestval`], [ac_cv_v8_version=NONE], [ac_cv_v8_version=NONE])
+}], [ac_cv_v8_version=`cat ./conftestval|awk '{print $1}'`], [ac_cv_v8_version=NONE], [ac_cv_v8_version=NONE])
 AC_LANG_RESTORE
 LIBS=$old_LIBS
 LDFLAGS=$old_LDFLAGS
