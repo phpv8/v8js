@@ -51,6 +51,14 @@
 	v8::String::Utf8Value var(obj->GetConstructorName());
 #endif
 
+#if ZEND_MODULE_API_NO >= 20100409
+# define ZEND_HASH_KEY_DC , const zend_literal *key
+# define ZEND_HASH_KEY_CC , key
+#else
+# define ZEND_HASH_KEY_DC
+# define ZEND_HASH_KEY_CC
+#endif
+
 /* Global flags */
 #define V8JS_GLOBAL_SET_FLAGS(flags)	V8JS_GLOBAL->SetHiddenValue(V8JS_SYM("__php_flags__"), V8JS_INT(flags))
 #define V8JS_GLOBAL_GET_FLAGS()			V8JS_GLOBAL->GetHiddenValue(V8JS_SYM("__php_flags__"))->IntegerValue();

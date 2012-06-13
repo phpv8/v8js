@@ -84,7 +84,7 @@ static v8::Handle<v8::Value> php_v8js_php_callback(const v8::Arguments &args) /*
 
 		return_value = V8JS_THROW(TypeError, error, error_len);
 		if (ce == zend_ce_closure) {
-			efree(method_ptr->internal_function.function_name);
+			efree(const_cast<char*>(method_ptr->internal_function.function_name));
 			efree(method_ptr);
 		}
 		efree(error);

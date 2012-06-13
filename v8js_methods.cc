@@ -90,10 +90,12 @@ static void _php_v8js_dumper(v8::Local<v8::Value> var, int level TSRMLS_DC) /* {
 	{
 		php_printf("Date(%s)\n", valstr);
 	}
+#if PHP_V8_API_VERSION >= 2003007
 	else if (var->IsRegExp())
 	{
 		php_printf("RegExp(%s)\n", valstr);
 	}
+#endif
 	else if (var->IsArray())
 	{
 		v8::Local<v8::Array> array = v8::Local<v8::Array>::Cast(var);
