@@ -24,7 +24,7 @@
 #include <v8.h>
 
 /* V8Js Version */
-#define V8JS_VERSION "0.1.1"
+#define V8JS_VERSION "0.1.2"
 
 /* Helper macros */
 #define V8JS_SYM(v)			v8::String::NewSymbol(v, sizeof(v) - 1)
