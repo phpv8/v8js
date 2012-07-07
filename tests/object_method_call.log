@@ -122,7 +122,7 @@ array(4) {
 
 TEST: Javascript Date -> PHP DateTime
 ======================================
-Mon Sep 08 1975 09:00:00 GMT+0000 (UTC)
+Mon Sep 08 1975 09:00:00 GMT-0700 (PDT)
 array(2) {
   [0]=>
   object(DateTime)#4 (3) {
@@ -131,7 +131,7 @@ array(2) {
     ["timezone_type"]=>
     int(1)
     ["timezone"]=>
-    string(6) "+00:00"
+    string(6) "-07:00"
   }
   [1]=>
   string(3) "foo"
