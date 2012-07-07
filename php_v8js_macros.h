@@ -25,7 +25,7 @@
 #include <v8.h>
 
 /* V8Js Version */
-#define V8JS_VERSION "0.1.1"
+#define V8JS_VERSION "0.1.3"
 
 /* Helper macros */
 #define V8JS_SYM(v)			v8::String::NewSymbol(v, sizeof(v) - 1)
@@ -50,6 +50,14 @@
 #else
 # define V8JS_GET_CLASS_NAME(var, obj) \
 	v8::String::Utf8Value var(obj->GetConstructorName());
+#endif
+
+#if ZEND_MODULE_API_NO >= 20100409
+# define ZEND_HASH_KEY_DC , const zend_literal *key
+# define ZEND_HASH_KEY_CC , key
+#else
+# define ZEND_HASH_KEY_DC
+# define ZEND_HASH_KEY_CC
 #endif
 
 /* Global flags */

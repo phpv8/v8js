@@ -17,7 +17,7 @@
   +----------------------------------------------------------------------+
 */
 
-/* $Id:$ */
+/* $Id$ */
 
 #define V8JS_DEBUG 0
 
@@ -155,7 +155,7 @@ ZEND_GET_MODULE(v8js)
 
 /* V8 Object handlers */
 
-static zval *php_v8js_v8_read_property(zval *object, zval *member, int type, const zend_literal *key TSRMLS_DC) /* {{{ */
+static zval *php_v8js_v8_read_property(zval *object, zval *member, int type ZEND_HASH_KEY_DC TSRMLS_DC) /* {{{ */
 {
 	zval *retval = NULL;
 	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
@@ -189,7 +189,7 @@ static zval *php_v8js_v8_read_property(zval *object, zval *member, int type, con
 }
 /* }}} */
 
-static void php_v8js_v8_write_property(zval *object, zval *member, zval *value, const zend_literal *key TSRMLS_DC) /* {{{ */
+static void php_v8js_v8_write_property(zval *object, zval *member, zval *value ZEND_HASH_KEY_DC TSRMLS_DC) /* {{{ */
 {
 	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
 
@@ -199,7 +199,7 @@ static void php_v8js_v8_write_property(zval *object, zval *member, zval *value, 
 }
 /* }}} */
 
-static void php_v8js_v8_unset_property(zval *object, zval *member, const zend_literal *key TSRMLS_DC) /* {{{ */
+static void php_v8js_v8_unset_property(zval *object, zval *member ZEND_HASH_KEY_DC TSRMLS_DC) /* {{{ */
 {
 	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
 
@@ -275,7 +275,7 @@ static HashTable *php_v8js_v8_get_debug_info(zval *object, int *is_temp TSRMLS_D
 }
 /* }}} */
 
-static zend_function *php_v8js_v8_get_method(zval **object_ptr, char *method, int method_len, const zend_literal *key TSRMLS_DC) /* {{{ */
+static zend_function *php_v8js_v8_get_method(zval **object_ptr, char *method, int method_len ZEND_HASH_KEY_DC TSRMLS_DC) /* {{{ */
 {
 	zend_function *f;
 	v8::Local<v8::String> jsKey = V8JS_STRL(method, method_len);
@@ -296,7 +296,11 @@ static zend_function *php_v8js_v8_get_method(zval **object_ptr, char *method, in
 }
 /* }}} */
 
+#if PHP_VERSION_ID >= 50400
 static int php_v8js_v8_call_method(const char *method, INTERNAL_FUNCTION_PARAMETERS) /* {{{ */
+#else
+static int php_v8js_v8_call_method(char *method, INTERNAL_FUNCTION_PARAMETERS) /* {{{ */
+#endif
 {
 	zval *object = this_ptr, ***argv = NULL;
 	int i = 0, argc = ZEND_NUM_ARGS();
@@ -552,9 +556,7 @@ static void php_v8js_init(TSRMLS_D) /* {{{ */
    __construct for V8Js */
 static PHP_METHOD(V8Js, __construct)
 {
-	char *object_name = NULL;
-	const char *class_name = NULL;
-
+	char *object_name = NULL, *class_name = NULL;
 	int object_name_len = 0, free = 0;
 	zend_uint class_name_len = 0;
 	zend_bool report_uncaught = 1;
@@ -628,11 +630,15 @@ static PHP_METHOD(V8Js, __construct)
 	v8::Local<v8::FunctionTemplate> php_obj_t = v8::FunctionTemplate::New();
 
 	/* Set class name for PHP object */
+#if PHP_VERSION_ID >= 50400
+	free = !zend_get_object_classname(getThis(), const_cast<const char**>(&class_name), &class_name_len TSRMLS_CC);
+#else
 	free = !zend_get_object_classname(getThis(), &class_name, &class_name_len TSRMLS_CC);
+#endif
 	php_obj_t->SetClassName(V8JS_SYML(class_name, class_name_len));
 
 	if (free) {
-		efree((char*)class_name);
+		efree(class_name);
 	}
 	
 	/* Register Get accessor for passed variables */
@@ -945,7 +951,7 @@ static const zend_function_entry v8js_methods[] = { /* {{{ */
 
 /* V8Js object handlers */
 
-static void php_v8js_write_property(zval *object, zval *member, zval *value, const zend_literal *key TSRMLS_DC) /* {{{ */
+static void php_v8js_write_property(zval *object, zval *member, zval *value ZEND_HASH_KEY_DC TSRMLS_DC) /* {{{ */
 {
 	V8JS_BEGIN_CTX(c, object)
 
@@ -958,11 +964,11 @@ static void php_v8js_write_property(zval *object, zval *member, zval *value, con
 	jsobj->ForceSet(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)), zval_to_v8js(value TSRMLS_CC), v8::ReadOnly);
 
 	/* Write value to PHP object */
-	std_object_handlers.write_property(object, member, value, key TSRMLS_CC);
+	std_object_handlers.write_property(object, member, value ZEND_HASH_KEY_CC TSRMLS_CC);
 }
 /* }}} */
 
-static void php_v8js_unset_property(zval *object, zval *member, const zend_literal *key TSRMLS_DC) /* {{{ */
+static void php_v8js_unset_property(zval *object, zval *member ZEND_HASH_KEY_DC TSRMLS_DC) /* {{{ */
 {
 	V8JS_BEGIN_CTX(c, object)
 
@@ -975,7 +981,7 @@ static void php_v8js_unset_property(zval *object, zval *member, const zend_liter
 	jsobj->ForceDelete(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)));
 
 	/* Unset from PHP object */
-	std_object_handlers.unset_property(object, member, key TSRMLS_CC);
+	std_object_handlers.unset_property(object, member ZEND_HASH_KEY_CC TSRMLS_CC);
 }
 /* }}} */
 
