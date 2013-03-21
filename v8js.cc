@@ -20,7 +20,7 @@
 /* $Id$ */
 
 #define V8JS_DEBUG 0
-
+#define PHP_V8_VERSION "0.1.4"
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
