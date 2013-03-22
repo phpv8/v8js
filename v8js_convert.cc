@@ -386,10 +386,7 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value TSRMLS_DC) /* {{
 		}
 
 		// See https://github.com/preillyme/v8js/issues/6
-		if (Z_REFCOUNT_P(value) == 1)
-		{
-			Z_SET_REFCOUNT_P(value, 2);
-		}
+		Z_SET_REFCOUNT_P(value, Z_REFCOUNT_P(value) + 1);
 
 		newobj->SetAlignedPointerInInternalField(0, (void *) value);
 	} else {
