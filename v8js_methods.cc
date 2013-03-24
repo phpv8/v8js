@@ -30,6 +30,7 @@ extern "C" {
 #include "php_v8js_macros.h"
 #include <v8.h>
 #include <map>
+#include <vector>
 
 /* global.exit - terminate execution */
 V8JS_METHOD(exit) /* {{{ */
@@ -170,42 +171,49 @@ V8JS_METHOD(var_dump) /* {{{ */
 
 // TODO: Put this in php_v8js_context
 std::map<char *, v8::Handle<v8::Object> > modules_loaded;
+std::vector<char *> modules_stack;
 
 V8JS_METHOD(require)
 {
 	//v8::Persistent<v8::Value> module_name_value_v8 = v8::Persistent<v8::Value>::New(args[0]->ToObject());
 	v8::String::Utf8Value module_name_v8(args[0]);
 
-	// Make sure to duplicate the string to ensure it is not freed by V8's garbage collector
+	// Make sure to duplicate the module name string so it doesn't get freed by the V8 garbage collector
 	char *module_name = strdup(ToCString(module_name_v8));
 
+	// Check for module cyclic dependencies
+	for (std::vector<char *>::iterator it = modules_stack.begin(); it != modules_stack.end(); ++it)
+    {
+    	if (!strcmp(*it, module_name)) {
+    		return v8::ThrowException(v8::String::New("Module cyclic dependency"));
+    	}
+    }
+
+    // If we have already loaded and cached this module then use it
 	if (modules_loaded.count(module_name) > 0) {
-printf("Using cached module\n");
 		return modules_loaded[module_name];
 	}
+
+	// Get the extension context
+	v8::Handle<v8::External> data = v8::Handle<v8::External>::Cast(args.Data());
+	php_v8js_ctx *c = static_cast<php_v8js_ctx*>(data->Value());
+
+	// Check that we have a module loader
+	if (c->module_loader == NULL) {
+		return v8::ThrowException(v8::String::New("No module loader"));
+	}
+
+	// Callback to PHP to load the module code
 
 	zval module_code;
 	zval *module_name_zend;
 
 	MAKE_STD_ZVAL(module_name_zend);
 	ZVAL_STRING(module_name_zend, module_name, 1);
-
 	zval* params[] = { module_name_zend };
 
-	// Get the module loader from extension context
-	v8::Handle<v8::External> data = v8::Handle<v8::External>::Cast(args.Data());
-	php_v8js_ctx *c = static_cast<php_v8js_ctx*>(data->Value());
-
-	if (c->module_loader == NULL) {
-		printf("Module loader not defined!\n");
-		exit(-1);
-	}
-
-	if (SUCCESS == call_user_function(EG(function_table), NULL, c->module_loader, &module_code, 1, params TSRMLS_CC)) {
-		printf("CODE = %s\n", Z_STRVAL(module_code));
-	} else {
-		printf("Module loader callback failed\n");
-		exit(-1);
+	if (FAILURE == call_user_function(EG(function_table), NULL, c->module_loader, &module_code, 1, params TSRMLS_CC)) {
+		return v8::ThrowException(v8::String::New("Module loader callback failed"));
 	}
 
 	// Create a template for the global object and set the built-in global functions
@@ -213,7 +221,7 @@ printf("Using cached module\n");
 	global->Set(v8::String::New("print"), v8::FunctionTemplate::New(V8JS_MN(print)), v8::ReadOnly);
 	global->Set(v8::String::New("require"), v8::FunctionTemplate::New(V8JS_MN(require), v8::External::New(c)), v8::ReadOnly);
 
-	// Add the exports object
+	// Add the exports object in which the module returns its API
 	v8::Handle<v8::ObjectTemplate> exports_template = v8::ObjectTemplate::New();
 	v8::Handle<v8::Object> exports = exports_template->NewInstance();
 	global->Set(v8::String::New("exports"), exports);
@@ -240,32 +248,31 @@ printf("Using cached module\n");
 
 	// The script will be empty if there are compile errors
 	if (script.IsEmpty()) {
-		//php_v8js_throw_exception(&try_catch TSRMLS_CC);
-		printf("Compile error\n");
-		exit(-1);
-		return V8JS_NULL;
+		return v8::ThrowException(v8::String::New("Module script compile failed"));
 	}
 
+	// Add this module to the stack
+	modules_stack.push_back(module_name);
+
 	// Run script
-	//c->in_execution++;
 	v8::Local<v8::Value> result = script->Run();
-	//c->in_execution--;
+
+	// Remove this module from the stack
+	modules_stack.pop_back();
 
 	// Script possibly terminated, return immediately
 	if (!try_catch.CanContinue()) {
-		// TODO: Throw PHP exception here?
-		return V8JS_NULL;
+		return v8::ThrowException(v8::String::New("Module script compile failed"));
 	}
 
 	// Handle runtime JS exceptions
 	if (try_catch.HasCaught()) {
 
 		// Rethrow the exception back to JS
-		try_catch.ReThrow();
-		return V8JS_NULL;
+		return try_catch.ReThrow();
 	}
 
-	// Cache the module
+	// Cache the module so it doesn't need to be compiled and run again
 	modules_loaded[module_name] = handle_scope.Close(exports);
 
 	return modules_loaded[module_name];
