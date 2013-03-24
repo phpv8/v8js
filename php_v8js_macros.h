@@ -91,11 +91,23 @@ v8::Handle<v8::Value> zval_to_v8js(zval * TSRMLS_DC);
 /* Convert V8 value into zval */
 int v8js_to_zval(v8::Handle<v8::Value>, zval *, int TSRMLS_DC);
 
-/* Register builtin methods into passed object */
-void php_v8js_register_methods(v8::Handle<v8::ObjectTemplate>);
-
 /* Register accessors into passed object */
 void php_v8js_register_accessors(v8::Local<v8::ObjectTemplate>, zval * TSRMLS_DC);
+
+/* {{{ Context container */
+struct php_v8js_ctx {
+  zend_object std;
+  v8::Persistent<v8::String> object_name;
+  v8::Persistent<v8::Context> context;
+  zend_bool report_uncaught;
+  zval *pending_exception;
+  int in_execution;
+  zval *module_loader;
+};
+/* }}} */
+
+/* Register builtin methods into passed object */
+void php_v8js_register_methods(v8::Handle<v8::ObjectTemplate>, php_v8js_ctx *c);
 
 #endif	/* PHP_V8JS_MACROS_H */
 

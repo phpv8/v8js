@@ -126,17 +126,6 @@ struct php_v8js_jsext {
 };
 /* }}} */
 
-/* {{{ Context container */
-struct php_v8js_ctx {
-	zend_object std;
-	v8::Persistent<v8::String> object_name;
-	v8::Persistent<v8::Context> context;
-	zend_bool report_uncaught;
-	zval *pending_exception;
-	int in_execution;
-};
-/* }}} */
-
 /* {{{ Object container */
 struct php_v8js_object {
 	zend_object std;
@@ -579,6 +568,7 @@ static PHP_METHOD(V8Js, __construct)
 	c->report_uncaught = report_uncaught;
 	c->pending_exception = NULL;
 	c->in_execution = 0;
+	c->module_loader = NULL;
 
 	/* Initialize V8 */
 	php_v8js_init(TSRMLS_C);
@@ -606,7 +596,7 @@ static PHP_METHOD(V8Js, __construct)
 		V8JSG(global_template)->SetClassName(V8JS_SYM("V8Js"));
 
 		/* Register builtin methods */
-		php_v8js_register_methods(V8JSG(global_template)->InstanceTemplate());
+		php_v8js_register_methods(V8JSG(global_template)->InstanceTemplate(), c);
 	}
 
 	/* Create context */
@@ -763,6 +753,24 @@ static PHP_METHOD(V8Js, getPendingException)
 	if (c->pending_exception) {
 		RETURN_ZVAL(c->pending_exception, 1, 0);
 	}
+}
+/* }}} */
+
+/* {{{ proto void V8Js::setModuleLoader(string module)
+ */
+static PHP_METHOD(V8Js, setModuleLoader)
+{
+	php_v8js_ctx *c;
+	zval *callable;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &callable) == FAILURE) {
+		return;
+	}
+
+	c = (php_v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
+
+	c->module_loader = callable;
+	Z_ADDREF_P(c->module_loader);
 }
 /* }}} */
 
@@ -925,6 +933,10 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO(arginfo_v8js_getpendingexception, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_setmoduleloader, 0, 0, 1)
+	ZEND_ARG_INFO(0, callable)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_registerextension, 0, 0, 2)
 	ZEND_ARG_INFO(0, extension_name)
 	ZEND_ARG_INFO(0, script)
@@ -943,6 +955,7 @@ static const zend_function_entry v8js_methods[] = { /* {{{ */
 	PHP_ME(V8Js,	__construct,			arginfo_v8js_construct,				ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
 	PHP_ME(V8Js,	executeString,			arginfo_v8js_executestring,			ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	getPendingException,	arginfo_v8js_getpendingexception,	ZEND_ACC_PUBLIC)
+	PHP_ME(V8Js,	setModuleLoader,		arginfo_v8js_setmoduleloader,		ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	registerExtension,		arginfo_v8js_registerextension,		ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
 	PHP_ME(V8Js,	getExtensions,			arginfo_v8js_getextensions,			ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
 	{NULL, NULL, NULL}
