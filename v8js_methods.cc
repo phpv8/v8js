@@ -173,24 +173,94 @@ V8JS_METHOD(var_dump) /* {{{ */
 std::map<char *, v8::Handle<v8::Object> > modules_loaded;
 std::vector<char *> modules_stack;
 
+void split_terms(char *identifier, std::vector<char *> &terms)
+{
+	char *term = (char *)malloc(PATH_MAX), *ptr = term;
+
+	// Initialise the term string
+	*term = 0;
+
+	while (*identifier > 0) {
+		if (*identifier == '/') {
+			if (strlen(term) > 0) {
+				// Terminate term string and add to terms vector
+				*ptr++ = 0;
+				terms.push_back(strdup(term));
+
+				// Reset term string
+				memset(term, 0, strlen(term));
+				ptr = term;
+			}
+		} else {
+			*ptr++ = *identifier;
+		}
+
+		identifier++;
+	}
+
+	if (strlen(term) > 0) {
+		// Terminate term string and add to terms vector
+		*ptr++ = 0;
+		terms.push_back(strdup(term));
+	}
+
+	if (term > 0) {
+		free(term);
+	}
+}
+
+void normalize_identifier(char *identifier, char *normalised)
+{
+	std::vector<char *> terms;
+	split_terms(identifier, terms);
+
+	std::vector<char *> normalised_terms;
+
+	for (std::vector<char *>::iterator it = terms.begin(); it != terms.end(); it++) {
+		char *term = *it;
+
+		if (!strcmp(term, "..")) {
+			normalised_terms.pop_back();
+		} else if (strcmp(term, ".")) {
+			normalised_terms.push_back(term);
+		}
+	}
+
+	// Initialise the normalised string
+	*normalised = 0;
+
+	for (std::vector<char *>::iterator it = normalised_terms.begin(); it != normalised_terms.end(); it++) {
+		char *term = *it;
+
+		if (strlen(normalised) > 0) {
+			strcat(normalised, "/");
+		}
+
+		strcat(normalised, term);
+	}
+}
+
 V8JS_METHOD(require)
 {
 	v8::String::Utf8Value module_name_v8(args[0]);
 
 	// Make sure to duplicate the module name string so it doesn't get freed by the V8 garbage collector
 	char *module_name = strdup(ToCString(module_name_v8));
+	char *normalised_module_identifier = (char *)malloc(strlen(module_name));
+
+	normalize_identifier(module_name, normalised_module_identifier);
 
 	// Check for module cyclic dependencies
 	for (std::vector<char *>::iterator it = modules_stack.begin(); it != modules_stack.end(); ++it)
     {
-    	if (!strcmp(*it, module_name)) {
+    	if (!strcmp(*it, normalised_module_identifier)) {
     		return v8::ThrowException(v8::String::New("Module cyclic dependency"));
     	}
     }
 
     // If we have already loaded and cached this module then use it
-	if (modules_loaded.count(module_name) > 0) {
-		return modules_loaded[module_name];
+	if (modules_loaded.count(normalised_module_identifier) > 0) {
+		return modules_loaded[normalised_module_identifier];
 	}
 
 	// Get the extension context
@@ -208,11 +278,21 @@ V8JS_METHOD(require)
 	zval *module_name_zend;
 
 	MAKE_STD_ZVAL(module_name_zend);
-	ZVAL_STRING(module_name_zend, module_name, 1);
+	ZVAL_STRING(module_name_zend, normalised_module_identifier, 1);
 	zval* params[] = { module_name_zend };
 
 	if (FAILURE == call_user_function(EG(function_table), NULL, c->module_loader, &module_code, 1, params TSRMLS_CC)) {
 		return v8::ThrowException(v8::String::New("Module loader callback failed"));
+	}
+
+	// Convert the return value to string
+	if (Z_TYPE(module_code) != IS_STRING) {
+    	convert_to_string(&module_code);
+	}
+
+	// Check that some code has been returned
+	if (!strlen(Z_STRVAL(module_code))) {
+		return v8::ThrowException(v8::String::New("Module loader callback did not return code"));
 	}
 
 	// Create a template for the global object and set the built-in global functions
@@ -239,7 +319,6 @@ V8JS_METHOD(require)
 	// Set script identifier
 	v8::Local<v8::String> sname = V8JS_SYM("require");
 
-	// TODO: Load module code here
 	v8::Local<v8::String> source = v8::String::New(Z_STRVAL(module_code));
 
 	// Create and compile script
@@ -251,7 +330,7 @@ V8JS_METHOD(require)
 	}
 
 	// Add this module to the stack
-	modules_stack.push_back(module_name);
+	modules_stack.push_back(normalised_module_identifier);
 
 	// Run script
 	v8::Local<v8::Value> result = script->Run();
@@ -272,9 +351,9 @@ V8JS_METHOD(require)
 	}
 
 	// Cache the module so it doesn't need to be compiled and run again
-	modules_loaded[module_name] = handle_scope.Close(exports);
+	modules_loaded[normalised_module_identifier] = handle_scope.Close(exports);
 
-	return modules_loaded[module_name];
+	return modules_loaded[normalised_module_identifier];
 }
 
 void php_v8js_register_methods(v8::Handle<v8::ObjectTemplate> global, php_v8js_ctx *c) /* {{{ */
