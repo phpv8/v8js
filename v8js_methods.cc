@@ -290,7 +290,7 @@ V8JS_METHOD(require)
 	if (EG(exception)) {
 		// Clear the PHP exception and throw it in V8 instead
 		zend_clear_exception(TSRMLS_CC);
-		return v8::ThrowException(v8::String::New("Module loader callback exception 456"));
+		return v8::ThrowException(v8::String::New("Module loader callback exception"));
 	}
 
 	// Convert the return value to string
