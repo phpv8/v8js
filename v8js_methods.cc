@@ -25,6 +25,7 @@
 
 extern "C" {
 #include "php.h"
+#include "zend_exceptions.h"
 }
 
 #include "php_v8js_macros.h"
@@ -283,6 +284,13 @@ V8JS_METHOD(require)
 
 	if (FAILURE == call_user_function(EG(function_table), NULL, c->module_loader, &module_code, 1, params TSRMLS_CC)) {
 		return v8::ThrowException(v8::String::New("Module loader callback failed"));
+	}
+
+	// Check if an exception was thrown
+	if (EG(exception)) {
+		// Clear the PHP exception and throw it in V8 instead
+		zend_clear_exception(TSRMLS_CC);
+		return v8::ThrowException(v8::String::New("Module loader callback exception 456"));
 	}
 
 	// Convert the return value to string
