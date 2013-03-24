@@ -175,7 +175,6 @@ std::vector<char *> modules_stack;
 
 V8JS_METHOD(require)
 {
-	//v8::Persistent<v8::Value> module_name_value_v8 = v8::Persistent<v8::Value>::New(args[0]->ToObject());
 	v8::String::Utf8Value module_name_v8(args[0]);
 
 	// Make sure to duplicate the module name string so it doesn't get freed by the V8 garbage collector
