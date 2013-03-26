@@ -332,10 +332,16 @@ V8JS_METHOD(require)
 	global->Set(V8JS_SYM("sleep"), v8::FunctionTemplate::New(V8JS_MN(sleep)), v8::ReadOnly);
 	global->Set(v8::String::New("require"), v8::FunctionTemplate::New(V8JS_MN(require), v8::External::New(c)), v8::ReadOnly);
 
-	// Add the exports object in which the module returns its API
+	// Add the exports object in which the module can return its API
 	v8::Handle<v8::ObjectTemplate> exports_template = v8::ObjectTemplate::New();
 	v8::Handle<v8::Object> exports = exports_template->NewInstance();
 	global->Set(v8::String::New("exports"), exports);
+
+	// Add the module object in which the module can have more fine-grained control over what it can return
+	v8::Handle<v8::ObjectTemplate> module_template = v8::ObjectTemplate::New();
+	v8::Handle<v8::Object> module = module_template->NewInstance();
+	module->Set(v8::String::New("id"), v8::String::New(normalised_module_id));
+	global->Set(v8::String::New("module"), module);
 
 	// Each module gets its own context so different modules do not affect each other
 	v8::Persistent<v8::Context> context = v8::Context::New(NULL, global);
@@ -385,7 +391,14 @@ V8JS_METHOD(require)
 	}
 
 	// Cache the module so it doesn't need to be compiled and run again
-	modules_loaded[normalised_module_id] = handle_scope.Close(exports);
+	// Ensure compatibility with CommonJS implementations such as NodeJS by playing nicely with module.exports and exports
+	if (module->Has(v8::String::New("exports")) && !module->Get(v8::String::New("exports"))->IsUndefined()) {
+		// If module.exports has been set then we cache this arbitrary value...
+		modules_loaded[normalised_module_id] = handle_scope.Close(module->Get(v8::String::New("exports"))->ToObject());
+	} else {
+		// ...otherwise we cache the exports object itself
+		modules_loaded[normalised_module_id] = handle_scope.Close(exports);		
+	}
 
 	return modules_loaded[normalised_module_id];
 }
