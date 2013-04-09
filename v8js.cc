@@ -38,9 +38,33 @@ extern "C" {
 #include <v8.h>
 #include "php_v8js_macros.h"
 
+#include <chrono>
+#include <stack>
+#include <thread>
+
 /* Forward declarations */
 static void php_v8js_throw_exception(v8::TryCatch * TSRMLS_DC);
 static void php_v8js_create_exception(zval *, v8::TryCatch * TSRMLS_DC);
+
+/* {{{ Context container */
+struct php_v8js_ctx {
+	zend_object std;
+	v8::Persistent<v8::String> object_name;
+	v8::Persistent<v8::Context> context;
+	zend_bool report_uncaught;
+	zval *pending_exception;
+	int in_execution;
+	v8::Isolate *isolate;
+	bool execution_terminated;
+};
+/* }}} */
+
+// Timer context
+struct php_v8js_timer_ctx
+{
+	std::chrono::time_point<std::chrono::high_resolution_clock> time_point;
+	php_v8js_ctx *v8js_ctx;
+};
 
 /* Module globals */
 ZEND_BEGIN_MODULE_GLOBALS(v8js)
@@ -52,6 +76,11 @@ ZEND_BEGIN_MODULE_GLOBALS(v8js)
 	/* Ini globals */
 	char *v8_flags; /* V8 command line flags */
 	int max_disposed_contexts; /* Max disposed context allowed before forcing V8 GC */
+
+	// Timer thread globals
+	std::stack<php_v8js_timer_ctx *> timer_stack;
+	std::thread *timer_thread;
+	bool timer_stop;
 ZEND_END_MODULE_GLOBALS(v8js)
 
 #ifdef ZTS
@@ -123,17 +152,6 @@ struct php_v8js_jsext {
 	int deps_count;
 	char *name;
 	char *source;
-};
-/* }}} */
-
-/* {{{ Context container */
-struct php_v8js_ctx {
-	zend_object std;
-	v8::Persistent<v8::String> object_name;
-	v8::Persistent<v8::Context> context;
-	zend_bool report_uncaught;
-	zval *pending_exception;
-	int in_execution;
 };
 /* }}} */
 
@@ -579,6 +597,8 @@ static PHP_METHOD(V8Js, __construct)
 	c->report_uncaught = report_uncaught;
 	c->pending_exception = NULL;
 	c->in_execution = 0;
+	c->isolate = v8::Isolate::New();
+	c->execution_terminated = false;
 
 	/* Initialize V8 */
 	php_v8js_init(TSRMLS_C);
@@ -596,6 +616,10 @@ static PHP_METHOD(V8Js, __construct)
 
 	/* Declare configuration for extensions */
 	v8::ExtensionConfiguration extension_conf(exts_count, exts);
+
+	// Isolate execution
+	v8::Locker locker(c->isolate);
+	v8::Isolate::Scope isolate_scope(c->isolate);
 
 	/* Handle scope */
 	v8::HandleScope handle_scope;
@@ -663,7 +687,63 @@ static PHP_METHOD(V8Js, __construct)
 	} \
 	\
 	(ctx) = (php_v8js_ctx *) zend_object_store_get_object(object TSRMLS_CC); \
+	v8::Locker locker((ctx)->isolate); \
+	v8::Isolate::Scope isolate_scope((ctx)->isolate); \
 	v8::Context::Scope context_scope((ctx)->context);
+
+static void timer_push(long timeout, php_v8js_ctx *c)
+{
+	// Create context for this timer
+	php_v8js_timer_ctx *timer_ctx = (php_v8js_timer_ctx *)malloc(sizeof(php_v8js_timer_ctx));
+
+	// Calculate the time point when the timeout is exceeded
+	std::chrono::milliseconds duration(timeout);
+	std::chrono::time_point<std::chrono::high_resolution_clock> from = std::chrono::high_resolution_clock::now();
+
+	// Push the timer context
+	timer_ctx->time_point = from + duration;
+	timer_ctx->v8js_ctx = c;
+	V8JSG(timer_stack).push(timer_ctx);
+}
+
+static void timer_pop()
+{
+	if (V8JSG(timer_stack).size()) {
+		// Free the timer context memory
+		php_v8js_timer_ctx *timer_ctx = V8JSG(timer_stack).top();
+		free(timer_ctx);
+
+		// Remove the timer context from the stack
+		V8JSG(timer_stack).pop();
+	}
+}
+
+static void php_v8js_timer_thread()
+{
+	while (!V8JSG(timer_stop)) {
+		std::chrono::time_point<std::chrono::high_resolution_clock> now = std::chrono::high_resolution_clock::now();
+
+		if (V8JSG(timer_stack).size()) {
+			// Get the current timer context
+			php_v8js_timer_ctx *timer_ctx = V8JSG(timer_stack).top();
+			php_v8js_ctx *c = timer_ctx->v8js_ctx;
+
+			if (now > timer_ctx->time_point) {
+				// Forcefully terminate the current thread of V8 execution in the isolate
+				v8::V8::TerminateExecution(c->isolate);
+
+				// Remove this timer from the stack
+				timer_pop();
+
+				c->execution_terminated = true;
+			}
+		}
+
+		// Sleep for 10ms
+		std::chrono::milliseconds duration(10);
+		std::this_thread::sleep_for(duration);
+	}
+}
 
 /* {{{ proto mixed V8Js::executeString(string script [, string identifier [, int flags]])
  */
@@ -671,9 +751,9 @@ static PHP_METHOD(V8Js, executeString)
 {
 	char *str = NULL, *identifier = NULL;
 	int str_len = 0, identifier_len = 0;
-	long flags = V8JS_FLAG_NONE;
+	long flags = V8JS_FLAG_NONE, timeout = 0;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|sl", &str, &str_len, &identifier, &identifier_len, &flags) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|sll", &str, &str_len, &identifier, &identifier_len, &flags, &timeout) == FAILURE) {
 		return;
 	}
 
@@ -700,14 +780,32 @@ static PHP_METHOD(V8Js, executeString)
 	/* Set flags for runtime use */
 	V8JS_GLOBAL_SET_FLAGS(flags);
 
+	if (timeout > 0) {
+		// If timer thread is not running then start it
+		if (!V8JSG(timer_thread)) {
+			// If not, start timer thread
+			V8JSG(timer_thread) = new std::thread(php_v8js_timer_thread);
+		}
+
+		timer_push(timeout, c);
+	}
+
 	/* Execute script */
 	c->in_execution++;
 	v8::Local<v8::Value> result = script->Run();
 	c->in_execution--;
 
-	/* Script possibly terminated, return immediately */
+	if (timeout > 0) {
+		timer_pop();
+	}
+
+	if (c->execution_terminated) {
+		// Execution has been terminated due to timeout
+		zend_throw_exception(php_ce_v8js_exception, "Script timeout", 0 TSRMLS_CC);
+	}
+
 	if (!try_catch.CanContinue()) {
-		/* TODO: throw PHP exception here? */
+		// At this point we can't re-throw the exception
 		return;
 	}
 
@@ -920,6 +1018,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_executestring, 0, 0, 1)
 	ZEND_ARG_INFO(0, script)
 	ZEND_ARG_INFO(0, identifier)
 	ZEND_ARG_INFO(0, flags)
+	ZEND_ARG_INFO(0, timeout)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO(arginfo_v8js_getpendingexception, 0)
@@ -1211,6 +1310,12 @@ static PHP_MSHUTDOWN_FUNCTION(v8js)
  */
 static PHP_RSHUTDOWN_FUNCTION(v8js)
 {
+	// If the timer thread is running then stop it
+	if (V8JSG(timer_thread)) {
+		V8JSG(timer_stop) = true;
+		V8JSG(timer_thread)->join();
+	}
+
 #if V8JS_DEBUG
 	v8::HeapStatistics stats;
 	v8::V8::GetHeapStatistics(&stats);
@@ -1254,6 +1359,8 @@ static PHP_GINIT_FUNCTION(v8js)
 	v8js_globals->disposed_contexts = 0;
 	v8js_globals->v8_initialized = 0;
 	v8js_globals->v8_flags = NULL;
+	v8js_globals->timer_thread = NULL;
+	v8js_globals->timer_stop = false;
 }
 /* }}} */
 
