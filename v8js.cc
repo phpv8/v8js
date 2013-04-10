@@ -55,13 +55,17 @@ struct php_v8js_ctx {
 	zval *pending_exception;
 	int in_execution;
 	v8::Isolate *isolate;
-	bool execution_terminated;
+	bool time_limit_hit;
+	bool memory_limit_hit;
+	v8::Persistent<v8::FunctionTemplate> global_template;
 };
 /* }}} */
 
 // Timer context
 struct php_v8js_timer_ctx
 {
+	long time_limit;
+	long memory_limit;
 	std::chrono::time_point<std::chrono::high_resolution_clock> time_point;
 	php_v8js_ctx *v8js_ctx;
 };
@@ -70,7 +74,6 @@ struct php_v8js_timer_ctx
 ZEND_BEGIN_MODULE_GLOBALS(v8js)
 	int v8_initialized;
 	HashTable *extensions;
-	v8::Persistent<v8::FunctionTemplate> global_template;
 	int disposed_contexts; /* Disposed contexts since last time V8 did GC */
 
 	/* Ini globals */
@@ -80,6 +83,7 @@ ZEND_BEGIN_MODULE_GLOBALS(v8js)
 	// Timer thread globals
 	std::stack<php_v8js_timer_ctx *> timer_stack;
 	std::thread *timer_thread;
+	std::mutex timer_mutex;
 	bool timer_stop;
 ZEND_END_MODULE_GLOBALS(v8js)
 
@@ -275,7 +279,11 @@ static HashTable *php_v8js_v8_get_properties(zval *object TSRMLS_DC) /* {{{ */
 	ALLOC_HASHTABLE(retval);
 	zend_hash_init(retval, 0, NULL, ZVAL_PTR_DTOR, 0);
 
-	v8::HandleScope local_scope;
+	php_v8js_ctx *c = (php_v8js_ctx *)v8::Context::GetCurrent()->GetAlignedPointerFromEmbedderData(1);
+	v8::Locker locker(c->isolate);
+	v8::Isolate::Scope isolate_scope(c->isolate);
+
+	v8::HandleScope local_scope(c->isolate);
 	v8::Handle<v8::Context> temp_context = v8::Context::New();
 	v8::Context::Scope temp_scope(temp_context);
 
@@ -598,7 +606,8 @@ static PHP_METHOD(V8Js, __construct)
 	c->pending_exception = NULL;
 	c->in_execution = 0;
 	c->isolate = v8::Isolate::New();
-	c->execution_terminated = false;
+	c->time_limit_hit = false;
+	c->memory_limit_hit = false;
 
 	/* Initialize V8 */
 	php_v8js_init(TSRMLS_C);
@@ -622,19 +631,20 @@ static PHP_METHOD(V8Js, __construct)
 	v8::Isolate::Scope isolate_scope(c->isolate);
 
 	/* Handle scope */
-	v8::HandleScope handle_scope;
+	v8::HandleScope handle_scope(c->isolate);
 
 	/* Create global template for global object */
-	if (V8JSG(global_template).IsEmpty()) {
-		V8JSG(global_template) = v8::Persistent<v8::FunctionTemplate>::New(v8::FunctionTemplate::New());
-		V8JSG(global_template)->SetClassName(V8JS_SYM("V8Js"));
+	// Now we are using multiple isolates this needs to be created for every context
 
-		/* Register builtin methods */
-		php_v8js_register_methods(V8JSG(global_template)->InstanceTemplate());
-	}
+	c->global_template = v8::Persistent<v8::FunctionTemplate>::New(v8::FunctionTemplate::New());
+	c->global_template->SetClassName(V8JS_SYM("V8Js"));
+
+	/* Register builtin methods */
+	php_v8js_register_methods(c->global_template->InstanceTemplate());
 
 	/* Create context */
-	c->context = v8::Context::New(&extension_conf, V8JSG(global_template)->InstanceTemplate());
+	c->context = v8::Context::New(&extension_conf, c->global_template->InstanceTemplate());
+	c->context->SetAlignedPointerInEmbedderData(1, c);
 
 	if (exts) {
 		_php_v8js_free_ext_strarr(exts, exts_count);
@@ -664,7 +674,7 @@ static PHP_METHOD(V8Js, __construct)
 	if (free) {
 		efree(class_name);
 	}
-	
+
 	/* Register Get accessor for passed variables */
 	if (vars_arr && zend_hash_num_elements(Z_ARRVAL_P(vars_arr)) > 0) {
 		php_v8js_register_accessors(php_obj_t->InstanceTemplate(), vars_arr TSRMLS_CC);
@@ -691,23 +701,31 @@ static PHP_METHOD(V8Js, __construct)
 	v8::Isolate::Scope isolate_scope((ctx)->isolate); \
 	v8::Context::Scope context_scope((ctx)->context);
 
-static void timer_push(long timeout, php_v8js_ctx *c)
+static void php_v8js_timer_push(long time_limit, long memory_limit, php_v8js_ctx *c)
 {
+	V8JSG(timer_mutex).lock();
+
 	// Create context for this timer
 	php_v8js_timer_ctx *timer_ctx = (php_v8js_timer_ctx *)malloc(sizeof(php_v8js_timer_ctx));
 
-	// Calculate the time point when the timeout is exceeded
-	std::chrono::milliseconds duration(timeout);
+	// Calculate the time point when the time limit is exceeded
+	std::chrono::milliseconds duration(time_limit);
 	std::chrono::time_point<std::chrono::high_resolution_clock> from = std::chrono::high_resolution_clock::now();
 
 	// Push the timer context
+	timer_ctx->time_limit = time_limit;
+	timer_ctx->memory_limit = memory_limit;
 	timer_ctx->time_point = from + duration;
 	timer_ctx->v8js_ctx = c;
 	V8JSG(timer_stack).push(timer_ctx);
+
+	V8JSG(timer_mutex).unlock();
 }
 
-static void timer_pop()
+static void php_v8js_timer_pop()
 {
+	V8JSG(timer_mutex).lock();
+
 	if (V8JSG(timer_stack).size()) {
 		// Free the timer context memory
 		php_v8js_timer_ctx *timer_ctx = V8JSG(timer_stack).top();
@@ -716,26 +734,49 @@ static void timer_pop()
 		// Remove the timer context from the stack
 		V8JSG(timer_stack).pop();
 	}
+
+	V8JSG(timer_mutex).unlock();
+}
+
+static void php_v8js_terminate_execution(php_v8js_ctx *c)
+{
+	// Forcefully terminate the current thread of V8 execution in the isolate
+	v8::V8::TerminateExecution(c->isolate);
+
+	// Remove this timer from the stack
+	php_v8js_timer_pop();
 }
 
 static void php_v8js_timer_thread()
 {
 	while (!V8JSG(timer_stop)) {
+		v8::Locker locker;
+
 		std::chrono::time_point<std::chrono::high_resolution_clock> now = std::chrono::high_resolution_clock::now();
+		v8::HeapStatistics hs;
 
 		if (V8JSG(timer_stack).size()) {
 			// Get the current timer context
 			php_v8js_timer_ctx *timer_ctx = V8JSG(timer_stack).top();
 			php_v8js_ctx *c = timer_ctx->v8js_ctx;
 
-			if (now > timer_ctx->time_point) {
-				// Forcefully terminate the current thread of V8 execution in the isolate
-				v8::V8::TerminateExecution(c->isolate);
+			// Get memory usage statistics for the isolate
+			c->isolate->GetHeapStatistics(&hs);
 
-				// Remove this timer from the stack
-				timer_pop();
+			if (timer_ctx->time_limit > 0 && now > timer_ctx->time_point) {
+				php_v8js_terminate_execution(c);
 
-				c->execution_terminated = true;
+				V8JSG(timer_mutex).lock();
+				c->time_limit_hit = true;
+				V8JSG(timer_mutex).unlock();
+			}
+
+			if (timer_ctx->memory_limit > 0 && hs.used_heap_size() > timer_ctx->memory_limit) {
+				php_v8js_terminate_execution(c);
+
+				V8JSG(timer_mutex).lock();
+				c->memory_limit_hit = true;
+				V8JSG(timer_mutex).unlock();
 			}
 		}
 
@@ -751,18 +792,23 @@ static PHP_METHOD(V8Js, executeString)
 {
 	char *str = NULL, *identifier = NULL;
 	int str_len = 0, identifier_len = 0;
-	long flags = V8JS_FLAG_NONE, timeout = 0;
+	long flags = V8JS_FLAG_NONE, time_limit = 0, memory_limit = 0;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|sll", &str, &str_len, &identifier, &identifier_len, &flags, &timeout) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|slll", &str, &str_len, &identifier, &identifier_len, &flags, &time_limit, &memory_limit) == FAILURE) {
 		return;
 	}
 
 	V8JS_BEGIN_CTX(c, getThis())
 
+	V8JSG(timer_mutex).lock();
+	c->time_limit_hit = false;
+	c->memory_limit_hit = false;
+	V8JSG(timer_mutex).unlock();
+
 	/* Catch JS exceptions */
 	v8::TryCatch try_catch;
 
-	v8::HandleScope handle_scope;
+	v8::HandleScope handle_scope(c->isolate);
 
 	/* Set script identifier */
 	v8::Local<v8::String> sname = identifier_len ? V8JS_SYML(identifier, identifier_len) : V8JS_SYM("V8Js::executeString()");
@@ -780,14 +826,14 @@ static PHP_METHOD(V8Js, executeString)
 	/* Set flags for runtime use */
 	V8JS_GLOBAL_SET_FLAGS(flags);
 
-	if (timeout > 0) {
+	if (time_limit > 0) {
 		// If timer thread is not running then start it
 		if (!V8JSG(timer_thread)) {
 			// If not, start timer thread
 			V8JSG(timer_thread) = new std::thread(php_v8js_timer_thread);
 		}
 
-		timer_push(timeout, c);
+		php_v8js_timer_push(time_limit, memory_limit, c);
 	}
 
 	/* Execute script */
@@ -795,13 +841,20 @@ static PHP_METHOD(V8Js, executeString)
 	v8::Local<v8::Value> result = script->Run();
 	c->in_execution--;
 
-	if (timeout > 0) {
-		timer_pop();
+	if (time_limit > 0) {
+		php_v8js_timer_pop();
 	}
 
-	if (c->execution_terminated) {
-		// Execution has been terminated due to timeout
-		zend_throw_exception(php_ce_v8js_exception, "Script timeout", 0 TSRMLS_CC);
+	if (c->time_limit_hit) {
+		// Execution has been terminated due to time limit
+		zend_throw_exception(php_ce_v8js_exception, "Maximum script time limit exceeded", 0 TSRMLS_CC);
+		return;
+	}
+
+	if (c->memory_limit_hit) {
+		// Execution has been terminated due to memory limit
+		zend_throw_exception(php_ce_v8js_exception, "Maximum script memory limit exceeded", 0 TSRMLS_CC);
+		return;
 	}
 
 	if (!try_catch.CanContinue()) {
@@ -1018,7 +1071,8 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_executestring, 0, 0, 1)
 	ZEND_ARG_INFO(0, script)
 	ZEND_ARG_INFO(0, identifier)
 	ZEND_ARG_INFO(0, flags)
-	ZEND_ARG_INFO(0, timeout)
+	ZEND_ARG_INFO(0, time_limit)
+	ZEND_ARG_INFO(0, memory_limit)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO(arginfo_v8js_getpendingexception, 0)
@@ -1054,7 +1108,7 @@ static void php_v8js_write_property(zval *object, zval *member, zval *value ZEND
 {
 	V8JS_BEGIN_CTX(c, object)
 
-	v8::HandleScope handle_scope;
+	v8::HandleScope handle_scope(c->isolate);
 
 	/* Global PHP JS object */
 	v8::Local<v8::Object> jsobj = V8JS_GLOBAL->Get(c->object_name)->ToObject();
@@ -1071,7 +1125,7 @@ static void php_v8js_unset_property(zval *object, zval *member ZEND_HASH_KEY_DC 
 {
 	V8JS_BEGIN_CTX(c, object)
 
-	v8::HandleScope handle_scope;
+	v8::HandleScope handle_scope(c->isolate);
 
 	/* Global PHP JS object */
 	v8::Local<v8::Object> jsobj = V8JS_GLOBAL->Get(c->object_name)->ToObject();
