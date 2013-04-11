@@ -1388,8 +1388,6 @@ static PHP_MSHUTDOWN_FUNCTION(v8js)
 {
 	UNREGISTER_INI_ENTRIES();
 
-	v8::V8::Dispose();
-
 	if (V8JSG(extensions)) {
 		zend_hash_destroy(V8JSG(extensions));
 		free(V8JSG(extensions));
