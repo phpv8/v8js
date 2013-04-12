@@ -694,7 +694,7 @@ static void php_v8js_timer_push(long time_limit, long memory_limit, php_v8js_ctx
 	V8JSG(timer_mutex).lock();
 
 	// Create context for this timer
-	php_v8js_timer_ctx *timer_ctx = (php_v8js_timer_ctx *)malloc(sizeof(php_v8js_timer_ctx));
+	php_v8js_timer_ctx *timer_ctx = (php_v8js_timer_ctx *)emalloc(sizeof(php_v8js_timer_ctx));
 
 	// Calculate the time point when the time limit is exceeded
 	std::chrono::milliseconds duration(time_limit);
@@ -717,7 +717,7 @@ static void php_v8js_timer_pop()
 	if (V8JSG(timer_stack).size()) {
 		// Free the timer context memory
 		php_v8js_timer_ctx *timer_ctx = V8JSG(timer_stack).top();
-		free(timer_ctx);
+		efree(timer_ctx);
 
 		// Remove the timer context from the stack
 		V8JSG(timer_stack).pop();
