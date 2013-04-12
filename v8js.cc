@@ -25,58 +25,19 @@
 #include "config.h"
 #endif
 
+#include "php_v8js_macros.h"
+
 extern "C" {
-#include "php.h"
 #include "php_ini.h"
 #include "ext/standard/info.h"
 #include "ext/standard/php_string.h"
 #include "ext/standard/php_smart_str.h"
 #include "zend_exceptions.h"
-#include "php_v8js.h"
 }
-
-#include <v8.h>
-#include "php_v8js_macros.h"
-
-#include <chrono>
-#include <stack>
-#include <thread>
 
 /* Forward declarations */
 static void php_v8js_throw_script_exception(v8::TryCatch * TSRMLS_DC);
 static void php_v8js_create_script_exception(zval *, v8::TryCatch * TSRMLS_DC);
-
-// Timer context
-struct php_v8js_timer_ctx
-{
-	long time_limit;
-	long memory_limit;
-	std::chrono::time_point<std::chrono::high_resolution_clock> time_point;
-	php_v8js_ctx *v8js_ctx;
-};
-
-/* Module globals */
-ZEND_BEGIN_MODULE_GLOBALS(v8js)
-	int v8_initialized;
-	HashTable *extensions;
-	int disposed_contexts; /* Disposed contexts since last time V8 did GC */
-
-	/* Ini globals */
-	char *v8_flags; /* V8 command line flags */
-	int max_disposed_contexts; /* Max disposed context allowed before forcing V8 GC */
-
-	// Timer thread globals
-	std::stack<php_v8js_timer_ctx *> timer_stack;
-	std::thread *timer_thread;
-	std::mutex timer_mutex;
-	bool timer_stop;
-ZEND_END_MODULE_GLOBALS(v8js)
-
-#ifdef ZTS
-# define V8JSG(v) TSRMG(v8js_globals_id, zend_v8js_globals *, v)
-#else
-# define V8JSG(v) (v8js_globals.v)
-#endif
 
 ZEND_DECLARE_MODULE_GLOBALS(v8js)
 

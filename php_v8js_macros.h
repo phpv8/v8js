@@ -22,7 +22,19 @@
 #ifndef PHP_V8JS_MACROS_H
 #define PHP_V8JS_MACROS_H
 
+extern "C" {
+#include "php.h"
+#include "php_v8js.h"
+}
+
 #include <v8.h>
+
+#include <chrono>
+#include <stack>
+#include <thread>
+
+#include <map>
+#include <vector>
 
 /* V8Js Version */
 #define V8JS_VERSION "0.1.3"
@@ -107,8 +119,46 @@ struct php_v8js_ctx {
   bool memory_limit_hit;
   v8::Persistent<v8::FunctionTemplate> global_template;
   zval *module_loader;
+  std::vector<char *> modules_stack;
+  std::vector<char *> modules_base;
 };
 /* }}} */
+
+// Timer context
+struct php_v8js_timer_ctx
+{
+  long time_limit;
+  long memory_limit;
+  std::chrono::time_point<std::chrono::high_resolution_clock> time_point;
+  php_v8js_ctx *v8js_ctx;
+};
+
+/* Module globals */
+ZEND_BEGIN_MODULE_GLOBALS(v8js)
+  int v8_initialized;
+  HashTable *extensions;
+  int disposed_contexts; /* Disposed contexts since last time V8 did GC */
+
+  /* Ini globals */
+  char *v8_flags; /* V8 command line flags */
+  int max_disposed_contexts; /* Max disposed context allowed before forcing V8 GC */
+
+  // Timer thread globals
+  std::stack<php_v8js_timer_ctx *> timer_stack;
+  std::thread *timer_thread;
+  std::mutex timer_mutex;
+  bool timer_stop;
+
+  std::map<char *, v8::Handle<v8::Object> > modules_loaded;
+ZEND_END_MODULE_GLOBALS(v8js)
+
+extern zend_v8js_globals v8js_globals;
+
+#ifdef ZTS
+# define V8JSG(v) TSRMG(v8js_globals_id, zend_v8js_globals *, v)
+#else
+# define V8JSG(v) (v8js_globals.v)
+#endif
 
 /* Register builtin methods into passed object */
 void php_v8js_register_methods(v8::Handle<v8::ObjectTemplate>, php_v8js_ctx *c);

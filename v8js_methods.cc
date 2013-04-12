@@ -23,15 +23,14 @@
 #include "config.h"
 #endif
 
+#include "php_v8js_macros.h"
+
 extern "C" {
-#include "php.h"
 #include "zend_exceptions.h"
 }
 
-#include "php_v8js_macros.h"
-#include <v8.h>
-#include <map>
-#include <vector>
+/* Forward declarations */
+void php_v8js_commonjs_normalise_identifier(char *base, char *identifier, char *normalised_path, char *module_name);
 
 /* global.exit - terminate execution */
 V8JS_METHOD(exit) /* {{{ */
@@ -165,106 +164,33 @@ V8JS_METHOD(var_dump) /* {{{ */
 	for (int i = 0; i < args.Length(); i++) {
 		_php_v8js_dumper(args[i], 1 TSRMLS_CC);
 	}
-	
+
 	return V8JS_NULL;
 }
 /* }}} */
 
-// TODO: Put this in php_v8js_context
-std::map<char *, v8::Handle<v8::Object> > modules_loaded;
-std::vector<char *> modules_stack;
-std::vector<char *> modules_base;
-
-void split_terms(char *identifier, std::vector<char *> &terms)
-{
-	char *term = (char *)malloc(PATH_MAX), *ptr = term;
-
-	// Initialise the term string
-	*term = 0;
-
-	while (*identifier > 0) {
-		if (*identifier == '/') {
-			if (strlen(term) > 0) {
-				// Terminate term string and add to terms vector
-				*ptr++ = 0;
-				terms.push_back(strdup(term));
-
-				// Reset term string
-				memset(term, 0, strlen(term));
-				ptr = term;
-			}
-		} else {
-			*ptr++ = *identifier;
-		}
-
-		identifier++;
-	}
-
-	if (strlen(term) > 0) {
-		// Terminate term string and add to terms vector
-		*ptr++ = 0;
-		terms.push_back(strdup(term));
-	}
-
-	if (term > 0) {
-		free(term);
-	}
-}
-
-void normalize_identifier(char *base, char *identifier, char *normalised_path, char *module_name)
-{
-	std::vector<char *> id_terms, terms;
-	split_terms(identifier, id_terms);
-
-	// If we have a relative module identifier then include the base terms
-	if (!strcmp(id_terms.front(), ".") || !strcmp(id_terms.front(), "..")) {
-		split_terms(base, terms);
-	}
-
-	terms.insert(terms.end(), id_terms.begin(), id_terms.end());
-
-	std::vector<char *> normalised_terms;
-
-	for (std::vector<char *>::iterator it = terms.begin(); it != terms.end(); it++) {
-		char *term = *it;
-
-		if (!strcmp(term, "..")) {
-			normalised_terms.pop_back();
-		} else if (strcmp(term, ".")) {
-			normalised_terms.push_back(term);
-		}
-	}
-
-	// Initialise the normalised path string
-	*normalised_path = 0;
-	*module_name = 0;
-
-	strcat(module_name, normalised_terms.back());
-	normalised_terms.pop_back();
-
-	for (std::vector<char *>::iterator it = normalised_terms.begin(); it != normalised_terms.end(); it++) {
-		char *term = *it;
-
-		if (strlen(normalised_path) > 0) {
-			strcat(normalised_path, "/");
-		}
-
-		strcat(normalised_path, term);
-	}
-}
-
 V8JS_METHOD(require)
 {
+	// Get the extension context
+	v8::Handle<v8::External> data = v8::Handle<v8::External>::Cast(args.Data());
+	php_v8js_ctx *c = static_cast<php_v8js_ctx*>(data->Value());
+
+	// Check that we have a module loader
+	if (c->module_loader == NULL) {
+		return v8::ThrowException(v8::String::New("No module loader"));
+	}
+
 	v8::String::Utf8Value module_id_v8(args[0]);
 
 	// Make sure to duplicate the module name string so it doesn't get freed by the V8 garbage collector
-	char *module_id = strdup(ToCString(module_id_v8));
-	char *normalised_path = (char *)malloc(PATH_MAX);
-	char *module_name = (char *)malloc(PATH_MAX);
+	char *module_id = estrdup(ToCString(module_id_v8));
+	char *normalised_path = (char *)emalloc(PATH_MAX);
+	char *module_name = (char *)emalloc(PATH_MAX);
 
-	normalize_identifier(modules_base.back(), module_id, normalised_path, module_name);
+	php_v8js_commonjs_normalise_identifier(c->modules_base.back(), module_id, normalised_path, module_name);
+	efree(module_id);
 
-	char *normalised_module_id = (char *)malloc(strlen(module_id));
+	char *normalised_module_id = (char *)emalloc(strlen(module_id));
 	*normalised_module_id = 0;
 
 	if (strlen(normalised_path) > 0) {
@@ -273,27 +199,23 @@ V8JS_METHOD(require)
 	}
 
 	strcat(normalised_module_id, module_name);
+	efree(module_name);
 
 	// Check for module cyclic dependencies
-	for (std::vector<char *>::iterator it = modules_stack.begin(); it != modules_stack.end(); ++it)
+	for (std::vector<char *>::iterator it = c->modules_stack.begin(); it != c->modules_stack.end(); ++it)
     {
     	if (!strcmp(*it, normalised_module_id)) {
+    		efree(normalised_path);
+
     		return v8::ThrowException(v8::String::New("Module cyclic dependency"));
     	}
     }
 
     // If we have already loaded and cached this module then use it
-	if (modules_loaded.count(normalised_module_id) > 0) {
-		return modules_loaded[normalised_module_id];
-	}
+	if (V8JSG(modules_loaded).count(normalised_module_id) > 0) {
+		efree(normalised_path);
 
-	// Get the extension context
-	v8::Handle<v8::External> data = v8::Handle<v8::External>::Cast(args.Data());
-	php_v8js_ctx *c = static_cast<php_v8js_ctx*>(data->Value());
-
-	// Check that we have a module loader
-	if (c->module_loader == NULL) {
-		return v8::ThrowException(v8::String::New("No module loader"));
+		return V8JSG(modules_loaded)[normalised_module_id];
 	}
 
 	// Callback to PHP to load the module code
@@ -306,11 +228,15 @@ V8JS_METHOD(require)
 	zval* params[] = { normalised_path_zend };
 
 	if (FAILURE == call_user_function(EG(function_table), NULL, c->module_loader, &module_code, 1, params TSRMLS_CC)) {
+		efree(normalised_path);
+
 		return v8::ThrowException(v8::String::New("Module loader callback failed"));
 	}
 
 	// Check if an exception was thrown
 	if (EG(exception)) {
+		efree(normalised_path);
+
 		// Clear the PHP exception and throw it in V8 instead
 		zend_clear_exception(TSRMLS_CC);
 		return v8::ThrowException(v8::String::New("Module loader callback exception"));
@@ -323,6 +249,8 @@ V8JS_METHOD(require)
 
 	// Check that some code has been returned
 	if (!strlen(Z_STRVAL(module_code))) {
+		efree(normalised_path);
+
 		return v8::ThrowException(v8::String::New("Module loader callback did not return code"));
 	}
 
@@ -349,11 +277,13 @@ V8JS_METHOD(require)
 	// Catch JS exceptions
 	v8::TryCatch try_catch;
 
+	v8::Locker locker(c->isolate);
+	v8::Isolate::Scope isolate_scope(c->isolate);
+
+	v8::HandleScope handle_scope(c->isolate);
+
 	// Enter the module context
 	v8::Context::Scope scope(context);
-
-	v8::HandleScope handle_scope;
-
 	// Set script identifier
 	v8::Local<v8::String> sname = V8JS_SYM("require");
 
@@ -364,19 +294,23 @@ V8JS_METHOD(require)
 
 	// The script will be empty if there are compile errors
 	if (script.IsEmpty()) {
+		efree(normalised_path);
 		return v8::ThrowException(v8::String::New("Module script compile failed"));
 	}
 
 	// Add this module and path to the stack
-	modules_stack.push_back(normalised_module_id);
-	modules_base.push_back(normalised_path);
+	c->modules_stack.push_back(normalised_module_id);
+
+	c->modules_base.push_back(normalised_path);
 
 	// Run script
 	v8::Local<v8::Value> result = script->Run();
 
 	// Remove this module and path from the stack
-	modules_stack.pop_back();
-	modules_base.pop_back();
+	c->modules_stack.pop_back();
+	c->modules_base.pop_back();
+
+	efree(normalised_path);
 
 	// Script possibly terminated, return immediately
 	if (!try_catch.CanContinue()) {
@@ -385,7 +319,6 @@ V8JS_METHOD(require)
 
 	// Handle runtime JS exceptions
 	if (try_catch.HasCaught()) {
-
 		// Rethrow the exception back to JS
 		return try_catch.ReThrow();
 	}
@@ -394,13 +327,13 @@ V8JS_METHOD(require)
 	// Ensure compatibility with CommonJS implementations such as NodeJS by playing nicely with module.exports and exports
 	if (module->Has(v8::String::New("exports")) && !module->Get(v8::String::New("exports"))->IsUndefined()) {
 		// If module.exports has been set then we cache this arbitrary value...
-		modules_loaded[normalised_module_id] = handle_scope.Close(module->Get(v8::String::New("exports"))->ToObject());
+		V8JSG(modules_loaded)[normalised_module_id] = handle_scope.Close(module->Get(v8::String::New("exports"))->ToObject());
 	} else {
 		// ...otherwise we cache the exports object itself
-		modules_loaded[normalised_module_id] = handle_scope.Close(exports);		
+		V8JSG(modules_loaded)[normalised_module_id] = handle_scope.Close(exports);
 	}
 
-	return modules_loaded[normalised_module_id];
+	return V8JSG(modules_loaded)[normalised_module_id];
 }
 
 void php_v8js_register_methods(v8::Handle<v8::ObjectTemplate> global, php_v8js_ctx *c) /* {{{ */
@@ -410,7 +343,7 @@ void php_v8js_register_methods(v8::Handle<v8::ObjectTemplate> global, php_v8js_c
 	global->Set(V8JS_SYM("print"), v8::FunctionTemplate::New(V8JS_MN(print)), v8::ReadOnly);
 	global->Set(V8JS_SYM("var_dump"), v8::FunctionTemplate::New(V8JS_MN(var_dump)), v8::ReadOnly);
 
-	modules_base.push_back("");
+	c->modules_base.push_back("");
 	global->Set(V8JS_SYM("require"), v8::FunctionTemplate::New(V8JS_MN(require), v8::External::New(c)), v8::ReadOnly);
 }
 /* }}} */
