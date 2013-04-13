@@ -43,7 +43,7 @@ API
         public mixed V8Js::executeString( string script [, string identifier [, int flags = V8Js::FLAG_NONE]])
 
         // Returns uncaught pending exception or null if there is no pending exception.
-        public V8JsException V8Js::getPendingException( void )
+        public V8JsScriptException V8Js::getPendingException( void )
 
         /** Static methods **/
 
@@ -56,7 +56,7 @@ API
         public static array V8Js::getExtensions( void )
     }
 
-    final class V8JsException extends Exception
+    final class V8JsScriptException extends Exception
     {
         /* Properties */
         protected string JsFileName = NULL;

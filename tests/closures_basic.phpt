@@ -10,7 +10,7 @@ $a->func = function ($arg) { echo "Hello {$arg}, I'm Closure!\n"; };
 
 try {
   $a->executeString('print(PHP.func + "\n"); PHP.func("foobar");', "closure_test.js");
-} catch (V8JsException $e) {
+} catch (V8JsScriptException $e) {
   echo $e->getMessage(), "\n";
 }
 ?>

@@ -17,7 +17,7 @@ try {
 	$v8->executeString($js, 'no_flags.js');
 	echo "---\n";
 	$v8->executeString($js, 'force_to_array.js', V8Js::FLAG_FORCE_ARRAY);
-} catch (V8JsException $e) {
+} catch (V8JsScriptException $e) {
 	var_dump($e);
 }
 ?>
