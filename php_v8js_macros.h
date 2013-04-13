@@ -92,19 +92,19 @@ extern zend_class_entry *php_ce_v8_object;
 extern zend_class_entry *php_ce_v8_function;
 
 /* Create PHP V8 object */
-void php_v8js_create_v8(zval *, v8::Handle<v8::Value>, int TSRMLS_DC);
+void php_v8js_create_v8(zval *, v8::Handle<v8::Value>, int, v8::Isolate * TSRMLS_DC);
 
 /* Fetch V8 object properties */
-int php_v8js_v8_get_properties_hash(v8::Handle<v8::Value>, HashTable *, int TSRMLS_DC);
+int php_v8js_v8_get_properties_hash(v8::Handle<v8::Value>, HashTable *, int, v8::Isolate * TSRMLS_DC);
 
 /* Convert zval into V8 value */
-v8::Handle<v8::Value> zval_to_v8js(zval * TSRMLS_DC);
+v8::Handle<v8::Value> zval_to_v8js(zval *, v8::Isolate * TSRMLS_DC);
 
 /* Convert V8 value into zval */
-int v8js_to_zval(v8::Handle<v8::Value>, zval *, int TSRMLS_DC);
+int v8js_to_zval(v8::Handle<v8::Value>, zval *, int, v8::Isolate * TSRMLS_DC);
 
 /* Register accessors into passed object */
-void php_v8js_register_accessors(v8::Local<v8::ObjectTemplate>, zval * TSRMLS_DC);
+void php_v8js_register_accessors(v8::Local<v8::ObjectTemplate>, zval *, v8::Isolate * TSRMLS_DC);
 
 /* {{{ Context container */
 struct php_v8js_ctx {

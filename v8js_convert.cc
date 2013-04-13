@@ -38,6 +38,7 @@ static v8::Handle<v8::Value> php_v8js_php_callback(const v8::Arguments &args) /*
 {
 	v8::Handle<v8::Value> return_value;
 	zval *value = reinterpret_cast<zval *>(args.This()->GetAlignedPointerFromInternalField(0));
+	v8::Isolate *isolate = reinterpret_cast<v8::Isolate *>(args.This()->GetAlignedPointerFromInternalField(1));
 	zend_function *method_ptr;
 	zend_fcall_info fci;
 	zend_fcall_info_cache fcc;
@@ -99,7 +100,7 @@ static v8::Handle<v8::Value> php_v8js_php_callback(const v8::Arguments &args) /*
 		argv = (zval **) safe_emalloc(argc, sizeof(zval *), 0);
 		for (i = 0; i < argc; i++) {
 			MAKE_STD_ZVAL(argv[i]);
-			if (v8js_to_zval(args[i], argv[i], flags TSRMLS_CC) == FAILURE) {
+			if (v8js_to_zval(args[i], argv[i], flags, isolate TSRMLS_CC) == FAILURE) {
 				fci.param_count++;
 				error_len = spprintf(&error, 0, "converting parameter #%d passed to %s() failed", i + 1, method_ptr->common.function_name);
 				return_value = V8JS_THROW(Error, error, error_len);
@@ -134,7 +135,7 @@ failure:
 	}
 
 	if (retval_ptr != NULL) {
-		return_value = zval_to_v8js(retval_ptr TSRMLS_CC);
+		return_value = zval_to_v8js(retval_ptr, isolate TSRMLS_CC);
 		zval_ptr_dtor(&retval_ptr);
 	} else {
 		return_value = V8JS_NULL;
@@ -275,7 +276,7 @@ static v8::Handle<v8::Integer> php_v8js_property_query(v8::Local<v8::String> pro
 #define PHP_V8JS_CALLBACK(mptr) \
 	v8::FunctionTemplate::New(php_v8js_php_callback, v8::External::New(mptr))->GetFunction()
 
-static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value TSRMLS_DC) /* {{{ */
+static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
 {
 	v8::Local<v8::FunctionTemplate> new_tpl = v8::FunctionTemplate::New();
 	v8::Local<v8::Object> newobj;
@@ -303,7 +304,7 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value TSRMLS_DC) /* {{
 	/* Object methods */
 	if (ce) {
 		new_tpl->SetClassName(V8JS_STRL(ce->name, ce->name_length));
-		new_tpl->InstanceTemplate()->SetInternalFieldCount(1);
+		new_tpl->InstanceTemplate()->SetInternalFieldCount(2);
 
 		if (ce == zend_ce_closure) {
 			new_tpl->InstanceTemplate()->SetCallAsFunctionHandler(php_v8js_php_callback);
@@ -390,6 +391,7 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value TSRMLS_DC) /* {{
 		Z_ADDREF_P(value);
 
 		newobj->SetAlignedPointerInInternalField(0, (void *) value);
+		newobj->SetAlignedPointerInInternalField(1, (void *) isolate);
 	} else {
 		new_tpl->SetClassName(V8JS_SYM("Array"));
 		newobj = new_tpl->InstanceTemplate()->NewInstance();
@@ -426,9 +428,9 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value TSRMLS_DC) /* {{
 						}
 						continue;
 					}
-					newobj->Set(V8JS_STRL(key, key_len - 1), zval_to_v8js(*data TSRMLS_CC), v8::ReadOnly);
+					newobj->Set(V8JS_STRL(key, key_len - 1), zval_to_v8js(*data, isolate TSRMLS_CC), v8::ReadOnly);
 				} else {
-					newobj->Set(index, zval_to_v8js(*data TSRMLS_CC));
+					newobj->Set(index, zval_to_v8js(*data, isolate TSRMLS_CC));
 				}
 
 				if (tmp_ht) {
@@ -441,14 +443,14 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value TSRMLS_DC) /* {{
 }
 /* }}} */
 
-static v8::Handle<v8::Value> php_v8js_hash_to_jsarr(zval *value TSRMLS_DC) /* {{{ */
+static v8::Handle<v8::Value> php_v8js_hash_to_jsarr(zval *value, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
 {
 	HashTable *myht = HASH_OF(value);
 	int i = myht ? zend_hash_num_elements(myht) : 0;
 
 	/* Return object if dealing with assoc array */
 	if (i > 0 && _php_v8js_is_assoc_array(myht TSRMLS_CC)) {
-		return php_v8js_hash_to_jsobj(value TSRMLS_CC);
+		return php_v8js_hash_to_jsobj(value, isolate TSRMLS_CC);
 	}
 
 	v8::Local<v8::Array> newarr;
@@ -477,7 +479,7 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsarr(zval *value TSRMLS_DC) /* {{
 				tmp_ht->nApplyCount++;
 			}
 
-			newarr->Set(index++, zval_to_v8js(*data TSRMLS_CC));
+			newarr->Set(index++, zval_to_v8js(*data, isolate TSRMLS_CC));
 
 			if (tmp_ht) {
 				tmp_ht->nApplyCount--;
@@ -488,18 +490,18 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsarr(zval *value TSRMLS_DC) /* {{
 }
 /* }}} */
 
-v8::Handle<v8::Value> zval_to_v8js(zval *value TSRMLS_DC) /* {{{ */
+v8::Handle<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
 {
 	v8::Handle<v8::Value> jsValue;
 
 	switch (Z_TYPE_P(value))
 	{
 		case IS_ARRAY:
-			jsValue = php_v8js_hash_to_jsarr(value TSRMLS_CC);
+			jsValue = php_v8js_hash_to_jsarr(value, isolate TSRMLS_CC);
 			break;
 
 		case IS_OBJECT:
-			jsValue = php_v8js_hash_to_jsobj(value TSRMLS_CC);
+			jsValue = php_v8js_hash_to_jsobj(value, isolate TSRMLS_CC);
 			break;
 
 		case IS_STRING:
@@ -527,7 +529,7 @@ v8::Handle<v8::Value> zval_to_v8js(zval *value TSRMLS_DC) /* {{{ */
 }
 /* }}} */
 
-int v8js_to_zval(v8::Handle<v8::Value> jsValue, zval *return_value, int flags TSRMLS_DC) /* {{{ */
+int v8js_to_zval(v8::Handle<v8::Value> jsValue, zval *return_value, int flags, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
 {
 	if (jsValue->IsString())
 	{
@@ -576,9 +578,9 @@ int v8js_to_zval(v8::Handle<v8::Value> jsValue, zval *return_value, int flags TS
 	{
 		if ((flags & V8JS_FLAG_FORCE_ARRAY) || jsValue->IsArray()) {
 			array_init(return_value);
-			return php_v8js_v8_get_properties_hash(jsValue, Z_ARRVAL_P(return_value), flags TSRMLS_CC);
+			return php_v8js_v8_get_properties_hash(jsValue, Z_ARRVAL_P(return_value), flags, isolate TSRMLS_CC);
 		} else {
-			php_v8js_create_v8(return_value, jsValue, flags TSRMLS_CC);
+			php_v8js_create_v8(return_value, jsValue, flags, isolate TSRMLS_CC);
 			return SUCCESS;
 		}
 	}

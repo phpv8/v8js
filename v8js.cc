@@ -112,6 +112,7 @@ struct php_v8js_object {
 	zend_object std;
 	v8::Persistent<v8::Value> v8obj;
 	int flags;
+	v8::Isolate *isolate;
 };
 /* }}} */
 
@@ -147,7 +148,7 @@ static zval *php_v8js_v8_read_property(zval *object, zval *member, int type ZEND
 				MAKE_STD_ZVAL(retval);
 			}
 
-			if (v8js_to_zval(jsVal, retval, obj->flags TSRMLS_CC) == SUCCESS) {
+			if (v8js_to_zval(jsVal, retval, obj->flags, obj->isolate TSRMLS_CC) == SUCCESS) {
 				return retval;
 			}
 		}
@@ -164,7 +165,7 @@ static void php_v8js_v8_write_property(zval *object, zval *member, zval *value Z
 	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
 
 	if (obj->v8obj->IsObject() && !obj->v8obj->IsFunction()) {
-		obj->v8obj->ToObject()->ForceSet(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)), zval_to_v8js(value TSRMLS_CC));
+		obj->v8obj->ToObject()->ForceSet(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)), zval_to_v8js(value, obj->isolate TSRMLS_CC));
 	}
 }
 /* }}} */
@@ -179,7 +180,7 @@ static void php_v8js_v8_unset_property(zval *object, zval *member ZEND_HASH_KEY_
 }
 /* }}} */
 
-int php_v8js_v8_get_properties_hash(v8::Handle<v8::Value> jsValue, HashTable *retval, int flags TSRMLS_DC) /* {{{ */
+int php_v8js_v8_get_properties_hash(v8::Handle<v8::Value> jsValue, HashTable *retval, int flags, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
 {
 	v8::Local<v8::Object> jsObj = jsValue->ToObject();
 
@@ -202,7 +203,7 @@ int php_v8js_v8_get_properties_hash(v8::Handle<v8::Value> jsValue, HashTable *re
 
 			MAKE_STD_ZVAL(value);
 
-			if (v8js_to_zval(jsVal, value, flags TSRMLS_CC) == FAILURE) {
+			if (v8js_to_zval(jsVal, value, flags, isolate TSRMLS_CC) == FAILURE) {
 				zval_ptr_dtor(&value);
 				return FAILURE;
 			}
@@ -223,19 +224,17 @@ static HashTable *php_v8js_v8_get_properties(zval *object TSRMLS_DC) /* {{{ */
 {
 	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
 	HashTable *retval;
-	
+
 	ALLOC_HASHTABLE(retval);
 	zend_hash_init(retval, 0, NULL, ZVAL_PTR_DTOR, 0);
 
-	php_v8js_ctx *c = (php_v8js_ctx *)v8::Context::GetCurrent()->GetAlignedPointerFromEmbedderData(1);
-	v8::Locker locker(c->isolate);
-	v8::Isolate::Scope isolate_scope(c->isolate);
-
-	v8::HandleScope local_scope(c->isolate);
+	v8::Locker locker(obj->isolate);
+	v8::Isolate::Scope isolate_scope(obj->isolate);
+	v8::HandleScope local_scope(obj->isolate);
 	v8::Handle<v8::Context> temp_context = v8::Context::New();
 	v8::Context::Scope temp_scope(temp_context);
 
-	if (php_v8js_v8_get_properties_hash(obj->v8obj, retval, obj->flags TSRMLS_CC) == SUCCESS) {
+	if (php_v8js_v8_get_properties_hash(obj->v8obj, retval, obj->flags, obj->isolate TSRMLS_CC) == SUCCESS) {
 		return retval;
 	}
 	return NULL;
@@ -306,7 +305,7 @@ static int php_v8js_v8_call_method(char *method, INTERNAL_FUNCTION_PARAMETERS) /
 	v8::Local<v8::Value> js_retval;
 
 	for (i = 0; i < argc; i++) {
-		jsArgv[i] = v8::Local<v8::Value>::New(zval_to_v8js(*argv[i] TSRMLS_CC));
+		jsArgv[i] = v8::Local<v8::Value>::New(zval_to_v8js(*argv[i], obj->isolate TSRMLS_CC));
 	}
 
 	js_retval = cb->Call(V8JS_GLOBAL, argc, jsArgv);
@@ -318,7 +317,7 @@ static int php_v8js_v8_call_method(char *method, INTERNAL_FUNCTION_PARAMETERS) /
 	}
 
 	if (return_value_used) {
-		return v8js_to_zval(js_retval, return_value, obj->flags TSRMLS_CC);
+		return v8js_to_zval(js_retval, return_value, obj->flags, obj->isolate TSRMLS_CC);
 	}
 
 	return SUCCESS;
@@ -381,7 +380,7 @@ static zend_object_value php_v8js_v8_new(zend_class_entry *ce TSRMLS_DC) /* {{{ 
 }
 /* }}} */
 
-void php_v8js_create_v8(zval *res, v8::Handle<v8::Value> value, int flags TSRMLS_DC) /* {{{ */
+void php_v8js_create_v8(zval *res, v8::Handle<v8::Value> value, int flags, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
 {
 	php_v8js_object *c;
 
@@ -391,6 +390,7 @@ void php_v8js_create_v8(zval *res, v8::Handle<v8::Value> value, int flags TSRMLS
 
 	c->v8obj = v8::Persistent<v8::Value>::New(value);
 	c->flags = flags;
+	c->isolate = isolate;
 }
 /* }}} */
 
@@ -626,7 +626,7 @@ static PHP_METHOD(V8Js, __construct)
 
 	/* Register Get accessor for passed variables */
 	if (vars_arr && zend_hash_num_elements(Z_ARRVAL_P(vars_arr)) > 0) {
-		php_v8js_register_accessors(php_obj_t->InstanceTemplate(), vars_arr TSRMLS_CC);
+		php_v8js_register_accessors(php_obj_t->InstanceTemplate(), vars_arr, c->isolate TSRMLS_CC);
 	}
 
 	/* Set name for the PHP JS object */
@@ -847,7 +847,7 @@ static PHP_METHOD(V8Js, executeString)
 
 	/* Convert V8 value to PHP value */
 	if (!result.IsEmpty()) {
-		v8js_to_zval(result, return_value, flags TSRMLS_CC);
+		v8js_to_zval(result, return_value, flags, c->isolate TSRMLS_CC);
 	}
 }
 /* }}} */
@@ -1090,7 +1090,7 @@ static void php_v8js_write_property(zval *object, zval *member, zval *value ZEND
 	v8::Local<v8::Object> jsobj = V8JS_GLOBAL->Get(c->object_name)->ToObject();
 
 	/* Write value to PHP JS object */
-	jsobj->ForceSet(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)), zval_to_v8js(value TSRMLS_CC), v8::ReadOnly);
+	jsobj->ForceSet(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)), zval_to_v8js(value, c->isolate TSRMLS_CC), v8::ReadOnly);
 
 	/* Write value to PHP object */
 	std_object_handlers.write_property(object, member, value ZEND_HASH_KEY_CC TSRMLS_CC);
