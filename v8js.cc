@@ -776,7 +776,7 @@ static PHP_METHOD(V8Js, executeString)
 	/* Set flags for runtime use */
 	V8JS_GLOBAL_SET_FLAGS(flags);
 
-	if (time_limit > 0) {
+	if (time_limit > 0 || memory_limit > 0) {
 		// If timer thread is not running then start it
 		if (!V8JSG(timer_thread)) {
 			// If not, start timer thread
