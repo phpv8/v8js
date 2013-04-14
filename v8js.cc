@@ -518,9 +518,6 @@ static void php_v8js_init(TSRMLS_D) /* {{{ */
 	/* Initialize V8 */
 	v8::V8::Initialize();
 
-	/* Redirect fatal errors to PHP error handler */
-	v8::V8::SetFatalErrorHandler(php_v8js_fatal_error_handler);
-
 	/* Run only once */
 	V8JSG(v8_initialized) = 1;
 }
@@ -581,6 +578,10 @@ static PHP_METHOD(V8Js, __construct)
 
 	/* Handle scope */
 	v8::HandleScope handle_scope(c->isolate);
+
+	/* Redirect fatal errors to PHP error handler */
+	// This needs to be done within the context isolate
+	v8::V8::SetFatalErrorHandler(php_v8js_fatal_error_handler);
 
 	/* Create global template for global object */
 	// Now we are using multiple isolates this needs to be created for every context
