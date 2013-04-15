@@ -1,7 +1,7 @@
 V8Js
 ====
 
-This is a PHP extension for Google's V8 Javascript engine.
+V8Js is a PHP extension for Google's V8 Javascript engine.
 
 The extension allows you to execute Javascript code in a secure sandbox from PHP. The executed code can be restricted using a time limit and/or memory limit. This provides the possibility to execute untrusted code with confidence.
 
