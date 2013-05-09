@@ -63,5 +63,14 @@ http://pear.php.net/dtd/package-2.0.xsd">
 - Added notice to registerExtension() if trying to use it when V8 is already initialized.
    </notes>
   </release>
+  <release>
+   <date>2010-12-30</date>
+   <version><release>0.1.0</release><api>0.1.0</api></version>
+   <stability><release>beta</release><api>beta</api></stability>
+   <license uri="http://www.php.net/license">PHP</license>
+   <notes>
+- Initial PECL release.
+   </notes>
+  </release>
  </changelog>
 </package>
