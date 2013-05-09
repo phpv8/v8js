@@ -54,6 +54,6 @@ try {
   $a->executeString("var patt1=/[^a-h]/g; var_dump(patt1);", "call_test5.js");
   $a->executeString("var_dump(Math.PI, Infinity, null, undefined);", "call_test6.js");
 //  $a->executeString($JS);
-} catch (V8JsException $e) {
+} catch (V8JsScriptException $e) {
   echo $e->getMessage(), "\n";
 }

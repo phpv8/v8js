@@ -23,12 +23,14 @@
 #include "config.h"
 #endif
 
+#include "php_v8js_macros.h"
+
 extern "C" {
-#include "php.h"
+#include "zend_exceptions.h"
 }
 
-#include "php_v8js_macros.h"
-#include <v8.h>
+/* Forward declarations */
+void php_v8js_commonjs_normalise_identifier(char *base, char *identifier, char *normalised_path, char *module_name);
 
 /* global.exit - terminate execution */
 V8JS_METHOD(exit) /* {{{ */
@@ -162,17 +164,187 @@ V8JS_METHOD(var_dump) /* {{{ */
 	for (int i = 0; i < args.Length(); i++) {
 		_php_v8js_dumper(args[i], 1 TSRMLS_CC);
 	}
-	
+
 	return V8JS_NULL;
 }
 /* }}} */
 
-void php_v8js_register_methods(v8::Handle<v8::ObjectTemplate> global) /* {{{ */
+V8JS_METHOD(require)
+{
+	// Get the extension context
+	v8::Handle<v8::External> data = v8::Handle<v8::External>::Cast(args.Data());
+	php_v8js_ctx *c = static_cast<php_v8js_ctx*>(data->Value());
+
+	// Check that we have a module loader
+	if (c->module_loader == NULL) {
+		return v8::ThrowException(v8::String::New("No module loader"));
+	}
+
+	v8::String::Utf8Value module_id_v8(args[0]);
+
+	// Make sure to duplicate the module name string so it doesn't get freed by the V8 garbage collector
+	char *module_id = estrdup(ToCString(module_id_v8));
+	char *normalised_path = (char *)emalloc(PATH_MAX);
+	char *module_name = (char *)emalloc(PATH_MAX);
+
+	php_v8js_commonjs_normalise_identifier(c->modules_base.back(), module_id, normalised_path, module_name);
+	efree(module_id);
+
+	char *normalised_module_id = (char *)emalloc(strlen(module_id));
+	*normalised_module_id = 0;
+
+	if (strlen(normalised_path) > 0) {
+		strcat(normalised_module_id, normalised_path);
+		strcat(normalised_module_id, "/");
+	}
+
+	strcat(normalised_module_id, module_name);
+	efree(module_name);
+
+	// Check for module cyclic dependencies
+	for (std::vector<char *>::iterator it = c->modules_stack.begin(); it != c->modules_stack.end(); ++it)
+    {
+    	if (!strcmp(*it, normalised_module_id)) {
+    		efree(normalised_path);
+
+    		return v8::ThrowException(v8::String::New("Module cyclic dependency"));
+    	}
+    }
+
+    // If we have already loaded and cached this module then use it
+	if (V8JSG(modules_loaded).count(normalised_module_id) > 0) {
+		efree(normalised_path);
+
+		return V8JSG(modules_loaded)[normalised_module_id];
+	}
+
+	// Callback to PHP to load the module code
+
+	zval module_code;
+	zval *normalised_path_zend;
+
+	MAKE_STD_ZVAL(normalised_path_zend);
+	ZVAL_STRING(normalised_path_zend, normalised_module_id, 1);
+	zval* params[] = { normalised_path_zend };
+
+	if (FAILURE == call_user_function(EG(function_table), NULL, c->module_loader, &module_code, 1, params TSRMLS_CC)) {
+		efree(normalised_path);
+
+		return v8::ThrowException(v8::String::New("Module loader callback failed"));
+	}
+
+	// Check if an exception was thrown
+	if (EG(exception)) {
+		efree(normalised_path);
+
+		// Clear the PHP exception and throw it in V8 instead
+		zend_clear_exception(TSRMLS_CC);
+		return v8::ThrowException(v8::String::New("Module loader callback exception"));
+	}
+
+	// Convert the return value to string
+	if (Z_TYPE(module_code) != IS_STRING) {
+    	convert_to_string(&module_code);
+	}
+
+	// Check that some code has been returned
+	if (!strlen(Z_STRVAL(module_code))) {
+		efree(normalised_path);
+
+		return v8::ThrowException(v8::String::New("Module loader callback did not return code"));
+	}
+
+	// Create a template for the global object and set the built-in global functions
+	v8::Handle<v8::ObjectTemplate> global = v8::ObjectTemplate::New();
+	global->Set(v8::String::New("print"), v8::FunctionTemplate::New(V8JS_MN(print)), v8::ReadOnly);
+	global->Set(V8JS_SYM("sleep"), v8::FunctionTemplate::New(V8JS_MN(sleep)), v8::ReadOnly);
+	global->Set(v8::String::New("require"), v8::FunctionTemplate::New(V8JS_MN(require), v8::External::New(c)), v8::ReadOnly);
+
+	// Add the exports object in which the module can return its API
+	v8::Handle<v8::ObjectTemplate> exports_template = v8::ObjectTemplate::New();
+	v8::Handle<v8::Object> exports = exports_template->NewInstance();
+	global->Set(v8::String::New("exports"), exports);
+
+	// Add the module object in which the module can have more fine-grained control over what it can return
+	v8::Handle<v8::ObjectTemplate> module_template = v8::ObjectTemplate::New();
+	v8::Handle<v8::Object> module = module_template->NewInstance();
+	module->Set(v8::String::New("id"), v8::String::New(normalised_module_id));
+	global->Set(v8::String::New("module"), module);
+
+	// Each module gets its own context so different modules do not affect each other
+	v8::Persistent<v8::Context> context = v8::Context::New(NULL, global);
+
+	// Catch JS exceptions
+	v8::TryCatch try_catch;
+
+	v8::Locker locker(c->isolate);
+	v8::Isolate::Scope isolate_scope(c->isolate);
+
+	v8::HandleScope handle_scope(c->isolate);
+
+	// Enter the module context
+	v8::Context::Scope scope(context);
+	// Set script identifier
+	v8::Local<v8::String> sname = V8JS_SYM("require");
+
+	v8::Local<v8::String> source = v8::String::New(Z_STRVAL(module_code));
+
+	// Create and compile script
+	v8::Local<v8::Script> script = v8::Script::New(source, sname);
+
+	// The script will be empty if there are compile errors
+	if (script.IsEmpty()) {
+		efree(normalised_path);
+		return v8::ThrowException(v8::String::New("Module script compile failed"));
+	}
+
+	// Add this module and path to the stack
+	c->modules_stack.push_back(normalised_module_id);
+
+	c->modules_base.push_back(normalised_path);
+
+	// Run script
+	v8::Local<v8::Value> result = script->Run();
+
+	// Remove this module and path from the stack
+	c->modules_stack.pop_back();
+	c->modules_base.pop_back();
+
+	efree(normalised_path);
+
+	// Script possibly terminated, return immediately
+	if (!try_catch.CanContinue()) {
+		return v8::ThrowException(v8::String::New("Module script compile failed"));
+	}
+
+	// Handle runtime JS exceptions
+	if (try_catch.HasCaught()) {
+		// Rethrow the exception back to JS
+		return try_catch.ReThrow();
+	}
+
+	// Cache the module so it doesn't need to be compiled and run again
+	// Ensure compatibility with CommonJS implementations such as NodeJS by playing nicely with module.exports and exports
+	if (module->Has(v8::String::New("exports")) && !module->Get(v8::String::New("exports"))->IsUndefined()) {
+		// If module.exports has been set then we cache this arbitrary value...
+		V8JSG(modules_loaded)[normalised_module_id] = handle_scope.Close(module->Get(v8::String::New("exports"))->ToObject());
+	} else {
+		// ...otherwise we cache the exports object itself
+		V8JSG(modules_loaded)[normalised_module_id] = handle_scope.Close(exports);
+	}
+
+	return V8JSG(modules_loaded)[normalised_module_id];
+}
+
+void php_v8js_register_methods(v8::Handle<v8::ObjectTemplate> global, php_v8js_ctx *c) /* {{{ */
 {
 	global->Set(V8JS_SYM("exit"), v8::FunctionTemplate::New(V8JS_MN(exit)), v8::ReadOnly);
 	global->Set(V8JS_SYM("sleep"), v8::FunctionTemplate::New(V8JS_MN(sleep)), v8::ReadOnly);
 	global->Set(V8JS_SYM("print"), v8::FunctionTemplate::New(V8JS_MN(print)), v8::ReadOnly);
 	global->Set(V8JS_SYM("var_dump"), v8::FunctionTemplate::New(V8JS_MN(var_dump)), v8::ReadOnly);
+
+	c->modules_base.push_back("");
+	global->Set(V8JS_SYM("require"), v8::FunctionTemplate::New(V8JS_MN(require), v8::External::New(c)), v8::ReadOnly);
 }
 /* }}} */
 

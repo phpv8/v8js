@@ -1,5 +1,5 @@
 --TEST--
-Test V8::executeString() : V8JsException
+Test V8::executeString() : V8JsScriptException
 --SKIPIF--
 <?php require_once(dirname(__FILE__) . '/skipif.inc'); ?>
 --FILE--
@@ -13,13 +13,13 @@ $v8 = new V8Js();
 
 try {
 	$v8->executeString($JS, 'exception.js');
-} catch (V8JsException $e) {
+} catch (V8JsScriptException $e) {
 	var_dump($e);
 }
 ?>
 ===EOF===
 --EXPECTF--
-object(V8JsException)#2 (11) {
+object(V8JsScriptException)#2 (11) {
   ["message":protected]=>
   string(75) "exception.js:1: ReferenceError: this_function_does_not_exist is not defined"
   ["string":"Exception":private]=>

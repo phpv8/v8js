@@ -18,6 +18,6 @@ echo $a;
 
 try {
 	$a->executeString("PHP.mytest(PHP.foo, PHP.my_private, PHP.my_protected);", "test7.js");
-} catch (V8JsException $e) {
+} catch (V8JsScriptException $e) {
 	var_dump($e);
 }

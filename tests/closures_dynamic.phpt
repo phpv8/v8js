@@ -19,7 +19,7 @@ $a->func = function ($arg) use ($b) { return call_user_func($b, $arg); };
 
 try {
   $a->executeString('print(PHP.func + "\n"); print(PHP.func("world") + "\n");', "closure_test.js");
-} catch (V8JsException $e) {
+} catch (V8JsScriptException $e) {
   echo $e->getMessage(), "\n";
 }
 ?>

@@ -69,6 +69,6 @@ try {
   $blaa->executeString('PHP.obj.foo(1,2,3);', "call_test1 #8.js");
   echo "------------\n";
 
-} catch (V8JsException $e) {
+} catch (V8JsScriptException $e) {
   echo $e->getMessage(), "\n";
 }

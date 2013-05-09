@@ -25,40 +25,19 @@
 #include "config.h"
 #endif
 
+#include "php_v8js_macros.h"
+
 extern "C" {
-#include "php.h"
 #include "php_ini.h"
 #include "ext/standard/info.h"
 #include "ext/standard/php_string.h"
 #include "ext/standard/php_smart_str.h"
 #include "zend_exceptions.h"
-#include "php_v8js.h"
 }
 
-#include <v8.h>
-#include "php_v8js_macros.h"
-
 /* Forward declarations */
-static void php_v8js_throw_exception(v8::TryCatch * TSRMLS_DC);
-static void php_v8js_create_exception(zval *, v8::TryCatch * TSRMLS_DC);
-
-/* Module globals */
-ZEND_BEGIN_MODULE_GLOBALS(v8js)
-	int v8_initialized;
-	HashTable *extensions;
-	v8::Persistent<v8::FunctionTemplate> global_template;
-	int disposed_contexts; /* Disposed contexts since last time V8 did GC */
-
-	/* Ini globals */
-	char *v8_flags; /* V8 command line flags */
-	int max_disposed_contexts; /* Max disposed context allowed before forcing V8 GC */
-ZEND_END_MODULE_GLOBALS(v8js)
-
-#ifdef ZTS
-# define V8JSG(v) TSRMG(v8js_globals_id, zend_v8js_globals *, v)
-#else
-# define V8JSG(v) (v8js_globals.v)
-#endif
+static void php_v8js_throw_script_exception(v8::TryCatch * TSRMLS_DC);
+static void php_v8js_create_script_exception(zval *, v8::TryCatch * TSRMLS_DC);
 
 ZEND_DECLARE_MODULE_GLOBALS(v8js)
 
@@ -107,7 +86,9 @@ ZEND_INI_END()
 zend_class_entry *php_ce_v8_object;
 zend_class_entry *php_ce_v8_function;
 static zend_class_entry *php_ce_v8js;
-static zend_class_entry *php_ce_v8js_exception;
+static zend_class_entry *php_ce_v8js_script_exception;
+static zend_class_entry *php_ce_v8js_time_limit_exception;
+static zend_class_entry *php_ce_v8js_memory_limit_exception;
 /* }}} */
 
 /* {{{ Object Handlers */
@@ -126,22 +107,12 @@ struct php_v8js_jsext {
 };
 /* }}} */
 
-/* {{{ Context container */
-struct php_v8js_ctx {
-	zend_object std;
-	v8::Persistent<v8::String> object_name;
-	v8::Persistent<v8::Context> context;
-	zend_bool report_uncaught;
-	zval *pending_exception;
-	int in_execution;
-};
-/* }}} */
-
 /* {{{ Object container */
 struct php_v8js_object {
 	zend_object std;
 	v8::Persistent<v8::Value> v8obj;
 	int flags;
+	v8::Isolate *isolate;
 };
 /* }}} */
 
@@ -177,7 +148,7 @@ static zval *php_v8js_v8_read_property(zval *object, zval *member, int type ZEND
 				MAKE_STD_ZVAL(retval);
 			}
 
-			if (v8js_to_zval(jsVal, retval, obj->flags TSRMLS_CC) == SUCCESS) {
+			if (v8js_to_zval(jsVal, retval, obj->flags, obj->isolate TSRMLS_CC) == SUCCESS) {
 				return retval;
 			}
 		}
@@ -194,7 +165,7 @@ static void php_v8js_v8_write_property(zval *object, zval *member, zval *value Z
 	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
 
 	if (obj->v8obj->IsObject() && !obj->v8obj->IsFunction()) {
-		obj->v8obj->ToObject()->ForceSet(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)), zval_to_v8js(value TSRMLS_CC));
+		obj->v8obj->ToObject()->ForceSet(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)), zval_to_v8js(value, obj->isolate TSRMLS_CC));
 	}
 }
 /* }}} */
@@ -209,7 +180,7 @@ static void php_v8js_v8_unset_property(zval *object, zval *member ZEND_HASH_KEY_
 }
 /* }}} */
 
-int php_v8js_v8_get_properties_hash(v8::Handle<v8::Value> jsValue, HashTable *retval, int flags TSRMLS_DC) /* {{{ */
+int php_v8js_v8_get_properties_hash(v8::Handle<v8::Value> jsValue, HashTable *retval, int flags, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
 {
 	v8::Local<v8::Object> jsObj = jsValue->ToObject();
 
@@ -232,7 +203,7 @@ int php_v8js_v8_get_properties_hash(v8::Handle<v8::Value> jsValue, HashTable *re
 
 			MAKE_STD_ZVAL(value);
 
-			if (v8js_to_zval(jsVal, value, flags TSRMLS_CC) == FAILURE) {
+			if (v8js_to_zval(jsVal, value, flags, isolate TSRMLS_CC) == FAILURE) {
 				zval_ptr_dtor(&value);
 				return FAILURE;
 			}
@@ -253,15 +224,17 @@ static HashTable *php_v8js_v8_get_properties(zval *object TSRMLS_DC) /* {{{ */
 {
 	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
 	HashTable *retval;
-	
+
 	ALLOC_HASHTABLE(retval);
 	zend_hash_init(retval, 0, NULL, ZVAL_PTR_DTOR, 0);
 
-	v8::HandleScope local_scope;
+	v8::Locker locker(obj->isolate);
+	v8::Isolate::Scope isolate_scope(obj->isolate);
+	v8::HandleScope local_scope(obj->isolate);
 	v8::Handle<v8::Context> temp_context = v8::Context::New();
 	v8::Context::Scope temp_scope(temp_context);
 
-	if (php_v8js_v8_get_properties_hash(obj->v8obj, retval, obj->flags TSRMLS_CC) == SUCCESS) {
+	if (php_v8js_v8_get_properties_hash(obj->v8obj, retval, obj->flags, obj->isolate TSRMLS_CC) == SUCCESS) {
 		return retval;
 	}
 	return NULL;
@@ -332,7 +305,7 @@ static int php_v8js_v8_call_method(char *method, INTERNAL_FUNCTION_PARAMETERS) /
 	v8::Local<v8::Value> js_retval;
 
 	for (i = 0; i < argc; i++) {
-		jsArgv[i] = v8::Local<v8::Value>::New(zval_to_v8js(*argv[i] TSRMLS_CC));
+		jsArgv[i] = v8::Local<v8::Value>::New(zval_to_v8js(*argv[i], obj->isolate TSRMLS_CC));
 	}
 
 	js_retval = cb->Call(V8JS_GLOBAL, argc, jsArgv);
@@ -344,7 +317,7 @@ static int php_v8js_v8_call_method(char *method, INTERNAL_FUNCTION_PARAMETERS) /
 	}
 
 	if (return_value_used) {
-		return v8js_to_zval(js_retval, return_value, obj->flags TSRMLS_CC);
+		return v8js_to_zval(js_retval, return_value, obj->flags, obj->isolate TSRMLS_CC);
 	}
 
 	return SUCCESS;
@@ -407,7 +380,7 @@ static zend_object_value php_v8js_v8_new(zend_class_entry *ce TSRMLS_DC) /* {{{ 
 }
 /* }}} */
 
-void php_v8js_create_v8(zval *res, v8::Handle<v8::Value> value, int flags TSRMLS_DC) /* {{{ */
+void php_v8js_create_v8(zval *res, v8::Handle<v8::Value> value, int flags, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
 {
 	php_v8js_object *c;
 
@@ -417,6 +390,7 @@ void php_v8js_create_v8(zval *res, v8::Handle<v8::Value> value, int flags TSRMLS
 
 	c->v8obj = v8::Persistent<v8::Value>::New(value);
 	c->flags = flags;
+	c->isolate = isolate;
 }
 /* }}} */
 
@@ -544,9 +518,6 @@ static void php_v8js_init(TSRMLS_D) /* {{{ */
 	/* Initialize V8 */
 	v8::V8::Initialize();
 
-	/* Redirect fatal errors to PHP error handler */
-	v8::V8::SetFatalErrorHandler(php_v8js_fatal_error_handler);
-
 	/* Run only once */
 	V8JSG(v8_initialized) = 1;
 }
@@ -579,6 +550,10 @@ static PHP_METHOD(V8Js, __construct)
 	c->report_uncaught = report_uncaught;
 	c->pending_exception = NULL;
 	c->in_execution = 0;
+	c->isolate = v8::Isolate::New();
+	c->time_limit_hit = false;
+	c->memory_limit_hit = false;
+	c->module_loader = NULL;
 
 	/* Initialize V8 */
 	php_v8js_init(TSRMLS_C);
@@ -597,20 +572,29 @@ static PHP_METHOD(V8Js, __construct)
 	/* Declare configuration for extensions */
 	v8::ExtensionConfiguration extension_conf(exts_count, exts);
 
+	// Isolate execution
+	v8::Locker locker(c->isolate);
+	v8::Isolate::Scope isolate_scope(c->isolate);
+
 	/* Handle scope */
-	v8::HandleScope handle_scope;
+	v8::HandleScope handle_scope(c->isolate);
+
+	/* Redirect fatal errors to PHP error handler */
+	// This needs to be done within the context isolate
+	v8::V8::SetFatalErrorHandler(php_v8js_fatal_error_handler);
 
 	/* Create global template for global object */
-	if (V8JSG(global_template).IsEmpty()) {
-		V8JSG(global_template) = v8::Persistent<v8::FunctionTemplate>::New(v8::FunctionTemplate::New());
-		V8JSG(global_template)->SetClassName(V8JS_SYM("V8Js"));
+	// Now we are using multiple isolates this needs to be created for every context
 
-		/* Register builtin methods */
-		php_v8js_register_methods(V8JSG(global_template)->InstanceTemplate());
-	}
+	c->global_template = v8::Persistent<v8::FunctionTemplate>::New(v8::FunctionTemplate::New());
+	c->global_template->SetClassName(V8JS_SYM("V8Js"));
+
+	/* Register builtin methods */
+	php_v8js_register_methods(c->global_template->InstanceTemplate(), c);
 
 	/* Create context */
-	c->context = v8::Context::New(&extension_conf, V8JSG(global_template)->InstanceTemplate());
+	c->context = v8::Context::New(&extension_conf, c->global_template->InstanceTemplate());
+	c->context->SetAlignedPointerInEmbedderData(1, c);
 
 	if (exts) {
 		_php_v8js_free_ext_strarr(exts, exts_count);
@@ -640,10 +624,10 @@ static PHP_METHOD(V8Js, __construct)
 	if (free) {
 		efree(class_name);
 	}
-	
+
 	/* Register Get accessor for passed variables */
 	if (vars_arr && zend_hash_num_elements(Z_ARRVAL_P(vars_arr)) > 0) {
-		php_v8js_register_accessors(php_obj_t->InstanceTemplate(), vars_arr TSRMLS_CC);
+		php_v8js_register_accessors(php_obj_t->InstanceTemplate(), vars_arr, c->isolate TSRMLS_CC);
 	}
 
 	/* Set name for the PHP JS object */
@@ -663,7 +647,94 @@ static PHP_METHOD(V8Js, __construct)
 	} \
 	\
 	(ctx) = (php_v8js_ctx *) zend_object_store_get_object(object TSRMLS_CC); \
+	v8::Locker locker((ctx)->isolate); \
+	v8::Isolate::Scope isolate_scope((ctx)->isolate); \
 	v8::Context::Scope context_scope((ctx)->context);
+
+static void php_v8js_timer_push(long time_limit, long memory_limit, php_v8js_ctx *c)
+{
+	V8JSG(timer_mutex).lock();
+
+	// Create context for this timer
+	php_v8js_timer_ctx *timer_ctx = (php_v8js_timer_ctx *)emalloc(sizeof(php_v8js_timer_ctx));
+
+	// Calculate the time point when the time limit is exceeded
+	std::chrono::milliseconds duration(time_limit);
+	std::chrono::time_point<std::chrono::high_resolution_clock> from = std::chrono::high_resolution_clock::now();
+
+	// Push the timer context
+	timer_ctx->time_limit = time_limit;
+	timer_ctx->memory_limit = memory_limit;
+	timer_ctx->time_point = from + duration;
+	timer_ctx->v8js_ctx = c;
+	V8JSG(timer_stack).push(timer_ctx);
+
+	V8JSG(timer_mutex).unlock();
+}
+
+static void php_v8js_timer_pop()
+{
+	V8JSG(timer_mutex).lock();
+
+	if (V8JSG(timer_stack).size()) {
+		// Free the timer context memory
+		php_v8js_timer_ctx *timer_ctx = V8JSG(timer_stack).top();
+		efree(timer_ctx);
+
+		// Remove the timer context from the stack
+		V8JSG(timer_stack).pop();
+	}
+
+	V8JSG(timer_mutex).unlock();
+}
+
+static void php_v8js_terminate_execution(php_v8js_ctx *c)
+{
+	// Forcefully terminate the current thread of V8 execution in the isolate
+	v8::V8::TerminateExecution(c->isolate);
+
+	// Remove this timer from the stack
+	php_v8js_timer_pop();
+}
+
+static void php_v8js_timer_thread()
+{
+	while (!V8JSG(timer_stop)) {
+		v8::Locker locker;
+
+		std::chrono::time_point<std::chrono::high_resolution_clock> now = std::chrono::high_resolution_clock::now();
+		v8::HeapStatistics hs;
+
+		if (V8JSG(timer_stack).size()) {
+			// Get the current timer context
+			php_v8js_timer_ctx *timer_ctx = V8JSG(timer_stack).top();
+			php_v8js_ctx *c = timer_ctx->v8js_ctx;
+
+			// Get memory usage statistics for the isolate
+			c->isolate->GetHeapStatistics(&hs);
+
+			if (timer_ctx->time_limit > 0 && now > timer_ctx->time_point) {
+				php_v8js_terminate_execution(c);
+
+				V8JSG(timer_mutex).lock();
+				c->time_limit_hit = true;
+				V8JSG(timer_mutex).unlock();
+			}
+
+			if (timer_ctx->memory_limit > 0 && hs.used_heap_size() > timer_ctx->memory_limit) {
+				php_v8js_terminate_execution(c);
+
+				V8JSG(timer_mutex).lock();
+				c->memory_limit_hit = true;
+				V8JSG(timer_mutex).unlock();
+			}
+		}
+
+		// Sleep for 10ms
+		std::chrono::milliseconds duration(10);
+		std::this_thread::sleep_for(duration);
+	}
+}
 
 /* {{{ proto mixed V8Js::executeString(string script [, string identifier [, int flags]])
  */
@@ -671,18 +742,23 @@ static PHP_METHOD(V8Js, executeString)
 {
 	char *str = NULL, *identifier = NULL;
 	int str_len = 0, identifier_len = 0;
-	long flags = V8JS_FLAG_NONE;
+	long flags = V8JS_FLAG_NONE, time_limit = 0, memory_limit = 0;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|sl", &str, &str_len, &identifier, &identifier_len, &flags) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|slll", &str, &str_len, &identifier, &identifier_len, &flags, &time_limit, &memory_limit) == FAILURE) {
 		return;
 	}
 
 	V8JS_BEGIN_CTX(c, getThis())
 
+	V8JSG(timer_mutex).lock();
+	c->time_limit_hit = false;
+	c->memory_limit_hit = false;
+	V8JSG(timer_mutex).unlock();
+
 	/* Catch JS exceptions */
 	v8::TryCatch try_catch;
 
-	v8::HandleScope handle_scope;
+	v8::HandleScope handle_scope(c->isolate);
 
 	/* Set script identifier */
 	v8::Local<v8::String> sname = identifier_len ? V8JS_SYML(identifier, identifier_len) : V8JS_SYM("V8Js::executeString()");
@@ -693,21 +769,50 @@ static PHP_METHOD(V8Js, executeString)
 
 	/* Compile errors? */
 	if (script.IsEmpty()) {
-		php_v8js_throw_exception(&try_catch TSRMLS_CC);
+		php_v8js_throw_script_exception(&try_catch TSRMLS_CC);
 		return;
 	}
 
 	/* Set flags for runtime use */
 	V8JS_GLOBAL_SET_FLAGS(flags);
 
+	if (time_limit > 0 || memory_limit > 0) {
+		// If timer thread is not running then start it
+		if (!V8JSG(timer_thread)) {
+			// If not, start timer thread
+			V8JSG(timer_thread) = new std::thread(php_v8js_timer_thread);
+		}
+
+		php_v8js_timer_push(time_limit, memory_limit, c);
+	}
+
 	/* Execute script */
 	c->in_execution++;
 	v8::Local<v8::Value> result = script->Run();
 	c->in_execution--;
 
-	/* Script possibly terminated, return immediately */
+	if (time_limit > 0) {
+		php_v8js_timer_pop();
+	}
+
+	char exception_string[64];
+
+	if (c->time_limit_hit) {
+		// Execution has been terminated due to time limit
+		sprintf(exception_string, "Script time limit of %lu milliseconds exceeded", time_limit);
+		zend_throw_exception(php_ce_v8js_time_limit_exception, exception_string, 0 TSRMLS_CC);
+		return;
+	}
+
+	if (c->memory_limit_hit) {
+		// Execution has been terminated due to memory limit
+		sprintf(exception_string, "Script memory limit of %lu bytes exceeded", memory_limit);
+		zend_throw_exception(php_ce_v8js_memory_limit_exception, exception_string, 0 TSRMLS_CC);
+		return;
+	}
+
 	if (!try_catch.CanContinue()) {
-		/* TODO: throw PHP exception here? */
+		// At this point we can't re-throw the exception
 		return;
 	}
 
@@ -725,14 +830,14 @@ static PHP_METHOD(V8Js, executeString)
 
 			/* Report immediately if report_uncaught is true */
 			if (c->report_uncaught) {
-				php_v8js_throw_exception(&try_catch TSRMLS_CC);
+				php_v8js_throw_script_exception(&try_catch TSRMLS_CC);
 				return;
 			}
 
 			/* Exception thrown from JS, preserve it for future execution */
 			if (result.IsEmpty()) {
 				MAKE_STD_ZVAL(c->pending_exception);
-				php_v8js_create_exception(c->pending_exception, &try_catch TSRMLS_CC);
+				php_v8js_create_script_exception(c->pending_exception, &try_catch TSRMLS_CC);
 			}
 		}
 
@@ -743,7 +848,7 @@ static PHP_METHOD(V8Js, executeString)
 
 	/* Convert V8 value to PHP value */
 	if (!result.IsEmpty()) {
-		v8js_to_zval(result, return_value, flags TSRMLS_CC);
+		v8js_to_zval(result, return_value, flags, c->isolate TSRMLS_CC);
 	}
 }
 /* }}} */
@@ -763,6 +868,24 @@ static PHP_METHOD(V8Js, getPendingException)
 	if (c->pending_exception) {
 		RETURN_ZVAL(c->pending_exception, 1, 0);
 	}
+}
+/* }}} */
+
+/* {{{ proto void V8Js::setModuleLoader(string module)
+ */
+static PHP_METHOD(V8Js, setModuleLoader)
+{
+	php_v8js_ctx *c;
+	zval *callable;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &callable) == FAILURE) {
+		return;
+	}
+
+	c = (php_v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
+
+	c->module_loader = callable;
+	Z_ADDREF_P(c->module_loader);
 }
 /* }}} */
 
@@ -920,9 +1043,15 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_executestring, 0, 0, 1)
 	ZEND_ARG_INFO(0, script)
 	ZEND_ARG_INFO(0, identifier)
 	ZEND_ARG_INFO(0, flags)
+	ZEND_ARG_INFO(0, time_limit)
+	ZEND_ARG_INFO(0, memory_limit)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO(arginfo_v8js_getpendingexception, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_setmoduleloader, 0, 0, 1)
+	ZEND_ARG_INFO(0, callable)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_registerextension, 0, 0, 2)
@@ -935,7 +1064,7 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO(arginfo_v8js_getextensions, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO(arginfo_v8jsexception_no_args, 0)
+ZEND_BEGIN_ARG_INFO(arginfo_v8jsscriptexception_no_args, 0)
 ZEND_END_ARG_INFO()
 /* }}} */
 
@@ -943,6 +1072,7 @@ static const zend_function_entry v8js_methods[] = { /* {{{ */
 	PHP_ME(V8Js,	__construct,			arginfo_v8js_construct,				ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
 	PHP_ME(V8Js,	executeString,			arginfo_v8js_executestring,			ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	getPendingException,	arginfo_v8js_getpendingexception,	ZEND_ACC_PUBLIC)
+	PHP_ME(V8Js,	setModuleLoader,		arginfo_v8js_setmoduleloader,		ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	registerExtension,		arginfo_v8js_registerextension,		ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
 	PHP_ME(V8Js,	getExtensions,			arginfo_v8js_getextensions,			ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
 	{NULL, NULL, NULL}
@@ -955,13 +1085,13 @@ static void php_v8js_write_property(zval *object, zval *member, zval *value ZEND
 {
 	V8JS_BEGIN_CTX(c, object)
 
-	v8::HandleScope handle_scope;
+	v8::HandleScope handle_scope(c->isolate);
 
 	/* Global PHP JS object */
 	v8::Local<v8::Object> jsobj = V8JS_GLOBAL->Get(c->object_name)->ToObject();
 
 	/* Write value to PHP JS object */
-	jsobj->ForceSet(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)), zval_to_v8js(value TSRMLS_CC), v8::ReadOnly);
+	jsobj->ForceSet(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)), zval_to_v8js(value, c->isolate TSRMLS_CC), v8::ReadOnly);
 
 	/* Write value to PHP object */
 	std_object_handlers.write_property(object, member, value ZEND_HASH_KEY_CC TSRMLS_CC);
@@ -972,7 +1102,7 @@ static void php_v8js_unset_property(zval *object, zval *member ZEND_HASH_KEY_DC 
 {
 	V8JS_BEGIN_CTX(c, object)
 
-	v8::HandleScope handle_scope;
+	v8::HandleScope handle_scope(c->isolate);
 
 	/* Global PHP JS object */
 	v8::Local<v8::Object> jsobj = V8JS_GLOBAL->Get(c->object_name)->ToObject();
@@ -987,9 +1117,9 @@ static void php_v8js_unset_property(zval *object, zval *member ZEND_HASH_KEY_DC 
 
 /* }}} V8Js */
 
-/* {{{ Class: V8JsException */
+/* {{{ Class: V8JsScriptException */
 
-static void php_v8js_create_exception(zval *return_value, v8::TryCatch *try_catch TSRMLS_DC) /* {{{ */
+static void php_v8js_create_script_exception(zval *return_value, v8::TryCatch *try_catch TSRMLS_DC) /* {{{ */
 {
 	v8::String::Utf8Value exception(try_catch->Exception());
 	const char *exception_string = ToCString(exception);
@@ -998,10 +1128,10 @@ static void php_v8js_create_exception(zval *return_value, v8::TryCatch *try_catc
 	char *message_string;
 	int linenum, message_len;
 
-	object_init_ex(return_value, php_ce_v8js_exception);
+	object_init_ex(return_value, php_ce_v8js_script_exception);
 
 #define PHPV8_EXPROP(type, name, value) \
-	zend_update_property##type(php_ce_v8js_exception, return_value, #name, sizeof(#name) - 1, value TSRMLS_CC);
+	zend_update_property##type(php_ce_v8js_script_exception, return_value, #name, sizeof(#name) - 1, value TSRMLS_CC);
 
 	if (tc_message.IsEmpty()) {
 		message_len = spprintf(&message_string, 0, "%s", exception_string);
@@ -1034,66 +1164,86 @@ static void php_v8js_create_exception(zval *return_value, v8::TryCatch *try_catc
 }
 /* }}} */
 
-static void php_v8js_throw_exception(v8::TryCatch *try_catch TSRMLS_DC) /* {{{ */
+static void php_v8js_throw_script_exception(v8::TryCatch *try_catch TSRMLS_DC) /* {{{ */
 {
 	v8::String::Utf8Value exception(try_catch->Exception());
 	const char *exception_string = ToCString(exception);
 	zval *zexception = NULL;
 
 	if (try_catch->Message().IsEmpty()) {
-		zend_throw_exception(php_ce_v8js_exception, (char *) exception_string, 0 TSRMLS_CC);
+		zend_throw_exception(php_ce_v8js_script_exception, (char *) exception_string, 0 TSRMLS_CC);
 	} else {
 		MAKE_STD_ZVAL(zexception);
-		php_v8js_create_exception(zexception, try_catch TSRMLS_CC);
+		php_v8js_create_script_exception(zexception, try_catch TSRMLS_CC);
 		zend_throw_exception_object(zexception TSRMLS_CC);
 	}
 }
 /* }}} */
 
 #define V8JS_EXCEPTION_METHOD(property) \
-	static PHP_METHOD(V8JsException, get##property) \
+	static PHP_METHOD(V8JsScriptException, get##property) \
 	{ \
 		zval *value; \
 		\
 		if (zend_parse_parameters_none() == FAILURE) { \
 			return; \
 		} \
-		value = zend_read_property(php_ce_v8js_exception, getThis(), #property, sizeof(#property) - 1, 0 TSRMLS_CC); \
+		value = zend_read_property(php_ce_v8js_script_exception, getThis(), #property, sizeof(#property) - 1, 0 TSRMLS_CC); \
 		*return_value = *value; \
 		zval_copy_ctor(return_value); \
 		INIT_PZVAL(return_value); \
 	}
 
-/* {{{ proto string V8JsException::getJsFileName()
+/* {{{ proto string V8JsEScriptxception::getJsFileName()
  */
 V8JS_EXCEPTION_METHOD(JsFileName);
 /* }}} */
 
-/* {{{ proto string V8JsException::getJsLineNumber()
+/* {{{ proto string V8JsScriptException::getJsLineNumber()
  */
 V8JS_EXCEPTION_METHOD(JsLineNumber);
 /* }}} */
 
-/* {{{ proto string V8JsException::getJsSourceLine()
+/* {{{ proto string V8JsScriptException::getJsSourceLine()
  */
 V8JS_EXCEPTION_METHOD(JsSourceLine);
 /* }}} */
 
-/* {{{ proto string V8JsException::getJsTrace()
+/* {{{ proto string V8JsScriptException::getJsTrace()
  */
 V8JS_EXCEPTION_METHOD(JsTrace);	
 /* }}} */
 
-static const zend_function_entry v8js_exception_methods[] = { /* {{{ */
-	PHP_ME(V8JsException,	getJsFileName,		arginfo_v8jsexception_no_args,	ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
-	PHP_ME(V8JsException,	getJsLineNumber,	arginfo_v8jsexception_no_args,	ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
-	PHP_ME(V8JsException,	getJsSourceLine,	arginfo_v8jsexception_no_args,	ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
-	PHP_ME(V8JsException,	getJsTrace,			arginfo_v8jsexception_no_args,	ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
+static const zend_function_entry v8js_script_exception_methods[] = { /* {{{ */
+	PHP_ME(V8JsScriptException,	getJsFileName,		arginfo_v8jsscriptexception_no_args,	ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
+	PHP_ME(V8JsScriptException,	getJsLineNumber,	arginfo_v8jsscriptexception_no_args,	ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
+	PHP_ME(V8JsScriptException,	getJsSourceLine,	arginfo_v8jsscriptexception_no_args,	ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
+	PHP_ME(V8JsScriptException,	getJsTrace,			arginfo_v8jsscriptexception_no_args,	ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
 	{NULL, NULL, NULL}
 };
 /* }}} */
 
-/* }}} V8JsException */
+/* }}} V8JsScriptException */
+
+/* {{{ Class: V8JsTimeLimitException */
+
+static const zend_function_entry v8js_time_limit_exception_methods[] = { /* {{{ */
+	{NULL, NULL, NULL}
+};
+
+/* }}} */
+
+/* }}} V8JsTimeLimitException */
+
+/* {{{ Class: V8JsMemoryLimitException */
+
+static const zend_function_entry v8js_memory_limit_exception_methods[] = { /* {{{ */
+	{NULL, NULL, NULL}
+};
+
+/* }}} */
+
+/* }}} V8JsMemoryLimitException */
 
 /* {{{ PHP_MINIT_FUNCTION
  */
@@ -1145,16 +1295,26 @@ static PHP_MINIT_FUNCTION(v8js)
 	zend_declare_class_constant_long(php_ce_v8js, ZEND_STRL("FLAG_NONE"),			V8JS_FLAG_NONE			TSRMLS_CC);
 	zend_declare_class_constant_long(php_ce_v8js, ZEND_STRL("FLAG_FORCE_ARRAY"),	V8JS_FLAG_FORCE_ARRAY	TSRMLS_CC);
 
-	/* V8JsException Class */
-	INIT_CLASS_ENTRY(ce, "V8JsException", v8js_exception_methods);
-	php_ce_v8js_exception = zend_register_internal_class_ex(&ce, zend_exception_get_default(TSRMLS_C), NULL TSRMLS_CC);
-	php_ce_v8js_exception->ce_flags |= ZEND_ACC_FINAL;
+	/* V8JsScriptException Class */
+	INIT_CLASS_ENTRY(ce, "V8JsScriptException", v8js_script_exception_methods);
+	php_ce_v8js_script_exception = zend_register_internal_class_ex(&ce, zend_exception_get_default(TSRMLS_C), NULL TSRMLS_CC);
+	php_ce_v8js_script_exception->ce_flags |= ZEND_ACC_FINAL;
 
 	/* Add custom JS specific properties */
-	zend_declare_property_null(php_ce_v8js_exception, ZEND_STRL("JsFileName"),		ZEND_ACC_PROTECTED TSRMLS_CC);
-	zend_declare_property_null(php_ce_v8js_exception, ZEND_STRL("JsLineNumber"),	ZEND_ACC_PROTECTED TSRMLS_CC);
-	zend_declare_property_null(php_ce_v8js_exception, ZEND_STRL("JsSourceLine"),	ZEND_ACC_PROTECTED TSRMLS_CC);
-	zend_declare_property_null(php_ce_v8js_exception, ZEND_STRL("JsTrace"),			ZEND_ACC_PROTECTED TSRMLS_CC);
+	zend_declare_property_null(php_ce_v8js_script_exception, ZEND_STRL("JsFileName"),		ZEND_ACC_PROTECTED TSRMLS_CC);
+	zend_declare_property_null(php_ce_v8js_script_exception, ZEND_STRL("JsLineNumber"),	ZEND_ACC_PROTECTED TSRMLS_CC);
+	zend_declare_property_null(php_ce_v8js_script_exception, ZEND_STRL("JsSourceLine"),	ZEND_ACC_PROTECTED TSRMLS_CC);
+	zend_declare_property_null(php_ce_v8js_script_exception, ZEND_STRL("JsTrace"),			ZEND_ACC_PROTECTED TSRMLS_CC);
+
+	/* V8JsTimeLimitException Class */
+	INIT_CLASS_ENTRY(ce, "V8JsTimeLimitException", v8js_time_limit_exception_methods);
+	php_ce_v8js_time_limit_exception = zend_register_internal_class_ex(&ce, zend_exception_get_default(TSRMLS_C), NULL TSRMLS_CC);
+	php_ce_v8js_time_limit_exception->ce_flags |= ZEND_ACC_FINAL;
+
+	/* V8JsMemoryLimitException Class */
+	INIT_CLASS_ENTRY(ce, "V8JsMemoryLimitException", v8js_memory_limit_exception_methods);
+	php_ce_v8js_memory_limit_exception = zend_register_internal_class_ex(&ce, zend_exception_get_default(TSRMLS_C), NULL TSRMLS_CC);
+	php_ce_v8js_memory_limit_exception->ce_flags |= ZEND_ACC_FINAL;
 
 	REGISTER_INI_ENTRIES();
 
@@ -1190,8 +1350,6 @@ static PHP_MSHUTDOWN_FUNCTION(v8js)
 {
 	UNREGISTER_INI_ENTRIES();
 
-	v8::V8::Dispose();
-
 	if (V8JSG(extensions)) {
 		zend_hash_destroy(V8JSG(extensions));
 		free(V8JSG(extensions));
@@ -1211,6 +1369,12 @@ static PHP_MSHUTDOWN_FUNCTION(v8js)
  */
 static PHP_RSHUTDOWN_FUNCTION(v8js)
 {
+	// If the timer thread is running then stop it
+	if (V8JSG(timer_thread)) {
+		V8JSG(timer_stop) = true;
+		V8JSG(timer_thread)->join();
+	}
+
 #if V8JS_DEBUG
 	v8::HeapStatistics stats;
 	v8::V8::GetHeapStatistics(&stats);
@@ -1254,6 +1418,8 @@ static PHP_GINIT_FUNCTION(v8js)
 	v8js_globals->disposed_contexts = 0;
 	v8js_globals->v8_initialized = 0;
 	v8js_globals->v8_flags = NULL;
+	v8js_globals->timer_thread = NULL;
+	v8js_globals->timer_stop = false;
 }
 /* }}} */
 

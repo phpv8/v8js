@@ -14,7 +14,7 @@ $v8 = new V8Js();
 
 try {
 	var_dump($v8->executeString($JS, 'basic.js'));
-} catch (V8JsException $e) {
+} catch (V8JsScriptException $e) {
 	var_dump($e);
 }
 ?>

@@ -36,13 +36,13 @@ $a->executeString("PHP.myobj.mytest(3.14, 42, null);", "test3.js");
 // Invalid parameters
 try {
 	$a->executeString("PHP.myobj.mytest();", "test4.js");
-} catch (V8JsException $e) {
+} catch (V8JsScriptException $e) {
 	echo $e->getMessage(), "\n";
 }
 
 try {
 	$a->executeString("PHP.myobj.mytest('arg1', 'arg2', 'arg3', 'extra_arg');", "test5.js");
-} catch (V8JsException $e) {
+} catch (V8JsScriptException $e) {
 	echo $e->getMessage(), "\n";
 }
 
@@ -50,14 +50,14 @@ try {
 	echo "\nTEST: Javascript Date -> PHP DateTime\n";
 	echo "======================================\n";
 	$a->executeString("date = new Date('September 8, 1975 09:00:00 GMT'); print(date.toUTCString() + '\\n'); PHP.myobj.mydatetest(date, 'foo');", "test6.js");
-} catch (V8JsException $e) {
+} catch (V8JsScriptException $e) {
 	echo $e->getMessage(), "\n";
 }
 
 // Array / Object
 try {
 	$a->executeString("PHP.myobj.mytest(PHP.myobj, new Array(1,2,3), new Array('foo', 'bar', PHP.myobj));", "test7.js");
-} catch (V8JsException $e) {
+} catch (V8JsScriptException $e) {
 	var_dump($e);
 }
 
