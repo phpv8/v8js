@@ -26,7 +26,7 @@ class Foo {
     
 try {
 	$foo = new Foo();
-} catch (V8JsException $e) {
+} catch (V8JsScriptException $e) {
 	echo "PHP Exception: ", $e->getMessage(), "\n";
 }
 ?>

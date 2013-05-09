@@ -27,7 +27,7 @@ $a->ctx = '#1';
 try {
 	echo '1. ';
 	$a->executeString($JS_set, 'set.js');
-} catch (V8JsException $e) {
+} catch (V8JsScriptException $e) {
 	var_dump($e);
 }
 
@@ -38,7 +38,7 @@ $b->ctx = '#2';
 try {
 	echo '2. ';
 	$b->executeString($JS_change, 'change.js');
-} catch (V8JsException $e) {
+} catch (V8JsScriptException $e) {
 	var_dump($e);
 }
 
@@ -46,7 +46,7 @@ try {
 try {
 	echo '3. ';
 	$a->executeString($JS_read, 'read.js');
-} catch (V8JsException $e) {
+} catch (V8JsScriptException $e) {
 	var_dump($e);
 }
 
@@ -54,7 +54,7 @@ try {
 try {
 	echo '4. ';
 	$a->executeString($JS_change, 'change.js');
-} catch (V8JsException $e) {
+} catch (V8JsScriptException $e) {
 	var_dump($e);
 }
 
@@ -62,7 +62,7 @@ try {
 try {
 	echo '5. ';
 	$a->executeString($JS_read, 'read.js');
-} catch (V8JsException $e) {
+} catch (V8JsScriptException $e) {
 	var_dump($e);
 }
 ?>

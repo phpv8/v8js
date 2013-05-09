@@ -27,13 +27,13 @@ class Foo {
     
 try {
 	$foo = new Foo();
-} catch (V8JsException $e) {
+} catch (V8JsScriptException $e) {
 	echo "PHP Exception: ", $e->getMessage(), "\n"; //var_dump($e);
 }
 ?>
 ===EOF===
 --EXPECTF--
-object(V8JsException)#3 (11) {
+object(V8JsScriptException)#3 (11) {
   ["message":protected]=>
   string(49) "throw_0:1: ReferenceError: fooobar is not defined"
   ["string":"Exception":private]=>

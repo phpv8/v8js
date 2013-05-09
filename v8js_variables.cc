@@ -29,26 +29,34 @@ extern "C" {
 
 #include "php_v8js_macros.h"
 #include <v8.h>
+#include <string>
+
+struct php_v8js_accessor_ctx
+{
+    char *variable_name_string;
+    uint variable_name_string_len;
+    v8::Isolate *isolate;
+};
 
 static v8::Handle<v8::Value> php_v8js_fetch_php_variable(v8::Local<v8::String> name, const v8::AccessorInfo &info) /* {{{ */
 {
-	v8::String::Utf8Value variable_name(info.Data()->ToString());
-	const char *variable_name_string = ToCString(variable_name);
-	uint variable_name_string_len = strlen(variable_name_string);
+    v8::Handle<v8::External> data = v8::Handle<v8::External>::Cast(info.Data());
+    php_v8js_accessor_ctx *ctx = static_cast<php_v8js_accessor_ctx *>(data->Value());
 	zval **variable;
 
 	TSRMLS_FETCH();
 
-	zend_is_auto_global(variable_name_string, variable_name_string_len TSRMLS_CC);
+	zend_is_auto_global(ctx->variable_name_string, ctx->variable_name_string_len TSRMLS_CC);
 
-	if (zend_hash_find(&EG(symbol_table), variable_name_string, variable_name_string_len + 1, (void **) &variable) == SUCCESS) {
-		return zval_to_v8js(*variable TSRMLS_CC);
+	if (zend_hash_find(&EG(symbol_table), ctx->variable_name_string, ctx->variable_name_string_len + 1, (void **) &variable) == SUCCESS) {
+		return zval_to_v8js(*variable, ctx->isolate TSRMLS_CC);
 	}
+
 	return v8::Undefined();
 }
 /* }}} */
 
-void php_v8js_register_accessors(v8::Local<v8::ObjectTemplate> php_obj, zval *array TSRMLS_DC) /* {{{ */
+void php_v8js_register_accessors(v8::Local<v8::ObjectTemplate> php_obj, zval *array, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
 {
 	char *property_name;
 	uint property_name_len;
@@ -76,8 +84,14 @@ void php_v8js_register_accessors(v8::Local<v8::ObjectTemplate> php_obj, zval *ar
 			continue; /* Ignore invalid property names */
 		}
 
+        // Create context to store accessor data
+        php_v8js_accessor_ctx *ctx = (php_v8js_accessor_ctx *)emalloc(sizeof(php_v8js_accessor_ctx));
+        ctx->variable_name_string = estrdup(Z_STRVAL_PP(item));
+        ctx->variable_name_string_len = Z_STRLEN_PP(item);
+        ctx->isolate = isolate;
+
 		/* Set the variable fetch callback for given symbol on named property */
-		php_obj->SetAccessor(V8JS_STRL(property_name, property_name_len - 1), php_v8js_fetch_php_variable, NULL, V8JS_STRL(Z_STRVAL_PP(item), Z_STRLEN_PP(item)), v8::PROHIBITS_OVERWRITING, v8::ReadOnly);
+		php_obj->SetAccessor(V8JS_STRL(property_name, property_name_len - 1), php_v8js_fetch_php_variable, NULL, v8::External::New(ctx), v8::PROHIBITS_OVERWRITING, v8::ReadOnly);
 	}
 }
 /* }}} */

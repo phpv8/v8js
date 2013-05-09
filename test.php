@@ -139,7 +139,7 @@ $a->executeString("bigarray()", "test1.js");
 try {
   echo($a->executeString($jstparser, "test2.js")), "\n";
   var_dump($a->executeString($jsontemplate, "test1.js"));
-} catch (V8JsException $e) {
+} catch (V8JsScriptException $e) {
   echo $e->getMessage();
 }
 
@@ -168,6 +168,6 @@ var_dump($b->executeString("print('foobar\\n');"));
 
 try {
   $b->executeString("foobar; foo();", "extest.js");
-} catch (V8JsException $e) {
+} catch (V8JsScriptException $e) {
   var_dump($e, $e->getJsFileName(), $e->getJsLineNumber(), $e->getJsSourceLine(), $e->getJsTrace());
 }

@@ -14,7 +14,7 @@ $a->foo = 'from first.js';
 
 try {
 	$a->executeString($JS, 'first.js');
-} catch (V8JsException $e) {
+} catch (V8JsScriptException $e) {
 	var_dump($e);
 }
 
@@ -25,7 +25,7 @@ $b->foo = 'from second.js';
 
 try {
 	$b->executeString($JS, 'second.js');
-} catch (V8JsException $e) {
+} catch (V8JsScriptException $e) {
 	var_dump($e);
 }
 
