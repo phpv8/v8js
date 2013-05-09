@@ -15,16 +15,16 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>jani@php.net</email>
   <active>yes</active>
  </lead>
-
- <date>2012-06-12</date>
+ <date>2012-07-06</date>
  <version><release>0.1.3</release><api>0.1.3</api></version>
  <stability><release>beta</release><api>beta</api></stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
 - Fixed build in PHP 5.4+
 - Fixed bug #59553 (can't build due to missing class member)
+- Fixed crash bug in setting v8.flags ini directive.
+- Added notice to registerExtension() if trying to use it when V8 is already initialized.
  </notes>
-
  <contents>
   <dir name="/">
    <file name="CREDITS" role="doc" />
@@ -61,15 +61,6 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <notes>
 - Fixed crash bug in setting v8.flags ini directive.
 - Added notice to registerExtension() if trying to use it when V8 is already initialized.
-   </notes>
-  </release>
-  <release>
-   <date>2010-12-30</date>
-   <version><release>0.1.0</release><api>0.1.0</api></version>
-   <stability><release>beta</release><api>beta</api></stability>
-   <license uri="http://www.php.net/license">PHP</license>
-   <notes>
-- Initial PECL release.
    </notes>
   </release>
  </changelog>

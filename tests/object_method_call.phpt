@@ -2,6 +2,8 @@
 Test V8::executeString() : Calling methods of object passed from PHP
 --SKIPIF--
 <?php require_once(dirname(__FILE__) . '/skipif.inc'); ?>
+--INI--
+date.timezone=UTC
 --FILE--
 <?php
 
@@ -16,6 +18,12 @@ class Testing
 	{
 		var_dump(func_get_args());
 	}
+
+  function mydatetest(DateTime $date, $b) {
+    $date->setTimeZone(new DateTimeZone(ini_get('date.timezone')));
+    echo $date->format(DateTime::RFC1123), "\n";
+    var_dump($b);
+  }
 }
 
 $a = new V8Js();
@@ -39,10 +47,9 @@ try {
 }
 
 try {
-	date_default_timezone_set("UTC");
 	echo "\nTEST: Javascript Date -> PHP DateTime\n";
 	echo "======================================\n";
-	$a->executeString("date = new Date('September 8, 1975 09:00:00'); print(date + '\\n'); PHP.myobj.mytest(date, 'foo');", "test6.js");
+	$a->executeString("date = new Date('September 8, 1975 09:00:00 GMT'); print(date.toUTCString() + '\\n'); PHP.myobj.mydatetest(date, 'foo');", "test6.js");
 } catch (V8JsException $e) {
 	echo $e->getMessage(), "\n";
 }
@@ -93,25 +100,17 @@ array(4) {
 
 TEST: Javascript Date -> PHP DateTime
 ======================================
-Mon Sep 08 1975 09:00:00 GMT+0200 (EET)
-array(2) {
-  [0]=>
-  object(DateTime)#4 (3) {
-    ["date"]=>
-    string(19) "1975-09-08 09:00:00"
-    ["timezone_type"]=>
-    int(1)
-    ["timezone"]=>
-    string(6) "+02:00"
-  }
-  [1]=>
-  string(3) "foo"
-}
+Mon, 08 Sep 1975 09:00:00 GMT
+Mon, 08 Sep 1975 09:00:00 +0000
+string(3) "foo"
 array(3) {
   [0]=>
-  object(V8Object)#4 (2) {
+  object(V8Object)#4 (3) {
     ["mytest"]=>
     object(V8Function)#6 (0) {
+    }
+    ["mydatetest"]=>
+    object(V8Function)#7 (0) {
     }
     ["foo"]=>
     string(8) "ORIGINAL"
@@ -132,8 +131,11 @@ array(3) {
     [1]=>
     string(3) "bar"
     [2]=>
-    object(V8Object)#5 (2) {
+    object(V8Object)#5 (3) {
       ["mytest"]=>
+      object(V8Function)#7 (0) {
+      }
+      ["mydatetest"]=>
       object(V8Function)#6 (0) {
       }
       ["foo"]=>

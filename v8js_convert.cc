@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2010 The PHP Group                                |
+  | Copyright (c) 1997-2012 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -13,6 +13,7 @@
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
   | Author: Jani Taskinen <jani.taskinen@iki.fi>                         |
+  | Author: Patrick Reilly <preilly@php.net>                             |
   +----------------------------------------------------------------------+
 */
 
@@ -36,7 +37,7 @@ extern "C" {
 static v8::Handle<v8::Value> php_v8js_php_callback(const v8::Arguments &args) /* {{{ */
 {
 	v8::Handle<v8::Value> return_value;
-	zval *value = reinterpret_cast<zval *>(args.This()->GetPointerFromInternalField(0));
+	zval *value = reinterpret_cast<zval *>(args.This()->GetAlignedPointerFromInternalField(0));
 	zend_function *method_ptr;
 	zend_fcall_info fci;
 	zend_fcall_info_cache fcc;
@@ -49,7 +50,7 @@ static v8::Handle<v8::Value> php_v8js_php_callback(const v8::Arguments &args) /*
 
 	/* Set method_ptr from v8::External or fetch the closure invoker */
 	if (!args.Data().IsEmpty() && args.Data()->IsExternal()) {
-		method_ptr = static_cast<zend_function *>(v8::External::Unwrap(args.Data()));
+		method_ptr = static_cast<zend_function *>(v8::External::Cast(*args.Data())->Value());
 	} else {
 		method_ptr = zend_get_closure_invoke_method(value TSRMLS_CC);
 	}
@@ -185,9 +186,9 @@ static v8::Handle<v8::Value> php_v8js_property_caller(const v8::Arguments &args)
 				argv[i] = args[i];
 			}
 			value = cb->Call(self, argc, argv);
-		} 
+		}
 		else /* __call() */
-		{ 
+		{
 			v8::Local<v8::Array> argsarr = v8::Array::New(argc);
 			for (; i < argc; ++i) {
 				argsarr->Set(i, args[i]);
@@ -383,7 +384,7 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value TSRMLS_DC) /* {{
 				newobj->SetHiddenValue(V8JS_SYM(ZEND_ISSET_FUNC_NAME), PHP_V8JS_CALLBACK(isset_ptr));
 			}
 		}
-		newobj->SetPointerInInternalField(0, (void *) value);
+		newobj->SetAlignedPointerInInternalField(0, (void *) value);
 	} else {
 		new_tpl->SetClassName(V8JS_SYM("Array"));
 		newobj = new_tpl->InstanceTemplate()->NewInstance();
@@ -517,7 +518,7 @@ v8::Handle<v8::Value> zval_to_v8js(zval *value TSRMLS_DC) /* {{{ */
 			jsValue = V8JS_NULL;
 			break;
 	}
-	return jsValue; 
+	return jsValue;
 }
 /* }}} */
 
