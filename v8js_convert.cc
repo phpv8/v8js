@@ -384,9 +384,9 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value TSRMLS_DC) /* {{
 				newobj->SetHiddenValue(V8JS_SYM(ZEND_ISSET_FUNC_NAME), PHP_V8JS_CALLBACK(isset_ptr));
 			}
 		}
-		
+			// Increase the reference count of this value because we're storing it internally for use later
 			// See https://github.com/preillyme/v8js/issues/6
-			Z_SET_REFCOUNT_P(value, Z_REFCOUNT_P(value) + 1);
+			Z_ADDREF_P(value);
 			
 		newobj->SetAlignedPointerInInternalField(0, (void *) value);
 	} else {
