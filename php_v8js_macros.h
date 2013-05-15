@@ -17,7 +17,7 @@
   +----------------------------------------------------------------------+
 */
 
-/* $Id$ */¬
+/* $Id$ */
 
 #ifndef PHP_V8JS_MACROS_H
 #define PHP_V8JS_MACROS_H
@@ -35,6 +35,7 @@ extern "C" {
 
 #include <map>
 #include <vector>
+#include <mutex>
 
 /* V8Js Version */
 #define V8JS_VERSION "0.1.3"
