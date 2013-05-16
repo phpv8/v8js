@@ -75,7 +75,7 @@ static void _php_v8js_dumper(v8::Local<v8::Value> var, int level TSRMLS_DC) /* {
 
 	if (var->IsString())
 	{
-		php_printf("string(%d) \"%s\"\n", valstr_len, valstr);
+		php_printf("string(%zu) \"%s\"\n", valstr_len, valstr);
 	}
 	else if (var->IsBoolean())
 	{
