@@ -231,10 +231,15 @@ static HashTable *php_v8js_v8_get_properties(zval *object TSRMLS_DC) /* {{{ */
 	v8::Locker locker(obj->isolate);
 	v8::Isolate::Scope isolate_scope(obj->isolate);
 	v8::HandleScope local_scope(obj->isolate);
+	v8::Persistent<v8::Context> temp_context = v8::Context::New();
+	v8::Context::Scope temp_scope(temp_context);
 
 	if (php_v8js_v8_get_properties_hash(obj->v8obj, retval, obj->flags, obj->isolate TSRMLS_CC) == SUCCESS) {
+		temp_context.Dispose();
 		return retval;
 	}
+
+	temp_context.Dispose();
 	return NULL;
 }
 /* }}} */
