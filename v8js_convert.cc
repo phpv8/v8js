@@ -278,9 +278,23 @@ static v8::Handle<v8::Integer> php_v8js_property_query(v8::Local<v8::String> pro
 #define PHP_V8JS_CALLBACK(mptr) \
 	v8::FunctionTemplate::New(php_v8js_php_callback, v8::External::New(mptr))->GetFunction()
 
+
+static void php_v8js_weak_object_callback(v8::Isolate *isolate, v8::Persistent<v8::Object> *object, zval *value)
+{
+	if (READY_TO_DESTROY(value)) {
+		zval_dtor(value);
+		FREE_ZVAL(value);
+	} else {
+		Z_DELREF_P(value);
+	}
+
+	v8::V8::AdjustAmountOfExternalAllocatedMemory(-1024);
+	object->Dispose();
+}
+
 static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
 {
-	v8::Local<v8::Object> newobj;
+	v8::Handle<v8::Object> newobj;
 	int i;
 	char *key = NULL;
 	ulong index;
@@ -390,7 +404,17 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 			}
 		}
 
-		newobj = new_tpl->InstanceTemplate()->NewInstance();
+		// Since we got to decrease the reference count again, in case v8 garbage collector
+		// decides to dispose the JS object, we add a weak persistent handle and register
+		// a callback function that removes the reference.
+		v8::Persistent<v8::Object> persist_newobj = v8::Persistent<v8::Object>::New(isolate, new_tpl->GetFunction()->NewInstance());
+		persist_newobj.MakeWeak(value, php_v8js_weak_object_callback);
+
+		// Just tell v8 that we're allocating some external memory
+		// (for the moment we just always tell 1k instead of trying to find out actual values)
+		v8::V8::AdjustAmountOfExternalAllocatedMemory(1024);
+
+		newobj = persist_newobj;
 
 		if (ce != zend_ce_closure) {	// @fixme all of those get lost, when using cached templates
 			if (call_ptr) {
