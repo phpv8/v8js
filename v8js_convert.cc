@@ -319,13 +319,15 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 	/* Object methods */
 	if (ce) {
 		v8::Handle<v8::FunctionTemplate> new_tpl;
+		bool cached_tpl = true;
 		static std::map<const char *, v8::Persistent<v8::FunctionTemplate> > tpl_map;
-		std::map<const char *, v8::Persistent<v8::FunctionTemplate> >::iterator it;
 
 		try {
 			new_tpl = tpl_map.at(ce->name);
 		}
 		catch (const std::out_of_range &) {
+			cached_tpl = false;
+
 			/* No cached v8::FunctionTemplate available as of yet, create one. */
 			new_tpl = v8::FunctionTemplate::New();
 
@@ -338,50 +340,53 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 			} else {
 				/* Add new v8::FunctionTemplate to tpl_map, as long as it is not a closure. */
 				tpl_map[ce->name] = v8::Persistent<v8::FunctionTemplate>::New(isolate, new_tpl);
+			}
+		}
 
-				/* Attach object methods to the instance template. */
-				zend_hash_internal_pointer_reset_ex(&ce->function_table, &pos);
-				for (;; zend_hash_move_forward_ex(&ce->function_table, &pos)) {
-					if (zend_hash_get_current_key_ex(&ce->function_table, &key, &key_len, &index, 0, &pos) != HASH_KEY_IS_STRING  ||
-						zend_hash_get_current_data_ex(&ce->function_table, (void **) &method_ptr, &pos) == FAILURE
-					) {
-						break;
-					}
-
-					if ((method_ptr->common.fn_flags & ZEND_ACC_PUBLIC)     && /* Allow only public methods */
-						(method_ptr->common.fn_flags & ZEND_ACC_CTOR) == 0  && /* ..and no __construct() */
-						(method_ptr->common.fn_flags & ZEND_ACC_DTOR) == 0  && /* ..or __destruct() */
-						(method_ptr->common.fn_flags & ZEND_ACC_CLONE) == 0 /* ..or __clone() functions */
-					) {
-						/* Override native toString() with __tostring() if it is set in passed object */
-						if (IS_MAGIC_FUNC(ZEND_TOSTRING_FUNC_NAME)) {
-							new_tpl->InstanceTemplate()->Set(V8JS_SYM("toString"), PHP_V8JS_CALLBACK(method_ptr));
-						/* TODO: __set(), __unset() disabled as JS is not allowed to modify the passed PHP object yet.
-						 *  __sleep(), __wakeup(), __set_state() are always ignored */
-						} else if (
-							IS_MAGIC_FUNC(ZEND_CALLSTATIC_FUNC_NAME)|| /* TODO */
-							IS_MAGIC_FUNC(ZEND_SLEEP_FUNC_NAME)     ||
-							IS_MAGIC_FUNC(ZEND_WAKEUP_FUNC_NAME)    ||
-							IS_MAGIC_FUNC(ZEND_SET_STATE_FUNC_NAME) ||
-							IS_MAGIC_FUNC(ZEND_SET_FUNC_NAME)       ||
-							IS_MAGIC_FUNC(ZEND_UNSET_FUNC_NAME)
-						) {
-						/* Register all magic function as hidden with lowercase name */
-						} else if (IS_MAGIC_FUNC(ZEND_GET_FUNC_NAME)) {
-							get_ptr = method_ptr;
-						} else if (IS_MAGIC_FUNC(ZEND_CALL_FUNC_NAME)) {
-							call_ptr = method_ptr;
-						} else if (IS_MAGIC_FUNC(ZEND_INVOKE_FUNC_NAME)) {
-							invoke_ptr = method_ptr;
-						} else if (IS_MAGIC_FUNC(ZEND_ISSET_FUNC_NAME)) {
-							isset_ptr = method_ptr;
-						} else {
-							new_tpl->InstanceTemplate()->Set(V8JS_STR(method_ptr->common.function_name), PHP_V8JS_CALLBACK(method_ptr), v8::ReadOnly);
-						}
-					}
+		if (ce != zend_ce_closure) {
+			/* Attach object methods to the instance template. */
+			zend_hash_internal_pointer_reset_ex(&ce->function_table, &pos);
+			for (;; zend_hash_move_forward_ex(&ce->function_table, &pos)) {
+				if (zend_hash_get_current_key_ex(&ce->function_table, &key, &key_len, &index, 0, &pos) != HASH_KEY_IS_STRING  ||
+					zend_hash_get_current_data_ex(&ce->function_table, (void **) &method_ptr, &pos) == FAILURE
+				) {
+					break;
 				}
 
+				if ((method_ptr->common.fn_flags & ZEND_ACC_PUBLIC)     && /* Allow only public methods */
+					(method_ptr->common.fn_flags & ZEND_ACC_CTOR) == 0  && /* ..and no __construct() */
+					(method_ptr->common.fn_flags & ZEND_ACC_DTOR) == 0  && /* ..or __destruct() */
+					(method_ptr->common.fn_flags & ZEND_ACC_CLONE) == 0 /* ..or __clone() functions */
+				) {
+					/* Override native toString() with __tostring() if it is set in passed object */
+					if (!cached_tpl && IS_MAGIC_FUNC(ZEND_TOSTRING_FUNC_NAME)) {
+						new_tpl->InstanceTemplate()->Set(V8JS_SYM("toString"), PHP_V8JS_CALLBACK(method_ptr));
+					/* TODO: __set(), __unset() disabled as JS is not allowed to modify the passed PHP object yet.
+					 *  __sleep(), __wakeup(), __set_state() are always ignored */
+					} else if (
+						IS_MAGIC_FUNC(ZEND_CALLSTATIC_FUNC_NAME)|| /* TODO */
+						IS_MAGIC_FUNC(ZEND_SLEEP_FUNC_NAME)     ||
+						IS_MAGIC_FUNC(ZEND_WAKEUP_FUNC_NAME)    ||
+						IS_MAGIC_FUNC(ZEND_SET_STATE_FUNC_NAME) ||
+						IS_MAGIC_FUNC(ZEND_SET_FUNC_NAME)       ||
+						IS_MAGIC_FUNC(ZEND_UNSET_FUNC_NAME)
+					) {
+					/* Register all magic function as hidden with lowercase name */
+					} else if (IS_MAGIC_FUNC(ZEND_GET_FUNC_NAME)) {
+						get_ptr = method_ptr;
+					} else if (IS_MAGIC_FUNC(ZEND_CALL_FUNC_NAME)) {
+						call_ptr = method_ptr;
+					} else if (IS_MAGIC_FUNC(ZEND_INVOKE_FUNC_NAME)) {
+						invoke_ptr = method_ptr;
+					} else if (IS_MAGIC_FUNC(ZEND_ISSET_FUNC_NAME)) {
+						isset_ptr = method_ptr;
+					} else if (!cached_tpl) {
+						new_tpl->InstanceTemplate()->Set(V8JS_STR(method_ptr->common.function_name), PHP_V8JS_CALLBACK(method_ptr), v8::ReadOnly);
+					}
+				}
+			}
 
+			if (!cached_tpl) {
 				/* Only register getter, etc. when they're set in PHP side */
 				if (call_ptr || get_ptr || isset_ptr)
 				{
@@ -395,7 +400,6 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 						V8JS_BOOL(call_ptr ? true : false)
 					);
 				}
-
 
 				/* __invoke() handler */
 				if (invoke_ptr) {
@@ -416,7 +420,9 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 
 		newobj = persist_newobj;
 
-		if (ce != zend_ce_closure) {	// @fixme all of those get lost, when using cached templates
+		if (ce != zend_ce_closure) {
+			// These unfortunately cannot be attached to the template, hence we have to put them
+			// on each and every object instance manually.
 			if (call_ptr) {
 				newobj->SetHiddenValue(V8JS_SYM(ZEND_CALL_FUNC_NAME), PHP_V8JS_CALLBACK(call_ptr));
 			}
