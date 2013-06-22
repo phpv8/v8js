@@ -148,6 +148,33 @@ failure:
 }
 /* }}} */
 
+/* Callback for PHP constructor calls */
+static v8::Handle<v8::Value> php_v8js_construct_callback(const v8::Arguments &args) /* {{{ */
+{
+	// @todo assert constructor call
+	v8::Handle<v8::Object> newobj = args.This();
+	zval *value;
+	TSRMLS_FETCH();
+
+	if (args[0]->IsExternal()) {
+		// Object created by v8js in php_v8js_hash_to_jsobj, PHP object passed as v8::External.
+		value = static_cast<zval *>(v8::External::Cast(*args[0])->Value());
+	} else {
+		// Object created from JavaScript context.  Need to create PHP object first.
+		zend_class_entry *ce = static_cast<zend_class_entry *>(v8::External::Cast(*args.Data())->Value());
+
+		MAKE_STD_ZVAL(value);
+		object_init_ex(value, ce TSRMLS_CC);
+		// @todo call __construct function, if it exists (and pass arguments)
+	}
+
+	newobj->SetAlignedPointerInInternalField(0, value);
+	newobj->SetAlignedPointerInInternalField(1, (void *) v8::Isolate::GetCurrent());
+
+	return V8JS_NULL;
+}
+/* }}} */
+
 static int _php_v8js_is_assoc_array(HashTable *myht TSRMLS_DC) /* {{{ */
 {
 	int i;
@@ -341,6 +368,9 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 			new_tpl->SetClassName(V8JS_STRL(ce->name, ce->name_length));
 			new_tpl->InstanceTemplate()->SetInternalFieldCount(2);
 
+			v8::Handle<v8::Value> wrapped_ce = v8::External::New(ce);
+			new_tpl->SetCallHandler(php_v8js_construct_callback, wrapped_ce);
+
 			if (ce == zend_ce_closure) {
 				/* Got a closure, mustn't cache ... */
 				new_tpl->InstanceTemplate()->SetCallAsFunctionHandler(php_v8js_php_callback);
@@ -415,10 +445,16 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 			}
 		}
 
+		// Increase the reference count of this value because we're storing it internally for use later
+		// See https://github.com/preillyme/v8js/issues/6
+		Z_ADDREF_P(value);
+
 		// Since we got to decrease the reference count again, in case v8 garbage collector
 		// decides to dispose the JS object, we add a weak persistent handle and register
 		// a callback function that removes the reference.
-		v8::Persistent<v8::Object> persist_newobj = v8::Persistent<v8::Object>::New(isolate, new_tpl->GetFunction()->NewInstance());
+		v8::Handle<v8::Value> external = v8::External::New(value);
+		v8::Persistent<v8::Object> persist_newobj = v8::Persistent<v8::Object>::New
+			(isolate, new_tpl->GetFunction()->NewInstance(1, &external));
 		persist_newobj.MakeWeak(value, php_v8js_weak_object_callback);
 
 		// Just tell v8 that we're allocating some external memory
@@ -443,12 +479,7 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 				newobj->SetHiddenValue(V8JS_SYM(ZEND_ISSET_FUNC_NAME), PHP_V8JS_CALLBACK(isset_ptr));
 			}
 		}
-			// Increase the reference count of this value because we're storing it internally for use later
-			// See https://github.com/preillyme/v8js/issues/6
-			Z_ADDREF_P(value);
 
-		newobj->SetAlignedPointerInInternalField(0, (void *) value);
-		newobj->SetAlignedPointerInInternalField(1, (void *) isolate);
 	} else {
 		v8::Local<v8::FunctionTemplate> new_tpl = v8::FunctionTemplate::New();	// @todo re-use template likewise
 
