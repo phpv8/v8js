@@ -172,14 +172,20 @@ static void php_v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value
 	} else {
 		// Object created from JavaScript context.  Need to create PHP object first.
 		zend_class_entry *ce = static_cast<zend_class_entry *>(v8::External::Cast(*info.Data())->Value());
+		zend_function *ctor_ptr = ce->constructor;
+
+		// Check access on __construct function, if any
+		if (ctor_ptr != NULL && (ctor_ptr->common.fn_flags & ZEND_ACC_PUBLIC) == 0) {
+			info.GetReturnValue().Set(v8::ThrowException(v8::String::New("Call to protected __construct() not allowed")));
+			return;
+		}
 
 		MAKE_STD_ZVAL(value);
 		object_init_ex(value, ce TSRMLS_CC);
 
 		// Call __construct function
-		if(ce->constructor != NULL) {
-			zend_function *method_ptr = ce->constructor;
-			php_v8js_call_php_func(value, ce, method_ptr, isolate, info);
+		if (ctor_ptr != NULL) {
+			php_v8js_call_php_func(value, ce, ctor_ptr, isolate, info);
 		}
 	}
 
