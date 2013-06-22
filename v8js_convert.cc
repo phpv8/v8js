@@ -36,27 +36,15 @@ extern "C" {
 #include <stdexcept>
 
 /* Callback for PHP methods and functions */
-static void php_v8js_php_callback(const v8::FunctionCallbackInfo<v8::Value>& info) /* {{{ */
+static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_function *method_ptr, v8::Isolate *isolate, const v8::FunctionCallbackInfo<v8::Value>& info) /* {{{ */
 {
 	v8::Handle<v8::Value> return_value;
-	zval *value = reinterpret_cast<zval *>(info.This()->GetAlignedPointerFromInternalField(0));
-	v8::Isolate *isolate = reinterpret_cast<v8::Isolate *>(info.This()->GetAlignedPointerFromInternalField(1));
-	zend_function *method_ptr;
 	zend_fcall_info fci;
 	zend_fcall_info_cache fcc;
 	zval fname, *retval_ptr = NULL, **argv = NULL;
-	TSRMLS_FETCH();
-	zend_class_entry *ce = Z_OBJCE_P(value);
 	zend_uint argc = info.Length(), min_num_args = 0, max_num_args = 0;
 	char *error;
 	int error_len, i, flags = V8JS_FLAG_NONE;
-
-	/* Set method_ptr from v8::External or fetch the closure invoker */
-	if (!info.Data().IsEmpty() && info.Data()->IsExternal()) {
-		method_ptr = static_cast<zend_function *>(v8::External::Cast(*info.Data())->Value());
-	} else {
-		method_ptr = zend_get_closure_invoke_method(value TSRMLS_CC);
-	}
 
 	/* Set parameter limits */
 	min_num_args = method_ptr->common.required_num_args;
@@ -148,30 +136,55 @@ failure:
 }
 /* }}} */
 
-/* Callback for PHP constructor calls */
-static v8::Handle<v8::Value> php_v8js_construct_callback(const v8::Arguments &args) /* {{{ */
+/* Callback for PHP methods and functions */
+static void php_v8js_php_callback(const v8::FunctionCallbackInfo<v8::Value>& info) /* {{{ */
 {
+	zval *value = reinterpret_cast<zval *>(info.This()->GetAlignedPointerFromInternalField(0));
+	v8::Isolate *isolate = reinterpret_cast<v8::Isolate *>(info.This()->GetAlignedPointerFromInternalField(1));
+	zend_function *method_ptr;
+	zend_class_entry *ce = Z_OBJCE_P(value);
+	TSRMLS_FETCH();
+
+	/* Set method_ptr from v8::External or fetch the closure invoker */
+	if (!info.Data().IsEmpty() && info.Data()->IsExternal()) {
+		method_ptr = static_cast<zend_function *>(v8::External::Cast(*info.Data())->Value());
+	} else {
+		method_ptr = zend_get_closure_invoke_method(value TSRMLS_CC);
+	}
+
+	return php_v8js_call_php_func(value, ce, method_ptr, isolate, info);
+}
+
+/* Callback for PHP constructor calls */
+static void php_v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value>& info) /* {{{ */
+{
+	v8::Isolate *isolate = v8::Isolate::GetCurrent();
+	info.GetReturnValue().Set(V8JS_NULL);
+
 	// @todo assert constructor call
-	v8::Handle<v8::Object> newobj = args.This();
+	v8::Handle<v8::Object> newobj = info.This();
 	zval *value;
 	TSRMLS_FETCH();
 
-	if (args[0]->IsExternal()) {
+	if (info[0]->IsExternal()) {
 		// Object created by v8js in php_v8js_hash_to_jsobj, PHP object passed as v8::External.
-		value = static_cast<zval *>(v8::External::Cast(*args[0])->Value());
+		value = static_cast<zval *>(v8::External::Cast(*info[0])->Value());
 	} else {
 		// Object created from JavaScript context.  Need to create PHP object first.
-		zend_class_entry *ce = static_cast<zend_class_entry *>(v8::External::Cast(*args.Data())->Value());
+		zend_class_entry *ce = static_cast<zend_class_entry *>(v8::External::Cast(*info.Data())->Value());
 
 		MAKE_STD_ZVAL(value);
 		object_init_ex(value, ce TSRMLS_CC);
-		// @todo call __construct function, if it exists (and pass arguments)
+
+		// Call __construct function
+		if(ce->constructor != NULL) {
+			zend_function *method_ptr = ce->constructor;
+			php_v8js_call_php_func(value, ce, method_ptr, isolate, info);
+		}
 	}
 
 	newobj->SetAlignedPointerInInternalField(0, value);
-	newobj->SetAlignedPointerInInternalField(1, (void *) v8::Isolate::GetCurrent());
-
-	return V8JS_NULL;
+	newobj->SetAlignedPointerInInternalField(1, (void *) isolate);
 }
 /* }}} */
 
