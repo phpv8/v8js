@@ -159,12 +159,16 @@ static void php_v8js_php_callback(const v8::FunctionCallbackInfo<v8::Value>& inf
 static void php_v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value>& info) /* {{{ */
 {
 	v8::Isolate *isolate = v8::Isolate::GetCurrent();
-	info.GetReturnValue().Set(V8JS_NULL);
+	info.GetReturnValue().Set(V8JS_UNDEFINED);
 
 	// @todo assert constructor call
 	v8::Handle<v8::Object> newobj = info.This();
 	zval *value;
 	TSRMLS_FETCH();
+
+	if (!info.IsConstructCall()) {
+		return;
+	}
 
 	if (info[0]->IsExternal()) {
 		// Object created by v8js in php_v8js_hash_to_jsobj, PHP object passed as v8::External.
