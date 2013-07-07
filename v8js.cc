@@ -231,15 +231,13 @@ static HashTable *php_v8js_v8_get_properties(zval *object TSRMLS_DC) /* {{{ */
 	v8::Locker locker(obj->isolate);
 	v8::Isolate::Scope isolate_scope(obj->isolate);
 	v8::HandleScope local_scope(obj->isolate);
-	v8::Persistent<v8::Context> temp_context = v8::Context::New();
+	v8::Local<v8::Context> temp_context = v8::Context::New(obj->isolate);
 	v8::Context::Scope temp_scope(temp_context);
 
 	if (php_v8js_v8_get_properties_hash(obj->v8obj, retval, obj->flags, obj->isolate TSRMLS_CC) == SUCCESS) {
-		temp_context.Dispose();
 		return retval;
 	}
 
-	temp_context.Dispose();
 	return NULL;
 }
 /* }}} */
@@ -391,7 +389,7 @@ void php_v8js_create_v8(zval *res, v8::Handle<v8::Value> value, int flags, v8::I
 
 	c = (php_v8js_object *) zend_object_store_get_object(res TSRMLS_CC);
 
-	c->v8obj = v8::Persistent<v8::Value>::New(value);
+	c->v8obj = v8::Persistent<v8::Value>::New(isolate, value);
 	c->flags = flags;
 	c->isolate = isolate;
 }
@@ -589,14 +587,14 @@ static PHP_METHOD(V8Js, __construct)
 	/* Create global template for global object */
 	// Now we are using multiple isolates this needs to be created for every context
 
-	c->global_template = v8::Persistent<v8::FunctionTemplate>::New(v8::FunctionTemplate::New());
+	c->global_template = v8::Persistent<v8::FunctionTemplate>::New(c->isolate, v8::FunctionTemplate::New());
 	c->global_template->SetClassName(V8JS_SYM("V8Js"));
 
 	/* Register builtin methods */
 	php_v8js_register_methods(c->global_template->InstanceTemplate(), c);
 
 	/* Create context */
-	c->context = v8::Context::New(&extension_conf, c->global_template->InstanceTemplate());
+	c->context = v8::Persistent<v8::Context>::New(c->isolate, v8::Context::New(c->isolate, &extension_conf, c->global_template->InstanceTemplate()));
 	c->context->SetAlignedPointerInEmbedderData(1, c);
 
 	if (exts) {
@@ -634,7 +632,7 @@ static PHP_METHOD(V8Js, __construct)
 	}
 
 	/* Set name for the PHP JS object */
-	c->object_name = v8::Persistent<v8::String>::New((object_name_len) ? V8JS_SYML(object_name, object_name_len) : V8JS_SYM("PHP"));
+	c->object_name = v8::Persistent<v8::String>::New(c->isolate, (object_name_len) ? V8JS_SYML(object_name, object_name_len) : V8JS_SYM("PHP"));
 
 	/* Add the PHP object into global object */
 	V8JS_GLOBAL->Set(c->object_name, php_obj_t->InstanceTemplate()->NewInstance(), v8::ReadOnly);
