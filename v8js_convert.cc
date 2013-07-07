@@ -34,24 +34,24 @@ extern "C" {
 #include <v8.h>
 
 /* Callback for PHP methods and functions */
-static v8::Handle<v8::Value> php_v8js_php_callback(const v8::Arguments &args) /* {{{ */
+static void php_v8js_php_callback(const v8::FunctionCallbackInfo<v8::Value>& info) /* {{{ */
 {
 	v8::Handle<v8::Value> return_value;
-	zval *value = reinterpret_cast<zval *>(args.This()->GetAlignedPointerFromInternalField(0));
-	v8::Isolate *isolate = reinterpret_cast<v8::Isolate *>(args.This()->GetAlignedPointerFromInternalField(1));
+	zval *value = reinterpret_cast<zval *>(info.This()->GetAlignedPointerFromInternalField(0));
+	v8::Isolate *isolate = reinterpret_cast<v8::Isolate *>(info.This()->GetAlignedPointerFromInternalField(1));
 	zend_function *method_ptr;
 	zend_fcall_info fci;
 	zend_fcall_info_cache fcc;
 	zval fname, *retval_ptr = NULL, **argv = NULL;
 	TSRMLS_FETCH();
 	zend_class_entry *ce = Z_OBJCE_P(value);
-	zend_uint argc = args.Length(), min_num_args = 0, max_num_args = 0;
+	zend_uint argc = info.Length(), min_num_args = 0, max_num_args = 0;
 	char *error;
 	int error_len, i, flags = V8JS_FLAG_NONE;
 
 	/* Set method_ptr from v8::External or fetch the closure invoker */
-	if (!args.Data().IsEmpty() && args.Data()->IsExternal()) {
-		method_ptr = static_cast<zend_function *>(v8::External::Cast(*args.Data())->Value());
+	if (!info.Data().IsEmpty() && info.Data()->IsExternal()) {
+		method_ptr = static_cast<zend_function *>(v8::External::Cast(*info.Data())->Value());
 	} else {
 		method_ptr = zend_get_closure_invoke_method(value TSRMLS_CC);
 	}
@@ -90,7 +90,8 @@ static v8::Handle<v8::Value> php_v8js_php_callback(const v8::Arguments &args) /*
 			efree(method_ptr);
 		}
 		efree(error);
-		return return_value;
+		info.GetReturnValue().Set(return_value);
+		return;
 	}
 
 	/* Convert parameters passed from V8 */
@@ -100,7 +101,7 @@ static v8::Handle<v8::Value> php_v8js_php_callback(const v8::Arguments &args) /*
 		argv = (zval **) safe_emalloc(argc, sizeof(zval *), 0);
 		for (i = 0; i < argc; i++) {
 			MAKE_STD_ZVAL(argv[i]);
-			if (v8js_to_zval(args[i], argv[i], flags, isolate TSRMLS_CC) == FAILURE) {
+			if (v8js_to_zval(info[i], argv[i], flags, isolate TSRMLS_CC) == FAILURE) {
 				fci.param_count++;
 				error_len = spprintf(&error, 0, "converting parameter #%d passed to %s() failed", i + 1, method_ptr->common.function_name);
 				return_value = V8JS_THROW(Error, error, error_len);
@@ -141,7 +142,7 @@ failure:
 		return_value = V8JS_NULL;
 	}
 
-	return return_value;
+	info.GetReturnValue().Set(return_value);
 }
 /* }}} */
 
@@ -167,24 +168,24 @@ static int _php_v8js_is_assoc_array(HashTable *myht TSRMLS_DC) /* {{{ */
 }
 /* }}} */
 
-static v8::Handle<v8::Value> php_v8js_property_caller(const v8::Arguments &args) /* {{{ */
+static void php_v8js_property_caller(const v8::FunctionCallbackInfo<v8::Value>& info) /* {{{ */
 {
-	v8::Local<v8::Object> self = args.Holder();
-	v8::Local<v8::String> cname = args.Callee()->GetName()->ToString();
+	v8::Local<v8::Object> self = info.Holder();
+	v8::Local<v8::String> cname = info.Callee()->GetName()->ToString();
 	v8::Local<v8::Value> value;
-	v8::Local<v8::String> cb_func = v8::Local<v8::String>::Cast(args.Data());
+	v8::Local<v8::String> cb_func = v8::Local<v8::String>::Cast(info.Data());
 
 	value = self->GetHiddenValue(cb_func);
 
 	if (!value.IsEmpty() && value->IsFunction())
 	{
-		int argc = args.Length(), i = 0;
+		int argc = info.Length(), i = 0;
 		v8::Local<v8::Value> *argv = new v8::Local<v8::Value>[argc];
 		v8::Local<v8::Function> cb = v8::Local<v8::Function>::Cast(value);
 
 		if (cb_func->Equals(V8JS_SYM(ZEND_INVOKE_FUNC_NAME))) {
 			for (; i < argc; ++i) {
-				argv[i] = args[i];
+				argv[i] = info[i];
 			}
 			value = cb->Call(self, argc, argv);
 		}
@@ -192,25 +193,28 @@ static v8::Handle<v8::Value> php_v8js_property_caller(const v8::Arguments &args)
 		{
 			v8::Local<v8::Array> argsarr = v8::Array::New(argc);
 			for (; i < argc; ++i) {
-				argsarr->Set(i, args[i]);
+				argsarr->Set(i, info[i]);
 			}
 			v8::Local<v8::Value> argsv[2] = { cname, argsarr };
 			value = cb->Call(self, 2, argsv);
 		}
 	}
 
-	if (args.IsConstructCall()) {
+	if (info.IsConstructCall()) {
 		if (!value.IsEmpty() && !value->IsNull()) {
-			return value;
+			info.GetReturnValue().Set(value);
+			return;
 		}
-		return self;
+
+		info.GetReturnValue().Set(self);
+		return;
 	}
 
-	return value;
+	info.GetReturnValue().Set(value);
 }
 /* }}} */
 
-static v8::Handle<v8::Value> php_v8js_property_getter(v8::Local<v8::String> property, const v8::AccessorInfo &info) /* {{{ */
+static void php_v8js_property_getter(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<v8::Value> &info) /* {{{ */
 {
 	v8::Local<v8::Object> self = info.Holder();
 	v8::Local<v8::Value> value;
@@ -220,7 +224,8 @@ static v8::Handle<v8::Value> php_v8js_property_getter(v8::Local<v8::String> prop
 	value = self->GetRealNamedProperty(property);
 
 	if (!value.IsEmpty()) {
-		return value;
+		info.GetReturnValue().Set(value);
+		return;
 	}
 
 	/* If __get() is set for PHP object, call it */
@@ -236,21 +241,23 @@ static v8::Handle<v8::Value> php_v8js_property_getter(v8::Local<v8::String> prop
 		v8::Local<v8::FunctionTemplate> cb_t = v8::FunctionTemplate::New(php_v8js_property_caller, V8JS_SYM(ZEND_CALL_FUNC_NAME));
 		cb = cb_t->GetFunction();
 		cb->SetName(property);
-		return cb;
+		info.GetReturnValue().Set(cb);
+		return;
 	}
 
-	return value;
+	info.GetReturnValue().Set(value);
 }
 /* }}} */
 
-static v8::Handle<v8::Integer> php_v8js_property_query(v8::Local<v8::String> property, const v8::AccessorInfo &info) /* {{{ */
+static void php_v8js_property_query(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<v8::Integer> &info) /* {{{ */
 {
 	v8::Local<v8::Object> self = info.Holder();
 	v8::Local<v8::Value> value;
 
 	/* Return early if property is set in JS object */
 	if (self->HasRealNamedProperty(property)) {
-		return V8JS_INT(v8::ReadOnly);
+		info.GetReturnValue().Set(V8JS_INT(v8::ReadOnly));
+		return;
 	}
 
 	value = self->GetHiddenValue(V8JS_SYM(ZEND_ISSET_FUNC_NAME));
@@ -260,7 +267,7 @@ static v8::Handle<v8::Integer> php_v8js_property_query(v8::Local<v8::String> pro
 		value = cb->Call(self, 1, argv);
 	}
 
-	return (!value.IsEmpty() && value->IsTrue()) ? V8JS_INT(v8::ReadOnly) : v8::Local<v8::Integer>();
+	info.GetReturnValue().Set((!value.IsEmpty() && value->IsTrue()) ? V8JS_INT(v8::ReadOnly) : v8::Local<v8::Integer>());
 }
 /* }}} */
 
