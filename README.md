@@ -9,7 +9,7 @@ The extension allows you to execute Javascript code in a secure sandbox from PHP
 Minimum requirements
 --------------------
 
-- V8 Javascript Engine library (libv8) version 3.2.4 or above <http://code.google.com/p/v8/> (trunk)
+- V8 Javascript Engine library (libv8) master <https://github.com/v8/v8/> (trunk)
 
 	V8 is Google's open source Javascript engine.
 	V8 is written in C++ and is used in Google Chrome, the open source browser from Google.
@@ -20,6 +20,36 @@ Minimum requirements
 
   This embedded implementation of the V8 engine uses thread locking so it should work with ZTS enabled.
   However, this has not been tested yet.
+  
+COMPILING LATEST VERSION
+========================
+
+Compile latest v8
+-----------------
+
+```
+cd /tmp
+git clone https://github.com/v8/v8.git
+cd v8
+make dependencies
+make native library=shared -j8
+sudo cp out/native/lib.target/libv8.so /usr/lib/libv8.so
+sudo cp include/v8* /usr/include
+
+```
+
+Compile php-v8js itself
+-----------------------
+
+```
+cd /tmp
+git clone https://github.com/preillyme/v8js.git
+cd v8js
+phpize
+./configure CXXFLAGS="-DV8_USE_UNSAFE_HANDLES=1"
+make
+sudo make install
+```
 
 
 PHP API
