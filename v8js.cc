@@ -231,15 +231,13 @@ static HashTable *php_v8js_v8_get_properties(zval *object TSRMLS_DC) /* {{{ */
 	v8::Locker locker(obj->isolate);
 	v8::Isolate::Scope isolate_scope(obj->isolate);
 	v8::HandleScope local_scope(obj->isolate);
-	v8::Persistent<v8::Context> temp_context = v8::Context::New();
+	v8::Local<v8::Context> temp_context = v8::Context::New(obj->isolate);
 	v8::Context::Scope temp_scope(temp_context);
 
 	if (php_v8js_v8_get_properties_hash(obj->v8obj, retval, obj->flags, obj->isolate TSRMLS_CC) == SUCCESS) {
-		temp_context.Dispose();
 		return retval;
 	}
 
-	temp_context.Dispose();
 	return NULL;
 }
 /* }}} */
@@ -596,7 +594,7 @@ static PHP_METHOD(V8Js, __construct)
 	php_v8js_register_methods(c->global_template->InstanceTemplate(), c);
 
 	/* Create context */
-	c->context = v8::Context::New(&extension_conf, c->global_template->InstanceTemplate());
+	c->context = v8::Persistent<v8::Context>::New(v8::Context::New(c->isolate, &extension_conf, c->global_template->InstanceTemplate()));
 	c->context->SetAlignedPointerInEmbedderData(1, c);
 
 	if (exts) {
