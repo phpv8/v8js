@@ -50,7 +50,7 @@ extern "C" {
 #define V8JS_BOOL(v)		v8::Boolean::New(v)
 #define V8JS_NULL			v8::Null()
 #define V8JS_MN(name)		v8js_method_##name
-#define V8JS_METHOD(name)	v8::Handle<v8::Value> V8JS_MN(name)(const v8::Arguments& args)
+#define V8JS_METHOD(name)	void V8JS_MN(name)(const v8::FunctionCallbackInfo<v8::Value>& info)
 #define V8JS_THROW(type, message, message_len)	v8::ThrowException(v8::Exception::type(V8JS_STRL(message, message_len)))
 #define V8JS_GLOBAL			v8::Context::GetCurrent()->Global()
 
