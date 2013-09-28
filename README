@@ -7,7 +7,7 @@ V8js is a PHP extension for Google's V8 Javascript engine
 Minimum requirements
 --------------------
 
-- V8 library version 2.5.8 <http://code.google.com/p/v8/> (trunk)
+- V8 library version >= 3.17.11 <http://code.google.com/p/v8/> (trunk)
 
 - PHP 5.3.3+ (non-ZTS build preferred)
   Note: V8 engine is not natively thread safe and this extension
