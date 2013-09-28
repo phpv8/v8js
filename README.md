@@ -14,7 +14,7 @@ Minimum requirements
 	V8 is Google's open source Javascript engine.
 	V8 is written in C++ and is used in Google Chrome, the open source browser from Google.
 	V8 implements ECMAScript as specified in ECMA-262, 5th edition.
-    This extension makes use of V8 isolates to ensure separation between multiple V8Js instances, hence the need for 3.2.4 or above.
+    This extension makes use of V8 isolates to ensure separation between multiple V8Js instances, hence the need for 3.17.11 or above. (See <https://github.com/preillyme/v8js/issues/12>.)
 
 - PHP 5.3.3+
 
