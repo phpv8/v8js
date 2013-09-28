@@ -646,7 +646,7 @@ static PHP_METHOD(V8Js, __construct)
 	v8::Isolate::Scope isolate_scope((ctx)->isolate); \
 	v8::Context::Scope context_scope((ctx)->context);
 
-static void php_v8js_timer_push(long time_limit, long memory_limit, php_v8js_ctx *c)
+static void php_v8js_timer_push(long time_limit, long memory_limit, php_v8js_ctx *c TSRMLS_DC)
 {
 	V8JSG(timer_mutex).lock();
 
@@ -667,7 +667,7 @@ static void php_v8js_timer_push(long time_limit, long memory_limit, php_v8js_ctx
 	V8JSG(timer_mutex).unlock();
 }
 
-static void php_v8js_timer_pop()
+static void php_v8js_timer_pop(TSRMLS_D)
 {
 	V8JSG(timer_mutex).lock();
 
@@ -683,16 +683,16 @@ static void php_v8js_timer_pop()
 	V8JSG(timer_mutex).unlock();
 }
 
-static void php_v8js_terminate_execution(php_v8js_ctx *c)
+static void php_v8js_terminate_execution(php_v8js_ctx *c TSRMLS_DC)
 {
 	// Forcefully terminate the current thread of V8 execution in the isolate
 	v8::V8::TerminateExecution(c->isolate);
 
 	// Remove this timer from the stack
-	php_v8js_timer_pop();
+	php_v8js_timer_pop(TSRMLS_C);
 }
 
-static void php_v8js_timer_thread()
+static void php_v8js_timer_thread(TSRMLS_D)
 {
 	while (!V8JSG(timer_stop)) {
 		v8::Locker locker;
@@ -709,7 +709,7 @@ static void php_v8js_timer_thread()
 			c->isolate->GetHeapStatistics(&hs);
 
 			if (timer_ctx->time_limit > 0 && now > timer_ctx->time_point) {
-				php_v8js_terminate_execution(c);
+				php_v8js_terminate_execution(c TSRMLS_CC);
 
 				V8JSG(timer_mutex).lock();
 				c->time_limit_hit = true;
@@ -717,7 +717,7 @@ static void php_v8js_timer_thread()
 			}
 
 			if (timer_ctx->memory_limit > 0 && hs.used_heap_size() > timer_ctx->memory_limit) {
-				php_v8js_terminate_execution(c);
+				php_v8js_terminate_execution(c TSRMLS_CC);
 
 				V8JSG(timer_mutex).lock();
 				c->memory_limit_hit = true;
@@ -775,10 +775,10 @@ static PHP_METHOD(V8Js, executeString)
 		// If timer thread is not running then start it
 		if (!V8JSG(timer_thread)) {
 			// If not, start timer thread
-			V8JSG(timer_thread) = new std::thread(php_v8js_timer_thread);
+			V8JSG(timer_thread) = new std::thread(php_v8js_timer_thread TSRMLS_CC);
 		}
 
-		php_v8js_timer_push(time_limit, memory_limit, c);
+		php_v8js_timer_push(time_limit, memory_limit, c TSRMLS_CC);
 	}
 
 	/* Execute script */
@@ -787,7 +787,7 @@ static PHP_METHOD(V8Js, executeString)
 	c->in_execution--;
 
 	if (time_limit > 0) {
-		php_v8js_timer_pop();
+		php_v8js_timer_pop(TSRMLS_C);
 	}
 
 	char exception_string[64];
