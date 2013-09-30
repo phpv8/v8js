@@ -15,18 +15,20 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>preilly@php.net</email>
   <active>yes</active>
  </lead>
- <date>2013-09-28</date>
- <version><release>0.1.4</release><api>0.1.4</api></version>
+ <date>2013-09-29</date>
+ <version><release>0.1.5</release><api>0.1.5</api></version>
  <stability><release>beta</release><api>beta</api></stability>
  <license uri="http://www.php.net/license">The MIT License (MIT)</license>
  <notes>
-- Added time/memory limit support
-- Moved to The MIT License (MIT)
+- Fix package
  </notes>
  <contents>
   <dir name="/">
    <file name="CREDITS" role="doc" />
+   <file name="LICENSE" role="doc" />
+   <file name="README.md" role="doc" />
    <file name="config.m4" role="src" />
+   <file name="config.w32" role="src" />
    <file name="Makefile.frag" role="src" />
    <file name="v8js.cc" role="src" />
    <file name="v8js_convert.cc" role="src" />
@@ -34,6 +36,58 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <file name="v8js_variables.cc" role="src" />
    <file name="php_v8js.h" role="src" />
    <file name="php_v8js_macros.h" role="src" />
+   <file name="php_v8js_commonjs.cc" role="src" />
+   <file name="test.php" role="src" />
+   <file name="TODO" role="src" />
+  </dir> <!-- / -->
+  <dir name="/samples">
+   <file name="dlopen.supp" role="src" />
+   <file name="test_callback.php" role="src" />
+   <file name="test_call.php" role="src" />
+   <file name="test_closure.php" role="src" />
+   <file name="test_crash.php" role="src" />
+   <file name="test_date.php" role="src" />
+   <file name="test_dumper.php" role="src" />
+   <file name="test_exception2.php" role="src" />
+   <file name="test_exception.php" role="src" />
+   <file name="test_extend.php" role="src" />
+   <file name="test_extension.php" role="src" />
+   <file name="test_method.php" role="src" />
+  </dir> <!-- / -->
+  <dir name="/tests">
+   <file name="basic.phpt" role="src" />
+   <file name="callbacks.phpt" role="src" />
+   <file name="closures_basic.phpt" role="src" />
+   <file name="closures_dynamic.phpt" role="src" />
+   <file name="commonjs_modules.phpt" role="src" />
+   <file name="construct.phpt" role="src" />
+   <file name="context_preserving.phpt" role="src" />
+   <file name="context_separation.phpt" role="src" />
+   <file name="context_temp_creation.phpt" role="src" />
+   <file name="exception.phpt" role="src" />
+   <file name="exception_propagation_1.phpt" role="src" />
+   <file name="exception_propagation_2.phpt" role="src" />
+   <file name="exception_propagation_3.phpt" role="src" />
+   <file name="execute_flags_args.phpt" role="src" />
+   <file name="execute_flags.phpt" role="src" />
+   <file name="extensions_basic.phpt" role="src" />
+   <file name="extensions_circular_dependency.phpt" role="src" />
+   <file name="get_accessor.phpt" role="src" />
+   <file name="js-construct-basic.phpt" role="src" />
+   <file name="js-construct-direct-call.phpt" role="src" />
+   <file name="js-construct-protected-ctor.phpt" role="src" />
+   <file name="js-construct-with-ctor.phpt" role="src" />
+   <file name="memory_limit.phpt" role="src" />
+   <file name="multi-object.phpt" role="src" />
+   <file name="multi.phpt" role="src" />
+   <file name="object_method_call.phpt" role="src" />
+   <file name="object.phpt" role="src" />
+   <file name="object_prototype.phpt" role="src" />
+   <file name="object_reuse.phpt" role="src" />
+   <file name="return_value.phpt" role="src" />
+   <file name="skipif.inc" role="src" />
+   <file name="time_limit.phpt" role="src" />
+   <file name="variable_passing.phpt" role="src" />
   </dir> <!-- / -->
  </contents>
  <dependencies>
@@ -51,6 +105,16 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <configureoption default="autodetect" name="with-v8js" prompt="Please provide the installation prefix of libv8" />
  </extsrcrelease>
  <changelog>
+  <release>
+    <version><release>0.1.4</release><api>0.1.4</api></version>
+    <stability><release>beta</release><api>beta</api></stability>
+    <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+    <date>2013-09-28</date>
+    <notes>
+    - Added time/memory limit support
+    - Moved to The MIT License (MIT)
+    </notes>
+  </release>
   <release>
     <version><release>0.1.3</release><api>0.1.3</api></version>
     <stability><release>beta</release><api>beta</api></stability>
