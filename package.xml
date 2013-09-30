@@ -39,7 +39,6 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <file name="php_v8js_commonjs.cc" role="src" />
    <file name="test.php" role="src" />
    <file name="TODO" role="src" />
-  </dir> <!-- / -->
   <dir name="/samples">
    <file name="dlopen.supp" role="src" />
    <file name="test_callback.php" role="src" />
@@ -53,7 +52,6 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <file name="test_extend.php" role="src" />
    <file name="test_extension.php" role="src" />
    <file name="test_method.php" role="src" />
-  </dir> <!-- / -->
   <dir name="/tests">
    <file name="basic.phpt" role="src" />
    <file name="callbacks.phpt" role="src" />
@@ -88,7 +86,9 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <file name="skipif.inc" role="src" />
    <file name="time_limit.phpt" role="src" />
    <file name="variable_passing.phpt" role="src" />
-  </dir> <!-- / -->
+</dir>
+</dir>
+</dir>
  </contents>
  <dependencies>
   <required>
