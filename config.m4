@@ -5,9 +5,10 @@ PHP_ARG_WITH(v8js, for V8 Javascript Engine,
 
 if test "$PHP_V8JS" != "no"; then
   SEARCH_PATH="/usr/local /usr"
-  SEARCH_FOR="/include/v8.h"
+  SEARCH_FOR="include/v8.h"
   
   if test -r $PHP_V8JS/$SEARCH_FOR; then
+    LDFLAGS="$LDFLAGS -Wl,--rpath=$PHP_V8JS/$PHP_LIBDIR"
     V8_DIR=$PHP_V8JS
   else
     AC_MSG_CHECKING([for V8 files in default path])
@@ -32,8 +33,10 @@ if test "$PHP_V8JS" != "no"; then
   AC_CACHE_CHECK(for V8 version, ac_cv_v8_version, [
 old_LIBS=$LIBS
 old_LDFLAGS=$LDFLAGS
-LDFLAGS=-L$V8_DIR/$PHP_LIBDIR
+old_CPPFLAGS=$CPPFLAGS
+LDFLAGS="-Wl,--rpath=$V8_DIR/$PHP_LIBDIR -L$V8_DIR/$PHP_LIBDIR"
 LIBS=-lv8
+CPPFLAGS=-I$V8_DIR/include
 AC_LANG_SAVE
 AC_LANG_CPLUSPLUS
 AC_TRY_RUN([#include <v8.h>
@@ -55,6 +58,7 @@ int main ()
 AC_LANG_RESTORE
 LIBS=$old_LIBS
 LDFLAGS=$old_LDFLAGS
+CPPFLAGS=$old_CPPFLAGS
 ])
 
   if test "$ac_cv_v8_version" != "NONE"; then
