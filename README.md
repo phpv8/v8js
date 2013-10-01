@@ -33,10 +33,15 @@ git clone https://github.com/v8/v8.git
 cd v8
 make dependencies
 make native library=shared -j8
+sudo mkdir -p /usr/lib /usr/include
 sudo cp out/native/lib.target/libv8.so /usr/lib/libv8.so
 sudo cp include/v8* /usr/include
 
 ```
+
+If you don't want to overwrite the system copy of v8, replace `/usr` in
+the above commands with `/tmp/v8-install` and then add
+`--with-v8js=/tmp/v8-install` to the php-v8js `./configure` command below.
 
 Compile php-v8js itself
 -----------------------
