@@ -29,6 +29,9 @@ extern "C" {
 #include <map>
 #include <stdexcept>
 
+typedef std::pair<v8::Isolate *, const char *> TemplateCacheKey;
+typedef std::map<TemplateCacheKey, v8::Persistent<v8::FunctionTemplate> > TemplateCache;
+
 /* Callback for PHP methods and functions */
 static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_function *method_ptr, v8::Isolate *isolate, const v8::FunctionCallbackInfo<v8::Value>& info) /* {{{ */
 {
@@ -371,10 +374,10 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 	if (ce) {
 		v8::Handle<v8::FunctionTemplate> new_tpl;
 		bool cached_tpl = true;
-		static std::map<const char *, v8::Persistent<v8::FunctionTemplate> > tpl_map;
+		static TemplateCache tpl_map;
 
 		try {
-			new_tpl = tpl_map.at(ce->name);
+			new_tpl = tpl_map.at(std::make_pair(isolate, ce->name));
 		}
 		catch (const std::out_of_range &) {
 			cached_tpl = false;
@@ -393,7 +396,8 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 				new_tpl->InstanceTemplate()->SetCallAsFunctionHandler(php_v8js_php_callback);
 			} else {
 				/* Add new v8::FunctionTemplate to tpl_map, as long as it is not a closure. */
-				tpl_map[ce->name] = v8::Persistent<v8::FunctionTemplate>::New(isolate, new_tpl);
+				tpl_map[std::make_pair(isolate, ce->name)] =
+					v8::Persistent<v8::FunctionTemplate>::New(isolate, new_tpl);
 			}
 		}
 
