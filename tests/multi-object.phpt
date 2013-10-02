@@ -25,7 +25,7 @@ for($i = 0; $i < 5; $i ++) {
 }
 
 $JS = <<< EOT
-php.test.sayHello();
+PHP.test.sayHello();
 EOT;
 
 foreach($instances as $v8) {
