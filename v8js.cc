@@ -118,6 +118,12 @@ static zval *php_v8js_v8_read_property(zval *object, zval *member, int type ZEND
 
 	if (Z_TYPE_P(member) == IS_STRING && obj->v8obj->IsObject() && !obj->v8obj->IsFunction())
 	{
+		v8::Locker locker(obj->isolate);
+		v8::Isolate::Scope isolate_scope(obj->isolate);
+		v8::HandleScope local_scope(obj->isolate);
+		v8::Local<v8::Context> temp_context = v8::Context::New(obj->isolate);
+		v8::Context::Scope temp_scope(temp_context);
+
 		v8::Local<v8::Object> jsObj = obj->v8obj->ToObject();
 		v8::Local<v8::String> jsKey = V8JS_STRL(Z_STRVAL_P(member), Z_STRLEN_P(member));
 		v8::Local<v8::Value> jsVal;
