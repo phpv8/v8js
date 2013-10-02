@@ -129,6 +129,16 @@ struct php_v8js_timer_ctx
   php_v8js_ctx *v8js_ctx;
 };
 
+/* {{{ Object container */
+struct php_v8js_object {
+	zend_object std;
+	v8::Persistent<v8::Value> v8obj;
+	int flags;
+	v8::Isolate *isolate;
+};
+/* }}} */
+
+
 /* Module globals */
 ZEND_BEGIN_MODULE_GLOBALS(v8js)
   int v8_initialized;
