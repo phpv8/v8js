@@ -101,15 +101,6 @@ struct php_v8js_jsext {
 };
 /* }}} */
 
-/* {{{ Object container */
-struct php_v8js_object {
-	zend_object std;
-	v8::Persistent<v8::Value> v8obj;
-	int flags;
-	v8::Isolate *isolate;
-};
-/* }}} */
-
 #ifdef COMPILE_DL_V8JS
 ZEND_GET_MODULE(v8js)
 #endif
