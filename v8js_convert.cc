@@ -371,7 +371,10 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 	}
 
 	/* Object methods */
-	if (ce) {
+	if (ce == php_ce_v8_function) {
+		php_v8js_object *c = (php_v8js_object *) zend_object_store_get_object(value TSRMLS_CC);
+		return c->v8obj;
+	} else if (ce) {
 		v8::Handle<v8::FunctionTemplate> new_tpl;
 		bool cached_tpl = true;
 		static TemplateCache tpl_map;
