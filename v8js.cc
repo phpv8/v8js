@@ -118,6 +118,12 @@ static zval *php_v8js_v8_read_property(zval *object, zval *member, int type ZEND
 
 	if (Z_TYPE_P(member) == IS_STRING && obj->v8obj->IsObject() && !obj->v8obj->IsFunction())
 	{
+		v8::Locker locker(obj->isolate);
+		v8::Isolate::Scope isolate_scope(obj->isolate);
+		v8::HandleScope local_scope(obj->isolate);
+		v8::Local<v8::Context> temp_context = v8::Context::New(obj->isolate);
+		v8::Context::Scope temp_scope(temp_context);
+
 		v8::Local<v8::Object> jsObj = obj->v8obj->ToObject();
 		v8::Local<v8::String> jsKey = V8JS_STRL(Z_STRVAL_P(member), Z_STRLEN_P(member));
 		v8::Local<v8::Value> jsVal;
@@ -236,9 +242,15 @@ static HashTable *php_v8js_v8_get_debug_info(zval *object, int *is_temp TSRMLS_D
 
 static zend_function *php_v8js_v8_get_method(zval **object_ptr, char *method, int method_len ZEND_HASH_KEY_DC TSRMLS_DC) /* {{{ */
 {
-	zend_function *f;
-	v8::Local<v8::String> jsKey = V8JS_STRL(method, method_len);
 	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(*object_ptr TSRMLS_CC);
+	zend_function *f;
+
+	v8::Locker locker(obj->isolate);
+	v8::Isolate::Scope isolate_scope(obj->isolate);
+	v8::HandleScope local_scope(obj->isolate);
+	v8::Local<v8::Context> temp_context = v8::Context::New(obj->isolate);
+	v8::Context::Scope temp_scope(temp_context);
+	v8::Local<v8::String> jsKey = V8JS_STRL(method, method_len);
 
 	if (!obj->v8obj.IsEmpty() && obj->v8obj->IsObject() && !obj->v8obj->IsFunction()) {
 		v8::Local<v8::Object> jsObj = obj->v8obj->ToObject();
@@ -276,6 +288,12 @@ static int php_v8js_v8_call_method(char *method, INTERNAL_FUNCTION_PARAMETERS) /
 		argv = (zval***)safe_emalloc(sizeof(zval**), argc, 0);
 		zend_get_parameters_array_ex(argc, argv);
 	}
+
+	v8::Locker locker(obj->isolate);
+	v8::Isolate::Scope isolate_scope(obj->isolate);
+	v8::HandleScope local_scope(obj->isolate);
+	v8::Local<v8::Context> temp_context = v8::Context::New(obj->isolate);
+	v8::Context::Scope temp_scope(temp_context);
 
 	v8::Local<v8::String> method_name = V8JS_SYML(method, strlen(method));
 	v8::Local<v8::Object> v8obj = obj->v8obj->ToObject();
