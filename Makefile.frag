@@ -1,4 +1,7 @@
+# add json extension, if needed (ie, for PHP >= 5.5)
+ifneq (,$(realpath $(EXTENSION_DIR)/json.so))
 PHP_TEST_SHARED_EXTENSIONS+=-d extension=$(EXTENSION_DIR)/json.so
+endif
 
 testv8: all
 	$(PHP_EXECUTABLE) -n -d extension_dir=./modules -d extension=v8js.so test.php
