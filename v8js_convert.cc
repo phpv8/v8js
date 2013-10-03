@@ -26,11 +26,28 @@ extern "C" {
 
 #include "php_v8js_macros.h"
 #include <v8.h>
-#include <map>
 #include <stdexcept>
 
-typedef std::pair<v8::Isolate *, const char *> TemplateCacheKey;
-typedef std::map<TemplateCacheKey, v8::Persistent<v8::FunctionTemplate> > TemplateCache;
+#if PHP_V8_API_VERSION < 3022000
+/* CopyablePersistentTraits is only part of V8 from 3.22.0 on,
+   to be compatible with lower versions add our own (compatible) version. */
+namespace v8 {
+	template<class T>
+	struct CopyablePersistentTraits {
+		typedef Persistent<T, CopyablePersistentTraits<T> > CopyablePersistent;
+		static const bool kResetInDestructor = true;
+		template<class S, class M>
+		V8_INLINE(static void Copy(const Persistent<S, M>& source,
+								   CopyablePersistent* dest)) {
+			// do nothing, just allow copy
+		}
+	};
+}
+#endif
+
+typedef std::pair<struct php_v8js_ctx *, const char *> TemplateCacheKey;
+typedef v8::Persistent<v8::FunctionTemplate, v8::CopyablePersistentTraits<v8::FunctionTemplate> > TemplateCacheEntry;
+typedef std::map<TemplateCacheKey, TemplateCacheEntry> TemplateCache;
 
 /* Callback for PHP methods and functions */
 static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_function *method_ptr, v8::Isolate *isolate, const v8::FunctionCallbackInfo<v8::Value>& info) /* {{{ */
@@ -373,14 +390,18 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 	/* Object methods */
 	if (ce == php_ce_v8_function) {
 		php_v8js_object *c = (php_v8js_object *) zend_object_store_get_object(value TSRMLS_CC);
-		return c->v8obj;
+		v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, c->v8obj);
+
+		return v8obj;
 	} else if (ce) {
-		v8::Handle<v8::FunctionTemplate> new_tpl;
+		php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData();
+		v8::Local<v8::FunctionTemplate> new_tpl;
 		bool cached_tpl = true;
 		static TemplateCache tpl_map;
 
 		try {
-			new_tpl = tpl_map.at(std::make_pair(isolate, ce->name));
+			new_tpl = v8::Local<v8::FunctionTemplate>::New
+				(isolate, tpl_map.at(std::make_pair(ctx, ce->name)));
 		}
 		catch (const std::out_of_range &) {
 			cached_tpl = false;
@@ -399,8 +420,8 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 				new_tpl->InstanceTemplate()->SetCallAsFunctionHandler(php_v8js_php_callback);
 			} else {
 				/* Add new v8::FunctionTemplate to tpl_map, as long as it is not a closure. */
-				tpl_map[std::make_pair(isolate, ce->name)] =
-					v8::Persistent<v8::FunctionTemplate>::New(isolate, new_tpl);
+				TemplateCacheEntry tce(isolate, new_tpl);
+				tpl_map[std::make_pair(ctx, ce->name)] = tce;
 			}
 		}
 
@@ -477,15 +498,14 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 		// decides to dispose the JS object, we add a weak persistent handle and register
 		// a callback function that removes the reference.
 		v8::Handle<v8::Value> external = v8::External::New(value);
-		v8::Persistent<v8::Object> persist_newobj = v8::Persistent<v8::Object>::New
-			(isolate, new_tpl->GetFunction()->NewInstance(1, &external));
+		v8::Persistent<v8::Object> persist_newobj(isolate, new_tpl->GetFunction()->NewInstance(1, &external));
 		persist_newobj.MakeWeak(value, php_v8js_weak_object_callback);
 
 		// Just tell v8 that we're allocating some external memory
 		// (for the moment we just always tell 1k instead of trying to find out actual values)
 		v8::V8::AdjustAmountOfExternalAllocatedMemory(1024);
 
-		newobj = persist_newobj;
+		newobj = v8::Local<v8::Object>::New(isolate, persist_newobj);
 
 		if (ce != zend_ce_closure) {
 			// These unfortunately cannot be attached to the template, hence we have to put them
