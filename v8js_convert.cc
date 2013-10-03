@@ -28,6 +28,9 @@ extern "C" {
 #include <v8.h>
 #include <stdexcept>
 
+#if PHP_V8_API_VERSION < 3022000
+/* CopyablePersistentTraits is only part of V8 from 3.22.0 on,
+   to be compatible with lower versions add our own (compatible) version. */
 namespace v8 {
 	template<class T>
 	struct CopyablePersistentTraits {
@@ -40,7 +43,7 @@ namespace v8 {
 		}
 	};
 }
-
+#endif
 
 typedef std::pair<struct php_v8js_ctx *, const char *> TemplateCacheKey;
 typedef v8::Persistent<v8::FunctionTemplate, v8::CopyablePersistentTraits<v8::FunctionTemplate> > TemplateCacheEntry;
