@@ -72,6 +72,8 @@ CPPFLAGS=$old_CPPFLAGS
     fi
     AC_DEFINE_UNQUOTED([PHP_V8_API_VERSION], $V8_API_VERSION, [ ])
     AC_DEFINE_UNQUOTED([PHP_V8_VERSION], "$ac_cv_v8_version", [ ])
+  else
+    AC_MSG_ERROR([could not determine libv8 version])
   fi
   
   PHP_NEW_EXTENSION(v8js, v8js.cc v8js_convert.cc v8js_methods.cc v8js_variables.cc v8js_commonjs.cc, $ext_shared, , "-std=c++11")
