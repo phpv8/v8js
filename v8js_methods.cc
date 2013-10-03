@@ -270,7 +270,7 @@ V8JS_METHOD(require)
 	global->Set(v8::String::New("module"), module);
 
 	// Each module gets its own context so different modules do not affect each other
-	v8::Persistent<v8::Context> context = v8::Persistent<v8::Context>::New(c->isolate, v8::Context::New(c->isolate, NULL, global));
+	v8::Local<v8::Context> context = v8::Local<v8::Context>::New(c->isolate, v8::Context::New(c->isolate, NULL, global));
 
 	// Catch JS exceptions
 	v8::TryCatch try_catch;
