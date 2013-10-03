@@ -737,8 +737,6 @@ static void php_v8js_terminate_execution(php_v8js_ctx *c TSRMLS_DC)
 static void php_v8js_timer_thread(TSRMLS_D)
 {
 	while (!V8JSG(timer_stop)) {
-		v8::Locker locker;
-
 		std::chrono::time_point<std::chrono::high_resolution_clock> now = std::chrono::high_resolution_clock::now();
 		v8::HeapStatistics hs;
 
