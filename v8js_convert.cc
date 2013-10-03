@@ -37,8 +37,14 @@ namespace v8 {
 		typedef Persistent<T, CopyablePersistentTraits<T> > CopyablePersistent;
 		static const bool kResetInDestructor = true;
 		template<class S, class M>
+#if PHP_V8_API_VERSION >= 3021015
+		static V8_INLINE void Copy(const Persistent<S, M>& source,
+								   CopyablePersistent* dest)
+#else
 		V8_INLINE(static void Copy(const Persistent<S, M>& source,
-								   CopyablePersistent* dest)) {
+								   CopyablePersistent* dest))
+#endif
+		{
 			// do nothing, just allow copy
 		}
 	};
