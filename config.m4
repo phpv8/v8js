@@ -67,9 +67,8 @@ CPPFLAGS=$old_CPPFLAGS
     set $ac_cv_v8_version
     IFS=$ac_IFS
     V8_API_VERSION=`expr [$]1 \* 1000000 + [$]2 \* 1000 + [$]3`
-    if test "$V8_API_VERSION" -lt 3017011 ; then
-       # see https://github.com/preillyme/v8js/issues/12
-       AC_MSG_ERROR([libv8 must be version 3.17.11 or greater])
+    if test "$V8_API_VERSION" -lt 3021012 ; then
+       AC_MSG_ERROR([libv8 must be version 3.21.12 or greater])
     fi
     AC_DEFINE_UNQUOTED([PHP_V8_API_VERSION], $V8_API_VERSION, [ ])
     AC_DEFINE_UNQUOTED([PHP_V8_VERSION], "$ac_cv_v8_version", [ ])
