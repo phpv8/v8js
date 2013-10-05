@@ -111,6 +111,69 @@ ZEND_GET_MODULE(v8js)
 
 /* V8 Object handlers */
 
+static int php_v8js_v8_has_property(zval *object, zval *member, int has_set_exists ZEND_HASH_KEY_DC TSRMLS_DC) /* {{{ */
+{
+	/* param has_set_exists:
+	 * 0 (has) whether property exists and is not NULL  - isset()
+	 * 1 (set) whether property exists and is true-ish  - empty()
+	 * 2 (exists) whether property exists               - property_exists()
+	 */
+	int retval = false;
+	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
+
+	v8::Locker locker(obj->isolate);
+	v8::Isolate::Scope isolate_scope(obj->isolate);
+	v8::HandleScope local_scope(obj->isolate);
+	v8::Local<v8::Context> temp_context = v8::Context::New(obj->isolate);
+	v8::Context::Scope temp_scope(temp_context);
+
+	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(obj->isolate, obj->v8obj);
+
+	if (Z_TYPE_P(member) == IS_STRING && v8obj->IsObject() && !v8obj->IsFunction())
+	{
+
+		v8::Local<v8::Object> jsObj = v8obj->ToObject();
+		v8::Local<v8::String> jsKey = V8JS_STRL(Z_STRVAL_P(member), Z_STRLEN_P(member));
+		v8::Local<v8::Value> jsVal;
+
+		/* Skip any prototype properties */
+		if (jsObj->HasRealNamedProperty(jsKey) || jsObj->HasRealNamedCallbackProperty(jsKey)) {
+			if (has_set_exists == 2) {
+				/* property_exists(), that's enough! */
+				retval = true;
+			} else {
+				/* We need to look at the value. */
+				jsVal = jsObj->Get(jsKey);
+				if (has_set_exists == 0 ) {
+					/* isset(): We make 'undefined' equivalent to 'null' */
+					retval = !( jsVal->IsNull() || jsVal->IsUndefined() );
+				} else {
+					/* empty() */
+					retval = jsVal->BooleanValue();
+					/* for PHP compatibility, [] should also be empty */
+					if (jsVal->IsArray() && retval) {
+						v8::Local<v8::Array> array = v8::Local<v8::Array>::Cast(jsVal);
+						retval = (array->Length() != 0);
+					}
+					/* for PHP compatibility, '0' should also be empty */
+					if (jsVal->IsString() && retval) {
+						v8::Local<v8::String> str = jsVal->ToString();
+						if (str->Length() == 1) {
+							uint16_t c = 0;
+							str->Write(&c, 0, 1);
+							if (c == '0') {
+								retval = false;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return retval;
+}
+/* }}} */
+
 static zval *php_v8js_v8_read_property(zval *object, zval *member, int type ZEND_HASH_KEY_DC TSRMLS_DC) /* {{{ */
 {
 	zval *retval = NULL;
@@ -1300,7 +1363,7 @@ static PHP_MINIT_FUNCTION(v8js)
 	v8_object_handlers.cast_object = NULL;
 	v8_object_handlers.get_constructor = NULL;
 	v8_object_handlers.get_property_ptr_ptr = NULL;
-//	v8_object_handlers.has_property = php_v8js_v8_has_property; // Not implemented yet
+	v8_object_handlers.has_property = php_v8js_v8_has_property;
 	v8_object_handlers.read_property = php_v8js_v8_read_property;
 	v8_object_handlers.write_property = php_v8js_v8_write_property;
 	v8_object_handlers.unset_property = php_v8js_v8_unset_property;
