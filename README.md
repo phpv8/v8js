@@ -1,6 +1,8 @@
 V8Js
 ====
 
+[![Build Status](http://jenkins.brokenpipe.de/job/v8js/badge/icon)](http://jenkins.brokenpipe.de/job/v8js/)
+
 V8Js is a PHP extension for Google's V8 Javascript engine.
 
 The extension allows you to execute Javascript code in a secure sandbox from PHP. The executed code can be restricted using a time limit and/or memory limit. This provides the possibility to execute untrusted code with confidence.
@@ -15,6 +17,8 @@ Minimum requirements
 	V8 is written in C++ and is used in Google Chrome, the open source browser from Google.
 	V8 implements ECMAScript as specified in ECMA-262, 5th edition.
     This extension makes use of V8 isolates to ensure separation between multiple V8Js instances and already uses the new persistence API, hence the need for 3.21.12 or above.
+
+    For a detailed overview of which V8 version V8Js can be successfully build against, see the [Jenkins V8Js job list](http://jenkins.brokenpipe.de/view/v8js-with-v8-versions/).
 
 - PHP 5.3.3+
 
