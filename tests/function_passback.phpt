@@ -17,7 +17,8 @@ $JS = <<< EOT
 EOT;
 
 $exports = $v8->executeString($JS, 'basic.js');
-$v8->func = get_object_vars( $exports )['hello'];
+$vars = get_object_vars($exports);
+$v8->func = $vars['hello'];
 
 echo $v8->executeString('PHP.func();')."\n";
 
