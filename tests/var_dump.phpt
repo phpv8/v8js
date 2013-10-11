@@ -198,11 +198,11 @@ array (11) {
     object(Closure)#%d {
         function () { [native code] }
     }
-    ["date"] =>
+    ["$date"] =>
     string(19) "1976-09-27 09:00:00"
-    ["timezone_type"] =>
+    ["$timezone_type"] =>
     int(3)
-    ["timezone"] =>
+    ["$timezone"] =>
     string(3) "UTC"
   }
   ["array"] =>
@@ -224,7 +224,7 @@ array (11) {
   }
   ["phpobject"] =>
   object(Foo)#%d (1) {
-    ["field"] =>
+    ["$field"] =>
     string(3) "php"
   }
 }
@@ -266,7 +266,7 @@ object(Object)#%d (12) {
   }
   ["phpobject"] =>
   object(Foo)#%d (1) {
-    ["field"] =>
+    ["$field"] =>
     string(3) "php"
   }
 }

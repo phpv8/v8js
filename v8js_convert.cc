@@ -20,6 +20,7 @@
 extern "C" {
 #include "php.h"
 #include "ext/date/php_date.h"
+#include "ext/standard/php_string.h"
 #include "zend_interfaces.h"
 #include "zend_closures.h"
 }
@@ -56,6 +57,8 @@ namespace v8 {
 typedef std::pair<struct php_v8js_ctx *, const char *> TemplateCacheKey;
 typedef v8::Persistent<v8::FunctionTemplate, v8::CopyablePersistentTraits<v8::FunctionTemplate> > TemplateCacheEntry;
 typedef std::map<TemplateCacheKey, TemplateCacheEntry> TemplateCache;
+
+static TemplateCache tpl_map;
 
 /* Callback for PHP methods and functions */
 static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_function *method_ptr, v8::Isolate *isolate, const v8::FunctionCallbackInfo<v8::Value>& info TSRMLS_DC) /* {{{ */
@@ -259,126 +262,6 @@ static int _php_v8js_is_assoc_array(HashTable *myht TSRMLS_DC) /* {{{ */
 }
 /* }}} */
 
-static void php_v8js_property_caller(const v8::FunctionCallbackInfo<v8::Value>& info) /* {{{ */
-{
-	v8::Local<v8::Object> self = info.Holder();
-	v8::Isolate *isolate = reinterpret_cast<v8::Isolate *>(self->GetAlignedPointerFromInternalField(1));
-	v8::Local<v8::String> cname = info.Callee()->GetName()->ToString();
-	v8::Local<v8::Value> value;
-	v8::Local<v8::String> cb_func = v8::Local<v8::String>::Cast(info.Data());
-
-	value = self->GetHiddenValue(cb_func);
-
-	if (!value.IsEmpty() && value->IsFunction())
-	{
-		int argc = info.Length(), i = 0;
-		v8::Local<v8::Value> argv[argc];
-		v8::Local<v8::Function> cb = v8::Local<v8::Function>::Cast(value);
-
-		if (cb_func->Equals(V8JS_SYM(ZEND_INVOKE_FUNC_NAME))) {
-			for (; i < argc; ++i) {
-				argv[i] = info[i];
-			}
-			value = cb->Call(self, argc, argv);
-		}
-		else /* __call() */
-		{
-			v8::Local<v8::Array> argsarr = v8::Array::New(argc);
-			for (; i < argc; ++i) {
-				argsarr->Set(i, info[i]);
-			}
-			v8::Local<v8::Value> argsv[2] = { cname, argsarr };
-			value = cb->Call(self, 2, argsv);
-		}
-	}
-
-	if (info.IsConstructCall()) {
-		if (!value.IsEmpty() && !value->IsNull()) {
-			info.GetReturnValue().Set(value);
-			return;
-		}
-
-		info.GetReturnValue().Set(self);
-		return;
-	}
-
-	info.GetReturnValue().Set(value);
-}
-/* }}} */
-
-static void php_v8js_property_getter(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<v8::Value> &info) /* {{{ */
-{
-	v8::Local<v8::Object> self = info.Holder();
-	v8::Local<v8::Value> value;
-	v8::Local<v8::Function> cb;
-
-	/* Check first if JS object has the named property */
-	value = self->GetRealNamedProperty(property);
-
-	if (!value.IsEmpty()) {
-		info.GetReturnValue().Set(value);
-		return;
-	}
-
-	v8::Isolate *isolate = reinterpret_cast<v8::Isolate *>(self->GetAlignedPointerFromInternalField(1));
-
-	/* If __get() is set for PHP object, call it */
-	value = self->GetHiddenValue(V8JS_SYM(ZEND_GET_FUNC_NAME));
-	if (!value.IsEmpty() && value->IsFunction()) {
-		cb = v8::Local<v8::Function>::Cast(value);
-		v8::Local<v8::Value> argv[1] = {property};
-		value = cb->Call(self, 1, argv);
-	}
-
-	/* If __get() does not exist or returns NULL, create new function with callback for __call() */
-	if ((value.IsEmpty() || value->IsNull()) && info.Data()->IsTrue()) {
-		v8::Local<v8::FunctionTemplate> cb_t = v8::FunctionTemplate::New(php_v8js_property_caller, V8JS_SYM(ZEND_CALL_FUNC_NAME));
-		cb = cb_t->GetFunction();
-		cb->SetName(property);
-		info.GetReturnValue().Set(cb);
-		return;
-	}
-
-	info.GetReturnValue().Set(value);
-}
-/* }}} */
-
-static void php_v8js_property_query(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<v8::Integer> &info) /* {{{ */
-{
-	v8::Local<v8::Object> self = info.Holder();
-	v8::Isolate *isolate = reinterpret_cast<v8::Isolate *>(self->GetAlignedPointerFromInternalField(1));
-	v8::Local<v8::Value> value;
-
-	/* Return early if property is set in JS object */
-	if (self->HasRealNamedProperty(property)) {
-		info.GetReturnValue().Set(V8JS_INT(v8::ReadOnly));
-		return;
-	}
-
-	value = self->GetHiddenValue(V8JS_SYM(ZEND_ISSET_FUNC_NAME));
-	if (!value.IsEmpty() && value->IsFunction()) {
-		v8::Local<v8::Function> cb = v8::Local<v8::Function>::Cast(value);
-		v8::Local<v8::Value> argv[1] = {property};
-		value = cb->Call(self, 1, argv);
-	}
-
-	info.GetReturnValue().Set((!value.IsEmpty() && value->IsTrue()) ? V8JS_INT(v8::ReadOnly) : v8::Local<v8::Integer>());
-}
-/* }}} */
-
-/* These are not defined by Zend */
-#define ZEND_WAKEUP_FUNC_NAME    "__wakeup"
-#define ZEND_SLEEP_FUNC_NAME     "__sleep"
-#define ZEND_SET_STATE_FUNC_NAME "__set_state"
-
-#define IS_MAGIC_FUNC(mname) \
-	((key_len == sizeof(mname)) && \
-	!strncasecmp(key, mname, key_len - 1))
-
-#define PHP_V8JS_CALLBACK(mptr, tmpl)										\
-	v8::FunctionTemplate::New(php_v8js_php_callback, v8::External::New(mptr), v8::Signature::New(tmpl))->GetFunction()
-
-
 static void php_v8js_weak_object_callback(v8::Isolate *isolate, v8::Persistent<v8::Object> *object, zval *value)
 {
 	TSRMLS_FETCH();
@@ -394,6 +277,406 @@ static void php_v8js_weak_object_callback(v8::Isolate *isolate, v8::Persistent<v
 	object->Dispose();
 }
 
+/* These are not defined by Zend */
+#define ZEND_WAKEUP_FUNC_NAME    "__wakeup"
+#define ZEND_SLEEP_FUNC_NAME     "__sleep"
+#define ZEND_SET_STATE_FUNC_NAME "__set_state"
+
+#define IS_MAGIC_FUNC(mname) \
+	((key_len == sizeof(mname)) && \
+	!strncasecmp(key, mname, key_len - 1))
+
+#define PHP_V8JS_CALLBACK(mptr, tmpl)										\
+	v8::FunctionTemplate::New(php_v8js_php_callback, v8::External::New(mptr), v8::Signature::New(tmpl))->GetFunction()
+
+
+static void php_v8js_named_property_enumerator(const v8::PropertyCallbackInfo<v8::Array> &info) /* {{{ */
+{
+	// note: 'special' properties like 'constructor' are not enumerated.
+	v8::Local<v8::Object> self = info.Holder();
+	v8::Local<v8::Array> result = v8::Array::New(0);
+	uint32_t result_len = 0;
+
+	zend_class_entry *ce;
+	zend_function *method_ptr;
+	HashTable *proptable;
+	HashPosition pos;
+	char *key = NULL;
+	uint key_len;
+	ulong index;
+
+	zval *object = reinterpret_cast<zval *>(self->GetAlignedPointerFromInternalField(0));
+	v8::Isolate *isolate = reinterpret_cast<v8::Isolate *>(self->GetAlignedPointerFromInternalField(1));
+	ce = Z_OBJCE_P(object);
+
+	/* enumerate all methods */
+	zend_hash_internal_pointer_reset_ex(&ce->function_table, &pos);
+	for (;; zend_hash_move_forward_ex(&ce->function_table, &pos)) {
+		if (zend_hash_get_current_key_ex(&ce->function_table, &key, &key_len, &index, 0, &pos) != HASH_KEY_IS_STRING  ||
+			zend_hash_get_current_data_ex(&ce->function_table, (void **) &method_ptr, &pos) == FAILURE
+			) {
+			break;
+		}
+
+		if ((method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) == 0) {
+			/* Allow only public methods */
+			continue;
+		}
+		if ((method_ptr->common.fn_flags & (ZEND_ACC_CTOR|ZEND_ACC_DTOR|ZEND_ACC_CLONE)) != 0) {
+			/* no __construct, __destruct(), or __clone() functions */
+			continue;
+		}
+		// hide (do not enumerate) other PHP magic functions
+		if (IS_MAGIC_FUNC(ZEND_CALLSTATIC_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_SLEEP_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_WAKEUP_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_SET_STATE_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_GET_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_SET_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_UNSET_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_CALL_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_INVOKE_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_ISSET_FUNC_NAME)) {
+			continue;
+		}
+		v8::Local<v8::String> method_name = V8JS_STR(method_ptr->common.function_name);
+		// rename PHP special method names to JS equivalents.
+		if (IS_MAGIC_FUNC(ZEND_TOSTRING_FUNC_NAME)) {
+			method_name = V8JS_SYM("toString");
+		}
+		result->Set(result_len++, method_name);
+	}
+	/* enumerate all properties */
+	/* Z_OBJPROP uses the get_properties handler */
+	proptable = Z_OBJPROP_P(object);
+	zend_hash_internal_pointer_reset_ex(proptable, &pos);
+	for (;; zend_hash_move_forward_ex(proptable, &pos)) {
+		int i = zend_hash_get_current_key_ex(proptable, &key, &key_len, &index, 0, &pos);
+		if (i == HASH_KEY_NON_EXISTANT)
+			break;
+
+		// for consistency with the 'in' operator, skip properties whose
+		// value IS_NULL (like isset does)
+		zval **data;
+		if (zend_hash_get_current_data_ex(proptable, (void **) &data, &pos) == SUCCESS &&
+			ZVAL_IS_NULL(*data))
+			continue;
+
+		if (i == HASH_KEY_IS_STRING) {
+			/* skip protected and private members */
+			if (key[0] == '\0') {
+				continue;
+			}
+			// prefix enumerated property names with '$' so they can be
+			// dereferenced unambiguously (ie, don't conflict with method
+			// names)
+			char prefixed[key_len + 1];
+			prefixed[0] = '$';
+			strncpy(prefixed + 1, key, key_len);
+			result->Set(result_len++, V8JS_STRL(prefixed, key_len));
+		} else {
+			// even numeric indices are enumerated as strings in JavaScript
+			result->Set(result_len++, V8JS_FLOAT((double) index)->ToString());
+		}
+	}
+
+	/* done */
+	info.GetReturnValue().Set(result);
+}
+/* }}} */
+
+static void php_v8js_invoke_callback(const v8::FunctionCallbackInfo<v8::Value>& info) /* {{{ */
+{
+	v8::Local<v8::Object> self = info.Holder();
+	v8::Local<v8::Function> cb = v8::Local<v8::Function>::Cast(info.Data());
+	int argc = info.Length(), i;
+	v8::Local<v8::Value> argv[argc];
+	v8::Local<v8::Value> result;
+
+	for (i=0; i<argc; i++) {
+		argv[i] = info[i];
+	}
+	if (info.IsConstructCall() && self->GetConstructor()->IsFunction()) {
+		// this is a 'new obj(...)' invocation.  Handle this like PHP does;
+		// that is, treat it as synonymous with 'new obj.constructor(...)'
+		cb = v8::Local<v8::Function>::Cast(self->GetConstructor());
+		result = cb->NewInstance(argc, argv);
+	} else {
+		result = cb->Call(self, argc, argv);
+	}
+	info.GetReturnValue().Set(result);
+}
+/* }}} */
+
+// this is a magic '__call' implementation for PHP classes which don't actually
+// have a '__call' magic function.  This way we can always force a method
+// call (as opposed to a property get) from JavaScript using __call.
+static void php_v8js_fake_call_impl(const v8::FunctionCallbackInfo<v8::Value>& info) /* {{{ */
+{
+	v8::Local<v8::Object> self = info.Holder();
+	v8::Handle<v8::Value> return_value;
+
+	char *error;
+	int error_len;
+
+	zend_class_entry *ce;
+	zval *object = reinterpret_cast<zval *>(self->GetAlignedPointerFromInternalField(0));
+	v8::Isolate *isolate = reinterpret_cast<v8::Isolate *>(self->GetAlignedPointerFromInternalField(1));
+	ce = Z_OBJCE_P(object);
+
+	// first arg is method name, second arg is array of args.
+	if (info.Length() < 2) {
+		error_len = spprintf(&error, 0,
+			"%s::__call expects 2 parameters, %d given",
+			ce->name, (int) info.Length());
+		return_value = V8JS_THROW(TypeError, error, error_len);
+		efree(error);
+		info.GetReturnValue().Set(return_value);
+		return;
+	}
+	if (!info[1]->IsArray()) {
+		error_len = spprintf(&error, 0,
+			"%s::__call expects 2nd parameter to be an array",
+			ce->name);
+		return_value = V8JS_THROW(TypeError, error, error_len);
+		efree(error);
+		info.GetReturnValue().Set(return_value);
+		return;
+	}
+	v8::String::Utf8Value str(info[0]->ToString());
+	const char *method_name = ToCString(str);
+	uint method_name_len = strlen(method_name);
+	v8::Local<v8::Array> args = v8::Local<v8::Array>::Cast(info[1]);
+	if (args->Length() > 1000000) {
+		// prevent overflow, since args->Length() is a uint32_t and args
+		// in the Function->Call method below is a (signed) int.
+		error_len = spprintf(&error, 0,
+			"%s::__call expects fewer than a million arguments",
+			ce->name);
+		return_value = V8JS_THROW(TypeError, error, error_len);
+		efree(error);
+		info.GetReturnValue().Set(return_value);
+		return;
+	}
+	// okay, look up the method name and manually invoke it.
+	const zend_object_handlers *h = Z_OBJ_HT_P(object);
+	zend_function *method_ptr =
+		h->get_method(&object, (char*)method_name, method_name_len,
+			NULL TSRMLS_DC);
+	if (method_ptr == NULL ||
+		(method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) == 0 ||
+		(method_ptr->common.fn_flags & (ZEND_ACC_CTOR|ZEND_ACC_DTOR|ZEND_ACC_CLONE)) != 0) {
+		error_len = spprintf(&error, 0,
+			"%s::__call to %s method %s", ce->name,
+			(method_ptr == NULL) ? "undefined" : "non-public", method_name);
+		return_value = V8JS_THROW(TypeError, error, error_len);
+		efree(error);
+		info.GetReturnValue().Set(return_value);
+		return;
+	}
+
+	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData();
+	try {
+		v8::Local<v8::FunctionTemplate> tmpl =
+			v8::Local<v8::FunctionTemplate>::New
+			(isolate, tpl_map.at(std::make_pair(ctx, ce->name)));
+		// use php_v8js_php_callback to actually execute the method
+		v8::Local<v8::Function> cb = PHP_V8JS_CALLBACK(method_ptr, tmpl);
+		uint32_t i, argc = args->Length();
+		v8::Local<v8::Value> argv[argc];
+		for (i=0; i<argc; i++) {
+			argv[i] = args->Get(i);
+		}
+		return_value = cb->Call(info.This(), (int) argc, argv);
+	} catch (const std::out_of_range &) {
+		/* shouldn't fail! but bail safely */
+		return_value = V8JS_NULL;
+	}
+	info.GetReturnValue().Set(return_value);
+}
+/* }}} */
+
+typedef enum {
+	V8JS_PROP_GETTER,
+	V8JS_PROP_SETTER,
+	V8JS_PROP_QUERY,
+	V8JS_PROP_DELETER
+} property_op_t;
+
+/* This method handles named property and method get/set/query/delete. */
+template<typename T>
+static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<T> &info, property_op_t callback_type, v8::Local<v8::Value> set_value = v8::Local<v8::Value>()) /* {{{ */
+{
+	v8::String::Utf8Value cstr(property);
+	const char *name = ToCString(cstr);
+	uint name_len = strlen(name);
+	char *lower = estrndup(name, name_len);
+	const char *method_name;
+	uint method_name_len;
+
+	v8::Local<v8::Object> self = info.Holder();
+	v8::Local<v8::Value> ret_value;
+	v8::Local<v8::Function> cb;
+
+	zend_class_entry *scope = NULL; /* XXX? */
+	zend_class_entry *ce;
+	zend_function *method_ptr = NULL;
+	zval *php_value;
+
+	zval *object = reinterpret_cast<zval *>(self->GetAlignedPointerFromInternalField(0));
+	v8::Isolate *isolate = reinterpret_cast<v8::Isolate *>(self->GetAlignedPointerFromInternalField(1));
+	ce = Z_OBJCE_P(object);
+
+	/* First, check the (case-insensitive) method table */
+	php_strtolower(lower, name_len);
+	method_name = lower;
+	method_name_len = name_len;
+	// toString() -> __tostring()
+	if (name_len == 8 && strcmp(name, "toString") == 0) {
+		method_name = ZEND_TOSTRING_FUNC_NAME;
+		method_name_len = sizeof(ZEND_TOSTRING_FUNC_NAME) - 1;
+	}
+	bool is_constructor = (name_len == 11 && strcmp(name, "constructor") == 0);
+	bool is_magic_call = (method_name_len == 6 && strcmp(method_name, "__call") == 0);
+	if (is_constructor ||
+		(name[0] != '$' /* leading '$' means property, not method */ &&
+		 zend_hash_find(&ce->function_table, method_name, method_name_len + 1, (void**)&method_ptr) == SUCCESS &&
+		 ((method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) != 0) && /* Allow only public methods */
+		 ((method_ptr->common.fn_flags & (ZEND_ACC_CTOR|ZEND_ACC_DTOR|ZEND_ACC_CLONE)) == 0) /* no __construct, __destruct(), or __clone() functions */
+		 ) || (method_ptr=NULL, is_magic_call)
+	) {
+		if (callback_type == V8JS_PROP_GETTER) {
+			if (is_constructor) {
+				ret_value = self->GetConstructor();
+			} else {
+				php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData();
+				try {
+					v8::Local<v8::FunctionTemplate> tmpl =
+						v8::Local<v8::FunctionTemplate>::New
+						(isolate, tpl_map.at(std::make_pair(ctx, ce->name)));
+					if (is_magic_call && method_ptr==NULL) {
+						// Fake __call implementation
+						// (only use this if method_ptr==NULL, which means
+						//  there is no actual PHP __call() implementation)
+						v8::Local<v8::Function> cb =
+							v8::FunctionTemplate::New(
+								php_v8js_fake_call_impl, V8JS_NULL,
+								v8::Signature::New(tmpl))->GetFunction();
+						cb->SetName(property);
+						ret_value = cb;
+					} else {
+						ret_value = PHP_V8JS_CALLBACK(method_ptr, tmpl);
+					}
+				} catch (const std::out_of_range &) {
+					/* shouldn't fail! but bail safely */
+					ret_value = V8JS_NULL;
+				}
+			}
+		} else if (callback_type == V8JS_PROP_QUERY) {
+			// methods are not enumerable
+			ret_value = v8::Integer::NewFromUnsigned(v8::ReadOnly|v8::DontEnum|v8::DontDelete, isolate);
+		} else if (callback_type == V8JS_PROP_SETTER) {
+			ret_value = set_value; // lie.  this field is read-only.
+		} else if (callback_type == V8JS_PROP_DELETER) {
+			ret_value = V8JS_BOOL(false);
+		} else {
+			/* shouldn't reach here! but bail safely */
+			ret_value = v8::Handle<v8::Value>();
+		}
+	} else {
+		if (name[0]=='$') {
+			// this is a property (not a method)
+			name++; name_len--;
+		}
+		if (callback_type == V8JS_PROP_GETTER) {
+			/* Nope, not a method -- must be a (case-sensitive) property */
+			php_value = zend_read_property(scope, object, name, name_len, true);
+			// special case 'NULL' and return an empty value (indicating that
+			// we don't intercept this property) if the property doesn't
+			// exist.
+			if (ZVAL_IS_NULL(php_value)) {
+				const zend_object_handlers *h = Z_OBJ_HT_P(object);
+				zval *prop;
+				MAKE_STD_ZVAL(prop);
+				ZVAL_STRINGL(prop, name, name_len, 1);
+				if (!h->has_property(object, prop, 2, NULL TSRMLS_CC))
+					ret_value = v8::Handle<v8::Value>();
+				else {
+					ret_value = V8JS_NULL;
+				}
+				zval_ptr_dtor(&prop);
+			} else {
+				// wrap it
+				ret_value = zval_to_v8js(php_value, isolate TSRMLS_CC);
+			}
+			/* php_value is the value in the property table; we don't own a
+			 * reference to it (and so don't have to deref) */
+		} else if (callback_type == V8JS_PROP_SETTER) {
+			MAKE_STD_ZVAL(php_value);
+			if (v8js_to_zval(set_value, php_value, 0, isolate) == SUCCESS) {
+				zend_update_property(scope, object, name, name_len, php_value);
+				ret_value = set_value;
+			} else {
+				ret_value = v8::Handle<v8::Value>();
+			}
+		} else if (callback_type == V8JS_PROP_QUERY ||
+				   callback_type == V8JS_PROP_DELETER) {
+			const zend_object_handlers *h = Z_OBJ_HT_P(object);
+			zval *prop;
+			MAKE_STD_ZVAL(prop);
+			ZVAL_STRINGL(prop, name, name_len, 1);
+			if (callback_type == V8JS_PROP_QUERY) {
+				if (h->has_property(object, prop, 0, NULL TSRMLS_CC)) {
+					ret_value = v8::Integer::NewFromUnsigned(v8::None);
+				} else {
+					ret_value = v8::Handle<v8::Value>(); // empty handle
+				}
+			} else {
+				h->unset_property(object, prop, NULL TSRMLS_CC);
+				ret_value = V8JS_BOOL(true);
+			}
+			zval_ptr_dtor(&prop);
+		} else {
+			/* shouldn't reach here! but bail safely */
+			ret_value = v8::Handle<v8::Value>();
+		}
+	}
+
+	efree(lower);
+	return ret_value;
+}
+/* }}} */
+
+static void php_v8js_named_property_getter(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<v8::Value> &info) /* {{{ */
+{
+	info.GetReturnValue().Set(php_v8js_named_property_callback(property, info, V8JS_PROP_GETTER));
+}
+/* }}} */
+
+static void php_v8js_named_property_setter(v8::Local<v8::String> property, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<v8::Value> &info) /* {{{ */
+{
+	info.GetReturnValue().Set(php_v8js_named_property_callback(property, info, V8JS_PROP_SETTER, value));
+}
+/* }}} */
+
+static void php_v8js_named_property_query(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<v8::Integer> &info) /* {{{ */
+{
+	v8::Local<v8::Value> r = php_v8js_named_property_callback(property, info, V8JS_PROP_QUERY);
+	if (!r.IsEmpty()) {
+		info.GetReturnValue().Set(r->ToInteger());
+	}
+}
+/* }}} */
+
+static void php_v8js_named_property_deleter(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<v8::Boolean> &info) /* {{{ */
+{
+	v8::Local<v8::Value> r = php_v8js_named_property_callback(property, info, V8JS_PROP_DELETER);
+	if (!r.IsEmpty()) {
+		info.GetReturnValue().Set(r->ToBoolean());
+	}
+}
+/* }}} */
+
 static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
 {
 	v8::Handle<v8::Object> newobj;
@@ -404,7 +687,6 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 	HashTable *myht;
 	HashPosition pos;
 	zend_class_entry *ce = NULL;
-	zend_function *method_ptr, *call_ptr = NULL, *get_ptr = NULL, *invoke_ptr = NULL, *isset_ptr = NULL;
 
 	if (Z_TYPE_P(value) == IS_ARRAY) {
 		myht = HASH_OF(value);
@@ -427,16 +709,12 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 	} else if (ce) {
 		php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData();
 		v8::Local<v8::FunctionTemplate> new_tpl;
-		bool cached_tpl = true;
-		static TemplateCache tpl_map;
 
 		try {
 			new_tpl = v8::Local<v8::FunctionTemplate>::New
 				(isolate, tpl_map.at(std::make_pair(ctx, ce->name)));
 		}
 		catch (const std::out_of_range &) {
-			cached_tpl = false;
-
 			/* No cached v8::FunctionTemplate available as of yet, create one. */
 			new_tpl = v8::FunctionTemplate::New();
 
@@ -450,74 +728,25 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 				/* Got a closure, mustn't cache ... */
 				new_tpl->InstanceTemplate()->SetCallAsFunctionHandler(php_v8js_php_callback);
 			} else {
+				new_tpl->InstanceTemplate()->SetNamedPropertyHandler
+					(php_v8js_named_property_getter, /* getter */
+					 php_v8js_named_property_setter, /* setter */
+					 php_v8js_named_property_query, /* query */
+					 php_v8js_named_property_deleter, /* deleter */
+					 php_v8js_named_property_enumerator, /* enumerator */
+					 V8JS_NULL /* data */
+					 );
+				// add __invoke() handler
+				zend_function *invoke_method_ptr;
+				if (zend_hash_find(&ce->function_table, ZEND_INVOKE_FUNC_NAME,
+								   sizeof(ZEND_INVOKE_FUNC_NAME),
+								   (void**)&invoke_method_ptr) == SUCCESS &&
+					invoke_method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) {
+					new_tpl->InstanceTemplate()->SetCallAsFunctionHandler(php_v8js_invoke_callback, PHP_V8JS_CALLBACK(invoke_method_ptr, new_tpl));
+				}
 				/* Add new v8::FunctionTemplate to tpl_map, as long as it is not a closure. */
 				TemplateCacheEntry tce(isolate, new_tpl);
 				tpl_map[std::make_pair(ctx, ce->name)] = tce;
-			}
-		}
-
-		if (ce != zend_ce_closure) {
-			/* Attach object methods to the instance template. */
-			zend_hash_internal_pointer_reset_ex(&ce->function_table, &pos);
-			for (;; zend_hash_move_forward_ex(&ce->function_table, &pos)) {
-				if (zend_hash_get_current_key_ex(&ce->function_table, &key, &key_len, &index, 0, &pos) != HASH_KEY_IS_STRING  ||
-					zend_hash_get_current_data_ex(&ce->function_table, (void **) &method_ptr, &pos) == FAILURE
-				) {
-					break;
-				}
-
-				if ((method_ptr->common.fn_flags & ZEND_ACC_PUBLIC)     && /* Allow only public methods */
-					(method_ptr->common.fn_flags & ZEND_ACC_CTOR) == 0  && /* ..and no __construct() */
-					(method_ptr->common.fn_flags & ZEND_ACC_DTOR) == 0  && /* ..or __destruct() */
-					(method_ptr->common.fn_flags & ZEND_ACC_CLONE) == 0 /* ..or __clone() functions */
-				) {
-					/* Override native toString() with __tostring() if it is set in passed object */
-					if (!cached_tpl && IS_MAGIC_FUNC(ZEND_TOSTRING_FUNC_NAME)) {
-						new_tpl->InstanceTemplate()->Set(V8JS_SYM("toString"), PHP_V8JS_CALLBACK(method_ptr, new_tpl));
-					/* TODO: __set(), __unset() disabled as JS is not allowed to modify the passed PHP object yet.
-					 *  __sleep(), __wakeup(), __set_state() are always ignored */
-					} else if (
-						IS_MAGIC_FUNC(ZEND_CALLSTATIC_FUNC_NAME)|| /* TODO */
-						IS_MAGIC_FUNC(ZEND_SLEEP_FUNC_NAME)     ||
-						IS_MAGIC_FUNC(ZEND_WAKEUP_FUNC_NAME)    ||
-						IS_MAGIC_FUNC(ZEND_SET_STATE_FUNC_NAME) ||
-						IS_MAGIC_FUNC(ZEND_SET_FUNC_NAME)       ||
-						IS_MAGIC_FUNC(ZEND_UNSET_FUNC_NAME)
-					) {
-					/* Register all magic function as hidden with lowercase name */
-					} else if (IS_MAGIC_FUNC(ZEND_GET_FUNC_NAME)) {
-						get_ptr = method_ptr;
-					} else if (IS_MAGIC_FUNC(ZEND_CALL_FUNC_NAME)) {
-						call_ptr = method_ptr;
-					} else if (IS_MAGIC_FUNC(ZEND_INVOKE_FUNC_NAME)) {
-						invoke_ptr = method_ptr;
-					} else if (IS_MAGIC_FUNC(ZEND_ISSET_FUNC_NAME)) {
-						isset_ptr = method_ptr;
-					} else if (!cached_tpl) {
-						new_tpl->InstanceTemplate()->Set(V8JS_STR(method_ptr->common.function_name), PHP_V8JS_CALLBACK(method_ptr, new_tpl), v8::ReadOnly);
-					}
-				}
-			}
-
-			if (!cached_tpl) {
-				/* Only register getter, etc. when they're set in PHP side */
-				if (call_ptr || get_ptr || isset_ptr)
-				{
-					/* Set __get() handler which acts also as __call() proxy */
-					new_tpl->InstanceTemplate()->SetNamedPropertyHandler(
-						php_v8js_property_getter,					/* getter */
-						0,											/* setter */
-						isset_ptr ? php_v8js_property_query : 0,	/* query */
-						0,											/* deleter */
-						0,											/* enumerator */
-						V8JS_BOOL(call_ptr ? true : false)
-					);
-				}
-
-				/* __invoke() handler */
-				if (invoke_ptr) {
-					new_tpl->InstanceTemplate()->SetCallAsFunctionHandler(php_v8js_property_caller, V8JS_SYM(ZEND_INVOKE_FUNC_NAME));
-				}
 			}
 		}
 
@@ -538,23 +767,6 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 
 		newobj = v8::Local<v8::Object>::New(isolate, persist_newobj);
 
-		if (ce != zend_ce_closure) {
-			// These unfortunately cannot be attached to the template, hence we have to put them
-			// on each and every object instance manually.
-			if (call_ptr) {
-				newobj->SetHiddenValue(V8JS_SYM(ZEND_CALL_FUNC_NAME), PHP_V8JS_CALLBACK(call_ptr, new_tpl));
-			}
-			if (get_ptr) {
-				newobj->SetHiddenValue(V8JS_SYM(ZEND_GET_FUNC_NAME), PHP_V8JS_CALLBACK(get_ptr, new_tpl));
-			}
-			if (invoke_ptr) {
-				newobj->SetHiddenValue(V8JS_SYM(ZEND_INVOKE_FUNC_NAME), PHP_V8JS_CALLBACK(invoke_ptr, new_tpl));
-			}
-			if (isset_ptr) {
-				newobj->SetHiddenValue(V8JS_SYM(ZEND_ISSET_FUNC_NAME), PHP_V8JS_CALLBACK(isset_ptr, new_tpl));
-			}
-		}
-
 	} else {
 		v8::Local<v8::FunctionTemplate> new_tpl = v8::FunctionTemplate::New();	// @todo re-use template likewise
 
@@ -565,7 +777,7 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 	/* Object properties */
 	i = myht ? zend_hash_num_elements(myht) : 0;
 
-	if (i > 0)
+	if (i > 0 && !ce)
 	{
 		zval **data;
 		HashTable *tmp_ht;

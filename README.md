@@ -154,3 +154,45 @@ Javascript API
     // This makes use of the PHP module loader provided via V8Js::setModuleLoader (see PHP API above).
     require("path/to/module");
 
+The JavaScript `in` operator, when applied to a wrapped PHP object,
+works the same as the PHP `isset()` function.  Similarly, when applied
+to a wrapped PHP object, JavaScript `delete` works like PHP `unset`.
+
+```php
+<?php
+class Foo {
+  var $bar = null;
+}
+$v8 = new V8Js();
+$v8->foo = new Foo;
+// This prints "no"
+$v8->executeString('print( "bar" in PHP.foo ? "yes" : "no" );');
+?>
+```
+
+PHP has separate namespaces for properties and methods, while JavaScript
+has just one.  Usually this isn't an issue, but if you need to you can use
+a leading `$` to specify a property, or `__call` to specifically invoke a
+method.
+
+```php
+<?php
+class Foo {
+	var $bar = "bar";
+	function bar($what) { echo "I'm a ", $what, "!\n"; }
+}
+
+$foo = new Foo;
+// This prints 'bar'
+echo $foo->bar, "\n";
+// This prints "I'm a function!"
+$foo->bar("function");
+
+$v8 = new V8Js();
+$v8->foo = new Foo;
+// This prints 'bar'
+$v8->executeString('print(PHP.foo.$bar, "\n");');
+// This prints "I'm a function!"
+$v8->executeString('PHP.foo.__call("bar", ["function"]);');
+?>
+```
