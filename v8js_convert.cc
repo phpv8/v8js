@@ -125,15 +125,22 @@ static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_funct
 	}
 	fci.no_separation = 1;
 
-	/* zend_fcall_info_cache */
-	fcc.initialized = 1;
-	fcc.function_handler = method_ptr;
-	fcc.calling_scope = ce;
-	fcc.called_scope = ce;
-	fcc.object_ptr = value;
+	{
+		isolate->Exit();
+		v8::Unlocker unlocker(isolate);
 
-	/* Call the method */
-	zend_call_function(&fci, &fcc TSRMLS_CC);
+		/* zend_fcall_info_cache */
+		fcc.initialized = 1;
+		fcc.function_handler = method_ptr;
+		fcc.calling_scope = ce;
+		fcc.called_scope = ce;
+		fcc.object_ptr = value;
+
+		/* Call the method */
+		zend_call_function(&fci, &fcc TSRMLS_CC);
+	}
+
+	isolate->Enter();
 
 failure:
 	/* Cleanup */
