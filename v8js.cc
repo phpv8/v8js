@@ -19,6 +19,8 @@
 #include "config.h"
 #endif
 
+#include <v8-debug.h>
+
 #include "php_v8js_macros.h"
 
 extern "C" {
@@ -100,6 +102,11 @@ struct php_v8js_jsext {
 	char *source;
 };
 /* }}} */
+
+#ifdef ENABLE_DEBUGGER_SUPPORT
+static php_v8js_ctx *v8js_debug_context;
+static int v8js_debug_auto_break_mode;
+#endif
 
 #ifdef COMPILE_DL_V8JS
 ZEND_GET_MODULE(v8js)
@@ -598,6 +605,25 @@ static void php_v8js_fatal_error_handler(const char *location, const char *messa
 }
 /* }}} */
 
+#ifdef ENABLE_DEBUGGER_SUPPORT
+static void DispatchDebugMessages() { /* {{{ */
+	if(v8js_debug_context == NULL) {
+		return;
+	}
+
+	v8::Isolate* isolate = v8js_debug_context->isolate;
+	v8::Isolate::Scope isolate_scope(isolate);
+
+	v8::HandleScope handle_scope(isolate);
+	v8::Local<v8::Context> context =
+		v8::Local<v8::Context>::New(isolate, v8js_debug_context->context);
+	v8::Context::Scope scope(context);
+
+	v8::Debug::ProcessDebugMessages();
+}
+/* }}} */
+#endif  /* ENABLE_DEBUGGER_SUPPORT */
+
 static void php_v8js_init(TSRMLS_D) /* {{{ */
 {
 	/* Run only once */
@@ -641,6 +667,9 @@ static PHP_METHOD(V8Js, __construct)
 		return;
 	}
 
+	/* Initialize V8 */
+	php_v8js_init(TSRMLS_C);
+
 	/* Throw PHP exception if uncaught exceptions exist */
 	c->report_uncaught = report_uncaught;
 	c->pending_exception = NULL;
@@ -650,9 +679,6 @@ static PHP_METHOD(V8Js, __construct)
 	c->time_limit_hit = false;
 	c->memory_limit_hit = false;
 	c->module_loader = NULL;
-
-	/* Initialize V8 */
-	php_v8js_init(TSRMLS_C);
 
 	/* Include extensions used by this context */
 	/* Note: Extensions registered with auto_enable do not need to be added separately like this. */
@@ -882,6 +908,17 @@ static PHP_METHOD(V8Js, executeString)
 		php_v8js_timer_push(time_limit, memory_limit, c TSRMLS_CC);
 	}
 
+#ifdef ENABLE_DEBUGGER_SUPPORT
+	if(c == v8js_debug_context && v8js_debug_auto_break_mode != V8JS_DEBUG_AUTO_BREAK_NEVER) {
+		v8::Debug::DebugBreak(c->isolate);
+
+		if(v8js_debug_auto_break_mode == V8JS_DEBUG_AUTO_BREAK_ONCE) {
+			/* If break-once-mode was enabled, reset flag. */
+			v8js_debug_auto_break_mode = V8JS_DEBUG_AUTO_BREAK_NEVER;
+		}
+	}
+#endif  /* ENABLE_DEBUGGER_SUPPORT */
+
 	/* Execute script */
 	c->in_execution++;
 	v8::Local<v8::Value> result = script->Run();
@@ -948,6 +985,66 @@ static PHP_METHOD(V8Js, executeString)
 	}
 }
 /* }}} */
+
+#ifdef ENABLE_DEBUGGER_SUPPORT
+/* {{{ proto void V8Js::__destruct()
+   __destruct for V8Js */
+static PHP_METHOD(V8Js, __destruct)
+{
+	V8JS_BEGIN_CTX(c, getThis());
+
+	if(v8js_debug_context == c) {
+		v8::Debug::DisableAgent();
+		v8js_debug_context = NULL;
+	}
+}
+/* }}} */
+
+/* {{{ proto bool V8Js::startDebugAgent(string agent_name[, int port[, int auto_break]])
+ */
+static PHP_METHOD(V8Js, startDebugAgent)
+{
+	char *str = NULL;
+	int str_len = 0;
+	long port = 0, auto_break = 0;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|sll", &str, &str_len, &port, &auto_break) == FAILURE) {
+		return;
+	}
+
+	if(!port) {
+		port = 9222;
+	}
+
+	V8JS_BEGIN_CTX(c, getThis());
+
+	if(v8js_debug_context == c) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Debug agent already started for this V8Js instance");
+		RETURN_BOOL(0);
+	}
+
+	if(v8js_debug_context != NULL) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Debug agent already started for a different V8Js instance");
+		RETURN_BOOL(0);
+	}
+
+	v8js_debug_context = c;
+	v8js_debug_auto_break_mode = auto_break;
+
+	v8::Debug::SetDebugMessageDispatchHandler(DispatchDebugMessages, true);
+	v8::Debug::EnableAgent(str_len ? str : "V8Js", port, auto_break > 0);
+
+	if(auto_break) {
+		/* v8::Debug::EnableAgent doesn't really do what we want it to do,
+		   since it only breaks processing on the default isolate.
+		   Hence just trigger another DebugBreak, no for our main isolate. */
+		v8::Debug::DebugBreak(c->isolate);
+	}
+
+	RETURN_BOOL(1);
+}
+/* }}} */
+#endif  /* ENABLE_DEBUGGER_SUPPORT */
 
 /* {{{ proto mixed V8Js::getPendingException()
  */
@@ -1143,6 +1240,17 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_executestring, 0, 0, 1)
 	ZEND_ARG_INFO(0, memory_limit)
 ZEND_END_ARG_INFO()
 
+#ifdef ENABLE_DEBUGGER_SUPPORT
+ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_destruct, 0, 0, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_startdebugagent, 0, 0, 0)
+	ZEND_ARG_INFO(0, agentName)
+	ZEND_ARG_INFO(0, port)
+	ZEND_ARG_INFO(0, auto_break)
+ZEND_END_ARG_INFO()
+#endif  /* ENABLE_DEBUGGER_SUPPORT */
+
 ZEND_BEGIN_ARG_INFO(arginfo_v8js_getpendingexception, 0)
 ZEND_END_ARG_INFO()
 
@@ -1171,6 +1279,10 @@ static const zend_function_entry v8js_methods[] = { /* {{{ */
 	PHP_ME(V8Js,	setModuleLoader,		arginfo_v8js_setmoduleloader,		ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	registerExtension,		arginfo_v8js_registerextension,		ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
 	PHP_ME(V8Js,	getExtensions,			arginfo_v8js_getextensions,			ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
+#ifdef ENABLE_DEBUGGER_SUPPORT
+	PHP_ME(V8Js,	__destruct,				arginfo_v8js_destruct,				ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
+	PHP_ME(V8Js,	startDebugAgent,		arginfo_v8js_startdebugagent,		ZEND_ACC_PUBLIC)
+#endif
 	{NULL, NULL, NULL}
 };
 /* }}} */
@@ -1386,8 +1498,15 @@ static PHP_MINIT_FUNCTION(v8js)
 
 	/* V8Js Class Constants */
 	zend_declare_class_constant_string(php_ce_v8js, ZEND_STRL("V8_VERSION"),		PHP_V8_VERSION			TSRMLS_CC);
+
 	zend_declare_class_constant_long(php_ce_v8js, ZEND_STRL("FLAG_NONE"),			V8JS_FLAG_NONE			TSRMLS_CC);
 	zend_declare_class_constant_long(php_ce_v8js, ZEND_STRL("FLAG_FORCE_ARRAY"),	V8JS_FLAG_FORCE_ARRAY	TSRMLS_CC);
+
+#ifdef ENABLE_DEBUGGER_SUPPORT
+	zend_declare_class_constant_long(php_ce_v8js, ZEND_STRL("DEBUG_AUTO_BREAK_NEVER"),	V8JS_DEBUG_AUTO_BREAK_NEVER			TSRMLS_CC);
+	zend_declare_class_constant_long(php_ce_v8js, ZEND_STRL("DEBUG_AUTO_BREAK_ONCE"),	V8JS_DEBUG_AUTO_BREAK_ONCE			TSRMLS_CC);
+	zend_declare_class_constant_long(php_ce_v8js, ZEND_STRL("DEBUG_AUTO_BREAK_ALWAYS"),	V8JS_DEBUG_AUTO_BREAK_ALWAYS		TSRMLS_CC);
+#endif
 
 	/* V8JsScriptException Class */
 	INIT_CLASS_ENTRY(ce, "V8JsScriptException", v8js_script_exception_methods);
