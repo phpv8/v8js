@@ -159,8 +159,8 @@ failure:
 /* Callback for PHP methods and functions */
 static void php_v8js_php_callback(const v8::FunctionCallbackInfo<v8::Value>& info) /* {{{ */
 {
-	zval *value = reinterpret_cast<zval *>(info.This()->GetAlignedPointerFromInternalField(0));
-	v8::Isolate *isolate = reinterpret_cast<v8::Isolate *>(info.This()->GetAlignedPointerFromInternalField(1));
+	zval *value = reinterpret_cast<zval *>(info.Holder()->GetAlignedPointerFromInternalField(0));
+	v8::Isolate *isolate = reinterpret_cast<v8::Isolate *>(info.Holder()->GetAlignedPointerFromInternalField(1));
 	zend_function *method_ptr;
 	zend_class_entry *ce = Z_OBJCE_P(value);
 	TSRMLS_FETCH();
@@ -352,8 +352,8 @@ static void php_v8js_property_query(v8::Local<v8::String> property, const v8::Pr
 	((key_len == sizeof(mname)) && \
 	!strncasecmp(key, mname, key_len - 1))
 
-#define PHP_V8JS_CALLBACK(mptr) \
-	v8::FunctionTemplate::New(php_v8js_php_callback, v8::External::New(mptr))->GetFunction()
+#define PHP_V8JS_CALLBACK(mptr, tmpl)										\
+	v8::FunctionTemplate::New(php_v8js_php_callback, v8::External::New(mptr), v8::Signature::New(tmpl))->GetFunction()
 
 
 static void php_v8js_weak_object_callback(v8::Isolate *isolate, v8::Persistent<v8::Object> *object, zval *value)
@@ -448,7 +448,7 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 				) {
 					/* Override native toString() with __tostring() if it is set in passed object */
 					if (!cached_tpl && IS_MAGIC_FUNC(ZEND_TOSTRING_FUNC_NAME)) {
-						new_tpl->InstanceTemplate()->Set(V8JS_SYM("toString"), PHP_V8JS_CALLBACK(method_ptr));
+						new_tpl->InstanceTemplate()->Set(V8JS_SYM("toString"), PHP_V8JS_CALLBACK(method_ptr, new_tpl));
 					/* TODO: __set(), __unset() disabled as JS is not allowed to modify the passed PHP object yet.
 					 *  __sleep(), __wakeup(), __set_state() are always ignored */
 					} else if (
@@ -469,7 +469,7 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 					} else if (IS_MAGIC_FUNC(ZEND_ISSET_FUNC_NAME)) {
 						isset_ptr = method_ptr;
 					} else if (!cached_tpl) {
-						new_tpl->InstanceTemplate()->Set(V8JS_STR(method_ptr->common.function_name), PHP_V8JS_CALLBACK(method_ptr), v8::ReadOnly);
+						new_tpl->InstanceTemplate()->Set(V8JS_STR(method_ptr->common.function_name), PHP_V8JS_CALLBACK(method_ptr, new_tpl), v8::ReadOnly);
 					}
 				}
 			}
@@ -517,16 +517,16 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 			// These unfortunately cannot be attached to the template, hence we have to put them
 			// on each and every object instance manually.
 			if (call_ptr) {
-				newobj->SetHiddenValue(V8JS_SYM(ZEND_CALL_FUNC_NAME), PHP_V8JS_CALLBACK(call_ptr));
+				newobj->SetHiddenValue(V8JS_SYM(ZEND_CALL_FUNC_NAME), PHP_V8JS_CALLBACK(call_ptr, new_tpl));
 			}
 			if (get_ptr) {
-				newobj->SetHiddenValue(V8JS_SYM(ZEND_GET_FUNC_NAME), PHP_V8JS_CALLBACK(get_ptr));
+				newobj->SetHiddenValue(V8JS_SYM(ZEND_GET_FUNC_NAME), PHP_V8JS_CALLBACK(get_ptr, new_tpl));
 			}
 			if (invoke_ptr) {
-				newobj->SetHiddenValue(V8JS_SYM(ZEND_INVOKE_FUNC_NAME), PHP_V8JS_CALLBACK(invoke_ptr));
+				newobj->SetHiddenValue(V8JS_SYM(ZEND_INVOKE_FUNC_NAME), PHP_V8JS_CALLBACK(invoke_ptr, new_tpl));
 			}
 			if (isset_ptr) {
-				newobj->SetHiddenValue(V8JS_SYM(ZEND_ISSET_FUNC_NAME), PHP_V8JS_CALLBACK(isset_ptr));
+				newobj->SetHiddenValue(V8JS_SYM(ZEND_ISSET_FUNC_NAME), PHP_V8JS_CALLBACK(isset_ptr, new_tpl));
 			}
 		}
 
