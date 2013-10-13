@@ -77,8 +77,13 @@ PHP API
         /* Constants */
 
         const string V8_VERSION;
+
         const int FLAG_NONE;
         const int FLAG_FORCE_ARRAY;
+
+        const int DEBUG_AUTO_BREAK_NEVER;
+        const int DEBUG_AUTO_BREAK_ONCE;
+        const int DEBUG_AUTO_BREAK_ALWAYS;
     
         /* Methods */
 
@@ -95,6 +100,9 @@ PHP API
 
         // Returns uncaught pending exception or null if there is no pending exception.
         public V8JsScriptException V8Js::getPendingException( )
+
+        // Starts V8 debug agent for use with Google Chrome Developer Tools (Eclipse Plugin)
+        public bool startDebugAgent( [ string $agent_name = "V8Js" [, $port = 9222 [, $auto_break = V8Js::DEBUG_AUTO_BREAK_NEVER ] ] ] )
 
         /** Static methods **/
 
