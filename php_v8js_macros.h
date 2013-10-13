@@ -76,6 +76,10 @@ extern "C" {
 #define V8JS_FLAG_NONE			(1<<0)
 #define V8JS_FLAG_FORCE_ARRAY	(1<<1)
 
+#define V8JS_DEBUG_AUTO_BREAK_NEVER		0
+#define V8JS_DEBUG_AUTO_BREAK_ONCE		1
+#define V8JS_DEBUG_AUTO_BREAK_ALWAYS	2
+
 /* Extracts a C string from a V8 Utf8Value. */
 static const char * ToCString(const v8::String::Utf8Value &value) /* {{{ */
 {

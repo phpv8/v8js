@@ -30,15 +30,16 @@ if test "$PHP_V8JS" != "no"; then
   PHP_SUBST(V8JS_SHARED_LIBADD)
   PHP_REQUIRE_CXX()
 
+  old_LIBS=$LIBS
+  old_LDFLAGS=$LDFLAGS
+  old_CPPFLAGS=$CPPFLAGS
+  LDFLAGS="-Wl,--rpath=$V8_DIR/$PHP_LIBDIR -L$V8_DIR/$PHP_LIBDIR"
+  LIBS=-lv8
+  CPPFLAGS=-I$V8_DIR/include
+  AC_LANG_SAVE
+  AC_LANG_CPLUSPLUS
+
   AC_CACHE_CHECK(for V8 version, ac_cv_v8_version, [
-old_LIBS=$LIBS
-old_LDFLAGS=$LDFLAGS
-old_CPPFLAGS=$CPPFLAGS
-LDFLAGS="-Wl,--rpath=$V8_DIR/$PHP_LIBDIR -L$V8_DIR/$PHP_LIBDIR"
-LIBS=-lv8
-CPPFLAGS=-I$V8_DIR/include
-AC_LANG_SAVE
-AC_LANG_CPLUSPLUS
 AC_TRY_RUN([#include <v8.h>
 #include <iostream>
 #include <fstream>
@@ -55,10 +56,6 @@ int main ()
 	}
 	return 1;
 }], [ac_cv_v8_version=`cat ./conftestval|awk '{print $1}'`], [ac_cv_v8_version=NONE], [ac_cv_v8_version=NONE])
-AC_LANG_RESTORE
-LIBS=$old_LIBS
-LDFLAGS=$old_LDFLAGS
-CPPFLAGS=$old_CPPFLAGS
 ])
 
   if test "$ac_cv_v8_version" != "NONE"; then
@@ -75,6 +72,23 @@ CPPFLAGS=$old_CPPFLAGS
   else
     AC_MSG_ERROR([could not determine libv8 version])
   fi
+
+  AC_CACHE_CHECK(for debuggersupport in v8, ac_cv_v8_debuggersupport, [
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <v8-debug.h>]],
+                               [[v8::Debug::DisableAgent()]])],
+    [ac_cv_v8_debuggersupport=yes],
+    [ac_cv_v8_debuggersupport=no])
+])
+
+  if test "$ac_cv_v8_debuggersupport" = "yes"; then
+    AC_DEFINE([ENABLE_DEBUGGER_SUPPORT], [1], [Enable debugger support in V8Js])
+  fi
+
+  AC_LANG_RESTORE
+  LIBS=$old_LIBS
+  LDFLAGS=$old_LDFLAGS
+  CPPFLAGS=$old_CPPFLAGS
+
 
   AC_CACHE_CHECK(for C standard version, ac_cv_v8_cstd, [
     ac_cv_v8_cstd="c++11"
