@@ -1,0 +1,31 @@
+# Configure and build scripts for travis CI system
+V8VER=3.22.10
+CPPVER=4.6
+
+export CXX=g++-$(CPPVER)
+export LINK=g++-$(CPPVER)
+
+export NO_INTERACTION=1
+
+before_install:
+	sudo apt-get update
+
+# install dependencies (php5, v8)
+install:
+	sudo apt-get install php5-cli php5-dev g++-$(CPPVER)
+	-$(RM) -rf $(V8VER).tar.gz v8-$(V8VER) v8-build
+	wget https://github.com/v8/v8/archive/$(V8VER).tar.gz
+	tar -xzf $(V8VER).tar.gz
+	$(MAKE) -C v8-$(V8VER) dependencies
+	$(MAKE) -C v8-$(V8VER) native library=shared -j4
+	mkdir -p v8-build/lib v8-build/include
+	cp v8-$(V8VER)/out/native/lib.target/lib*.so v8-build/lib/
+	cp v8-$(V8VER)/include/v8* v8-build/include/
+
+build:
+	phpize
+	./configure --with-v8js=$(realpath ./v8-build)
+	$(MAKE)
+
+test: build
+	$(MAKE) test

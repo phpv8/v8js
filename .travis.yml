@@ -1,0 +1,5 @@
+language: cpp
+compiler: gcc
+before_install: make -f Makefile.travis before_install
+install: make -f Makefile.travis install
+script: make -f Makefile.travis test

@@ -75,8 +75,18 @@ CPPFLAGS=$old_CPPFLAGS
   else
     AC_MSG_ERROR([could not determine libv8 version])
   fi
+
+  AC_CACHE_CHECK(for C standard version, ac_cv_v8_cstd, [
+    ac_cv_v8_cstd="c++11"
+    old_CPPFLAGS=$CPPFLAGS
+    AC_LANG_PUSH([C++])
+    CPPFLAGS="-std="$ac_cv_v8_cstd
+    AC_TRY_RUN([int main() { return 0; }],[],[ac_cv_v8_cstd="c++0x"],[])
+    AC_LANG_POP([C++])
+    CPPFLAGS=$old_CPPFLAGS
+  ]);
   
-  PHP_NEW_EXTENSION(v8js, v8js.cc v8js_convert.cc v8js_methods.cc v8js_variables.cc v8js_commonjs.cc, $ext_shared, , "-std=c++11")
+  PHP_NEW_EXTENSION(v8js, v8js.cc v8js_convert.cc v8js_methods.cc v8js_variables.cc v8js_commonjs.cc, $ext_shared, , "-std="$ac_cv_v8_cstd)
 
   PHP_ADD_MAKEFILE_FRAGMENT
 fi
