@@ -61,6 +61,14 @@ try {
 	var_dump($e);
 }
 
+// Type safety
+// this is illegal, but shouldn't crash!
+try {
+	$a->executeString("PHP.myobj.mytest.call({})", "test8.js");
+} catch (V8JsScriptException $e) {
+	echo "exception: ", $e->getMessage(), "\n";
+}
+
 ?>
 ===EOF===
 --EXPECT--
@@ -143,4 +151,5 @@ array(3) {
     }
   }
 }
+exception: test8.js:1: TypeError: Illegal invocation
 ===EOF===
