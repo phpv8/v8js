@@ -536,6 +536,10 @@ static zend_object_value php_v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 	zend_object_std_init(&c->std, ce TSRMLS_CC);
 #if PHP_VERSION_ID >= 50400
 	object_properties_init(&c->std, ce);
+#else
+	zval *tmp;
+	zend_hash_copy(c->std.properties, &ce->default_properties,
+				   (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
 #endif
 
 	retval.handle = zend_objects_store_put(c, NULL, (zend_objects_free_object_storage_t) php_v8js_free_storage, NULL TSRMLS_CC);
