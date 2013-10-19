@@ -762,7 +762,35 @@ static PHP_METHOD(V8Js, __construct)
 	c->object_name.Reset(c->isolate, object_name_js);
 
 	/* Add the PHP object into global object */
-	V8JS_GLOBAL->Set(object_name_js, php_obj_t->InstanceTemplate()->NewInstance(), v8::ReadOnly);
+	v8::Local<v8::Object> php_obj = php_obj_t->InstanceTemplate()->NewInstance();
+	V8JS_GLOBAL->Set(object_name_js, php_obj, v8::ReadOnly);
+
+	/* Export public property values */
+	HashTable *properties = zend_std_get_properties(getThis());
+	HashPosition pos;
+	zval **value;
+	ulong index;
+	char *member;
+	uint member_len;
+
+	for(zend_hash_internal_pointer_reset_ex(properties, &pos);
+		zend_hash_get_current_data_ex(properties, (void **) &value, &pos) == SUCCESS;
+		zend_hash_move_forward_ex(properties, &pos)) {
+		if(zend_hash_get_current_key_ex(properties, &member, &member_len, &index, 0, &pos) != HASH_KEY_IS_STRING) {
+			continue;
+		}
+
+		zval zmember;
+		ZVAL_STRING(&zmember, member, 0);
+
+		zend_property_info *property_info = zend_get_property_info(c->std.ce, &zmember, 1 TSRMLS_CC);
+		if(property_info && property_info->flags & ZEND_ACC_PUBLIC) {
+			/* Write value to PHP JS object */
+			php_obj->ForceSet(V8JS_SYML(member, member_len - 1), zval_to_v8js(*value, c->isolate TSRMLS_CC), v8::ReadOnly);
+		}
+	}
+
+
 }
 /* }}} */
 
