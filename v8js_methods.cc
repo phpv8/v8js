@@ -163,6 +163,8 @@ V8JS_METHOD(var_dump) /* {{{ */
 
 V8JS_METHOD(require)
 {
+	TSRMLS_FETCH();
+
 	// Get the extension context
 	v8::Handle<v8::External> data = v8::Handle<v8::External>::Cast(info.Data());
 	php_v8js_ctx *c = static_cast<php_v8js_ctx*>(data->Value());
@@ -234,7 +236,7 @@ V8JS_METHOD(require)
 		efree(normalised_path);
 
 		// Clear the PHP exception and throw it in V8 instead
-		zend_clear_exception(TSRMLS_CC);
+		zend_clear_exception(TSRMLS_C);
 		info.GetReturnValue().Set(v8::ThrowException(v8::String::New("Module loader callback exception")));
 		return;
 	}

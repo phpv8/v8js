@@ -56,7 +56,7 @@ typedef v8::Persistent<v8::FunctionTemplate, v8::CopyablePersistentTraits<v8::Fu
 typedef std::map<TemplateCacheKey, TemplateCacheEntry> TemplateCache;
 
 /* Callback for PHP methods and functions */
-static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_function *method_ptr, v8::Isolate *isolate, const v8::FunctionCallbackInfo<v8::Value>& info) /* {{{ */
+static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_function *method_ptr, v8::Isolate *isolate, const v8::FunctionCallbackInfo<v8::Value>& info TSRMLS_DC) /* {{{ */
 {
 	v8::Handle<v8::Value> return_value;
 	zend_fcall_info fci;
@@ -169,8 +169,8 @@ static void php_v8js_php_callback(const v8::FunctionCallbackInfo<v8::Value>& inf
 	zval *value = reinterpret_cast<zval *>(info.Holder()->GetAlignedPointerFromInternalField(0));
 	v8::Isolate *isolate = reinterpret_cast<v8::Isolate *>(info.Holder()->GetAlignedPointerFromInternalField(1));
 	zend_function *method_ptr;
-	zend_class_entry *ce = Z_OBJCE_P(value);
 	TSRMLS_FETCH();
+	zend_class_entry *ce = Z_OBJCE_P(value);
 
 	/* Set method_ptr from v8::External or fetch the closure invoker */
 	if (!info.Data().IsEmpty() && info.Data()->IsExternal()) {
@@ -179,7 +179,7 @@ static void php_v8js_php_callback(const v8::FunctionCallbackInfo<v8::Value>& inf
 		method_ptr = zend_get_closure_invoke_method(value TSRMLS_CC);
 	}
 
-	return php_v8js_call_php_func(value, ce, method_ptr, isolate, info);
+	return php_v8js_call_php_func(value, ce, method_ptr, isolate, info TSRMLS_CC);
 }
 
 /* Callback for PHP constructor calls */
@@ -212,11 +212,11 @@ static void php_v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value
 		}
 
 		MAKE_STD_ZVAL(value);
-		object_init_ex(value, ce TSRMLS_CC);
+		object_init_ex(value, ce);
 
 		// Call __construct function
 		if (ctor_ptr != NULL) {
-			php_v8js_call_php_func(value, ce, ctor_ptr, isolate, info);
+			php_v8js_call_php_func(value, ce, ctor_ptr, isolate, info TSRMLS_CC);
 		}
 	}
 
@@ -365,6 +365,8 @@ static void php_v8js_property_query(v8::Local<v8::String> property, const v8::Pr
 
 static void php_v8js_weak_object_callback(v8::Isolate *isolate, v8::Persistent<v8::Object> *object, zval *value)
 {
+	TSRMLS_FETCH();
+
 	if (READY_TO_DESTROY(value)) {
 		zval_dtor(value);
 		FREE_ZVAL(value);
