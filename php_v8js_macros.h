@@ -81,7 +81,7 @@ extern "C" {
 #define V8JS_DEBUG_AUTO_BREAK_ALWAYS	2
 
 /* Extracts a C string from a V8 Utf8Value. */
-static const char * ToCString(const v8::String::Utf8Value &value) /* {{{ */
+static inline const char * ToCString(const v8::String::Utf8Value &value) /* {{{ */
 {
 	return *value ? *value : "<string conversion failed>";
 }

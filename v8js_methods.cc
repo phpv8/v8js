@@ -150,7 +150,6 @@ static void _php_v8js_dumper(v8::Local<v8::Value> var, int level TSRMLS_DC) /* {
 /* global.var_dump - Dump JS values */
 V8JS_METHOD(var_dump) /* {{{ */
 {
-	int i;
 	TSRMLS_FETCH();
 
 	for (int i = 0; i < info.Length(); i++) {
