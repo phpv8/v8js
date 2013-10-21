@@ -770,7 +770,7 @@ static PHP_METHOD(V8Js, __construct)
 	V8JS_GLOBAL->Set(object_name_js, php_obj, v8::ReadOnly);
 
 	/* Export public property values */
-	HashTable *properties = zend_std_get_properties(getThis());
+	HashTable *properties = zend_std_get_properties(getThis() TSRMLS_CC);
 	HashPosition pos;
 	zval **value;
 	ulong index;
@@ -1495,6 +1495,11 @@ static const zend_function_entry v8js_memory_limit_exception_methods[] = { /* {{
 static PHP_MINIT_FUNCTION(v8js)
 {
 	zend_class_entry ce;
+
+#ifdef ZTS
+	std::mutex mutex;
+	memcpy(&V8JSG(timer_mutex), &mutex, sizeof(V8JSG(timer_mutex)));
+#endif
 
 	/* V8Object Class */
 	INIT_CLASS_ENTRY(ce, "V8Object", NULL);

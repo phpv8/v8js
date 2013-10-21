@@ -164,6 +164,8 @@ ZEND_END_MODULE_GLOBALS(v8js)
 
 extern zend_v8js_globals v8js_globals;
 
+ZEND_EXTERN_MODULE_GLOBALS(v8js)
+
 #ifdef ZTS
 # define V8JSG(v) TSRMG(v8js_globals_id, zend_v8js_globals *, v)
 #else
