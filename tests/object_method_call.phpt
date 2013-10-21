@@ -113,15 +113,13 @@ Mon, 08 Sep 1975 09:00:00 +0000
 string(3) "foo"
 array(3) {
   [0]=>
-  object(V8Object)#4 (3) {
-    ["mytest"]=>
-    object(V8Function)#6 (0) {
-    }
-    ["mydatetest"]=>
-    object(V8Function)#7 (0) {
-    }
+  object(Testing)#2 (3) {
     ["foo"]=>
     string(8) "ORIGINAL"
+    ["my_private":"Testing":private]=>
+    string(3) "arf"
+    ["my_protected":protected]=>
+    string(4) "argh"
   }
   [1]=>
   array(3) {
@@ -139,15 +137,13 @@ array(3) {
     [1]=>
     string(3) "bar"
     [2]=>
-    object(V8Object)#5 (3) {
-      ["mytest"]=>
-      object(V8Function)#7 (0) {
-      }
-      ["mydatetest"]=>
-      object(V8Function)#6 (0) {
-      }
+    object(Testing)#2 (3) {
       ["foo"]=>
       string(8) "ORIGINAL"
+      ["my_private":"Testing":private]=>
+      string(3) "arf"
+      ["my_protected":protected]=>
+      string(4) "argh"
     }
   }
 }

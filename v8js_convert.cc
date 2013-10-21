@@ -110,14 +110,23 @@ static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_funct
 		fci.params = (zval ***) safe_emalloc(argc, sizeof(zval **), 0);
 		argv = (zval **) safe_emalloc(argc, sizeof(zval *), 0);
 		for (i = 0; i < argc; i++) {
-			MAKE_STD_ZVAL(argv[i]);
-			if (v8js_to_zval(info[i], argv[i], flags, isolate TSRMLS_CC) == FAILURE) {
-				fci.param_count++;
-				error_len = spprintf(&error, 0, "converting parameter #%d passed to %s() failed", i + 1, method_ptr->common.function_name);
-				return_value = V8JS_THROW(Error, error, error_len);
-				efree(error);
-				goto failure;
+			if(info[i]->IsObject()
+			   && !info[i]->IsFunction()
+			   && info[i]->ToObject()->InternalFieldCount() == 2) {
+				/* This is a PHP object, passed to JS and back. */
+				argv[i] = reinterpret_cast<zval *>(info[i]->ToObject()->GetAlignedPointerFromInternalField(0));
+				Z_ADDREF_P(argv[i]);
+			} else {
+				MAKE_STD_ZVAL(argv[i]);
+				if (v8js_to_zval(info[i], argv[i], flags, isolate TSRMLS_CC) == FAILURE) {
+					fci.param_count++;
+					error_len = spprintf(&error, 0, "converting parameter #%d passed to %s() failed", i + 1, method_ptr->common.function_name);
+					return_value = V8JS_THROW(Error, error, error_len);
+					efree(error);
+					goto failure;
+				}
 			}
+
 			fci.params[fci.param_count++] = &argv[i];
  		}
 	} else {

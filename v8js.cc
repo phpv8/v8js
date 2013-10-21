@@ -281,11 +281,20 @@ int php_v8js_v8_get_properties_hash(v8::Handle<v8::Value> jsValue, HashTable *re
 			const char *key = ToCString(cstr);
 			zval *value = NULL;
 
-			MAKE_STD_ZVAL(value);
+			if(jsVal->IsObject()
+			   && !jsVal->IsFunction()
+			   && jsVal->ToObject()->InternalFieldCount() == 2) {
+				/* This is a PHP object, passed to JS and back. */
+				value = reinterpret_cast<zval *>(jsVal->ToObject()->GetAlignedPointerFromInternalField(0));
+				Z_ADDREF_P(value);
+			}
+			else {
+				MAKE_STD_ZVAL(value);
 
-			if (v8js_to_zval(jsVal, value, flags, isolate TSRMLS_CC) == FAILURE) {
-				zval_ptr_dtor(&value);
-				return FAILURE;
+				if (v8js_to_zval(jsVal, value, flags, isolate TSRMLS_CC) == FAILURE) {
+					zval_ptr_dtor(&value);
+					return FAILURE;
+				}
 			}
 
 			if ((flags & V8JS_FLAG_FORCE_ARRAY) || jsValue->IsArray()) {
