@@ -28,6 +28,8 @@ extern "C" {
 #include <v8.h>
 #include <stdexcept>
 
+#define PHPJS_OBJECT_KEY "phpjs::object"
+
 #if PHP_V8_API_VERSION < 3022000
 /* CopyablePersistentTraits is only part of V8 from 3.22.0 on,
    to be compatible with lower versions add our own (compatible) version. */
@@ -231,6 +233,7 @@ static void php_v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value
 
 	newobj->SetAlignedPointerInInternalField(0, value);
 	newobj->SetAlignedPointerInInternalField(1, (void *) isolate);
+	newobj->SetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY), v8::True(isolate));
 }
 /* }}} */
 
@@ -734,6 +737,13 @@ int v8js_to_zval(v8::Handle<v8::Value> jsValue, zval *return_value, int flags, v
 	}
 	else if (jsValue->IsObject())
 	{
+		v8::Handle<v8::Object> self = v8::Handle<v8::Object>::Cast(jsValue);
+		// if this is a wrapped PHP object, then just unwrap it.
+		if (!self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY)).IsEmpty()) {
+			zval *object = reinterpret_cast<zval *>(self->GetAlignedPointerFromInternalField(0));
+			RETVAL_ZVAL(object, 1, 0);
+			return SUCCESS;
+		}
 		if ((flags & V8JS_FLAG_FORCE_ARRAY) || jsValue->IsArray()) {
 			array_init(return_value);
 			return php_v8js_v8_get_properties_hash(jsValue, Z_ARRVAL_P(return_value), flags, isolate TSRMLS_CC);
