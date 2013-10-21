@@ -1015,6 +1015,7 @@ static PHP_METHOD(V8Js, executeString)
 			if (result.IsEmpty()) {
 				MAKE_STD_ZVAL(c->pending_exception);
 				php_v8js_create_script_exception(c->pending_exception, &try_catch TSRMLS_CC);
+				return;
 			}
 		}
 
