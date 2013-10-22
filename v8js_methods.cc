@@ -61,13 +61,43 @@ static void _php_v8js_dumper(v8::Local<v8::Value> var, int level TSRMLS_DC) /* {
 		php_printf("%*c", (level - 1) * 2, ' ');
 	}
 
-	if (var->IsNull())
+	if (var.IsEmpty())
+	{
+		php_printf("<empty>\n");
+		return;
+	}
+	if (var->IsNull() || var->IsUndefined() /* PHP compat */)
 	{
 		php_printf("NULL\n");
 		return;
 	}
+	if (var->IsInt32())
+	{
+		php_printf("int(%ld)\n", (long) var->IntegerValue());
+		return;
+	}
+	if (var->IsUint32())
+	{
+		php_printf("int(%lu)\n", (unsigned long) var->IntegerValue());
+		return;
+	}
+	if (var->IsNumber())
+	{
+		php_printf("float(%f)\n", var->NumberValue());
+		return;
+	}
+	if (var->IsBoolean())
+	{
+		php_printf("bool(%s)\n", var->BooleanValue() ? "true" : "false");
+		return;
+	}
 
-	v8::String::Utf8Value str(var->ToDetailString());
+	v8::TryCatch try_catch; /* object.toString() can throw an exception */
+	v8::Local<v8::String> details = var->ToDetailString();
+	if (try_catch.HasCaught()) {
+		details = V8JS_SYM("<toString threw exception>");
+	}
+	v8::String::Utf8Value str(details);
 	const char *valstr = ToCString(str);
 	size_t valstr_len = (valstr) ? strlen(valstr) : 0;
 
@@ -75,26 +105,15 @@ static void _php_v8js_dumper(v8::Local<v8::Value> var, int level TSRMLS_DC) /* {
 	{
 		php_printf("string(%zu) \"%s\"\n", valstr_len, valstr);
 	}
-	else if (var->IsBoolean())
-	{
-		php_printf("bool(%s)\n", valstr);
-	}
-	else if (var->IsInt32() || var->IsUint32())
-	{
-		php_printf("int(%s)\n", valstr);
-	}
-	else if (var->IsNumber())
-	{
-		php_printf("float(%s)\n", valstr);
-	}
 	else if (var->IsDate())
 	{
+		// fake the fields of a PHP DateTime
 		php_printf("Date(%s)\n", valstr);
 	}
 #if PHP_V8_API_VERSION >= 2003007
 	else if (var->IsRegExp())
 	{
-		php_printf("RegExp(%s)\n", valstr);
+		php_printf("regexp(%s)\n", valstr);
 	}
 #endif
 	else if (var->IsArray())
@@ -119,18 +138,25 @@ static void _php_v8js_dumper(v8::Local<v8::Value> var, int level TSRMLS_DC) /* {
 	{
 		v8::Local<v8::Object> object = v8::Local<v8::Object>::Cast(var);
 		V8JS_GET_CLASS_NAME(cname, object);
+		int hash = object->GetIdentityHash();
 
 		if (var->IsFunction())
 		{
 			v8::String::Utf8Value csource(object->ToString());
-			php_printf("object(%s)#%d {\n%*c%s\n", ToCString(cname), object->GetIdentityHash(), level * 2 + 2, ' ', ToCString(csource));
+			php_printf("object(Closure)#%d {\n%*c%s\n", hash, level * 2 + 2, ' ', ToCString(csource));
 		}
 		else
 		{
-			v8::Local<v8::Array> keys = object->GetPropertyNames();
+			v8::Local<v8::Array> keys = object->GetOwnPropertyNames();
 			uint32_t length = keys->Length();
 
-			php_printf("object(%s)#%d (%d) {\n", ToCString(cname), object->GetIdentityHash(), length);
+			if (strcmp(ToCString(cname), "Array") == 0 ||
+				strcmp(ToCString(cname), "V8Object") == 0) {
+				php_printf("array");
+			} else {
+				php_printf("object(%s)#%d", ToCString(cname), hash);
+			}
+			php_printf(" (%d) {\n", length);
 
 			for (unsigned i = 0; i < length; i++) {
 				v8::Local<v8::String> key = keys->Get(i)->ToString();
