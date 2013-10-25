@@ -128,13 +128,14 @@ static int php_v8js_v8_has_property(zval *object, zval *member, int has_set_exis
 	int retval = false;
 	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
 
-	v8::Locker locker(obj->isolate);
-	v8::Isolate::Scope isolate_scope(obj->isolate);
-	v8::HandleScope local_scope(obj->isolate);
-	v8::Local<v8::Context> temp_context = v8::Context::New(obj->isolate);
+	v8::Isolate *isolate = obj->isolate;
+	v8::Locker locker(isolate);
+	v8::Isolate::Scope isolate_scope(isolate);
+	v8::HandleScope local_scope(isolate);
+	v8::Local<v8::Context> temp_context = v8::Context::New(isolate);
 	v8::Context::Scope temp_scope(temp_context);
 
-	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(obj->isolate, obj->v8obj);
+	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
 	if (Z_TYPE_P(member) == IS_STRING && v8obj->IsObject() && !v8obj->IsFunction())
 	{
@@ -186,13 +187,14 @@ static zval *php_v8js_v8_read_property(zval *object, zval *member, int type ZEND
 	zval *retval = NULL;
 	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
 
-	v8::Locker locker(obj->isolate);
-	v8::Isolate::Scope isolate_scope(obj->isolate);
-	v8::HandleScope local_scope(obj->isolate);
-	v8::Local<v8::Context> temp_context = v8::Context::New(obj->isolate);
+	v8::Isolate *isolate = obj->isolate;
+	v8::Locker locker(isolate);
+	v8::Isolate::Scope isolate_scope(isolate);
+	v8::HandleScope local_scope(isolate);
+	v8::Local<v8::Context> temp_context = v8::Context::New(isolate);
 	v8::Context::Scope temp_scope(temp_context);
 
-	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(obj->isolate, obj->v8obj);
+	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
 	if (Z_TYPE_P(member) == IS_STRING && v8obj->IsObject() && !v8obj->IsFunction())
 	{
@@ -212,7 +214,7 @@ static zval *php_v8js_v8_read_property(zval *object, zval *member, int type ZEND
 				MAKE_STD_ZVAL(retval);
 			}
 
-			if (v8js_to_zval(jsVal, retval, obj->flags, obj->isolate TSRMLS_CC) == SUCCESS) {
+			if (v8js_to_zval(jsVal, retval, obj->flags, isolate TSRMLS_CC) == SUCCESS) {
 				return retval;
 			}
 		}
@@ -228,16 +230,17 @@ static void php_v8js_v8_write_property(zval *object, zval *member, zval *value Z
 {
 	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
 
-	v8::Locker locker(obj->isolate);
-	v8::Isolate::Scope isolate_scope(obj->isolate);
-	v8::HandleScope local_scope(obj->isolate);
-	v8::Local<v8::Context> temp_context = v8::Context::New(obj->isolate);
+	v8::Isolate *isolate = obj->isolate;
+	v8::Locker locker(isolate);
+	v8::Isolate::Scope isolate_scope(isolate);
+	v8::HandleScope local_scope(isolate);
+	v8::Local<v8::Context> temp_context = v8::Context::New(isolate);
 	v8::Context::Scope temp_scope(temp_context);
 
-	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(obj->isolate, obj->v8obj);
+	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
 	if (v8obj->IsObject() && !v8obj->IsFunction()) {
-		v8obj->ToObject()->ForceSet(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)), zval_to_v8js(value, obj->isolate TSRMLS_CC));
+		v8obj->ToObject()->ForceSet(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)), zval_to_v8js(value, isolate TSRMLS_CC));
 	}
 }
 /* }}} */
@@ -246,13 +249,14 @@ static void php_v8js_v8_unset_property(zval *object, zval *member ZEND_HASH_KEY_
 {
 	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
 
-	v8::Locker locker(obj->isolate);
-	v8::Isolate::Scope isolate_scope(obj->isolate);
-	v8::HandleScope local_scope(obj->isolate);
-	v8::Local<v8::Context> temp_context = v8::Context::New(obj->isolate);
+	v8::Isolate *isolate = obj->isolate;
+	v8::Locker locker(isolate);
+	v8::Isolate::Scope isolate_scope(isolate);
+	v8::HandleScope local_scope(isolate);
+	v8::Local<v8::Context> temp_context = v8::Context::New(isolate);
 	v8::Context::Scope temp_scope(temp_context);
 
-	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(obj->isolate, obj->v8obj);
+	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
 	if (v8obj->IsObject() && !v8obj->IsFunction()) {
 		v8obj->ToObject()->ForceDelete(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)));
@@ -317,14 +321,15 @@ static HashTable *php_v8js_v8_get_properties(zval *object TSRMLS_DC) /* {{{ */
 	ALLOC_HASHTABLE(retval);
 	zend_hash_init(retval, 0, NULL, ZVAL_PTR_DTOR, 0);
 
-	v8::Locker locker(obj->isolate);
-	v8::Isolate::Scope isolate_scope(obj->isolate);
-	v8::HandleScope local_scope(obj->isolate);
-	v8::Local<v8::Context> temp_context = v8::Context::New(obj->isolate);
+	v8::Isolate *isolate = obj->isolate;
+	v8::Locker locker(isolate);
+	v8::Isolate::Scope isolate_scope(isolate);
+	v8::HandleScope local_scope(isolate);
+	v8::Local<v8::Context> temp_context = v8::Context::New(isolate);
 	v8::Context::Scope temp_scope(temp_context);
-	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(obj->isolate, obj->v8obj);
+	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
-	if (php_v8js_v8_get_properties_hash(v8obj, retval, obj->flags, obj->isolate TSRMLS_CC) == SUCCESS) {
+	if (php_v8js_v8_get_properties_hash(v8obj, retval, obj->flags, isolate TSRMLS_CC) == SUCCESS) {
 		return retval;
 	}
 
@@ -344,13 +349,14 @@ static zend_function *php_v8js_v8_get_method(zval **object_ptr, char *method, in
 	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(*object_ptr TSRMLS_CC);
 	zend_function *f;
 
-	v8::Locker locker(obj->isolate);
-	v8::Isolate::Scope isolate_scope(obj->isolate);
-	v8::HandleScope local_scope(obj->isolate);
-	v8::Local<v8::Context> temp_context = v8::Context::New(obj->isolate);
+	v8::Isolate *isolate = obj->isolate;
+	v8::Locker locker(isolate);
+	v8::Isolate::Scope isolate_scope(isolate);
+	v8::HandleScope local_scope(isolate);
+	v8::Local<v8::Context> temp_context = v8::Context::New(isolate);
 	v8::Context::Scope temp_scope(temp_context);
 	v8::Local<v8::String> jsKey = V8JS_STRL(method, method_len);
-	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(obj->isolate, obj->v8obj);
+	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
 	if (!obj->v8obj.IsEmpty() && v8obj->IsObject() && !v8obj->IsFunction()) {
 		v8::Local<v8::Object> jsObj = v8obj->ToObject();
@@ -389,14 +395,15 @@ static int php_v8js_v8_call_method(char *method, INTERNAL_FUNCTION_PARAMETERS) /
 		zend_get_parameters_array_ex(argc, argv);
 	}
 
-	v8::Locker locker(obj->isolate);
-	v8::Isolate::Scope isolate_scope(obj->isolate);
-	v8::HandleScope local_scope(obj->isolate);
-	v8::Local<v8::Context> temp_context = v8::Context::New(obj->isolate);
+	v8::Isolate *isolate = obj->isolate;
+	v8::Locker locker(isolate);
+	v8::Isolate::Scope isolate_scope(isolate);
+	v8::HandleScope local_scope(isolate);
+	v8::Local<v8::Context> temp_context = v8::Context::New(isolate);
 	v8::Context::Scope temp_scope(temp_context);
 
 	v8::Local<v8::String> method_name = V8JS_SYML(method, strlen(method));
-	v8::Local<v8::Object> v8obj = v8::Local<v8::Value>::New(obj->isolate, obj->v8obj)->ToObject();
+	v8::Local<v8::Object> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj)->ToObject();
 	v8::Local<v8::Function> cb;
 
 	if (method_name->Equals(V8JS_SYM(V8JS_V8_INVOKE_FUNC_NAME))) {
@@ -405,11 +412,11 @@ static int php_v8js_v8_call_method(char *method, INTERNAL_FUNCTION_PARAMETERS) /
 		cb = v8::Local<v8::Function>::Cast(v8obj->Get(method_name));
 	}
 
-	v8::Local<v8::Value> *jsArgv = new v8::Local<v8::Value>[argc];
+	v8::Local<v8::Value> jsArgv[argc];
 	v8::Local<v8::Value> js_retval;
 
 	for (i = 0; i < argc; i++) {
-		jsArgv[i] = v8::Local<v8::Value>::New(obj->isolate, zval_to_v8js(*argv[i], obj->isolate TSRMLS_CC));
+		jsArgv[i] = v8::Local<v8::Value>::New(isolate, zval_to_v8js(*argv[i], isolate TSRMLS_CC));
 	}
 
 	js_retval = cb->Call(V8JS_GLOBAL, argc, jsArgv);
@@ -421,7 +428,7 @@ static int php_v8js_v8_call_method(char *method, INTERNAL_FUNCTION_PARAMETERS) /
 	}
 
 	if (return_value_used) {
-		return v8js_to_zval(js_retval, return_value, obj->flags, obj->isolate TSRMLS_CC);
+		return v8js_to_zval(js_retval, return_value, obj->flags, isolate TSRMLS_CC);
 	}
 
 	return SUCCESS;
@@ -434,12 +441,13 @@ static int php_v8js_v8_get_closure(zval *object, zend_class_entry **ce_ptr, zend
 
 	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
 
-	v8::Locker locker(obj->isolate);
-	v8::Isolate::Scope isolate_scope(obj->isolate);
-	v8::HandleScope local_scope(obj->isolate);
-	v8::Local<v8::Context> temp_context = v8::Context::New(obj->isolate);
+	v8::Isolate *isolate = obj->isolate;
+	v8::Locker locker(isolate);
+	v8::Isolate::Scope isolate_scope(isolate);
+	v8::HandleScope local_scope(isolate);
+	v8::Local<v8::Context> temp_context = v8::Context::New(isolate);
 	v8::Context::Scope temp_scope(temp_context);
-	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(obj->isolate, obj->v8obj);
+	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
 	if (!v8obj->IsFunction()) {
 		return FAILURE;
@@ -467,9 +475,7 @@ static void php_v8js_v8_free_storage(void *object, zend_object_handle handle TSR
 
 	zend_object_std_dtor(&c->std TSRMLS_CC);
 
-	if (!c->v8obj.IsEmpty()) {
-		c->v8obj.Dispose();
-	}
+	c->v8obj.Reset();
 
 	efree(object);
 }
@@ -519,19 +525,24 @@ static void php_v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 		zval_ptr_dtor(&c->pending_exception);
 	}
 	
-	c->object_name.Dispose();
+	c->object_name.Reset();
+	c->object_name.~Persistent();
+	c->global_template.Reset();
+	c->global_template.~Persistent();
 
 	/* Clear global object, dispose context */
 	if (!c->context.IsEmpty()) {
-		c->context.Dispose();
-		c->context.Clear();
+		c->context.Reset();
 		V8JSG(disposed_contexts) = v8::V8::ContextDisposedNotification();
 #if V8JS_DEBUG
 		fprintf(stderr, "Context dispose notification sent (%d)\n", V8JSG(disposed_contexts));
 		fflush(stderr);
 #endif
 	}
+	c->context.~Persistent();
 
+	c->modules_stack.~vector();
+	c->modules_base.~vector();
 	efree(object);
 }
 /* }}} */
@@ -543,6 +554,7 @@ static zend_object_value php_v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 
 	c = (php_v8js_ctx *) ecalloc(1, sizeof(*c));
 	zend_object_std_init(&c->std, ce TSRMLS_CC);
+
 #if PHP_VERSION_ID >= 50400
 	object_properties_init(&c->std, ce);
 #else
@@ -550,6 +562,13 @@ static zend_object_value php_v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 	zend_hash_copy(c->std.properties, &ce->default_properties,
 				   (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
 #endif
+
+	new(&c->object_name) v8::Persistent<v8::String>();
+	new(&c->context) v8::Persistent<v8::Context>();
+	new(&c->global_template) v8::Persistent<v8::FunctionTemplate>();
+
+	new(&c->modules_stack) std::vector<char*>();
+	new(&c->modules_base) std::vector<char*>();
 
 	retval.handle = zend_objects_store_put(c, NULL, (zend_objects_free_object_storage_t) php_v8js_free_storage, NULL TSRMLS_CC);
 	retval.handlers = &v8js_object_handlers;
@@ -711,11 +730,12 @@ static PHP_METHOD(V8Js, __construct)
 	v8::ExtensionConfiguration extension_conf(exts_count, exts);
 
 	// Isolate execution
-	v8::Locker locker(c->isolate);
-	v8::Isolate::Scope isolate_scope(c->isolate);
+	v8::Isolate *isolate = c->isolate;
+	v8::Locker locker(isolate);
+	v8::Isolate::Scope isolate_scope(isolate);
 
 	/* Handle scope */
-	v8::HandleScope handle_scope(c->isolate);
+	v8::HandleScope handle_scope(isolate);
 
 	/* Redirect fatal errors to PHP error handler */
 	// This needs to be done within the context isolate
@@ -726,15 +746,15 @@ static PHP_METHOD(V8Js, __construct)
 
 	v8::Local<v8::FunctionTemplate> tpl = v8::FunctionTemplate::New();
 	tpl->SetClassName(V8JS_SYM("V8Js"));
-	c->global_template.Reset(c->isolate, tpl);
+	c->global_template.Reset(isolate, tpl);
 
 	/* Register builtin methods */
 	php_v8js_register_methods(tpl->InstanceTemplate(), c);
 
 	/* Create context */
-	v8::Local<v8::Context> context = v8::Context::New(c->isolate, &extension_conf, tpl->InstanceTemplate());
+	v8::Local<v8::Context> context = v8::Context::New(isolate, &extension_conf, tpl->InstanceTemplate());
 	context->SetAlignedPointerInEmbedderData(1, c);
-	c->context.Reset(c->isolate, context);
+	c->context.Reset(isolate, context);
 
 	if (exts) {
 		_php_v8js_free_ext_strarr(exts, exts_count);
@@ -767,12 +787,12 @@ static PHP_METHOD(V8Js, __construct)
 
 	/* Register Get accessor for passed variables */
 	if (vars_arr && zend_hash_num_elements(Z_ARRVAL_P(vars_arr)) > 0) {
-		php_v8js_register_accessors(php_obj_t->InstanceTemplate(), vars_arr, c->isolate TSRMLS_CC);
+		php_v8js_register_accessors(php_obj_t->InstanceTemplate(), vars_arr, isolate TSRMLS_CC);
 	}
 
 	/* Set name for the PHP JS object */
 	v8::Local<v8::String> object_name_js = (object_name_len) ? V8JS_SYML(object_name, object_name_len) : V8JS_SYM("PHP");
-	c->object_name.Reset(c->isolate, object_name_js);
+	c->object_name.Reset(isolate, object_name_js);
 
 	/* Add the PHP object into global object */
 	v8::Local<v8::Object> php_obj = php_obj_t->InstanceTemplate()->NewInstance();
@@ -799,7 +819,7 @@ static PHP_METHOD(V8Js, __construct)
 		zend_property_info *property_info = zend_get_property_info(c->std.ce, &zmember, 1 TSRMLS_CC);
 		if(property_info && property_info->flags & ZEND_ACC_PUBLIC) {
 			/* Write value to PHP JS object */
-			php_obj->ForceSet(V8JS_SYML(member, member_len - 1), zval_to_v8js(*value, c->isolate TSRMLS_CC), v8::ReadOnly);
+			php_obj->ForceSet(V8JS_SYML(member, member_len - 1), zval_to_v8js(*value, isolate TSRMLS_CC), v8::ReadOnly);
 		}
 	}
 
@@ -816,10 +836,11 @@ static PHP_METHOD(V8Js, __construct)
 	} \
 	\
 	(ctx) = (php_v8js_ctx *) zend_object_store_get_object(object TSRMLS_CC); \
-	v8::Locker locker((ctx)->isolate); \
-	v8::Isolate::Scope isolate_scope((ctx)->isolate); \
-	v8::HandleScope handle_scope((ctx)->isolate); \
-	v8::Context::Scope context_scope((ctx)->isolate, (ctx)->context);
+	v8::Isolate *isolate = (ctx)->isolate; \
+	v8::Locker locker(isolate); \
+	v8::Isolate::Scope isolate_scope(isolate); \
+	v8::HandleScope handle_scope(isolate); \
+	v8::Context::Scope context_scope(isolate, (ctx)->context);
 
 static void php_v8js_timer_push(long time_limit, long memory_limit, php_v8js_ctx *c TSRMLS_DC)
 {
@@ -930,7 +951,7 @@ static PHP_METHOD(V8Js, executeString)
 	v8::Local<v8::String> sname = identifier_len ? V8JS_SYML(identifier, identifier_len) : V8JS_SYM("V8Js::executeString()");
 
 	/* Compiles a string context independently. TODO: Add a php function which calls this and returns the result as resource which can be executed later. */
-	v8::Local<v8::String> source = v8::String::New(str, str_len);
+	v8::Local<v8::String> source = V8JS_STRL(str, str_len);
 	v8::Local<v8::Script> script = v8::Script::New(source, sname);
 
 	/* Compile errors? */
@@ -1015,6 +1036,7 @@ static PHP_METHOD(V8Js, executeString)
 			if (result.IsEmpty()) {
 				MAKE_STD_ZVAL(c->pending_exception);
 				php_v8js_create_script_exception(c->pending_exception, &try_catch TSRMLS_CC);
+				return;
 			}
 		}
 
@@ -1341,11 +1363,11 @@ static void php_v8js_write_property(zval *object, zval *member, zval *value ZEND
 	zend_property_info *property_info = zend_get_property_info(c->std.ce, member, 1 TSRMLS_CC);
 	if(property_info->flags & ZEND_ACC_PUBLIC) {
 		/* Global PHP JS object */
-		v8::Local<v8::String> object_name_js = v8::Local<v8::String>::New(c->isolate, c->object_name);
+		v8::Local<v8::String> object_name_js = v8::Local<v8::String>::New(isolate, c->object_name);
 		v8::Local<v8::Object> jsobj = V8JS_GLOBAL->Get(object_name_js)->ToObject();
 
 		/* Write value to PHP JS object */
-		jsobj->ForceSet(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)), zval_to_v8js(value, c->isolate TSRMLS_CC), v8::ReadOnly);
+		jsobj->ForceSet(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)), zval_to_v8js(value, isolate TSRMLS_CC), v8::ReadOnly);
 	}
 
 	/* Write value to PHP object */
@@ -1358,7 +1380,7 @@ static void php_v8js_unset_property(zval *object, zval *member ZEND_HASH_KEY_DC 
 	V8JS_BEGIN_CTX(c, object)
 
 	/* Global PHP JS object */
-	v8::Local<v8::String> object_name_js = v8::Local<v8::String>::New(c->isolate, c->object_name);
+	v8::Local<v8::String> object_name_js = v8::Local<v8::String>::New(isolate, c->object_name);
 	v8::Local<v8::Object> jsobj = V8JS_GLOBAL->Get(object_name_js)->ToObject();
 	
 	/* Delete value from PHP JS object */

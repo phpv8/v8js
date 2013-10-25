@@ -28,6 +28,8 @@ extern "C" {
 #include <v8.h>
 #include <stdexcept>
 
+#define PHPJS_OBJECT_KEY "phpjs::object"
+
 #if PHP_V8_API_VERSION < 3022000
 /* CopyablePersistentTraits is only part of V8 from 3.22.0 on,
    to be compatible with lower versions add our own (compatible) version. */
@@ -194,7 +196,7 @@ static void php_v8js_php_callback(const v8::FunctionCallbackInfo<v8::Value>& inf
 /* Callback for PHP constructor calls */
 static void php_v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value>& info) /* {{{ */
 {
-	v8::Isolate *isolate = v8::Isolate::GetCurrent();
+	v8::Isolate *isolate = info.GetIsolate();
 	info.GetReturnValue().Set(V8JS_UNDEFINED);
 
 	// @todo assert constructor call
@@ -216,7 +218,7 @@ static void php_v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value
 
 		// Check access on __construct function, if any
 		if (ctor_ptr != NULL && (ctor_ptr->common.fn_flags & ZEND_ACC_PUBLIC) == 0) {
-			info.GetReturnValue().Set(v8::ThrowException(v8::String::New("Call to protected __construct() not allowed")));
+			info.GetReturnValue().Set(v8::ThrowException(V8JS_SYM("Call to protected __construct() not allowed")));
 			return;
 		}
 
@@ -231,6 +233,7 @@ static void php_v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value
 
 	newobj->SetAlignedPointerInInternalField(0, value);
 	newobj->SetAlignedPointerInInternalField(1, (void *) isolate);
+	newobj->SetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY), V8JS_BOOL(true));
 }
 /* }}} */
 
@@ -259,6 +262,7 @@ static int _php_v8js_is_assoc_array(HashTable *myht TSRMLS_DC) /* {{{ */
 static void php_v8js_property_caller(const v8::FunctionCallbackInfo<v8::Value>& info) /* {{{ */
 {
 	v8::Local<v8::Object> self = info.Holder();
+	v8::Isolate *isolate = reinterpret_cast<v8::Isolate *>(self->GetAlignedPointerFromInternalField(1));
 	v8::Local<v8::String> cname = info.Callee()->GetName()->ToString();
 	v8::Local<v8::Value> value;
 	v8::Local<v8::String> cb_func = v8::Local<v8::String>::Cast(info.Data());
@@ -268,7 +272,7 @@ static void php_v8js_property_caller(const v8::FunctionCallbackInfo<v8::Value>& 
 	if (!value.IsEmpty() && value->IsFunction())
 	{
 		int argc = info.Length(), i = 0;
-		v8::Local<v8::Value> *argv = new v8::Local<v8::Value>[argc];
+		v8::Local<v8::Value> argv[argc];
 		v8::Local<v8::Function> cb = v8::Local<v8::Function>::Cast(value);
 
 		if (cb_func->Equals(V8JS_SYM(ZEND_INVOKE_FUNC_NAME))) {
@@ -316,6 +320,8 @@ static void php_v8js_property_getter(v8::Local<v8::String> property, const v8::P
 		return;
 	}
 
+	v8::Isolate *isolate = reinterpret_cast<v8::Isolate *>(self->GetAlignedPointerFromInternalField(1));
+
 	/* If __get() is set for PHP object, call it */
 	value = self->GetHiddenValue(V8JS_SYM(ZEND_GET_FUNC_NAME));
 	if (!value.IsEmpty() && value->IsFunction()) {
@@ -340,6 +346,7 @@ static void php_v8js_property_getter(v8::Local<v8::String> property, const v8::P
 static void php_v8js_property_query(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<v8::Integer> &info) /* {{{ */
 {
 	v8::Local<v8::Object> self = info.Holder();
+	v8::Isolate *isolate = reinterpret_cast<v8::Isolate *>(self->GetAlignedPointerFromInternalField(1));
 	v8::Local<v8::Value> value;
 
 	/* Return early if property is set in JS object */
@@ -734,6 +741,13 @@ int v8js_to_zval(v8::Handle<v8::Value> jsValue, zval *return_value, int flags, v
 	}
 	else if (jsValue->IsObject())
 	{
+		v8::Handle<v8::Object> self = v8::Handle<v8::Object>::Cast(jsValue);
+		// if this is a wrapped PHP object, then just unwrap it.
+		if (!self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY)).IsEmpty()) {
+			zval *object = reinterpret_cast<zval *>(self->GetAlignedPointerFromInternalField(0));
+			RETVAL_ZVAL(object, 1, 0);
+			return SUCCESS;
+		}
 		if ((flags & V8JS_FLAG_FORCE_ARRAY) || jsValue->IsArray()) {
 			array_init(return_value);
 			return php_v8js_v8_get_properties_hash(jsValue, Z_ARRVAL_P(return_value), flags, isolate TSRMLS_CC);
