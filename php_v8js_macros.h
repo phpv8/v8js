@@ -35,15 +35,15 @@ extern "C" {
 #define V8JS_VERSION "0.1.3"
 
 /* Helper macros */
-#define V8JS_SYM(v)			v8::String::NewSymbol(v, sizeof(v) - 1)
-#define V8JS_SYML(v, l)		v8::String::NewSymbol(v, l)
-#define V8JS_STR(v)			v8::String::New(v)
-#define V8JS_STRL(v, l)		v8::String::New(v, l)
-#define V8JS_INT(v)			v8::Integer::New(v)
-#define V8JS_FLOAT(v)		v8::Number::New(v)
-#define V8JS_BOOL(v)		v8::Boolean::New(v)
-#define V8JS_NULL			v8::Null()
-#define V8JS_UNDEFINED		v8::Undefined()
+#define V8JS_SYM(v)			v8::String::NewFromUtf8(isolate, v, v8::String::kInternalizedString, sizeof(v) - 1)
+#define V8JS_SYML(v, l)		v8::String::NewFromUtf8(isolate, v, v8::String::kInternalizedString, l)
+#define V8JS_STR(v)			v8::String::NewFromUtf8(isolate, v)
+#define V8JS_STRL(v, l)		v8::String::NewFromUtf8(isolate, v, v8::String::kNormalString, l)
+#define V8JS_INT(v)			v8::Integer::New(v, isolate)
+#define V8JS_FLOAT(v)		v8::Number::New(isolate, v)
+#define V8JS_BOOL(v)		((v)?v8::True(isolate):v8::False(isolate))
+#define V8JS_NULL			v8::Null(isolate)
+#define V8JS_UNDEFINED		v8::Undefined(isolate)
 #define V8JS_MN(name)		v8js_method_##name
 #define V8JS_METHOD(name)	void V8JS_MN(name)(const v8::FunctionCallbackInfo<v8::Value>& info)
 #define V8JS_THROW(type, message, message_len)	v8::ThrowException(v8::Exception::type(V8JS_STRL(message, message_len)))
