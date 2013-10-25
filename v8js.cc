@@ -405,7 +405,7 @@ static int php_v8js_v8_call_method(char *method, INTERNAL_FUNCTION_PARAMETERS) /
 		cb = v8::Local<v8::Function>::Cast(v8obj->Get(method_name));
 	}
 
-	v8::Local<v8::Value> *jsArgv = new v8::Local<v8::Value>[argc];
+	v8::Local<v8::Value> jsArgv[argc];
 	v8::Local<v8::Value> js_retval;
 
 	for (i = 0; i < argc; i++) {
@@ -467,9 +467,7 @@ static void php_v8js_v8_free_storage(void *object, zend_object_handle handle TSR
 
 	zend_object_std_dtor(&c->std TSRMLS_CC);
 
-	if (!c->v8obj.IsEmpty()) {
-		c->v8obj.Dispose();
-	}
+	c->v8obj.Reset();
 
 	efree(object);
 }
@@ -519,19 +517,24 @@ static void php_v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 		zval_ptr_dtor(&c->pending_exception);
 	}
 	
-	c->object_name.Dispose();
+	c->object_name.Reset();
+	c->object_name.~Persistent();
+	c->global_template.Reset();
+	c->global_template.~Persistent();
 
 	/* Clear global object, dispose context */
 	if (!c->context.IsEmpty()) {
-		c->context.Dispose();
-		c->context.Clear();
+		c->context.Reset();
 		V8JSG(disposed_contexts) = v8::V8::ContextDisposedNotification();
 #if V8JS_DEBUG
 		fprintf(stderr, "Context dispose notification sent (%d)\n", V8JSG(disposed_contexts));
 		fflush(stderr);
 #endif
 	}
+	c->context.~Persistent();
 
+	c->modules_stack.~vector();
+	c->modules_base.~vector();
 	efree(object);
 }
 /* }}} */
@@ -543,6 +546,7 @@ static zend_object_value php_v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 
 	c = (php_v8js_ctx *) ecalloc(1, sizeof(*c));
 	zend_object_std_init(&c->std, ce TSRMLS_CC);
+
 #if PHP_VERSION_ID >= 50400
 	object_properties_init(&c->std, ce);
 #else
@@ -550,6 +554,13 @@ static zend_object_value php_v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 	zend_hash_copy(c->std.properties, &ce->default_properties,
 				   (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
 #endif
+
+	new(&c->object_name) v8::Persistent<v8::String>();
+	new(&c->context) v8::Persistent<v8::Context>();
+	new(&c->global_template) v8::Persistent<v8::FunctionTemplate>();
+
+	new(&c->modules_stack) std::vector<char*>();
+	new(&c->modules_base) std::vector<char*>();
 
 	retval.handle = zend_objects_store_put(c, NULL, (zend_objects_free_object_storage_t) php_v8js_free_storage, NULL TSRMLS_CC);
 	retval.handlers = &v8js_object_handlers;
