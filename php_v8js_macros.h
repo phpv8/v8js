@@ -49,6 +49,35 @@ extern "C" {
 #define V8JS_THROW(type, message, message_len)	v8::ThrowException(v8::Exception::type(V8JS_STRL(message, message_len)))
 #define V8JS_GLOBAL			v8::Context::GetCurrent()->Global()
 
+#if PHP_V8_API_VERSION < 3022000
+/* CopyablePersistentTraits is only part of V8 from 3.22.0 on,
+   to be compatible with lower versions add our own (compatible) version. */
+namespace v8 {
+	template<class T>
+	struct CopyablePersistentTraits {
+		typedef Persistent<T, CopyablePersistentTraits<T> > CopyablePersistent;
+		static const bool kResetInDestructor = true;
+		template<class S, class M>
+#if PHP_V8_API_VERSION >= 3021015
+		static V8_INLINE void Copy(const Persistent<S, M>& source,
+								   CopyablePersistent* dest)
+#else
+		V8_INLINE(static void Copy(const Persistent<S, M>& source,
+								   CopyablePersistent* dest))
+#endif
+		{
+			// do nothing, just allow copy
+		}
+	};
+}
+#endif
+
+/* Abbreviate long type names */
+typedef v8::Persistent<v8::FunctionTemplate, v8::CopyablePersistentTraits<v8::FunctionTemplate> > v8js_tmpl_t;
+
+/* Hidden field name used to link JS wrappers with underlying PHP object */
+#define PHPJS_OBJECT_KEY "phpjs::object"
+
 /* Helper macros */
 #if PHP_V8_API_VERSION < 2005009
 # define V8JS_GET_CLASS_NAME(var, obj) \
@@ -63,9 +92,19 @@ extern "C" {
 #if ZEND_MODULE_API_NO >= 20100409
 # define ZEND_HASH_KEY_DC , const zend_literal *key
 # define ZEND_HASH_KEY_CC , key
+# define ZEND_HASH_KEY_NULL , NULL
 #else
 # define ZEND_HASH_KEY_DC
 # define ZEND_HASH_KEY_CC
+# define ZEND_HASH_KEY_NULL
+#endif
+
+/* method signatures of zend_update_property and zend_read_property were
+ * declared as 'char *' instead of 'const char *' before PHP 5.4 */
+#if ZEND_MODULE_API_NO >= 20100525
+# define V8JS_CONST
+#else
+# define V8JS_CONST (char *)
 #endif
 
 /* Global flags */
@@ -121,6 +160,7 @@ struct php_v8js_ctx {
   zval *module_loader;
   std::vector<char *> modules_stack;
   std::vector<char *> modules_base;
+  std::map<const char *,v8js_tmpl_t> template_cache;
 };
 /* }}} */
 

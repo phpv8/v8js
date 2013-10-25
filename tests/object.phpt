@@ -43,8 +43,8 @@ var_dump($a->myobj->foo);
 ===EOF===
 --EXPECT--
 mytest => function () { [native code] }
-foo => ORIGINAL
+$foo => ORIGINAL
 Here be monsters..
-ORIGINAL
-string(8) "ORIGINAL"
+CHANGED
+string(7) "CHANGED"
 ===EOF===

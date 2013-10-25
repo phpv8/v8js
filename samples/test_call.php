@@ -8,6 +8,7 @@ class Foo {
 	function __Get($name) {
 		echo "Called __get(): ";
 		var_dump($name);
+		return "xyz";
 	}
 	function __Set($name, $args) {
 		echo "Called __set(): ";

@@ -285,11 +285,13 @@ int php_v8js_v8_get_properties_hash(v8::Handle<v8::Value> jsValue, HashTable *re
 			const char *key = ToCString(cstr);
 			zval *value = NULL;
 
-			if(jsVal->IsObject()
-			   && !jsVal->IsFunction()
-			   && jsVal->ToObject()->InternalFieldCount() == 2) {
+			v8::Local<v8::Value> php_object;
+			if (jsVal->IsObject()) {
+				php_object = v8::Local<v8::Object>::Cast(jsVal)->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY));
+			}
+			if (!php_object.IsEmpty()) {
 				/* This is a PHP object, passed to JS and back. */
-				value = reinterpret_cast<zval *>(jsVal->ToObject()->GetAlignedPointerFromInternalField(0));
+				value = reinterpret_cast<zval *>(v8::External::Cast(*php_object)->Value());
 				Z_ADDREF_P(value);
 			}
 			else {
@@ -530,6 +532,13 @@ static void php_v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 	c->global_template.Reset();
 	c->global_template.~Persistent();
 
+	/* Clear persistent handles in template cache */
+	for (std::map<const char *,v8js_tmpl_t>::iterator it = c->template_cache.begin();
+		 it != c->template_cache.end(); ++it) {
+		it->second.Reset();
+	}
+	c->template_cache.~map();
+
 	/* Clear global object, dispose context */
 	if (!c->context.IsEmpty()) {
 		c->context.Reset();
@@ -569,6 +578,7 @@ static zend_object_value php_v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 
 	new(&c->modules_stack) std::vector<char*>();
 	new(&c->modules_base) std::vector<char*>();
+	new(&c->template_cache) std::map<const char *,v8js_tmpl_t>();
 
 	retval.handle = zend_objects_store_put(c, NULL, (zend_objects_free_object_storage_t) php_v8js_free_storage, NULL TSRMLS_CC);
 	retval.handlers = &v8js_object_handlers;

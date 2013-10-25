@@ -7,9 +7,9 @@ Test V8::executeString() : Prototype with PHP callbacks
 $js = <<<'EOT'
 
 String.prototype.test = function(){ return PHP.test(this.toString(), arguments); };
-String.prototype.test_two = function(){ return PHP.test_two.func(this.toString(), arguments); };
+String.prototype.test_two = function(){ return PHP.test_two.__call('func', [this.toString(), arguments]); };
 Array.prototype.test = function(){ return PHP.test(this.toString(), arguments); };
-Array.prototype.test_two = function(){ return PHP.test_two.func(this.toString(), arguments); };
+Array.prototype.test_two = function(){ return PHP.test_two.__call('func', [this.toString(), arguments]); };
 
 "Foobar".test("foo", "bar");
 "Foobar".test_two("foo", "bar");
