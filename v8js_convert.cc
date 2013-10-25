@@ -461,8 +461,8 @@ static void php_v8js_fake_call_impl(const v8::FunctionCallbackInfo<v8::Value>& i
 	// okay, look up the method name and manually invoke it.
 	const zend_object_handlers *h = Z_OBJ_HT_P(object);
 	zend_function *method_ptr =
-		h->get_method(&object, (char*)method_name, method_name_len,
-			NULL TSRMLS_DC);
+		h->get_method(&object, (char*)method_name, method_name_len
+			ZEND_HASH_KEY_NULL TSRMLS_DC);
 	if (method_ptr == NULL ||
 		(method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) == 0 ||
 		(method_ptr->common.fn_flags & (ZEND_ACC_CTOR|ZEND_ACC_DTOR|ZEND_ACC_CLONE)) != 0) {
@@ -590,7 +590,7 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 		}
 		if (callback_type == V8JS_PROP_GETTER) {
 			/* Nope, not a method -- must be a (case-sensitive) property */
-			php_value = zend_read_property(scope, object, name, name_len, true);
+			php_value = zend_read_property(scope, object, V8JS_CONST name, name_len, true);
 			// special case 'NULL' and return an empty value (indicating that
 			// we don't intercept this property) if the property doesn't
 			// exist.
@@ -599,7 +599,7 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 				zval *prop;
 				MAKE_STD_ZVAL(prop);
 				ZVAL_STRINGL(prop, name, name_len, 1);
-				if (!h->has_property(object, prop, 2, NULL TSRMLS_CC))
+				if (!h->has_property(object, prop, 2 ZEND_HASH_KEY_NULL TSRMLS_CC))
 					ret_value = v8::Handle<v8::Value>();
 				else {
 					ret_value = V8JS_NULL;
@@ -614,7 +614,7 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 		} else if (callback_type == V8JS_PROP_SETTER) {
 			MAKE_STD_ZVAL(php_value);
 			if (v8js_to_zval(set_value, php_value, 0, isolate) == SUCCESS) {
-				zend_update_property(scope, object, name, name_len, php_value);
+				zend_update_property(scope, object, V8JS_CONST name, name_len, php_value);
 				ret_value = set_value;
 			} else {
 				ret_value = v8::Handle<v8::Value>();
@@ -626,13 +626,13 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 			MAKE_STD_ZVAL(prop);
 			ZVAL_STRINGL(prop, name, name_len, 1);
 			if (callback_type == V8JS_PROP_QUERY) {
-				if (h->has_property(object, prop, 0, NULL TSRMLS_CC)) {
+				if (h->has_property(object, prop, 0 ZEND_HASH_KEY_NULL TSRMLS_CC)) {
 					ret_value = v8::Integer::NewFromUnsigned(v8::None);
 				} else {
 					ret_value = v8::Handle<v8::Value>(); // empty handle
 				}
 			} else {
-				h->unset_property(object, prop, NULL TSRMLS_CC);
+				h->unset_property(object, prop ZEND_HASH_KEY_NULL TSRMLS_CC);
 				ret_value = V8JS_BOOL(true);
 			}
 			zval_ptr_dtor(&prop);
