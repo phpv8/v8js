@@ -6,6 +6,7 @@ export CXX=g++-$(CPPVER)
 export LINK=g++-$(CPPVER)
 
 export NO_INTERACTION=1
+export REPORT_EXIT_STATUS=1
 
 before_install:
 	sudo apt-get update
