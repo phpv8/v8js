@@ -29,37 +29,6 @@ extern "C" {
 #include <v8.h>
 #include <stdexcept>
 
-#define PHPJS_OBJECT_KEY "phpjs::object"
-
-#if PHP_V8_API_VERSION < 3022000
-/* CopyablePersistentTraits is only part of V8 from 3.22.0 on,
-   to be compatible with lower versions add our own (compatible) version. */
-namespace v8 {
-	template<class T>
-	struct CopyablePersistentTraits {
-		typedef Persistent<T, CopyablePersistentTraits<T> > CopyablePersistent;
-		static const bool kResetInDestructor = true;
-		template<class S, class M>
-#if PHP_V8_API_VERSION >= 3021015
-		static V8_INLINE void Copy(const Persistent<S, M>& source,
-								   CopyablePersistent* dest)
-#else
-		V8_INLINE(static void Copy(const Persistent<S, M>& source,
-								   CopyablePersistent* dest))
-#endif
-		{
-			// do nothing, just allow copy
-		}
-	};
-}
-#endif
-
-typedef std::pair<struct php_v8js_ctx *, const char *> TemplateCacheKey;
-typedef v8::Persistent<v8::FunctionTemplate, v8::CopyablePersistentTraits<v8::FunctionTemplate> > TemplateCacheEntry;
-typedef std::map<TemplateCacheKey, TemplateCacheEntry> TemplateCache;
-
-static TemplateCache tpl_map;
-
 /* Callback for PHP methods and functions */
 static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_function *method_ptr, v8::Isolate *isolate, const v8::FunctionCallbackInfo<v8::Value>& info TSRMLS_DC) /* {{{ */
 {
@@ -115,11 +84,13 @@ static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_funct
 		fci.params = (zval ***) safe_emalloc(argc, sizeof(zval **), 0);
 		argv = (zval **) safe_emalloc(argc, sizeof(zval *), 0);
 		for (i = 0; i < argc; i++) {
-			if(info[i]->IsObject()
-			   && !info[i]->IsFunction()
-			   && info[i]->ToObject()->InternalFieldCount() == 2) {
+			v8::Local<v8::Value> php_object;
+			if (info[i]->IsObject()) {
+				php_object = v8::Local<v8::Object>::Cast(info[i])->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY));
+			}
+			if (!php_object.IsEmpty()) {
 				/* This is a PHP object, passed to JS and back. */
-				argv[i] = reinterpret_cast<zval *>(info[i]->ToObject()->GetAlignedPointerFromInternalField(0));
+				argv[i] = reinterpret_cast<zval *>(v8::External::Cast(*php_object)->Value());
 				Z_ADDREF_P(argv[i]);
 			} else {
 				MAKE_STD_ZVAL(argv[i]);
@@ -180,8 +151,9 @@ failure:
 /* Callback for PHP methods and functions */
 static void php_v8js_php_callback(const v8::FunctionCallbackInfo<v8::Value>& info) /* {{{ */
 {
-	zval *value = reinterpret_cast<zval *>(info.Holder()->GetAlignedPointerFromInternalField(0));
-	v8::Isolate *isolate = reinterpret_cast<v8::Isolate *>(info.Holder()->GetAlignedPointerFromInternalField(1));
+	v8::Isolate *isolate = info.GetIsolate();
+	v8::Local<v8::Object> self = info.Holder();
+	zval *value = reinterpret_cast<zval *>(v8::External::Cast(*self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY)))->Value());
 	zend_function *method_ptr;
 	TSRMLS_FETCH();
 	zend_class_entry *ce = Z_OBJCE_P(value);
@@ -204,19 +176,23 @@ static void php_v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value
 
 	// @todo assert constructor call
 	v8::Handle<v8::Object> newobj = info.This();
-	zval *value;
+	v8::Local<v8::External> php_object;
 	TSRMLS_FETCH();
 
 	if (!info.IsConstructCall()) {
 		return;
 	}
 
+	v8::Local<v8::Array> cons_data = v8::Local<v8::Array>::Cast(info.Data());
+	v8::Local<v8::External> ext_tmpl = v8::Local<v8::External>::Cast(cons_data->Get(0));
+	v8::Local<v8::External> ext_ce =  v8::Local<v8::External>::Cast(cons_data->Get(1));
+
 	if (info[0]->IsExternal()) {
 		// Object created by v8js in php_v8js_hash_to_jsobj, PHP object passed as v8::External.
-		value = static_cast<zval *>(v8::External::Cast(*info[0])->Value());
+		php_object = v8::Local<v8::External>::Cast(info[0]);
 	} else {
 		// Object created from JavaScript context.  Need to create PHP object first.
-		zend_class_entry *ce = static_cast<zend_class_entry *>(v8::External::Cast(*info.Data())->Value());
+		zend_class_entry *ce = static_cast<zend_class_entry *>(ext_ce->Value());
 		zend_function *ctor_ptr = ce->constructor;
 
 		// Check access on __construct function, if any
@@ -225,6 +201,7 @@ static void php_v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value
 			return;
 		}
 
+		zval *value;
 		MAKE_STD_ZVAL(value);
 		object_init_ex(value, ce);
 
@@ -232,11 +209,11 @@ static void php_v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value
 		if (ctor_ptr != NULL) {
 			php_v8js_call_php_func(value, ce, ctor_ptr, isolate, info TSRMLS_CC);
 		}
+		php_object = v8::External::New(value);
 	}
 
-	newobj->SetAlignedPointerInInternalField(0, value);
-	newobj->SetAlignedPointerInInternalField(1, (void *) isolate);
-	newobj->SetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY), V8JS_BOOL(true));
+	newobj->SetAlignedPointerInInternalField(0, ext_tmpl->Value());
+	newobj->SetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY), php_object);
 }
 /* }}} */
 
@@ -262,10 +239,9 @@ static int _php_v8js_is_assoc_array(HashTable *myht TSRMLS_DC) /* {{{ */
 }
 /* }}} */
 
-static void php_v8js_weak_object_callback(v8::Isolate *isolate, v8::Persistent<v8::Object> *object, zval *value)
-{
+static void php_v8js_weak_object_callback(const v8::WeakCallbackData<v8::Object, zval> &data) {
 	TSRMLS_FETCH();
-
+	zval *value = data.GetParameter();
 	if (READY_TO_DESTROY(value)) {
 		zval_dtor(value);
 		FREE_ZVAL(value);
@@ -274,8 +250,13 @@ static void php_v8js_weak_object_callback(v8::Isolate *isolate, v8::Persistent<v
 	}
 
 	v8::V8::AdjustAmountOfExternalAllocatedMemory(-1024);
-	object->Dispose();
 }
+
+static void php_v8js_weak_closure_callback(const v8::WeakCallbackData<v8::Object, v8js_tmpl_t> &data) {
+	v8js_tmpl_t *persist_tpl_ = data.GetParameter();
+	persist_tpl_->Reset();
+	delete persist_tpl_;
+};
 
 /* These are not defined by Zend */
 #define ZEND_WAKEUP_FUNC_NAME    "__wakeup"
@@ -293,6 +274,7 @@ static void php_v8js_weak_object_callback(v8::Isolate *isolate, v8::Persistent<v
 static void php_v8js_named_property_enumerator(const v8::PropertyCallbackInfo<v8::Array> &info) /* {{{ */
 {
 	// note: 'special' properties like 'constructor' are not enumerated.
+	v8::Isolate *isolate = info.GetIsolate();
 	v8::Local<v8::Object> self = info.Holder();
 	v8::Local<v8::Array> result = v8::Array::New(0);
 	uint32_t result_len = 0;
@@ -305,8 +287,7 @@ static void php_v8js_named_property_enumerator(const v8::PropertyCallbackInfo<v8
 	uint key_len;
 	ulong index;
 
-	zval *object = reinterpret_cast<zval *>(self->GetAlignedPointerFromInternalField(0));
-	v8::Isolate *isolate = reinterpret_cast<v8::Isolate *>(self->GetAlignedPointerFromInternalField(1));
+	zval *object = reinterpret_cast<zval *>(v8::External::Cast(*self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY)))->Value());
 	ce = Z_OBJCE_P(object);
 
 	/* enumerate all methods */
@@ -413,6 +394,7 @@ static void php_v8js_invoke_callback(const v8::FunctionCallbackInfo<v8::Value>& 
 // call (as opposed to a property get) from JavaScript using __call.
 static void php_v8js_fake_call_impl(const v8::FunctionCallbackInfo<v8::Value>& info) /* {{{ */
 {
+	v8::Isolate *isolate = info.GetIsolate();
 	v8::Local<v8::Object> self = info.Holder();
 	v8::Handle<v8::Value> return_value;
 
@@ -420,8 +402,7 @@ static void php_v8js_fake_call_impl(const v8::FunctionCallbackInfo<v8::Value>& i
 	int error_len;
 
 	zend_class_entry *ce;
-	zval *object = reinterpret_cast<zval *>(self->GetAlignedPointerFromInternalField(0));
-	v8::Isolate *isolate = reinterpret_cast<v8::Isolate *>(self->GetAlignedPointerFromInternalField(1));
+	zval *object = reinterpret_cast<zval *>(v8::External::Cast(*self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY)))->Value());
 	ce = Z_OBJCE_P(object);
 
 	// first arg is method name, second arg is array of args.
@@ -475,23 +456,17 @@ static void php_v8js_fake_call_impl(const v8::FunctionCallbackInfo<v8::Value>& i
 		return;
 	}
 
-	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData();
-	try {
-		v8::Local<v8::FunctionTemplate> tmpl =
-			v8::Local<v8::FunctionTemplate>::New
-			(isolate, tpl_map.at(std::make_pair(ctx, ce->name)));
-		// use php_v8js_php_callback to actually execute the method
-		v8::Local<v8::Function> cb = PHP_V8JS_CALLBACK(method_ptr, tmpl);
-		uint32_t i, argc = args->Length();
-		v8::Local<v8::Value> argv[argc];
-		for (i=0; i<argc; i++) {
-			argv[i] = args->Get(i);
-		}
-		return_value = cb->Call(info.This(), (int) argc, argv);
-	} catch (const std::out_of_range &) {
-		/* shouldn't fail! but bail safely */
-		return_value = V8JS_NULL;
+	v8::Local<v8::FunctionTemplate> tmpl =
+		v8::Local<v8::FunctionTemplate>::New
+			(isolate, *reinterpret_cast<v8js_tmpl_t *>(self->GetAlignedPointerFromInternalField(0)));
+	// use php_v8js_php_callback to actually execute the method
+	v8::Local<v8::Function> cb = PHP_V8JS_CALLBACK(method_ptr, tmpl);
+	uint32_t i, argc = args->Length();
+	v8::Local<v8::Value> argv[argc];
+	for (i=0; i<argc; i++) {
+		argv[i] = args->Get(i);
 	}
+	return_value = cb->Call(info.This(), (int) argc, argv);
 	info.GetReturnValue().Set(return_value);
 }
 /* }}} */
@@ -507,6 +482,7 @@ typedef enum {
 template<typename T>
 static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<T> &info, property_op_t callback_type, v8::Local<v8::Value> set_value = v8::Local<v8::Value>()) /* {{{ */
 {
+	v8::Isolate *isolate = info.GetIsolate();
 	v8::String::Utf8Value cstr(property);
 	const char *name = ToCString(cstr);
 	uint name_len = strlen(name);
@@ -523,8 +499,10 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 	zend_function *method_ptr = NULL;
 	zval *php_value;
 
-	zval *object = reinterpret_cast<zval *>(self->GetAlignedPointerFromInternalField(0));
-	v8::Isolate *isolate = reinterpret_cast<v8::Isolate *>(self->GetAlignedPointerFromInternalField(1));
+	zval *object = reinterpret_cast<zval *>(v8::External::Cast(*self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY)))->Value());
+	v8::Local<v8::FunctionTemplate> tmpl =
+		v8::Local<v8::FunctionTemplate>::New
+		(isolate, *reinterpret_cast<v8js_tmpl_t *>(self->GetAlignedPointerFromInternalField(0)));
 	ce = Z_OBJCE_P(object);
 
 	/* First, check the (case-insensitive) method table */
@@ -549,27 +527,18 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 			if (is_constructor) {
 				ret_value = self->GetConstructor();
 			} else {
-				php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData();
-				try {
-					v8::Local<v8::FunctionTemplate> tmpl =
-						v8::Local<v8::FunctionTemplate>::New
-						(isolate, tpl_map.at(std::make_pair(ctx, ce->name)));
-					if (is_magic_call && method_ptr==NULL) {
-						// Fake __call implementation
-						// (only use this if method_ptr==NULL, which means
-						//  there is no actual PHP __call() implementation)
-						v8::Local<v8::Function> cb =
-							v8::FunctionTemplate::New(
-								php_v8js_fake_call_impl, V8JS_NULL,
-								v8::Signature::New(tmpl))->GetFunction();
-						cb->SetName(property);
-						ret_value = cb;
-					} else {
-						ret_value = PHP_V8JS_CALLBACK(method_ptr, tmpl);
-					}
-				} catch (const std::out_of_range &) {
-					/* shouldn't fail! but bail safely */
-					ret_value = V8JS_NULL;
+				if (is_magic_call && method_ptr==NULL) {
+					// Fake __call implementation
+					// (only use this if method_ptr==NULL, which means
+					//  there is no actual PHP __call() implementation)
+					v8::Local<v8::Function> cb =
+						v8::FunctionTemplate::New(
+							php_v8js_fake_call_impl, V8JS_NULL,
+							v8::Signature::New(tmpl))->GetFunction();
+					cb->SetName(property);
+					ret_value = cb;
+				} else {
+					ret_value = PHP_V8JS_CALLBACK(method_ptr, tmpl);
 				}
 			}
 		} else if (callback_type == V8JS_PROP_QUERY) {
@@ -709,25 +678,30 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 	} else if (ce) {
 		php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData();
 		v8::Local<v8::FunctionTemplate> new_tpl;
+		v8js_tmpl_t *persist_tpl_;
 
 		try {
 			new_tpl = v8::Local<v8::FunctionTemplate>::New
-				(isolate, tpl_map.at(std::make_pair(ctx, ce->name)));
+				(isolate, ctx->template_cache.at(ce->name));
 		}
 		catch (const std::out_of_range &) {
 			/* No cached v8::FunctionTemplate available as of yet, create one. */
 			new_tpl = v8::FunctionTemplate::New();
 
 			new_tpl->SetClassName(V8JS_STRL(ce->name, ce->name_length));
-			new_tpl->InstanceTemplate()->SetInternalFieldCount(2);
-
-			v8::Handle<v8::Value> wrapped_ce = v8::External::New(ce);
-			new_tpl->SetCallHandler(php_v8js_construct_callback, wrapped_ce);
+			new_tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
 			if (ce == zend_ce_closure) {
 				/* Got a closure, mustn't cache ... */
+				persist_tpl_ = new v8js_tmpl_t(isolate, new_tpl);
+				/* We'll free persist_tpl_ via php_v8js_weak_closure_callback, below */
 				new_tpl->InstanceTemplate()->SetCallAsFunctionHandler(php_v8js_php_callback);
 			} else {
+				/* Add new v8::FunctionTemplate to tpl_map, as long as it is not a closure. */
+				persist_tpl_ = &ctx->template_cache[ce->name];
+				persist_tpl_->Reset(isolate, new_tpl);
+				/* We'll free persist_tpl_ when template_cache is destroyed */
+				// Finish setup of new_tpl
 				new_tpl->InstanceTemplate()->SetNamedPropertyHandler
 					(php_v8js_named_property_getter, /* getter */
 					 php_v8js_named_property_setter, /* setter */
@@ -744,11 +718,16 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 					invoke_method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) {
 					new_tpl->InstanceTemplate()->SetCallAsFunctionHandler(php_v8js_invoke_callback, PHP_V8JS_CALLBACK(invoke_method_ptr, new_tpl));
 				}
-				/* Add new v8::FunctionTemplate to tpl_map, as long as it is not a closure. */
-				TemplateCacheEntry tce(isolate, new_tpl);
-				tpl_map[std::make_pair(ctx, ce->name)] = tce;
 			}
+			v8::Local<v8::Array> call_handler_data = v8::Array::New(2);
+			call_handler_data->Set(0, v8::External::New(persist_tpl_));
+			call_handler_data->Set(1, v8::External::New(ce));
+			new_tpl->SetCallHandler(php_v8js_construct_callback, call_handler_data);
 		}
+
+		// Create v8 wrapper object
+		v8::Handle<v8::Value> external = v8::External::New(value);
+		newobj = new_tpl->GetFunction()->NewInstance(1, &external);
 
 		// Increase the reference count of this value because we're storing it internally for use later
 		// See https://github.com/preillyme/v8js/issues/6
@@ -757,16 +736,18 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 		// Since we got to decrease the reference count again, in case v8 garbage collector
 		// decides to dispose the JS object, we add a weak persistent handle and register
 		// a callback function that removes the reference.
-		v8::Handle<v8::Value> external = v8::External::New(value);
-		v8::Persistent<v8::Object> persist_newobj(isolate, new_tpl->GetFunction()->NewInstance(1, &external));
-		persist_newobj.MakeWeak(value, php_v8js_weak_object_callback);
+		v8::Persistent<v8::Object> persist_newobj(isolate, newobj);
+		persist_newobj.SetWeak(value, php_v8js_weak_object_callback);
 
 		// Just tell v8 that we're allocating some external memory
 		// (for the moment we just always tell 1k instead of trying to find out actual values)
 		v8::V8::AdjustAmountOfExternalAllocatedMemory(1024);
 
-		newobj = v8::Local<v8::Object>::New(isolate, persist_newobj);
-
+		if (ce == zend_ce_closure) {
+			// free uncached function template when object is freed
+			v8::Persistent<v8::Object> persist_newobj2(isolate, newobj);
+			persist_newobj2.SetWeak(persist_tpl_, php_v8js_weak_closure_callback);
+		}
 	} else {
 		v8::Local<v8::FunctionTemplate> new_tpl = v8::FunctionTemplate::New();	// @todo re-use template likewise
 
@@ -955,8 +936,9 @@ int v8js_to_zval(v8::Handle<v8::Value> jsValue, zval *return_value, int flags, v
 	{
 		v8::Handle<v8::Object> self = v8::Handle<v8::Object>::Cast(jsValue);
 		// if this is a wrapped PHP object, then just unwrap it.
-		if (!self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY)).IsEmpty()) {
-			zval *object = reinterpret_cast<zval *>(self->GetAlignedPointerFromInternalField(0));
+		v8::Local<v8::Value> php_object = self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY));
+		if (!php_object.IsEmpty()) {
+			zval *object = reinterpret_cast<zval *>(v8::External::Cast(*php_object)->Value());
 			RETVAL_ZVAL(object, 1, 0);
 			return SUCCESS;
 		}
