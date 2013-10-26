@@ -512,6 +512,10 @@ static void php_v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 		zval_ptr_dtor(&c->pending_exception);
 	}
 
+	if (c->module_loader) {
+		zval_ptr_dtor(&c->module_loader);
+	}
+
 	/* Delete PHP global object from JavaScript */
 	if (!c->context.IsEmpty()) {
 		v8::Locker locker(c->isolate);
