@@ -1729,9 +1729,11 @@ static PHP_GSHUTDOWN_FUNCTION(v8js)
 		v8js_globals->v8_flags = NULL;
 	}
 
+#if 0
 	v8js_globals->timer_stack.~stack();
 	v8js_globals->timer_mutex.~mutex();
 	v8js_globals->modules_loaded.~map();
+#endif
 }
 /* }}} */
 
