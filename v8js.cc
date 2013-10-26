@@ -39,20 +39,6 @@ ZEND_DECLARE_MODULE_GLOBALS(v8js)
 
 /* {{{ INI Settings */
 
-static ZEND_INI_MH(v8js_OnUpdateMaxDisposedContexts) /* {{{ */
-{
-	int max_disposed = zend_atoi(new_value, new_value_length);
-
-	if (max_disposed <= 0) {
-		return FAILURE;
-	}
-
-	V8JSG(max_disposed_contexts) = max_disposed;
-
-	return SUCCESS;
-}
-/* }}} */
-
 static ZEND_INI_MH(v8js_OnUpdateV8Flags) /* {{{ */
 {
 	if (new_value) {
@@ -71,7 +57,6 @@ static ZEND_INI_MH(v8js_OnUpdateV8Flags) /* {{{ */
 /* }}} */
 
 ZEND_INI_BEGIN() /* {{{ */
-	ZEND_INI_ENTRY("v8js.max_disposed_contexts", "25", ZEND_INI_ALL, v8js_OnUpdateMaxDisposedContexts)
 	ZEND_INI_ENTRY("v8js.flags", NULL, ZEND_INI_ALL, v8js_OnUpdateV8Flags)
 ZEND_INI_END()
 /* }}} */
@@ -542,13 +527,18 @@ static void php_v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 	/* Clear global object, dispose context */
 	if (!c->context.IsEmpty()) {
 		c->context.Reset();
-		V8JSG(disposed_contexts) = v8::V8::ContextDisposedNotification();
-#if V8JS_DEBUG
-		fprintf(stderr, "Context dispose notification sent (%d)\n", V8JSG(disposed_contexts));
-		fflush(stderr);
-#endif
 	}
 	c->context.~Persistent();
+
+	/* Force garbage collection on our isolate, this is needed that V8 triggers
+	 * our MakeWeak callbacks.  Without these we won't remove our references
+	 * on the PHP objects leading to memory leaks in PHP context.
+	 */
+	{
+		v8::Locker locker(c->isolate);
+		v8::Isolate::Scope isolate_scope(c->isolate);
+		while(!v8::V8::IdleNotification()) {};
+	}
 
 	c->modules_stack.~vector();
 	c->modules_base.~vector();
@@ -1621,28 +1611,6 @@ static PHP_MINIT_FUNCTION(v8js)
 }
 /* }}} */
 
-static void php_v8js_force_v8_gc(void) /* {{{ */
-{
-#if V8JS_DEBUG
-	TSRMLS_FETCH();
-	fprintf(stderr, "############ Running V8 Idle notification: disposed/max_disposed %d/%d ############\n", V8JSG(disposed_contexts), V8JSG(max_disposed_contexts));
-	fflush(stderr);
-#endif
-
-	while (!v8::V8::IdleNotification()) {
-#if V8JS_DEBUG
-		fprintf(stderr, ".");
-		fflush(stderr);
-#endif
-	}
-
-#if V8JS_DEBUG
-	fprintf(stderr, "\n");
-	fflush(stderr);
-#endif
-}
-/* }}} */
-
 /* {{{ PHP_MSHUTDOWN_FUNCTION
  */
 static PHP_MSHUTDOWN_FUNCTION(v8js)
@@ -1673,11 +1641,6 @@ static PHP_RSHUTDOWN_FUNCTION(v8js)
 	fflush(stderr);
 #endif
 
-	/* Force V8 to do as much GC as possible */
-	if (V8JSG(max_disposed_contexts) && (V8JSG(disposed_contexts) > V8JSG(max_disposed_contexts))) {
-		php_v8js_force_v8_gc();
-	}
-
 	return SUCCESS;
 }
 /* }}} */
@@ -1702,8 +1665,6 @@ static PHP_MINFO_FUNCTION(v8js)
 static PHP_GINIT_FUNCTION(v8js)
 {
 	v8js_globals->extensions = NULL;
-	v8js_globals->disposed_contexts = 0;
-	v8js_globals->max_disposed_contexts = 0;
 	v8js_globals->v8_initialized = 0;
 	v8js_globals->v8_flags = NULL;
 	v8js_globals->timer_thread = NULL;
