@@ -305,8 +305,16 @@ static HashTable *php_v8js_v8_get_properties(zval *object TSRMLS_DC) /* {{{ */
 	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
 	HashTable *retval;
 
-	ALLOC_HASHTABLE(retval);
-	zend_hash_init(retval, 0, NULL, ZVAL_PTR_DTOR, 0);
+	if (obj->properties == NULL) {
+		if (GC_G(gc_active)) {
+			/* the garbage collector is running, don't create more zvals */
+			return NULL;
+		}
+		ALLOC_HASHTABLE(obj->properties);
+		zend_hash_init(obj->properties, 0, NULL, ZVAL_PTR_DTOR, 0);
+	} else {
+		zend_hash_clean(obj->properties);
+	}
 
 	v8::Isolate *isolate = obj->isolate;
 	v8::Locker locker(isolate);
@@ -316,8 +324,8 @@ static HashTable *php_v8js_v8_get_properties(zval *object TSRMLS_DC) /* {{{ */
 	v8::Context::Scope temp_scope(temp_context);
 	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
-	if (php_v8js_v8_get_properties_hash(v8obj, retval, obj->flags, isolate TSRMLS_CC) == SUCCESS) {
-		return retval;
+	if (php_v8js_v8_get_properties_hash(v8obj, obj->properties, obj->flags, isolate TSRMLS_CC) == SUCCESS) {
+		return obj->properties;
 	}
 
 	return NULL;
@@ -326,7 +334,7 @@ static HashTable *php_v8js_v8_get_properties(zval *object TSRMLS_DC) /* {{{ */
 
 static HashTable *php_v8js_v8_get_debug_info(zval *object, int *is_temp TSRMLS_DC) /* {{{ */
 {
-	*is_temp = 1;
+	*is_temp = 0;
 	return php_v8js_v8_get_properties(object TSRMLS_CC);
 }
 /* }}} */
@@ -460,6 +468,12 @@ static void php_v8js_v8_free_storage(void *object, zend_object_handle handle TSR
 {
 	php_v8js_object *c = (php_v8js_object *) object;
 
+	if (c->properties) {
+		zend_hash_destroy(c->properties);
+		FREE_HASHTABLE(c->properties);
+		c->properties = NULL;
+	}
+
 	zend_object_std_dtor(&c->std TSRMLS_CC);
 
 	c->v8obj.Reset();
@@ -495,6 +509,7 @@ void php_v8js_create_v8(zval *res, v8::Handle<v8::Value> value, int flags, v8::I
 	c->v8obj.Reset(isolate, value);
 	c->flags = flags;
 	c->isolate = isolate;
+	c->properties = NULL;
 }
 /* }}} */
 

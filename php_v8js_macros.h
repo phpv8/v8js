@@ -188,6 +188,7 @@ struct php_v8js_object {
 	v8::Persistent<v8::Value> v8obj;
 	int flags;
 	v8::Isolate *isolate;
+	HashTable *properties;
 };
 /* }}} */
 
