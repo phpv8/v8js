@@ -1538,11 +1538,6 @@ static PHP_MINIT_FUNCTION(v8js)
 {
 	zend_class_entry ce;
 
-#ifdef ZTS
-	std::mutex mutex;
-	memcpy(&V8JSG(timer_mutex), &mutex, sizeof(V8JSG(timer_mutex)));
-#endif
-
 	/* V8Object Class */
 	INIT_CLASS_ENTRY(ce, "V8Object", NULL);
 	php_ce_v8_object = zend_register_internal_class(&ce TSRMLS_CC);
@@ -1701,6 +1696,7 @@ static PHP_MINFO_FUNCTION(v8js)
  */
 static PHP_GINIT_FUNCTION(v8js)
 {
+#ifdef ZTS
 	v8js_globals->extensions = NULL;
 	v8js_globals->disposed_contexts = 0;
 	v8js_globals->max_disposed_contexts = 0;
@@ -1711,6 +1707,7 @@ static PHP_GINIT_FUNCTION(v8js)
 	new(&v8js_globals->timer_mutex) std::mutex;
 	new(&v8js_globals->timer_stack) std::stack<php_v8js_timer_ctx *>;
 	new(&v8js_globals->modules_loaded) std::map<char *, v8::Handle<v8::Object>>;
+#endif
 }
 /* }}} */
 
@@ -1729,7 +1726,7 @@ static PHP_GSHUTDOWN_FUNCTION(v8js)
 		v8js_globals->v8_flags = NULL;
 	}
 
-#if 0
+#ifdef ZTS
 	v8js_globals->timer_stack.~stack();
 	v8js_globals->timer_mutex.~mutex();
 	v8js_globals->modules_loaded.~map();
