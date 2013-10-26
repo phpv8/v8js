@@ -1,6 +1,6 @@
 # Configure and build scripts for travis CI system
-V8VER=3.22.10
-CPPVER=4.6
+V8VER ?= 3.22.10
+CPPVER ?= 4.6
 
 export CXX=g++-$(CPPVER)
 export LINK=g++-$(CPPVER)
