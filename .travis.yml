@@ -1,5 +1,8 @@
-language: cpp
-compiler: gcc
+language: php
+php:
+  - 5.5
+  - 5.4
+  - 5.3
 before_install: make -f Makefile.travis before_install
 install: make -f Makefile.travis install
 script: make -f Makefile.travis test
