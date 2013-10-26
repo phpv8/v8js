@@ -1648,18 +1648,6 @@ static void php_v8js_force_v8_gc(void) /* {{{ */
 static PHP_MSHUTDOWN_FUNCTION(v8js)
 {
 	UNREGISTER_INI_ENTRIES();
-
-	if (V8JSG(extensions)) {
-		zend_hash_destroy(V8JSG(extensions));
-		free(V8JSG(extensions));
-		V8JSG(extensions) = NULL;
-	}
-
-	if (V8JSG(v8_flags)) {
-		free(V8JSG(v8_flags));
-		V8JSG(v8_flags) = NULL;
-	}
-
 	return SUCCESS;
 }
 /* }}} */
@@ -1715,10 +1703,35 @@ static PHP_GINIT_FUNCTION(v8js)
 {
 	v8js_globals->extensions = NULL;
 	v8js_globals->disposed_contexts = 0;
+	v8js_globals->max_disposed_contexts = 0;
 	v8js_globals->v8_initialized = 0;
 	v8js_globals->v8_flags = NULL;
 	v8js_globals->timer_thread = NULL;
 	v8js_globals->timer_stop = false;
+	new(&v8js_globals->timer_mutex) std::mutex;
+	new(&v8js_globals->timer_stack) std::stack<php_v8js_timer_ctx *>;
+	new(&v8js_globals->modules_loaded) std::map<char *, v8::Handle<v8::Object>>;
+}
+/* }}} */
+
+/* {{{ PHP_GSHUTDOWN_FUNCTION
+ */
+static PHP_GSHUTDOWN_FUNCTION(v8js)
+{
+	if (v8js_globals->extensions) {
+		zend_hash_destroy(v8js_globals->extensions);
+		free(v8js_globals->extensions);
+		v8js_globals->extensions = NULL;
+	}
+
+	if (v8js_globals->v8_flags) {
+		free(v8js_globals->v8_flags);
+		v8js_globals->v8_flags = NULL;
+	}
+
+	v8js_globals->timer_stack.~stack();
+	v8js_globals->timer_mutex.~mutex();
+	v8js_globals->modules_loaded.~map();
 }
 /* }}} */
 
@@ -1744,7 +1757,7 @@ zend_module_entry v8js_module_entry = {
 	V8JS_VERSION,
 	PHP_MODULE_GLOBALS(v8js),
 	PHP_GINIT(v8js),
-	NULL,
+	PHP_GSHUTDOWN(v8js),
 	NULL,
 	STANDARD_MODULE_PROPERTIES_EX
 };
