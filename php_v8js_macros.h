@@ -161,8 +161,17 @@ struct php_v8js_ctx {
   std::vector<char *> modules_stack;
   std::vector<char *> modules_base;
   std::map<const char *,v8js_tmpl_t> template_cache;
+#ifdef ZTS
+  void ***zts_ctx;
+#endif
 };
 /* }}} */
+
+#ifdef ZTS
+# define V8JS_TSRMLS_FETCH() TSRMLS_FETCH_FROM_CTX(((php_v8js_ctx *) isolate->GetData())->zts_ctx);
+#else
+# define V8JS_TSRMLS_FETCH()
+#endif
 
 // Timer context
 struct php_v8js_timer_ctx

@@ -154,7 +154,7 @@ static void php_v8js_php_callback(const v8::FunctionCallbackInfo<v8::Value>& inf
 	v8::Isolate *isolate = info.GetIsolate();
 	v8::Local<v8::Object> self = info.Holder();
 
-	TSRMLS_FETCH();
+	V8JS_TSRMLS_FETCH();
 	zval *value = reinterpret_cast<zval *>(v8::External::Cast(*self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY)))->Value());
 	zend_function *method_ptr;
 	zend_class_entry *ce = Z_OBJCE_P(value);
@@ -192,7 +192,7 @@ static void php_v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value
 		php_object = v8::Local<v8::External>::Cast(info[0]);
 	} else {
 		// Object created from JavaScript context.  Need to create PHP object first.
-		TSRMLS_FETCH();
+		V8JS_TSRMLS_FETCH();
 		zend_class_entry *ce = static_cast<zend_class_entry *>(ext_ce->Value());
 		zend_function *ctor_ptr = ce->constructor;
 
@@ -241,8 +241,9 @@ static int _php_v8js_is_assoc_array(HashTable *myht TSRMLS_DC) /* {{{ */
 /* }}} */
 
 static void php_v8js_weak_object_callback(const v8::WeakCallbackData<v8::Object, zval> &data) {
-	TSRMLS_FETCH();
+	v8::Isolate *isolate = data.GetIsolate();
 	zval *value = data.GetParameter();
+	V8JS_TSRMLS_FETCH();
 	if (READY_TO_DESTROY(value)) {
 		zval_dtor(value);
 		FREE_ZVAL(value);
@@ -280,7 +281,7 @@ static void php_v8js_named_property_enumerator(const v8::PropertyCallbackInfo<v8
 	v8::Local<v8::Array> result = v8::Array::New(0);
 	uint32_t result_len = 0;
 
-	TSRMLS_FETCH();
+	V8JS_TSRMLS_FETCH();
 	zend_class_entry *ce;
 	zend_function *method_ptr;
 	HashTable *proptable;
@@ -403,7 +404,7 @@ static void php_v8js_fake_call_impl(const v8::FunctionCallbackInfo<v8::Value>& i
 	char *error;
 	int error_len;
 
-	TSRMLS_FETCH();
+	V8JS_TSRMLS_FETCH();
 	zend_class_entry *ce;
 	zval *object = reinterpret_cast<zval *>(v8::External::Cast(*self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY)))->Value());
 	ce = Z_OBJCE_P(object);
@@ -497,7 +498,7 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 	v8::Local<v8::Value> ret_value;
 	v8::Local<v8::Function> cb;
 
-	TSRMLS_FETCH();
+	V8JS_TSRMLS_FETCH();
 	zend_class_entry *scope = NULL; /* XXX? */
 	zend_class_entry *ce;
 	zend_function *method_ptr = NULL;
