@@ -563,6 +563,7 @@ static zend_object_value php_v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 
 	c = (php_v8js_ctx *) ecalloc(1, sizeof(*c));
 	zend_object_std_init(&c->std, ce TSRMLS_CC);
+	TSRMLS_SET_CTX(c->zts_ctx);
 
 #if PHP_VERSION_ID >= 50400
 	object_properties_init(&c->std, ce);

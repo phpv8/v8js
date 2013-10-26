@@ -36,14 +36,15 @@ static void php_v8js_fetch_php_variable(v8::Local<v8::String> name, const v8::Pr
 {
     v8::Handle<v8::External> data = v8::Handle<v8::External>::Cast(info.Data());
     php_v8js_accessor_ctx *ctx = static_cast<php_v8js_accessor_ctx *>(data->Value());
+	v8::Isolate *isolate = ctx->isolate;
 	zval **variable;
 
-	TSRMLS_FETCH();
+	V8JS_TSRMLS_FETCH();
 
 	zend_is_auto_global(ctx->variable_name_string, ctx->variable_name_string_len TSRMLS_CC);
 
 	if (zend_hash_find(&EG(symbol_table), ctx->variable_name_string, ctx->variable_name_string_len + 1, (void **) &variable) == SUCCESS) {
-		info.GetReturnValue().Set(zval_to_v8js(*variable, ctx->isolate TSRMLS_CC));
+		info.GetReturnValue().Set(zval_to_v8js(*variable, isolate TSRMLS_CC));
 		return;
 	}
 }

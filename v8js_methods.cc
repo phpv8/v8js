@@ -45,7 +45,7 @@ V8JS_METHOD(print) /* {{{ */
 {
 	v8::Isolate *isolate = info.GetIsolate();
 	int ret = 0;
-	TSRMLS_FETCH();
+	V8JS_TSRMLS_FETCH();
 
 	for (int i = 0; i < info.Length(); i++) {
 		v8::String::Utf8Value str(info[i]);
@@ -184,7 +184,7 @@ static void _php_v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int
 V8JS_METHOD(var_dump) /* {{{ */
 {
 	v8::Isolate *isolate = info.GetIsolate();
-	TSRMLS_FETCH();
+	V8JS_TSRMLS_FETCH();
 
 	for (int i = 0; i < info.Length(); i++) {
 		_php_v8js_dumper(isolate, info[i], 1 TSRMLS_CC);
@@ -197,7 +197,7 @@ V8JS_METHOD(var_dump) /* {{{ */
 V8JS_METHOD(require)
 {
 	v8::Isolate *isolate = info.GetIsolate();
-	TSRMLS_FETCH();
+	V8JS_TSRMLS_FETCH();
 
 	// Get the extension context
 	v8::Handle<v8::External> data = v8::Handle<v8::External>::Cast(info.Data());
