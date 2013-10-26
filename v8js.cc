@@ -511,7 +511,18 @@ static void php_v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 	if (c->pending_exception) {
 		zval_ptr_dtor(&c->pending_exception);
 	}
-	
+
+	/* Delete PHP global object from JavaScript */
+	if (!c->context.IsEmpty()) {
+		v8::Locker locker(c->isolate);
+		v8::Isolate::Scope isolate_scope(c->isolate);
+		v8::HandleScope handle_scope(c->isolate);
+		v8::Context::Scope context_scope(c->isolate, c->context);
+
+		v8::Local<v8::String> object_name_js = v8::Local<v8::String>::New(c->isolate, c->object_name);
+		V8JS_GLOBAL->Delete(object_name_js);
+	}
+
 	c->object_name.Reset();
 	c->object_name.~Persistent();
 	c->global_template.Reset();
