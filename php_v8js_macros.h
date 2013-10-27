@@ -196,11 +196,9 @@ struct php_v8js_object {
 ZEND_BEGIN_MODULE_GLOBALS(v8js)
   int v8_initialized;
   HashTable *extensions;
-  int disposed_contexts; /* Disposed contexts since last time V8 did GC */
 
   /* Ini globals */
   char *v8_flags; /* V8 command line flags */
-  int max_disposed_contexts; /* Max disposed context allowed before forcing V8 GC */
 
   // Timer thread globals
   std::stack<php_v8js_timer_ctx *> timer_stack;
