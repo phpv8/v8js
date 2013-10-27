@@ -29,6 +29,8 @@ extern "C" {
 #include <v8.h>
 #include <stdexcept>
 
+static void php_v8js_weak_object_callback(const v8::WeakCallbackData<v8::Object, zval> &data);
+
 /* Callback for PHP methods and functions */
 static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_function *method_ptr, v8::Isolate *isolate, const v8::FunctionCallbackInfo<v8::Value>& info TSRMLS_DC) /* {{{ */
 {
@@ -178,6 +180,7 @@ static void php_v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value
 	// @todo assert constructor call
 	v8::Handle<v8::Object> newobj = info.This();
 	v8::Local<v8::External> php_object;
+	zval *value;
 
 	if (!info.IsConstructCall()) {
 		return;
@@ -190,6 +193,10 @@ static void php_v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value
 	if (info[0]->IsExternal()) {
 		// Object created by v8js in php_v8js_hash_to_jsobj, PHP object passed as v8::External.
 		php_object = v8::Local<v8::External>::Cast(info[0]);
+		value = reinterpret_cast<zval *>(php_object->Value());
+		// Increase the reference count of this value because we're storing it internally for use later
+		// See https://github.com/preillyme/v8js/issues/6
+		Z_ADDREF_P(value);
 	} else {
 		// Object created from JavaScript context.  Need to create PHP object first.
 		V8JS_TSRMLS_FETCH();
@@ -202,7 +209,6 @@ static void php_v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value
 			return;
 		}
 
-		zval *value;
 		MAKE_STD_ZVAL(value);
 		object_init_ex(value, ce);
 
@@ -215,6 +221,16 @@ static void php_v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value
 
 	newobj->SetAlignedPointerInInternalField(0, ext_tmpl->Value());
 	newobj->SetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY), php_object);
+
+	// Since we got to decrease the reference count again, in case v8 garbage collector
+	// decides to dispose the JS object, we add a weak persistent handle and register
+	// a callback function that removes the reference.
+	v8::Persistent<v8::Object> persist_newobj(isolate, newobj);
+	persist_newobj.SetWeak(value, php_v8js_weak_object_callback);
+
+	// Just tell v8 that we're allocating some external memory
+	// (for the moment we just always tell 1k instead of trying to find out actual values)
+	v8::V8::AdjustAmountOfExternalAllocatedMemory(1024);
 }
 /* }}} */
 
@@ -733,20 +749,6 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 		// Create v8 wrapper object
 		v8::Handle<v8::Value> external = v8::External::New(value);
 		newobj = new_tpl->GetFunction()->NewInstance(1, &external);
-
-		// Increase the reference count of this value because we're storing it internally for use later
-		// See https://github.com/preillyme/v8js/issues/6
-		Z_ADDREF_P(value);
-
-		// Since we got to decrease the reference count again, in case v8 garbage collector
-		// decides to dispose the JS object, we add a weak persistent handle and register
-		// a callback function that removes the reference.
-		v8::Persistent<v8::Object> persist_newobj(isolate, newobj);
-		persist_newobj.SetWeak(value, php_v8js_weak_object_callback);
-
-		// Just tell v8 that we're allocating some external memory
-		// (for the moment we just always tell 1k instead of trying to find out actual values)
-		v8::V8::AdjustAmountOfExternalAllocatedMemory(1024);
 
 		if (ce == zend_ce_closure) {
 			// free uncached function template when object is freed
