@@ -580,30 +580,17 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 		if (callback_type == V8JS_PROP_GETTER) {
 			/* Nope, not a method -- must be a (case-sensitive) property */
 			php_value = zend_read_property(scope, object, V8JS_CONST name, name_len, true TSRMLS_CC);
-			// special case 'NULL' and return an empty value (indicating that
-			// we don't intercept this property) if the property doesn't
-			// exist.
-			if (ZVAL_IS_NULL(php_value)) {
-				const zend_object_handlers *h = Z_OBJ_HT_P(object);
-				zval *prop;
-				MAKE_STD_ZVAL(prop);
-				ZVAL_STRINGL(prop, name, name_len, 1);
-				if (!h->has_property(object, prop, 2 ZEND_HASH_KEY_NULL TSRMLS_CC))
-					ret_value = v8::Handle<v8::Value>();
-				else {
-					ret_value = V8JS_NULL;
-				}
-				zval_ptr_dtor(&prop);
+			// special case uninitialized_zval_ptr and return an empty value
+			// (indicating that we don't intercept this property) if the
+			// property doesn't exist.
+			if (php_value == EG(uninitialized_zval_ptr)) {
+				ret_value = v8::Handle<v8::Value>();
 			} else {
 				// wrap it
 				ret_value = zval_to_v8js(php_value, isolate TSRMLS_CC);
-			}
-			/* php_value is the value in the property table; *usually* we
-			 * don't own a reference to it (and so don't have to deref).
-			 * But sometimes the value is the result of a __get() call and
-			 * the refcnt of the returned value is 0.  In that case, free
-			 * it. */
-			if (php_value != EG(uninitialized_zval_ptr)) {
+				/* We don't own the reference to php_value... unless the
+				 * returned refcount was 0, in which case the below code
+				 * will free it. */
 				zval_add_ref(&php_value);
 				zval_ptr_dtor(&php_value);
 			}
@@ -615,6 +602,9 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 			} else {
 				ret_value = v8::Handle<v8::Value>();
 			}
+			// if PHP wanted to hold on to this value, update_property would
+			// have bumped the refcount
+			zval_ptr_dtor(&php_value);
 		} else if (callback_type == V8JS_PROP_QUERY ||
 				   callback_type == V8JS_PROP_DELETER) {
 			const zend_object_handlers *h = Z_OBJ_HT_P(object);
