@@ -554,6 +554,13 @@ static void php_v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 	}
 	c->template_cache.~map();
 
+	/* Clear contexts */
+	for (std::vector<php_v8js_accessor_ctx*>::iterator it = c->accessor_list.begin();
+		 it != c->accessor_list.end(); ++it) {
+		php_v8js_accessor_ctx_dtor(*it TSRMLS_CC);
+	}
+	c->accessor_list.~vector();
+
 	/* Clear global object, dispose context */
 	if (!c->context.IsEmpty()) {
 		c->context.Reset();
@@ -600,6 +607,7 @@ static zend_object_value php_v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 	new(&c->modules_stack) std::vector<char*>();
 	new(&c->modules_base) std::vector<char*>();
 	new(&c->template_cache) std::map<const char *,v8js_tmpl_t>();
+	new(&c->accessor_list) std::vector<php_v8js_accessor_ctx *>();
 
 	retval.handle = zend_objects_store_put(c, NULL, (zend_objects_free_object_storage_t) php_v8js_free_storage, NULL TSRMLS_CC);
 	retval.handlers = &v8js_object_handlers;
@@ -818,7 +826,7 @@ static PHP_METHOD(V8Js, __construct)
 
 	/* Register Get accessor for passed variables */
 	if (vars_arr && zend_hash_num_elements(Z_ARRVAL_P(vars_arr)) > 0) {
-		php_v8js_register_accessors(php_obj_t, vars_arr, isolate TSRMLS_CC);
+		php_v8js_register_accessors(&c->accessor_list, php_obj_t, vars_arr, isolate TSRMLS_CC);
 	}
 
 	/* Set name for the PHP JS object */
