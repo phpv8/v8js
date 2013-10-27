@@ -515,8 +515,7 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 	v8::Local<v8::Function> cb;
 
 	V8JS_TSRMLS_FETCH();
-	zend_class_entry *scope = NULL; /* XXX? */
-	zend_class_entry *ce;
+	zend_class_entry *scope, *ce;
 	zend_function *method_ptr = NULL;
 	zval *php_value;
 
@@ -524,7 +523,7 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 	v8::Local<v8::FunctionTemplate> tmpl =
 		v8::Local<v8::FunctionTemplate>::New
 		(isolate, *reinterpret_cast<v8js_tmpl_t *>(self->GetAlignedPointerFromInternalField(0)));
-	ce = Z_OBJCE_P(object);
+	ce = scope = Z_OBJCE_P(object);
 
 	/* First, check the (case-insensitive) method table */
 	php_strtolower(lower, name_len);
@@ -599,8 +598,15 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 				// wrap it
 				ret_value = zval_to_v8js(php_value, isolate TSRMLS_CC);
 			}
-			/* php_value is the value in the property table; we don't own a
-			 * reference to it (and so don't have to deref) */
+			/* php_value is the value in the property table; *usually* we
+			 * don't own a reference to it (and so don't have to deref).
+			 * But sometimes the value is the result of a __get() call and
+			 * the refcnt of the returned value is 0.  In that case, free
+			 * it. */
+			if (php_value != EG(uninitialized_zval_ptr)) {
+				zval_add_ref(&php_value);
+				zval_ptr_dtor(&php_value);
+			}
 		} else if (callback_type == V8JS_PROP_SETTER) {
 			MAKE_STD_ZVAL(php_value);
 			if (v8js_to_zval(set_value, php_value, 0, isolate TSRMLS_CC) == SUCCESS) {
