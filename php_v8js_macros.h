@@ -143,7 +143,7 @@ v8::Handle<v8::Value> zval_to_v8js(zval *, v8::Isolate * TSRMLS_DC);
 int v8js_to_zval(v8::Handle<v8::Value>, zval *, int, v8::Isolate * TSRMLS_DC);
 
 /* Register accessors into passed object */
-void php_v8js_register_accessors(v8::Local<v8::ObjectTemplate>, zval *, v8::Isolate * TSRMLS_DC);
+void php_v8js_register_accessors(v8::Local<v8::FunctionTemplate>, zval *, v8::Isolate * TSRMLS_DC);
 
 /* {{{ Context container */
 struct php_v8js_ctx {

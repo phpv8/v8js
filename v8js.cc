@@ -818,7 +818,7 @@ static PHP_METHOD(V8Js, __construct)
 
 	/* Register Get accessor for passed variables */
 	if (vars_arr && zend_hash_num_elements(Z_ARRVAL_P(vars_arr)) > 0) {
-		php_v8js_register_accessors(php_obj_t->InstanceTemplate(), vars_arr, isolate TSRMLS_CC);
+		php_v8js_register_accessors(php_obj_t, vars_arr, isolate TSRMLS_CC);
 	}
 
 	/* Set name for the PHP JS object */

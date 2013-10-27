@@ -50,12 +50,13 @@ static void php_v8js_fetch_php_variable(v8::Local<v8::String> name, const v8::Pr
 }
 /* }}} */
 
-void php_v8js_register_accessors(v8::Local<v8::ObjectTemplate> php_obj, zval *array, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
+void php_v8js_register_accessors(v8::Local<v8::FunctionTemplate> php_obj_t, zval *array, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
 {
 	char *property_name;
 	uint property_name_len;
 	ulong index;
 	zval **item;
+	v8::Local<v8::ObjectTemplate> php_obj = php_obj_t->InstanceTemplate();
 
 	for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(array));
 		zend_hash_get_current_data(Z_ARRVAL_P(array), (void **) &item) != FAILURE;
@@ -85,7 +86,7 @@ void php_v8js_register_accessors(v8::Local<v8::ObjectTemplate> php_obj, zval *ar
         ctx->isolate = isolate;
 
 		/* Set the variable fetch callback for given symbol on named property */
-		php_obj->SetAccessor(V8JS_STRL(property_name, property_name_len - 1), php_v8js_fetch_php_variable, NULL, v8::External::New(ctx), v8::PROHIBITS_OVERWRITING, v8::ReadOnly);
+		php_obj->SetAccessor(V8JS_STRL(property_name, property_name_len - 1), php_v8js_fetch_php_variable, NULL, v8::External::New(ctx), v8::PROHIBITS_OVERWRITING, v8::ReadOnly, v8::AccessorSignature::New(php_obj_t));
 	}
 }
 /* }}} */
