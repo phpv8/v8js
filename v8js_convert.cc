@@ -260,12 +260,7 @@ static void php_v8js_weak_object_callback(const v8::WeakCallbackData<v8::Object,
 	v8::Isolate *isolate = data.GetIsolate();
 	zval *value = data.GetParameter();
 	V8JS_TSRMLS_FETCH();
-	if (READY_TO_DESTROY(value)) {
-		zval_dtor(value);
-		FREE_ZVAL(value);
-	} else {
-		Z_DELREF_P(value);
-	}
+	zval_ptr_dtor(&value);
 
 	v8::V8::AdjustAmountOfExternalAllocatedMemory(-1024);
 }
