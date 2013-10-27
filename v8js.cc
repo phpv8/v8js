@@ -305,8 +305,16 @@ static HashTable *php_v8js_v8_get_properties(zval *object TSRMLS_DC) /* {{{ */
 	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
 	HashTable *retval;
 
-	ALLOC_HASHTABLE(retval);
-	zend_hash_init(retval, 0, NULL, ZVAL_PTR_DTOR, 0);
+	if (obj->properties == NULL) {
+		if (GC_G(gc_active)) {
+			/* the garbage collector is running, don't create more zvals */
+			return NULL;
+		}
+		ALLOC_HASHTABLE(obj->properties);
+		zend_hash_init(obj->properties, 0, NULL, ZVAL_PTR_DTOR, 0);
+	} else {
+		zend_hash_clean(obj->properties);
+	}
 
 	v8::Isolate *isolate = obj->isolate;
 	v8::Locker locker(isolate);
@@ -316,8 +324,8 @@ static HashTable *php_v8js_v8_get_properties(zval *object TSRMLS_DC) /* {{{ */
 	v8::Context::Scope temp_scope(temp_context);
 	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
-	if (php_v8js_v8_get_properties_hash(v8obj, retval, obj->flags, isolate TSRMLS_CC) == SUCCESS) {
-		return retval;
+	if (php_v8js_v8_get_properties_hash(v8obj, obj->properties, obj->flags, isolate TSRMLS_CC) == SUCCESS) {
+		return obj->properties;
 	}
 
 	return NULL;
@@ -326,7 +334,7 @@ static HashTable *php_v8js_v8_get_properties(zval *object TSRMLS_DC) /* {{{ */
 
 static HashTable *php_v8js_v8_get_debug_info(zval *object, int *is_temp TSRMLS_DC) /* {{{ */
 {
-	*is_temp = 1;
+	*is_temp = 0;
 	return php_v8js_v8_get_properties(object TSRMLS_CC);
 }
 /* }}} */
@@ -460,6 +468,12 @@ static void php_v8js_v8_free_storage(void *object, zend_object_handle handle TSR
 {
 	php_v8js_object *c = (php_v8js_object *) object;
 
+	if (c->properties) {
+		zend_hash_destroy(c->properties);
+		FREE_HASHTABLE(c->properties);
+		c->properties = NULL;
+	}
+
 	zend_object_std_dtor(&c->std TSRMLS_CC);
 
 	c->v8obj.Reset();
@@ -495,6 +509,7 @@ void php_v8js_create_v8(zval *res, v8::Handle<v8::Value> value, int flags, v8::I
 	c->v8obj.Reset(isolate, value);
 	c->flags = flags;
 	c->isolate = isolate;
+	c->properties = NULL;
 }
 /* }}} */
 
@@ -510,6 +525,10 @@ static void php_v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 
 	if (c->pending_exception) {
 		zval_ptr_dtor(&c->pending_exception);
+	}
+
+	if (c->module_loader) {
+		zval_ptr_dtor(&c->module_loader);
 	}
 
 	/* Delete PHP global object from JavaScript */
@@ -534,6 +553,13 @@ static void php_v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 		it->second.Reset();
 	}
 	c->template_cache.~map();
+
+	/* Clear contexts */
+	for (std::vector<php_v8js_accessor_ctx*>::iterator it = c->accessor_list.begin();
+		 it != c->accessor_list.end(); ++it) {
+		php_v8js_accessor_ctx_dtor(*it TSRMLS_CC);
+	}
+	c->accessor_list.~vector();
 
 	/* Clear global object, dispose context */
 	if (!c->context.IsEmpty()) {
@@ -581,6 +607,7 @@ static zend_object_value php_v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 	new(&c->modules_stack) std::vector<char*>();
 	new(&c->modules_base) std::vector<char*>();
 	new(&c->template_cache) std::map<const char *,v8js_tmpl_t>();
+	new(&c->accessor_list) std::vector<php_v8js_accessor_ctx *>();
 
 	retval.handle = zend_objects_store_put(c, NULL, (zend_objects_free_object_storage_t) php_v8js_free_storage, NULL TSRMLS_CC);
 	retval.handlers = &v8js_object_handlers;
@@ -799,7 +826,7 @@ static PHP_METHOD(V8Js, __construct)
 
 	/* Register Get accessor for passed variables */
 	if (vars_arr && zend_hash_num_elements(Z_ARRVAL_P(vars_arr)) > 0) {
-		php_v8js_register_accessors(php_obj_t->InstanceTemplate(), vars_arr, isolate TSRMLS_CC);
+		php_v8js_register_accessors(&c->accessor_list, php_obj_t, vars_arr, isolate TSRMLS_CC);
 	}
 
 	/* Set name for the PHP JS object */
@@ -870,6 +897,7 @@ static void php_v8js_timer_push(long time_limit, long memory_limit, php_v8js_ctx
 	timer_ctx->memory_limit = memory_limit;
 	timer_ctx->time_point = from + duration;
 	timer_ctx->v8js_ctx = c;
+	timer_ctx->killed = false;
 	V8JSG(timer_stack).push(timer_ctx);
 
 	V8JSG(timer_mutex).unlock();
@@ -880,12 +908,11 @@ static void php_v8js_timer_pop(TSRMLS_D)
 	V8JSG(timer_mutex).lock();
 
 	if (V8JSG(timer_stack).size()) {
-		// Free the timer context memory
 		php_v8js_timer_ctx *timer_ctx = V8JSG(timer_stack).top();
-		efree(timer_ctx);
-
 		// Remove the timer context from the stack
 		V8JSG(timer_stack).pop();
+		// Free the timer context memory
+		efree(timer_ctx);
 	}
 
 	V8JSG(timer_mutex).unlock();
@@ -895,9 +922,7 @@ static void php_v8js_terminate_execution(php_v8js_ctx *c TSRMLS_DC)
 {
 	// Forcefully terminate the current thread of V8 execution in the isolate
 	v8::V8::TerminateExecution(c->isolate);
-
-	// Remove this timer from the stack
-	php_v8js_timer_pop(TSRMLS_C);
+	// This timer will be removed from stack by the parent thread.
 }
 
 static void php_v8js_timer_thread(TSRMLS_D)
@@ -914,7 +939,9 @@ static void php_v8js_timer_thread(TSRMLS_D)
 			// Get memory usage statistics for the isolate
 			c->isolate->GetHeapStatistics(&hs);
 
-			if (timer_ctx->time_limit > 0 && now > timer_ctx->time_point) {
+			if (timer_ctx->time_limit > 0 && now > timer_ctx->time_point &&
+				!timer_ctx->killed) {
+				timer_ctx->killed = true;
 				php_v8js_terminate_execution(c TSRMLS_CC);
 
 				V8JSG(timer_mutex).lock();
@@ -922,7 +949,9 @@ static void php_v8js_timer_thread(TSRMLS_D)
 				V8JSG(timer_mutex).unlock();
 			}
 
-			if (timer_ctx->memory_limit > 0 && hs.used_heap_size() > timer_ctx->memory_limit) {
+			if (timer_ctx->memory_limit > 0 && hs.used_heap_size() > timer_ctx->memory_limit &&
+				!timer_ctx->killed) {
+				timer_ctx->killed = true;
 				php_v8js_terminate_execution(c TSRMLS_CC);
 
 				V8JSG(timer_mutex).lock();
@@ -1001,7 +1030,7 @@ static PHP_METHOD(V8Js, executeString)
 	v8::Local<v8::Value> result = script->Run();
 	c->in_execution--;
 
-	if (time_limit > 0) {
+	if (time_limit > 0 || memory_limit > 0) {
 		php_v8js_timer_pop(TSRMLS_C);
 	}
 
@@ -1670,6 +1699,16 @@ static PHP_MINFO_FUNCTION(v8js)
  */
 static PHP_GINIT_FUNCTION(v8js)
 {
+	/*
+	  If ZTS is disabled, the v8js_globals instance is declared right
+	  in the BSS and hence automatically initialized by C++ compiler.
+	  Most of the variables are just zeroed.
+
+	  If ZTS is enabled however, v8js_globals just points to a freshly
+	  allocated, uninitialized piece of memory, hence we need to
+	  initialize all fields on our own.  Likewise on shutdown we have to
+	  run the destructors manually.
+	*/
 #ifdef ZTS
 	v8js_globals->extensions = NULL;
 	v8js_globals->v8_initialized = 0;

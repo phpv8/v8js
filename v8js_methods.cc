@@ -234,6 +234,7 @@ V8JS_METHOD(require)
 	for (std::vector<char *>::iterator it = c->modules_stack.begin(); it != c->modules_stack.end(); ++it)
     {
     	if (!strcmp(*it, normalised_module_id)) {
+    		efree(normalised_module_id);
     		efree(normalised_path);
 
 		info.GetReturnValue().Set(v8::ThrowException(V8JS_SYM("Module cyclic dependency")));
@@ -243,6 +244,7 @@ V8JS_METHOD(require)
 
     // If we have already loaded and cached this module then use it
 	if (V8JSG(modules_loaded).count(normalised_module_id) > 0) {
+		efree(normalised_module_id);
 		efree(normalised_path);
 
 		info.GetReturnValue().Set(V8JSG(modules_loaded)[normalised_module_id]);
@@ -251,22 +253,26 @@ V8JS_METHOD(require)
 
 	// Callback to PHP to load the module code
 
-	zval module_code;
+	zval *module_code;
 	zval *normalised_path_zend;
 
 	MAKE_STD_ZVAL(normalised_path_zend);
 	ZVAL_STRING(normalised_path_zend, normalised_module_id, 1);
-	zval* params[] = { normalised_path_zend };
 
-	if (FAILURE == call_user_function(EG(function_table), NULL, c->module_loader, &module_code, 1, params TSRMLS_CC)) {
+	zval **params[1] = {&normalised_path_zend};
+	if (FAILURE == call_user_function_ex(EG(function_table), NULL, c->module_loader, &module_code, 1, params, 0, NULL TSRMLS_CC)) {
+		zval_ptr_dtor(&normalised_path_zend);
+		efree(normalised_module_id);
 		efree(normalised_path);
 
 		info.GetReturnValue().Set(v8::ThrowException(V8JS_SYM("Module loader callback failed")));
 		return;
 	}
+	zval_ptr_dtor(&normalised_path_zend);
 
 	// Check if an exception was thrown
 	if (EG(exception)) {
+		efree(normalised_module_id);
 		efree(normalised_path);
 
 		// Clear the PHP exception and throw it in V8 instead
@@ -276,12 +282,14 @@ V8JS_METHOD(require)
 	}
 
 	// Convert the return value to string
-	if (Z_TYPE(module_code) != IS_STRING) {
-    	convert_to_string(&module_code);
+	if (Z_TYPE_P(module_code) != IS_STRING) {
+		convert_to_string(module_code);
 	}
 
 	// Check that some code has been returned
-	if (!strlen(Z_STRVAL(module_code))) {
+	if (Z_STRLEN_P(module_code)==0) {
+		zval_ptr_dtor(&module_code);
+		efree(normalised_module_id);
 		efree(normalised_path);
 
 		info.GetReturnValue().Set(v8::ThrowException(V8JS_SYM("Module loader callback did not return code")));
@@ -321,13 +329,15 @@ V8JS_METHOD(require)
 	// Set script identifier
 	v8::Local<v8::String> sname = V8JS_SYM("require");
 
-	v8::Local<v8::String> source = V8JS_STR(Z_STRVAL(module_code));
+	v8::Local<v8::String> source = V8JS_STRL(Z_STRVAL_P(module_code), Z_STRLEN_P(module_code));
+	zval_ptr_dtor(&module_code);
 
 	// Create and compile script
 	v8::Local<v8::Script> script = v8::Script::New(source, sname);
 
 	// The script will be empty if there are compile errors
 	if (script.IsEmpty()) {
+		efree(normalised_module_id);
 		efree(normalised_path);
 		info.GetReturnValue().Set(v8::ThrowException(V8JS_SYM("Module script compile failed")));
 		return;
@@ -345,6 +355,7 @@ V8JS_METHOD(require)
 	c->modules_stack.pop_back();
 	c->modules_base.pop_back();
 
+	efree(normalised_module_id);
 	efree(normalised_path);
 
 	// Script possibly terminated, return immediately
