@@ -1670,6 +1670,16 @@ static PHP_MINFO_FUNCTION(v8js)
  */
 static PHP_GINIT_FUNCTION(v8js)
 {
+	/*
+	  If ZTS is disabled, the v8js_globals instance is declared right
+	  in the BSS and hence automatically initialized by C++ compiler.
+	  Most of the variables are just zeroed.
+
+	  If ZTS is enabled however, v8js_globals just points to a freshly
+	  allocated, uninitialized piece of memory, hence we need to
+	  initialize all fields on our own.  Likewise on shutdown we have to
+	  run the destructors manually.
+	*/
 #ifdef ZTS
 	v8js_globals->extensions = NULL;
 	v8js_globals->v8_initialized = 0;
