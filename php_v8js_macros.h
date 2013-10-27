@@ -180,6 +180,7 @@ struct php_v8js_timer_ctx
   long memory_limit;
   std::chrono::time_point<std::chrono::high_resolution_clock> time_point;
   php_v8js_ctx *v8js_ctx;
+  bool killed;
 };
 
 /* {{{ Object container */

@@ -889,6 +889,7 @@ static void php_v8js_timer_push(long time_limit, long memory_limit, php_v8js_ctx
 	timer_ctx->memory_limit = memory_limit;
 	timer_ctx->time_point = from + duration;
 	timer_ctx->v8js_ctx = c;
+	timer_ctx->killed = false;
 	V8JSG(timer_stack).push(timer_ctx);
 
 	V8JSG(timer_mutex).unlock();
@@ -899,12 +900,11 @@ static void php_v8js_timer_pop(TSRMLS_D)
 	V8JSG(timer_mutex).lock();
 
 	if (V8JSG(timer_stack).size()) {
-		// Free the timer context memory
 		php_v8js_timer_ctx *timer_ctx = V8JSG(timer_stack).top();
-		efree(timer_ctx);
-
 		// Remove the timer context from the stack
 		V8JSG(timer_stack).pop();
+		// Free the timer context memory
+		efree(timer_ctx);
 	}
 
 	V8JSG(timer_mutex).unlock();
@@ -914,9 +914,7 @@ static void php_v8js_terminate_execution(php_v8js_ctx *c TSRMLS_DC)
 {
 	// Forcefully terminate the current thread of V8 execution in the isolate
 	v8::V8::TerminateExecution(c->isolate);
-
-	// Remove this timer from the stack
-	php_v8js_timer_pop(TSRMLS_C);
+	// This timer will be removed from stack by the parent thread.
 }
 
 static void php_v8js_timer_thread(TSRMLS_D)
@@ -933,7 +931,9 @@ static void php_v8js_timer_thread(TSRMLS_D)
 			// Get memory usage statistics for the isolate
 			c->isolate->GetHeapStatistics(&hs);
 
-			if (timer_ctx->time_limit > 0 && now > timer_ctx->time_point) {
+			if (timer_ctx->time_limit > 0 && now > timer_ctx->time_point &&
+				!timer_ctx->killed) {
+				timer_ctx->killed = true;
 				php_v8js_terminate_execution(c TSRMLS_CC);
 
 				V8JSG(timer_mutex).lock();
@@ -941,7 +941,9 @@ static void php_v8js_timer_thread(TSRMLS_D)
 				V8JSG(timer_mutex).unlock();
 			}
 
-			if (timer_ctx->memory_limit > 0 && hs.used_heap_size() > timer_ctx->memory_limit) {
+			if (timer_ctx->memory_limit > 0 && hs.used_heap_size() > timer_ctx->memory_limit &&
+				!timer_ctx->killed) {
+				timer_ctx->killed = true;
 				php_v8js_terminate_execution(c TSRMLS_CC);
 
 				V8JSG(timer_mutex).lock();
@@ -1020,7 +1022,7 @@ static PHP_METHOD(V8Js, executeString)
 	v8::Local<v8::Value> result = script->Run();
 	c->in_execution--;
 
-	if (time_limit > 0) {
+	if (time_limit > 0 || memory_limit > 0) {
 		php_v8js_timer_pop(TSRMLS_C);
 	}
 
