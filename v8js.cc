@@ -310,6 +310,10 @@ static HashTable *php_v8js_v8_get_properties(zval *object TSRMLS_DC) /* {{{ */
 			/* the garbage collector is running, don't create more zvals */
 			return NULL;
 		}
+		if (obj->isolate == NULL) {
+			/* Half-constructed object.  Shouldn't happen, but be safe. */
+			return NULL;
+		}
 		ALLOC_HASHTABLE(obj->properties);
 		zend_hash_init(obj->properties, 0, NULL, ZVAL_PTR_DTOR, 0);
 	} else {
@@ -490,11 +494,37 @@ static zend_object_value php_v8js_v8_new(zend_class_entry *ce TSRMLS_DC) /* {{{ 
 	c = (php_v8js_object *) ecalloc(1, sizeof(*c));
 
 	zend_object_std_init(&c->std, ce TSRMLS_CC);
+	new(&c->v8obj) v8::Persistent<v8::Value>();
 
 	retval.handle = zend_objects_store_put(c, NULL, (zend_objects_free_object_storage_t) php_v8js_v8_free_storage, NULL TSRMLS_CC);
 	retval.handlers = &v8_object_handlers;
 
 	return retval;
+}
+/* }}} */
+
+/* NOTE: We could also override v8_object_handlers.get_constructor to throw
+ * an exception when invoked, but doing so causes the half-constructed object
+ * to leak -- this seems to be a PHP bug.  So we'll define magic __construct
+ * methods instead. */
+
+/* {{{ proto V8Object::__construct()
+ */
+PHP_METHOD(V8Object,__construct)
+{
+	zend_throw_exception(php_ce_v8js_script_exception,
+		"Can't directly construct V8 objects!", 0 TSRMLS_CC);
+	RETURN_FALSE;
+}
+/* }}} */
+
+/* {{{ proto V8Function::__construct()
+ */
+PHP_METHOD(V8Function,__construct)
+{
+	zend_throw_exception(php_ce_v8js_script_exception,
+		"Can't directly construct V8 objects!", 0 TSRMLS_CC);
+	RETURN_FALSE;
 }
 /* }}} */
 
@@ -1379,6 +1409,18 @@ ZEND_BEGIN_ARG_INFO(arginfo_v8jsscriptexception_no_args, 0)
 ZEND_END_ARG_INFO()
 /* }}} */
 
+static const zend_function_entry v8_object_methods[] = { /* {{{ */
+	PHP_ME(V8Object,	__construct,			NULL,				ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+	{NULL, NULL, NULL}
+};
+/* }}} */
+
+static const zend_function_entry v8_function_methods[] = { /* {{{ */
+	PHP_ME(V8Function,	__construct,			NULL,				ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+	{NULL, NULL, NULL}
+};
+/* }}} */
+
 static const zend_function_entry v8js_methods[] = { /* {{{ */
 	PHP_ME(V8Js,	__construct,			arginfo_v8js_construct,				ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
 	PHP_ME(V8Js,	executeString,			arginfo_v8js_executestring,			ZEND_ACC_PUBLIC)
@@ -1569,13 +1611,13 @@ static PHP_MINIT_FUNCTION(v8js)
 	zend_class_entry ce;
 
 	/* V8Object Class */
-	INIT_CLASS_ENTRY(ce, "V8Object", NULL);
+	INIT_CLASS_ENTRY(ce, "V8Object", v8_object_methods);
 	php_ce_v8_object = zend_register_internal_class(&ce TSRMLS_CC);
 	php_ce_v8_object->ce_flags |= ZEND_ACC_FINAL;
 	php_ce_v8_object->create_object = php_v8js_v8_new;
 
 	/* V8Function Class */
-	INIT_CLASS_ENTRY(ce, "V8Function", NULL);
+	INIT_CLASS_ENTRY(ce, "V8Function", v8_function_methods);
 	php_ce_v8_function = zend_register_internal_class(&ce TSRMLS_CC);
 	php_ce_v8_function->ce_flags |= ZEND_ACC_FINAL;
 	php_ce_v8_function->create_object = php_v8js_v8_new;
@@ -1584,7 +1626,6 @@ static PHP_MINIT_FUNCTION(v8js)
 	memcpy(&v8_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
 	v8_object_handlers.clone_obj = NULL;
 	v8_object_handlers.cast_object = NULL;
-	v8_object_handlers.get_constructor = NULL;
 	v8_object_handlers.get_property_ptr_ptr = NULL;
 	v8_object_handlers.has_property = php_v8js_v8_has_property;
 	v8_object_handlers.read_property = php_v8js_v8_read_property;
