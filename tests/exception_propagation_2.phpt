@@ -33,7 +33,7 @@ try {
 ?>
 ===EOF===
 --EXPECTF--
-object(V8JsScriptException)#3 (11) {
+object(V8JsScriptException)#%d (11) {
   ["message":protected]=>
   string(49) "throw_0:1: ReferenceError: fooobar is not defined"
   ["string":"Exception":private]=>

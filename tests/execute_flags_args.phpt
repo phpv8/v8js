@@ -22,10 +22,10 @@ try {
 }
 ?>
 ===EOF===
---EXPECT--
+--EXPECTF--
 array(2) {
   [0]=>
-  object(V8Object)#3 (6) {
+  object(V8Object)#%d (6) {
     ["0"]=>
     string(1) "F"
     ["1"]=>
@@ -40,7 +40,7 @@ array(2) {
     string(1) "r"
   }
   [1]=>
-  object(V8Object)#4 (2) {
+  object(V8Object)#%d (2) {
     ["0"]=>
     string(3) "foo"
     ["1"]=>
