@@ -257,9 +257,7 @@ static int _php_v8js_is_assoc_array(HashTable *myht TSRMLS_DC) /* {{{ */
 /* }}} */
 
 static void php_v8js_weak_object_callback(const v8::WeakCallbackData<v8::Object, zval> &data) {
-	v8::Isolate *isolate = data.GetIsolate();
 	zval *value = data.GetParameter();
-	V8JS_TSRMLS_FETCH();
 	zval_ptr_dtor(&value);
 
 	v8::V8::AdjustAmountOfExternalAllocatedMemory(-1024);
