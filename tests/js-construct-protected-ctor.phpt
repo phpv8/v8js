@@ -42,7 +42,7 @@ try {
 ctor called (php)
 Hello John
 caught js exception
-object(V8JsScriptException)#3 (11) {
+object(V8JsScriptException)#%d (11) {
   ["message":protected]=>
   string(56) "ctor-test:4: Call to protected __construct() not allowed"
   ["string":"Exception":private]=>

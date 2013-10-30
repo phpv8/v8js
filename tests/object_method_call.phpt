@@ -71,7 +71,7 @@ try {
 
 ?>
 ===EOF===
---EXPECT--
+--EXPECTF--
 array(2) {
   [0]=>
   string(4) "arg1"
@@ -113,7 +113,7 @@ Mon, 08 Sep 1975 09:00:00 +0000
 string(3) "foo"
 array(3) {
   [0]=>
-  object(Testing)#2 (3) {
+  object(Testing)#%d (3) {
     ["foo"]=>
     string(8) "ORIGINAL"
     ["my_private":"Testing":private]=>
@@ -137,7 +137,7 @@ array(3) {
     [1]=>
     string(3) "bar"
     [2]=>
-    object(Testing)#2 (3) {
+    object(Testing)#%d (3) {
       ["foo"]=>
       string(8) "ORIGINAL"
       ["my_private":"Testing":private]=>

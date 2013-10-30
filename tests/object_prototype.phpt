@@ -34,12 +34,12 @@ $a->test_two = new A();
 $a->executeString($js, 'foo');
 ?>
 ===EOF===
---EXPECT--
+--EXPECTF--
 array(2) {
   [0]=>
   string(6) "Foobar"
   [1]=>
-  object(V8Object)#4 (2) {
+  object(V8Object)#%d (2) {
     ["0"]=>
     string(3) "foo"
     ["1"]=>
@@ -50,7 +50,7 @@ array(2) {
   [0]=>
   string(6) "Foobar"
   [1]=>
-  object(V8Object)#4 (2) {
+  object(V8Object)#%d (2) {
     ["0"]=>
     string(3) "foo"
     ["1"]=>
@@ -61,7 +61,7 @@ array(2) {
   [0]=>
   string(5) "a,b,c"
   [1]=>
-  object(V8Object)#4 (2) {
+  object(V8Object)#%d (2) {
     ["0"]=>
     string(3) "foo"
     ["1"]=>
@@ -72,7 +72,7 @@ array(2) {
   [0]=>
   string(5) "a,b,c"
   [1]=>
-  object(V8Object)#4 (2) {
+  object(V8Object)#%d (2) {
     ["0"]=>
     string(3) "foo"
     ["1"]=>

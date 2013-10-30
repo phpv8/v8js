@@ -41,9 +41,9 @@ var_dump($a->executeString("test(true);", "test8.js"));
 var_dump($a->executeString("test(false);", "test9.js"));
 ?>
 ===EOF===
---EXPECT--
+--EXPECTF--
 NULL
-object(Testing)#2 (3) {
+object(Testing)#%d (3) {
   ["foo"]=>
   string(8) "ORIGINAL"
   ["my_private":"Testing":private]=>

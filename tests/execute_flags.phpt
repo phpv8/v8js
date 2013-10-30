@@ -20,8 +20,8 @@ try {
 }
 ?>
 ===EOF===
---EXPECT--
-object(V8Object)#2 (1) {
+--EXPECTF--
+object(V8Object)#%d (1) {
   ["hello"]=>
   string(5) "world"
 }
