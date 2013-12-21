@@ -86,7 +86,7 @@ void php_v8js_register_accessors(std::vector<php_v8js_accessor_ctx*> *accessor_l
         ctx->isolate = isolate;
 
 		/* Set the variable fetch callback for given symbol on named property */
-		php_obj->SetAccessor(V8JS_STRL(property_name, property_name_len - 1), php_v8js_fetch_php_variable, NULL, v8::External::New(isolate, ctx), v8::PROHIBITS_OVERWRITING, v8::ReadOnly, v8::AccessorSignature::New(isolate, php_obj_t));
+		php_obj->SetAccessor(V8JS_STRL(property_name, property_name_len - 1), php_v8js_fetch_php_variable, NULL, V8JS_NEW(v8::External, isolate, ctx), v8::PROHIBITS_OVERWRITING, v8::ReadOnly, V8JS_NEW(v8::AccessorSignature, isolate, php_obj_t));
 
 		/* record the context so we can free it later */
 		accessor_list->push_back(ctx);

@@ -34,6 +34,14 @@ extern "C" {
 /* V8Js Version */
 #define V8JS_VERSION "0.1.3"
 
+/* V8 from 3.23.12 has most v8::Anything::New constructors expect isolates
+   as their first argument.  Older versions don't provide these. */
+#if PHP_V8_API_VERSION < 3023012
+#define V8JS_NEW(t, i, v...) t::New(v)
+#else
+#define V8JS_NEW(t, i, v...) t::New(i, v)
+#endif
+
 /* Helper macros */
 #define V8JS_SYM(v)			v8::String::NewFromUtf8(isolate, v, v8::String::kInternalizedString, sizeof(v) - 1)
 #define V8JS_SYML(v, l)		v8::String::NewFromUtf8(isolate, v, v8::String::kInternalizedString, l)
