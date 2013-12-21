@@ -187,7 +187,12 @@ struct php_v8js_ctx {
 /* }}} */
 
 #ifdef ZTS
-# define V8JS_TSRMLS_FETCH() TSRMLS_FETCH_FROM_CTX(((php_v8js_ctx *) isolate->GetData(0))->zts_ctx);
+# if PHP_V8_API_VERSION <= 3023008
+   /* Until V8 3.23.8 Isolate could only take one external pointer. */
+#  define V8JS_TSRMLS_FETCH() TSRMLS_FETCH_FROM_CTX(((php_v8js_ctx *) isolate->GetData())->zts_ctx);
+# else
+#  define V8JS_TSRMLS_FETCH() TSRMLS_FETCH_FROM_CTX(((php_v8js_ctx *) isolate->GetData(0))->zts_ctx);
+# endif
 #else
 # define V8JS_TSRMLS_FETCH()
 #endif

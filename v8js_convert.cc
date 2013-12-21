@@ -686,7 +686,12 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 
 		return v8obj;
 	} else if (ce) {
+#if PHP_V8_API_VERSION <= 3023008
+		/* Until V8 3.23.8 Isolate could only take one external pointer. */
+		php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData();
+#else
 		php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData(0);
+#endif
 		v8::Local<v8::FunctionTemplate> new_tpl;
 		v8js_tmpl_t *persist_tpl_;
 
