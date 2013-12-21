@@ -300,7 +300,7 @@ V8JS_METHOD(require)
 	v8::Handle<v8::ObjectTemplate> global = v8::ObjectTemplate::New();
 	global->Set(V8JS_SYM("print"), v8::FunctionTemplate::New(V8JS_MN(print)), v8::ReadOnly);
 	global->Set(V8JS_SYM("sleep"), v8::FunctionTemplate::New(V8JS_MN(sleep)), v8::ReadOnly);
-	global->Set(V8JS_SYM("require"), v8::FunctionTemplate::New(V8JS_MN(require), v8::External::New(isolate, c)), v8::ReadOnly);
+	global->Set(V8JS_SYM("require"), v8::FunctionTemplate::New(V8JS_MN(require), V8JS_NEW(v8::External, isolate, c)), v8::ReadOnly);
 
 	// Add the exports object in which the module can return its API
 	v8::Local<v8::ObjectTemplate> exports_template = v8::ObjectTemplate::New();
@@ -393,7 +393,7 @@ void php_v8js_register_methods(v8::Handle<v8::ObjectTemplate> global, php_v8js_c
 	global->Set(V8JS_SYM("var_dump"), v8::FunctionTemplate::New(V8JS_MN(var_dump)), v8::ReadOnly);
 
 	c->modules_base.push_back("");
-	global->Set(V8JS_SYM("require"), v8::FunctionTemplate::New(V8JS_MN(require), v8::External::New(isolate, c)), v8::ReadOnly);
+	global->Set(V8JS_SYM("require"), v8::FunctionTemplate::New(V8JS_MN(require), V8JS_NEW(v8::External, isolate, c)), v8::ReadOnly);
 }
 /* }}} */
 

@@ -216,7 +216,7 @@ static void php_v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value
 		if (ctor_ptr != NULL) {
 			php_v8js_call_php_func(value, ce, ctor_ptr, isolate, info TSRMLS_CC);
 		}
-		php_object = v8::External::New(isolate, value);
+		php_object = V8JS_NEW(v8::External, isolate, value);
 	}
 
 	newobj->SetAlignedPointerInInternalField(0, ext_tmpl->Value());
@@ -279,7 +279,7 @@ static void php_v8js_weak_closure_callback(const v8::WeakCallbackData<v8::Object
 	!strncasecmp(key, mname, key_len - 1))
 
 #define PHP_V8JS_CALLBACK(isolate, mptr, tmpl)										\
-	v8::FunctionTemplate::New(php_v8js_php_callback, v8::External::New(isolate, mptr), V8JS_NEW(v8::Signature, (isolate), tmpl))->GetFunction()
+	v8::FunctionTemplate::New(php_v8js_php_callback, V8JS_NEW(v8::External, (isolate), mptr), V8JS_NEW(v8::Signature, (isolate), tmpl))->GetFunction()
 
 
 static void php_v8js_named_property_enumerator(const v8::PropertyCallbackInfo<v8::Array> &info) /* {{{ */
@@ -735,13 +735,13 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 				}
 			}
 			v8::Local<v8::Array> call_handler_data = V8JS_NEW(v8::Array, isolate, 2);
-			call_handler_data->Set(0, v8::External::New(isolate, persist_tpl_));
-			call_handler_data->Set(1, v8::External::New(isolate, ce));
+			call_handler_data->Set(0, V8JS_NEW(v8::External, isolate, persist_tpl_));
+			call_handler_data->Set(1, V8JS_NEW(v8::External, isolate, ce));
 			new_tpl->SetCallHandler(php_v8js_construct_callback, call_handler_data);
 		}
 
 		// Create v8 wrapper object
-		v8::Handle<v8::Value> external = v8::External::New(isolate, value);
+		v8::Handle<v8::Value> external = V8JS_NEW(v8::External, isolate, value);
 		newobj = new_tpl->GetFunction()->NewInstance(1, &external);
 
 		if (ce == zend_ce_closure) {
