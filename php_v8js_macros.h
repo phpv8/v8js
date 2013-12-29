@@ -34,6 +34,14 @@ extern "C" {
 /* V8Js Version */
 #define V8JS_VERSION "0.1.3"
 
+/* V8 from 3.23.12 has most v8::Anything::New constructors expect isolates
+   as their first argument.  Older versions don't provide these. */
+#if PHP_V8_API_VERSION < 3023012
+#define V8JS_NEW(t, i, v...) t::New(v)
+#else
+#define V8JS_NEW(t, i, v...) t::New(i, v)
+#endif
+
 /* Helper macros */
 #define V8JS_SYM(v)			v8::String::NewFromUtf8(isolate, v, v8::String::kInternalizedString, sizeof(v) - 1)
 #define V8JS_SYML(v, l)		v8::String::NewFromUtf8(isolate, v, v8::String::kInternalizedString, l)
@@ -46,8 +54,8 @@ extern "C" {
 #define V8JS_UNDEFINED		v8::Undefined(isolate)
 #define V8JS_MN(name)		v8js_method_##name
 #define V8JS_METHOD(name)	void V8JS_MN(name)(const v8::FunctionCallbackInfo<v8::Value>& info)
-#define V8JS_THROW(type, message, message_len)	v8::ThrowException(v8::Exception::type(V8JS_STRL(message, message_len)))
-#define V8JS_GLOBAL			v8::Context::GetCurrent()->Global()
+#define V8JS_THROW(isolate, type, message, message_len)	(isolate)->ThrowException(v8::Exception::type(V8JS_STRL(message, message_len)))
+#define V8JS_GLOBAL(isolate)			((isolate)->GetCurrentContext()->Global())
 
 #if PHP_V8_API_VERSION < 3022000
 /* CopyablePersistentTraits is only part of V8 from 3.22.0 on,
@@ -108,8 +116,8 @@ typedef v8::Persistent<v8::FunctionTemplate, v8::CopyablePersistentTraits<v8::Fu
 #endif
 
 /* Global flags */
-#define V8JS_GLOBAL_SET_FLAGS(flags)	V8JS_GLOBAL->SetHiddenValue(V8JS_SYM("__php_flags__"), V8JS_INT(flags))
-#define V8JS_GLOBAL_GET_FLAGS()			V8JS_GLOBAL->GetHiddenValue(V8JS_SYM("__php_flags__"))->IntegerValue();
+#define V8JS_GLOBAL_SET_FLAGS(isolate,flags)	V8JS_GLOBAL(isolate)->SetHiddenValue(V8JS_SYM("__php_flags__"), V8JS_INT(flags))
+#define V8JS_GLOBAL_GET_FLAGS(isolate)			V8JS_GLOBAL(isolate)->GetHiddenValue(V8JS_SYM("__php_flags__"))->IntegerValue();
 
 /* Options */
 #define V8JS_FLAG_NONE			(1<<0)
@@ -179,7 +187,12 @@ struct php_v8js_ctx {
 /* }}} */
 
 #ifdef ZTS
-# define V8JS_TSRMLS_FETCH() TSRMLS_FETCH_FROM_CTX(((php_v8js_ctx *) isolate->GetData())->zts_ctx);
+# if PHP_V8_API_VERSION <= 3023008
+   /* Until V8 3.23.8 Isolate could only take one external pointer. */
+#  define V8JS_TSRMLS_FETCH() TSRMLS_FETCH_FROM_CTX(((php_v8js_ctx *) isolate->GetData())->zts_ctx);
+# else
+#  define V8JS_TSRMLS_FETCH() TSRMLS_FETCH_FROM_CTX(((php_v8js_ctx *) isolate->GetData(0))->zts_ctx);
+# endif
 #else
 # define V8JS_TSRMLS_FETCH()
 #endif

@@ -418,7 +418,7 @@ static int php_v8js_v8_call_method(char *method, INTERNAL_FUNCTION_PARAMETERS) /
 		jsArgv[i] = v8::Local<v8::Value>::New(isolate, zval_to_v8js(*argv[i], isolate TSRMLS_CC));
 	}
 
-	js_retval = cb->Call(V8JS_GLOBAL, argc, jsArgv);
+	js_retval = cb->Call(V8JS_GLOBAL(isolate), argc, jsArgv);
 
 	zval_ptr_dtor(&object);
 
@@ -566,10 +566,10 @@ static void php_v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 		v8::Locker locker(c->isolate);
 		v8::Isolate::Scope isolate_scope(c->isolate);
 		v8::HandleScope handle_scope(c->isolate);
-		v8::Context::Scope context_scope(c->isolate, c->context);
-
+		v8::Local<v8::Context> v8_context = v8::Local<v8::Context>::New(c->isolate, c->context);
+		v8::Context::Scope context_scope(v8_context);
 		v8::Local<v8::String> object_name_js = v8::Local<v8::String>::New(c->isolate, c->object_name);
-		V8JS_GLOBAL->Delete(object_name_js);
+		V8JS_GLOBAL(c->isolate)->Delete(object_name_js);
 	}
 
 	c->object_name.Reset();
@@ -779,7 +779,12 @@ static PHP_METHOD(V8Js, __construct)
 	c->pending_exception = NULL;
 	c->in_execution = 0;
 	c->isolate = v8::Isolate::New();
+#if PHP_V8_API_VERSION <= 3023008
+	/* Until V8 3.23.8 Isolate could only take one external pointer. */
 	c->isolate->SetData(c);
+#else
+	c->isolate->SetData(0, c);
+#endif
 	c->time_limit_hit = false;
 	c->memory_limit_hit = false;
 	c->module_loader = NULL;
@@ -865,7 +870,7 @@ static PHP_METHOD(V8Js, __construct)
 
 	/* Add the PHP object into global object */
 	v8::Local<v8::Object> php_obj = php_obj_t->InstanceTemplate()->NewInstance();
-	V8JS_GLOBAL->Set(object_name_js, php_obj, v8::ReadOnly);
+	V8JS_GLOBAL(isolate)->Set(object_name_js, php_obj, v8::ReadOnly);
 
 	/* Export public property values */
 	HashTable *properties = zend_std_get_properties(getThis() TSRMLS_CC);
@@ -909,7 +914,8 @@ static PHP_METHOD(V8Js, __construct)
 	v8::Locker locker(isolate); \
 	v8::Isolate::Scope isolate_scope(isolate); \
 	v8::HandleScope handle_scope(isolate); \
-	v8::Context::Scope context_scope(isolate, (ctx)->context);
+	v8::Local<v8::Context> v8_context = v8::Local<v8::Context>::New(isolate, (ctx)->context); \
+	v8::Context::Scope context_scope(v8_context);
 
 static void php_v8js_timer_push(long time_limit, long memory_limit, php_v8js_ctx *c TSRMLS_DC)
 {
@@ -1032,7 +1038,7 @@ static PHP_METHOD(V8Js, executeString)
 	}
 
 	/* Set flags for runtime use */
-	V8JS_GLOBAL_SET_FLAGS(flags);
+	V8JS_GLOBAL_SET_FLAGS(isolate, flags);
 
 	if (time_limit > 0 || memory_limit > 0) {
 		// If timer thread is not running then start it
@@ -1447,7 +1453,7 @@ static void php_v8js_write_property(zval *object, zval *member, zval *value ZEND
 	if(property_info->flags & ZEND_ACC_PUBLIC) {
 		/* Global PHP JS object */
 		v8::Local<v8::String> object_name_js = v8::Local<v8::String>::New(isolate, c->object_name);
-		v8::Local<v8::Object> jsobj = V8JS_GLOBAL->Get(object_name_js)->ToObject();
+		v8::Local<v8::Object> jsobj = V8JS_GLOBAL(isolate)->Get(object_name_js)->ToObject();
 
 		/* Write value to PHP JS object */
 		jsobj->ForceSet(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)), zval_to_v8js(value, isolate TSRMLS_CC), v8::ReadOnly);
@@ -1464,7 +1470,7 @@ static void php_v8js_unset_property(zval *object, zval *member ZEND_HASH_KEY_DC 
 
 	/* Global PHP JS object */
 	v8::Local<v8::String> object_name_js = v8::Local<v8::String>::New(isolate, c->object_name);
-	v8::Local<v8::Object> jsobj = V8JS_GLOBAL->Get(object_name_js)->ToObject();
+	v8::Local<v8::Object> jsobj = V8JS_GLOBAL(isolate)->Get(object_name_js)->ToObject();
 	
 	/* Delete value from PHP JS object */
 	jsobj->ForceDelete(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)));
