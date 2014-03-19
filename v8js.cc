@@ -1129,6 +1129,40 @@ static PHP_METHOD(V8Js, executeString)
 }
 /* }}} */
 
+/* {{{ proto mixed V8Js::checkString(string script)
+ */
+static PHP_METHOD(V8Js, checkString)
+{
+	char *str = NULL;
+	int str_len = 0;
+	long flags = V8JS_FLAG_NONE, time_limit = 0, memory_limit = 0;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &str, &str_len) == FAILURE) {
+		return;
+	}
+
+	V8JS_BEGIN_CTX(c, getThis())
+
+	/* Catch JS exceptions */
+	v8::TryCatch try_catch;
+
+	/* Set script identifier */
+	v8::Local<v8::String> sname = V8JS_SYM("V8Js::checkString()");
+
+	/* Compiles a string context independently. TODO: Add a php function which calls this and returns the result as resource which can be executed later. */
+	v8::Local<v8::String> source = V8JS_STRL(str, str_len);
+	v8::Local<v8::Script> script = v8::Script::New(source, sname);
+
+	/* Compile errors? */
+	if (script.IsEmpty()) {
+		php_v8js_throw_script_exception(&try_catch TSRMLS_CC);
+		return;
+	}
+	RETURN_TRUE;
+}
+/* }}} */
+
+
 #ifdef ENABLE_DEBUGGER_SUPPORT
 /* {{{ proto void V8Js::__destruct()
    __destruct for V8Js */
@@ -1383,6 +1417,10 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_executestring, 0, 0, 1)
 	ZEND_ARG_INFO(0, memory_limit)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_checkstring, 0, 0, 1)
+	ZEND_ARG_INFO(0, script)
+ZEND_END_ARG_INFO()
+
 #ifdef ENABLE_DEBUGGER_SUPPORT
 ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_destruct, 0, 0, 0)
 ZEND_END_ARG_INFO()
@@ -1430,6 +1468,7 @@ static const zend_function_entry v8_function_methods[] = { /* {{{ */
 static const zend_function_entry v8js_methods[] = { /* {{{ */
 	PHP_ME(V8Js,	__construct,			arginfo_v8js_construct,				ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
 	PHP_ME(V8Js,	executeString,			arginfo_v8js_executestring,			ZEND_ACC_PUBLIC)
+	PHP_ME(V8Js,    checkString,			arginfo_v8js_checkstring,			ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	getPendingException,	arginfo_v8js_getpendingexception,	ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	setModuleLoader,		arginfo_v8js_setmoduleloader,		ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	registerExtension,		arginfo_v8js_registerextension,		ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
