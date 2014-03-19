@@ -16,6 +16,10 @@
 #ifndef PHP_V8JS_MACROS_H
 #define PHP_V8JS_MACROS_H
 
+#if __GNUC__ == 4 && __GNUC_MINOR__ == 4
+#define _GLIBCXX_USE_NANOSLEEP 1
+#endif
+
 extern "C" {
 #include "php.h"
 #include "php_v8js.h"
