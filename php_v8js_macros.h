@@ -184,6 +184,7 @@ struct php_v8js_ctx {
   std::vector<char *> modules_base;
   std::map<const char *,v8js_tmpl_t> template_cache;
   std::vector<php_v8js_accessor_ctx *> accessor_list;
+  char *tz;
 #ifdef ZTS
   void ***zts_ctx;
 #endif

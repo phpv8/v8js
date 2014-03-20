@@ -1006,7 +1006,7 @@ static void php_v8js_timer_thread(TSRMLS_D)
  */
 static PHP_METHOD(V8Js, executeString)
 {
-	char *str = NULL, *identifier = NULL;
+	char *str = NULL, *identifier = NULL, *tz = NULL;
 	int str_len = 0, identifier_len = 0;
 	long flags = V8JS_FLAG_NONE, time_limit = 0, memory_limit = 0;
 
@@ -1039,6 +1039,15 @@ static PHP_METHOD(V8Js, executeString)
 
 	/* Set flags for runtime use */
 	V8JS_GLOBAL_SET_FLAGS(isolate, flags);
+
+	/* Check if timezone has been changed and notify V8 */
+	tz = getenv("TZ");
+	if (c->tz != NULL) {
+		if (c->tz != NULL && strcmp(c->tz, tz) != 0) {
+			v8::Date::DateTimeConfigurationChangeNotification(c->isolate);
+		}
+	}
+	c->tz = tz;
 
 	if (time_limit > 0 || memory_limit > 0) {
 		// If timer thread is not running then start it
