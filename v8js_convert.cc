@@ -28,6 +28,7 @@ extern "C" {
 #include "php_v8js_macros.h"
 #include <v8.h>
 #include <stdexcept>
+#include <limits>
 
 static void php_v8js_weak_object_callback(const v8::WeakCallbackData<v8::Object, zval> &data);
 
@@ -852,6 +853,7 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsarr(zval *value, v8::Isolate *is
 v8::Handle<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
 {
 	v8::Handle<v8::Value> jsValue;
+	long v;
 
 	switch (Z_TYPE_P(value))
 	{
@@ -868,7 +870,12 @@ v8::Handle<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate TSRMLS_DC) 
 			break;
 
 		case IS_LONG:
-			jsValue = V8JS_INT(Z_LVAL_P(value));
+		    v = Z_LVAL_P(value);
+			if (v < - std::numeric_limits<int32_t>::min() || v > std::numeric_limits<int32_t>::max()) {
+				jsValue = V8JS_FLOAT((double)v);
+			} else {
+				jsValue = V8JS_INT(v);
+			}
 			break;
 
 		case IS_DOUBLE:
