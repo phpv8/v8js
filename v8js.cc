@@ -261,7 +261,7 @@ int php_v8js_v8_get_properties_hash(v8::Handle<v8::Value> jsValue, HashTable *re
 			v8::Local<v8::String> jsKey = jsKeys->Get(i)->ToString();
 
 			/* Skip any prototype properties */
-			if (!jsObj->HasRealNamedProperty(jsKey) && !jsObj->HasRealNamedCallbackProperty(jsKey) && !jsObj->HasRealIndexedProperty(i)) {
+			if (!jsObj->HasOwnProperty(jsKey) && !jsObj->HasRealNamedProperty(jsKey) && !jsObj->HasRealNamedCallbackProperty(jsKey)) {
 				continue;
 			}
 
