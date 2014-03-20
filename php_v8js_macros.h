@@ -54,6 +54,7 @@ extern "C" {
 #define V8JS_INT(v)			v8::Integer::New(v, isolate)
 #define V8JS_FLOAT(v)		v8::Number::New(isolate, v)
 #define V8JS_BOOL(v)		((v)?v8::True(isolate):v8::False(isolate))
+#define V8JS_DATE(v)		v8::Date::New(isolate, v)
 #define V8JS_NULL			v8::Null(isolate)
 #define V8JS_UNDEFINED		v8::Undefined(isolate)
 #define V8JS_MN(name)		v8js_method_##name
@@ -230,6 +231,7 @@ ZEND_BEGIN_MODULE_GLOBALS(v8js)
 
   /* Ini globals */
   char *v8_flags; /* V8 command line flags */
+  bool use_date; /* Generate JS Date objects instead of PHP DateTime */
 
   // Timer thread globals
   std::stack<php_v8js_timer_ctx *> timer_stack;

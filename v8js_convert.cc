@@ -854,6 +854,7 @@ v8::Handle<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate TSRMLS_DC) 
 {
 	v8::Handle<v8::Value> jsValue;
 	long v;
+	zend_class_entry *ce;
 
 	switch (Z_TYPE_P(value))
 	{
@@ -862,7 +863,19 @@ v8::Handle<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate TSRMLS_DC) 
 			break;
 
 		case IS_OBJECT:
-			jsValue = php_v8js_hash_to_jsobj(value, isolate TSRMLS_CC);
+             if (V8JSG(use_date)) {
+				 ce = php_date_get_date_ce();
+				 if (instanceof_function(Z_OBJCE_P(value), ce TSRMLS_CC)) {
+					 zval *dtval;
+					 zend_call_method_with_0_params(&value, NULL, NULL, "getTimestamp", &dtval);
+					 if (dtval)
+						 jsValue = V8JS_DATE(((double)Z_LVAL_P(dtval) * 1000.0));
+					 else
+						 jsValue = V8JS_NULL;
+				 } else
+					 jsValue = php_v8js_hash_to_jsobj(value, isolate TSRMLS_CC);
+			 } else
+				 jsValue = php_v8js_hash_to_jsobj(value, isolate TSRMLS_CC);
 			break;
 
 		case IS_STRING:

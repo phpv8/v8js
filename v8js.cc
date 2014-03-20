@@ -54,10 +54,27 @@ static ZEND_INI_MH(v8js_OnUpdateV8Flags) /* {{{ */
 
 	return SUCCESS;
 }
+
+static ZEND_INI_MH(v8js_OnUpdateUseDate) /* {{{ */
+{
+	bool value;
+	if (new_value_length==2 && strcasecmp("on", new_value)==0) {
+		value = (bool) 1;
+    } else if (new_value_length==3 && strcasecmp("yes", new_value)==0) {
+		value = (bool) 1;
+	} else if (new_value_length==4 && strcasecmp("true", new_value)==0) {
+		value = (bool) 1;
+	} else {
+		value = (bool) atoi(new_value);
+	}
+	V8JSG(use_date) = value;
+	return SUCCESS;
+}
 /* }}} */
 
 ZEND_INI_BEGIN() /* {{{ */
 	ZEND_INI_ENTRY("v8js.flags", NULL, ZEND_INI_ALL, v8js_OnUpdateV8Flags)
+	ZEND_INI_ENTRY("v8js.use_date", "0", ZEND_INI_ALL, v8js_OnUpdateUseDate)
 ZEND_INI_END()
 /* }}} */
 
