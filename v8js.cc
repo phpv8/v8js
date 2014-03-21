@@ -818,7 +818,8 @@ static PHP_METHOD(V8Js, __construct)
 	/* Create global template for global object */
 	// Now we are using multiple isolates this needs to be created for every context
 
-	v8::Local<v8::FunctionTemplate> tpl = v8::FunctionTemplate::New();
+	v8::Local<v8::FunctionTemplate> tpl = V8JS_NEW(v8::FunctionTemplate, c->isolate, 0);
+
 	tpl->SetClassName(V8JS_SYM("V8Js"));
 	c->global_template.Reset(isolate, tpl);
 
@@ -845,7 +846,7 @@ static PHP_METHOD(V8Js, __construct)
 	v8::Context::Scope context_scope(context);
 
 	/* Create the PHP container object's function template */
-	v8::Local<v8::FunctionTemplate> php_obj_t = v8::FunctionTemplate::New();
+	v8::Local<v8::FunctionTemplate> php_obj_t = V8JS_NEW(v8::FunctionTemplate, isolate, 0);
 
 	/* Set class name for PHP object */
 #if PHP_VERSION_ID >= 50400

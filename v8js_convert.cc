@@ -279,7 +279,7 @@ static void php_v8js_weak_closure_callback(const v8::WeakCallbackData<v8::Object
 	!strncasecmp(key, mname, key_len - 1))
 
 #define PHP_V8JS_CALLBACK(isolate, mptr, tmpl)										\
-	v8::FunctionTemplate::New(php_v8js_php_callback, V8JS_NEW(v8::External, (isolate), mptr), V8JS_NEW(v8::Signature, (isolate), tmpl))->GetFunction()
+	V8JS_NEW(v8::FunctionTemplate, (isolate), php_v8js_php_callback, V8JS_NEW(v8::External, (isolate), mptr), V8JS_NEW(v8::Signature, (isolate), tmpl))->GetFunction()
 
 
 static void php_v8js_named_property_enumerator(const v8::PropertyCallbackInfo<v8::Array> &info) /* {{{ */
@@ -545,7 +545,7 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 					// (only use this if method_ptr==NULL, which means
 					//  there is no actual PHP __call() implementation)
 					v8::Local<v8::Function> cb =
-						v8::FunctionTemplate::New(
+						V8JS_NEW(v8::FunctionTemplate, isolate,
 							php_v8js_fake_call_impl, V8JS_NULL,
 							V8JS_NEW(v8::Signature, isolate, tmpl))->GetFunction();
 					cb->SetName(property);
@@ -556,7 +556,7 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 			}
 		} else if (callback_type == V8JS_PROP_QUERY) {
 			// methods are not enumerable
-			ret_value = v8::Integer::NewFromUnsigned(v8::ReadOnly|v8::DontEnum|v8::DontDelete, isolate);
+			ret_value = V8JS_UINT(v8::ReadOnly|v8::DontEnum|v8::DontDelete);
 		} else if (callback_type == V8JS_PROP_SETTER) {
 			ret_value = set_value; // lie.  this field is read-only.
 		} else if (callback_type == V8JS_PROP_DELETER) {
@@ -606,7 +606,7 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 			ZVAL_STRINGL(prop, name, name_len, 1);
 			if (callback_type == V8JS_PROP_QUERY) {
 				if (h->has_property(object, prop, 0 ZEND_HASH_KEY_NULL TSRMLS_CC)) {
-					ret_value = v8::Integer::NewFromUnsigned(v8::None);
+					ret_value = V8JS_UINT(v8::None);
 				} else {
 					ret_value = v8::Handle<v8::Value>(); // empty handle
 				}
@@ -701,7 +701,7 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 		}
 		catch (const std::out_of_range &) {
 			/* No cached v8::FunctionTemplate available as of yet, create one. */
-			new_tpl = v8::FunctionTemplate::New();
+			new_tpl = V8JS_NEW(v8::FunctionTemplate, isolate, 0);
 
 			new_tpl->SetClassName(V8JS_STRL(ce->name, ce->name_length));
 			new_tpl->InstanceTemplate()->SetInternalFieldCount(1);
@@ -750,7 +750,8 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 			persist_newobj2.SetWeak(persist_tpl_, php_v8js_weak_closure_callback);
 		}
 	} else {
-		v8::Local<v8::FunctionTemplate> new_tpl = v8::FunctionTemplate::New();	// @todo re-use template likewise
+		// @todo re-use template likewise
+		v8::Local<v8::FunctionTemplate> new_tpl = V8JS_NEW(v8::FunctionTemplate, isolate, 0);
 
 		new_tpl->SetClassName(V8JS_SYM("Array"));
 		newobj = new_tpl->InstanceTemplate()->NewInstance();

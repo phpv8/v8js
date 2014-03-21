@@ -47,7 +47,15 @@ extern "C" {
 #define V8JS_SYML(v, l)		v8::String::NewFromUtf8(isolate, v, v8::String::kInternalizedString, l)
 #define V8JS_STR(v)			v8::String::NewFromUtf8(isolate, v)
 #define V8JS_STRL(v, l)		v8::String::NewFromUtf8(isolate, v, v8::String::kNormalString, l)
+
+#if PHP_V8_API_VERSION < 3024010
 #define V8JS_INT(v)			v8::Integer::New(v, isolate)
+#define V8JS_UINT(v)		v8::Integer::NewFromUnsigned(v, isolate)
+#else
+#define V8JS_INT(v)			v8::Integer::New(isolate, v)
+#define V8JS_UINT(v)		v8::Integer::NewFromUnsigned(isolate, v)
+#endif
+
 #define V8JS_FLOAT(v)		v8::Number::New(isolate, v)
 #define V8JS_BOOL(v)		((v)?v8::True(isolate):v8::False(isolate))
 #define V8JS_NULL			v8::Null(isolate)
