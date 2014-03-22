@@ -105,7 +105,7 @@ static void _php_v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int
 	if (var->IsString())
 	{
 		php_printf("string(%zu) \"", valstr_len, valstr);
-		php_output_write(valstr, valstr_len TSRMLS_CC);
+		PHPWRITE(valstr, valstr_len);
 		php_printf("\"\n");
 	}
 	else if (var->IsDate())
