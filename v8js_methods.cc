@@ -333,7 +333,7 @@ V8JS_METHOD(require)
 	zval_ptr_dtor(&module_code);
 
 	// Create and compile script
-	v8::Local<v8::Script> script = v8::Script::New(source, sname);
+	v8::Local<v8::Script> script = v8::Script::Compile(source, sname);
 
 	// The script will be empty if there are compile errors
 	if (script.IsEmpty()) {

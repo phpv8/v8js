@@ -1053,7 +1053,7 @@ static PHP_METHOD(V8Js, executeString)
 
 	/* Compiles a string context independently. TODO: Add a php function which calls this and returns the result as resource which can be executed later. */
 	v8::Local<v8::String> source = V8JS_STRL(str, str_len);
-	v8::Local<v8::Script> script = v8::Script::New(source, sname);
+	v8::Local<v8::Script> script = v8::Script::Compile(source, sname);
 
 	/* Compile errors? */
 	if (script.IsEmpty()) {
