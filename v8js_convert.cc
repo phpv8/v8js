@@ -222,11 +222,18 @@ static void php_v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value
 	newobj->SetAlignedPointerInInternalField(0, ext_tmpl->Value());
 	newobj->SetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY), php_object);
 
+#if PHP_V8_API_VERSION <= 3023008
+	/* Until V8 3.23.8 Isolate could only take one external pointer. */
+	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData();
+#else
+	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData(0);
+#endif
+
 	// Since we got to decrease the reference count again, in case v8 garbage collector
 	// decides to dispose the JS object, we add a weak persistent handle and register
 	// a callback function that removes the reference.
-	v8::Persistent<v8::Object> persist_newobj(isolate, newobj);
-	persist_newobj.SetWeak(value, php_v8js_weak_object_callback);
+	ctx->weak_objects[value].Reset(isolate, newobj);
+	ctx->weak_objects[value].SetWeak(value, php_v8js_weak_object_callback);
 
 	// Just tell v8 that we're allocating some external memory
 	// (for the moment we just always tell 1k instead of trying to find out actual values)
@@ -257,16 +264,40 @@ static int _php_v8js_is_assoc_array(HashTable *myht TSRMLS_DC) /* {{{ */
 /* }}} */
 
 static void php_v8js_weak_object_callback(const v8::WeakCallbackData<v8::Object, zval> &data) {
+	v8::Isolate *isolate = data.GetIsolate();
+
 	zval *value = data.GetParameter();
 	zval_ptr_dtor(&value);
 
-	data.GetIsolate()->AdjustAmountOfExternalAllocatedMemory(-1024);
+#if PHP_V8_API_VERSION <= 3023008
+	/* Until V8 3.23.8 Isolate could only take one external pointer. */
+	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData();
+#else
+	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData(0);
+#endif
+
+	ctx->weak_objects.at(value).Reset();
+	ctx->weak_objects.erase(value);
+
+	isolate->AdjustAmountOfExternalAllocatedMemory(-1024);
 }
 
 static void php_v8js_weak_closure_callback(const v8::WeakCallbackData<v8::Object, v8js_tmpl_t> &data) {
+	v8::Isolate *isolate = data.GetIsolate();
+
 	v8js_tmpl_t *persist_tpl_ = data.GetParameter();
 	persist_tpl_->Reset();
 	delete persist_tpl_;
+
+#if PHP_V8_API_VERSION <= 3023008
+	/* Until V8 3.23.8 Isolate could only take one external pointer. */
+	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData();
+#else
+	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData(0);
+#endif
+
+	ctx->weak_closures.at(persist_tpl_).Reset();
+	ctx->weak_closures.erase(persist_tpl_);
 };
 
 /* These are not defined by Zend */
@@ -746,8 +777,8 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 
 		if (ce == zend_ce_closure) {
 			// free uncached function template when object is freed
-			v8::Persistent<v8::Object> persist_newobj2(isolate, newobj);
-			persist_newobj2.SetWeak(persist_tpl_, php_v8js_weak_closure_callback);
+			ctx->weak_closures[persist_tpl_].Reset(isolate, newobj);
+			ctx->weak_closures[persist_tpl_].SetWeak(persist_tpl_, php_v8js_weak_closure_callback);
 		}
 	} else {
 		// @todo re-use template likewise

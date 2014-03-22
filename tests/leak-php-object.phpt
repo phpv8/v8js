@@ -6,7 +6,9 @@ Test V8::executeString() : Test for leaked PHP object if passed back multiple ti
 <?php
 
 $js =<<< EOF
-for(var i = 0; i < 1000; i ++) {
+// Generate a large number of objects so we trigger definitely trigger the
+// garbage collector.  5000 * 1 kB should be enough.
+for(var i = 0; i < 5000; i ++) {
     PHP.foo.getStdClassObject();
 }
 EOF;

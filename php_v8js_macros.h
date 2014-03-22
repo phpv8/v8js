@@ -90,6 +90,7 @@ namespace v8 {
 
 /* Abbreviate long type names */
 typedef v8::Persistent<v8::FunctionTemplate, v8::CopyablePersistentTraits<v8::FunctionTemplate> > v8js_tmpl_t;
+typedef v8::Persistent<v8::Object, v8::CopyablePersistentTraits<v8::Object> > v8js_persistent_obj_t;
 
 /* Hidden field name used to link JS wrappers with underlying PHP object */
 #define PHPJS_OBJECT_KEY "phpjs::object"
@@ -187,6 +188,10 @@ struct php_v8js_ctx {
   std::vector<char *> modules_stack;
   std::vector<char *> modules_base;
   std::map<const char *,v8js_tmpl_t> template_cache;
+
+  std::map<zval *, v8js_persistent_obj_t> weak_objects;
+  std::map<v8js_tmpl_t *, v8js_persistent_obj_t> weak_closures;
+
   std::vector<php_v8js_accessor_ctx *> accessor_list;
 #ifdef ZTS
   void ***zts_ctx;

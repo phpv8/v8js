@@ -607,6 +607,26 @@ static void php_v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 		while(!v8::V8::IdleNotification()) {};
 	}
 
+	/* Dispose yet undisposed weak refs */
+	for (std::map<zval *, v8js_persistent_obj_t>::iterator it = c->weak_objects.begin();
+		 it != c->weak_objects.end(); ++it) {
+		zval *value = it->first;
+		zval_ptr_dtor(&value);
+		c->isolate->AdjustAmountOfExternalAllocatedMemory(-1024);
+		it->second.Reset();
+	}
+	c->weak_objects.~map();
+
+	for (std::map<v8js_tmpl_t *, v8js_persistent_obj_t>::iterator it = c->weak_closures.begin();
+		 it != c->weak_closures.end(); ++it) {
+		v8js_tmpl_t *persist_tpl_ = it->first;
+		persist_tpl_->Reset();
+		delete persist_tpl_;
+		it->second.Reset();
+	}
+	c->weak_closures.~map();
+
+
 	c->modules_stack.~vector();
 	c->modules_base.~vector();
 	efree(object);
@@ -638,6 +658,9 @@ static zend_object_value php_v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 	new(&c->modules_base) std::vector<char*>();
 	new(&c->template_cache) std::map<const char *,v8js_tmpl_t>();
 	new(&c->accessor_list) std::vector<php_v8js_accessor_ctx *>();
+
+	new(&c->weak_closures) std::map<v8js_tmpl_t *, v8js_persistent_obj_t>();
+	new(&c->weak_objects) std::map<zval *, v8js_persistent_obj_t>();
 
 	retval.handle = zend_objects_store_put(c, NULL, (zend_objects_free_object_storage_t) php_v8js_free_storage, NULL TSRMLS_CC);
 	retval.handlers = &v8js_object_handlers;
