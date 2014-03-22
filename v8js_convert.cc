@@ -28,6 +28,7 @@ extern "C" {
 #include "php_v8js_macros.h"
 #include <v8.h>
 #include <stdexcept>
+#include <limits>
 
 static void php_v8js_weak_object_callback(const v8::WeakCallbackData<v8::Object, zval> &data);
 
@@ -884,6 +885,8 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsarr(zval *value, v8::Isolate *is
 v8::Handle<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
 {
 	v8::Handle<v8::Value> jsValue;
+	long v;
+	zend_class_entry *ce;
 
 	switch (Z_TYPE_P(value))
 	{
@@ -892,7 +895,19 @@ v8::Handle<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate TSRMLS_DC) 
 			break;
 
 		case IS_OBJECT:
-			jsValue = php_v8js_hash_to_jsobj(value, isolate TSRMLS_CC);
+             if (V8JSG(use_date)) {
+				 ce = php_date_get_date_ce();
+				 if (instanceof_function(Z_OBJCE_P(value), ce TSRMLS_CC)) {
+					 zval *dtval;
+					 zend_call_method_with_0_params(&value, NULL, NULL, "getTimestamp", &dtval);
+					 if (dtval)
+						 jsValue = V8JS_DATE(((double)Z_LVAL_P(dtval) * 1000.0));
+					 else
+						 jsValue = V8JS_NULL;
+				 } else
+					 jsValue = php_v8js_hash_to_jsobj(value, isolate TSRMLS_CC);
+			 } else
+				 jsValue = php_v8js_hash_to_jsobj(value, isolate TSRMLS_CC);
 			break;
 
 		case IS_STRING:
@@ -900,7 +915,12 @@ v8::Handle<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate TSRMLS_DC) 
 			break;
 
 		case IS_LONG:
-			jsValue = V8JS_INT(Z_LVAL_P(value));
+		    v = Z_LVAL_P(value);
+			if (v < - std::numeric_limits<int32_t>::min() || v > std::numeric_limits<int32_t>::max()) {
+				jsValue = V8JS_FLOAT((double)v);
+			} else {
+				jsValue = V8JS_INT(v);
+			}
 			break;
 
 		case IS_DOUBLE:
@@ -926,7 +946,8 @@ int v8js_to_zval(v8::Handle<v8::Value> jsValue, zval *return_value, int flags, v
 	{
 		v8::String::Utf8Value str(jsValue);
 		const char *cstr = ToCString(str);
-		RETVAL_STRING(cstr, 1);
+		RETVAL_STRINGL(cstr, jsValue->ToString()->Utf8Length(), 1);
+//		RETVAL_STRING(cstr, 1);
 	}
 	else if (jsValue->IsBoolean())
 	{
