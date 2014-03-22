@@ -87,6 +87,12 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <file name="skipif.inc" role="test" />
    <file name="time_limit.phpt" role="test" />
    <file name="variable_passing.phpt" role="test" />
+   <file name="checkstring.phpt" role="test" />
+   <file name="array_pass.phpt" role="test" />
+   <file name="array_pass_flags.phpt" role="test" />
+   <file name="timezones.phpt" role="test" />
+   <file name="long.phpt" role="test" />
+   <file name="datetime_pass.phpt" role="test" />
 </dir>
 </dir>
  </contents>

@@ -16,6 +16,10 @@
 #ifndef PHP_V8JS_MACROS_H
 #define PHP_V8JS_MACROS_H
 
+#if __GNUC__ == 4 && __GNUC_MINOR__ == 4
+#define _GLIBCXX_USE_NANOSLEEP 1
+#endif
+
 extern "C" {
 #include "php.h"
 #include "php_v8js.h"
@@ -58,6 +62,7 @@ extern "C" {
 
 #define V8JS_FLOAT(v)		v8::Number::New(isolate, v)
 #define V8JS_BOOL(v)		((v)?v8::True(isolate):v8::False(isolate))
+#define V8JS_DATE(v)		v8::Date::New(isolate, v)
 #define V8JS_NULL			v8::Null(isolate)
 #define V8JS_UNDEFINED		v8::Undefined(isolate)
 #define V8JS_MN(name)		v8js_method_##name
@@ -193,6 +198,7 @@ struct php_v8js_ctx {
   std::map<v8js_tmpl_t *, v8js_persistent_obj_t> weak_closures;
 
   std::vector<php_v8js_accessor_ctx *> accessor_list;
+  char *tz;
 #ifdef ZTS
   void ***zts_ctx;
 #endif
@@ -238,6 +244,7 @@ ZEND_BEGIN_MODULE_GLOBALS(v8js)
 
   /* Ini globals */
   char *v8_flags; /* V8 command line flags */
+  bool use_date; /* Generate JS Date objects instead of PHP DateTime */
 
   // Timer thread globals
   std::stack<php_v8js_timer_ctx *> timer_stack;
