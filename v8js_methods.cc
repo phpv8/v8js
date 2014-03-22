@@ -100,11 +100,13 @@ static void _php_v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int
 	}
 	v8::String::Utf8Value str(details);
 	const char *valstr = ToCString(str);
-	size_t valstr_len = (valstr) ? strlen(valstr) : 0;
+	size_t valstr_len = details->ToString()->Utf8Length();
 
 	if (var->IsString())
 	{
-		php_printf("string(%zu) \"%s\"\n", valstr_len, valstr);
+		php_printf("string(%zu) \"", valstr_len, valstr);
+		php_output_write(valstr, valstr_len TSRMLS_CC);
+		php_printf("\"\n");
 	}
 	else if (var->IsDate())
 	{
