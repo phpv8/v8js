@@ -6,6 +6,12 @@ Test V8::executeString() : Pass JS date to PHP
 <?php
 	
 ini_set('v8js.use_date', 1);
+
+// Set date.timezone since run-tests.php calls php without it being set;
+// which causes the test to fail on PHP 5.3 as it shows a warning message
+// in the output.
+ini_set('date.timezone', 'Europe/Berlin');
+
 $a = new V8Js();
 $a->var = new \DateTime("Wed, 19 Mar 2014 14:37:11 +0000");
 $a->executeString('print(PHP.var.toGMTString()); print("\n");');
