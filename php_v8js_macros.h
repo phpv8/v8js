@@ -62,7 +62,13 @@ extern "C" {
 
 #define V8JS_FLOAT(v)		v8::Number::New(isolate, v)
 #define V8JS_BOOL(v)		((v)?v8::True(isolate):v8::False(isolate))
+
+#if PHP_V8_API_VERSION <= 3023012
+#define V8JS_DATE(v)		v8::Date::New(v)
+#else
 #define V8JS_DATE(v)		v8::Date::New(isolate, v)
+#endif
+
 #define V8JS_NULL			v8::Null(isolate)
 #define V8JS_UNDEFINED		v8::Undefined(isolate)
 #define V8JS_MN(name)		v8js_method_##name

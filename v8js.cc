@@ -643,6 +643,9 @@ static void php_v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 	}
 	c->weak_closures.~map();
 
+	if(c->tz != NULL) {
+		free(c->tz);
+	}
 
 	c->modules_stack.~vector();
 	c->modules_base.~vector();
@@ -1083,12 +1086,22 @@ static PHP_METHOD(V8Js, executeString)
 
 	/* Check if timezone has been changed and notify V8 */
 	tz = getenv("TZ");
-	if (c->tz != NULL) {
-		if (c->tz != NULL && strcmp(c->tz, tz) != 0) {
+
+	if (tz != NULL) {
+		if (c->tz == NULL) {
+			c->tz = strdup(tz);
+		}
+		else if (strcmp(c->tz, tz) != 0) {
+#if PHP_V8_API_VERSION <= 3023012
+			v8::Date::DateTimeConfigurationChangeNotification();
+#else
 			v8::Date::DateTimeConfigurationChangeNotification(c->isolate);
+#endif
+
+			free(c->tz);
+			c->tz = strdup(tz);
 		}
 	}
-	c->tz = tz;
 
 	if (time_limit > 0 || memory_limit > 0) {
 		// If timer thread is not running then start it
@@ -1201,7 +1214,7 @@ static PHP_METHOD(V8Js, checkString)
 
 	/* Compiles a string context independently. TODO: Add a php function which calls this and returns the result as resource which can be executed later. */
 	v8::Local<v8::String> source = V8JS_STRL(str, str_len);
-	v8::Local<v8::Script> script = v8::Script::New(source, sname);
+	v8::Local<v8::Script> script = v8::Script::Compile(source, sname);
 
 	/* Compile errors? */
 	if (script.IsEmpty()) {
