@@ -670,6 +670,42 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 					zend_update_property(scope, object, V8JS_CONST name, name_len, php_value TSRMLS_CC);
 					ret_value = set_value;
 				}
+				else if (zend_hash_find(&ce->function_table, "__set", 6, (void**)&method_ptr) == SUCCESS
+						 /* Allow only public methods */
+						 && ((method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) != 0)) {
+					/* Okay, let's call __set. */
+					zend_fcall_info fci;
+
+					zval fmember;
+					ZVAL_STRING(&fmember, "__set", 0);
+
+					zval *php_ret_value;
+
+					fci.size = sizeof(fci);
+					fci.function_table = &ce->function_table;
+					fci.function_name = &fmember;
+					fci.symbol_table = NULL;
+					fci.object_ptr = object;
+					fci.retval_ptr_ptr = &php_ret_value;
+					fci.param_count = 2;
+
+					zval *zname_ptr = &zname;
+
+					zval **params[2];
+					fci.params = params;
+					fci.params[0] = &zname_ptr;
+					fci.params[1] = &php_value;
+
+					zend_call_function(&fci, NULL TSRMLS_CC);
+
+					ret_value = zval_to_v8js(php_ret_value, isolate TSRMLS_CC);
+
+					/* We don't own the reference to php_ret_value... unless the
+					 * returned refcount was 0, in which case the below code
+					 * will free it. */
+					zval_add_ref(&php_ret_value);
+					zval_ptr_dtor(&php_ret_value);
+				}
 			}
 
 			// if PHP wanted to hold on to this value, update_property would
