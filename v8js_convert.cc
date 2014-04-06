@@ -604,15 +604,52 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 		}
 		if (callback_type == V8JS_PROP_GETTER) {
 			/* Nope, not a method -- must be a (case-sensitive) property */
-			php_value = zend_read_property(scope, object, V8JS_CONST name, name_len, true TSRMLS_CC);
-			// special case uninitialized_zval_ptr and return an empty value
-			// (indicating that we don't intercept this property) if the
-			// property doesn't exist.
-			if (php_value == EG(uninitialized_zval_ptr)) {
-				ret_value = v8::Handle<v8::Value>();
-			} else {
-				// wrap it
+			zval zname;
+			ZVAL_STRINGL(&zname, name, name_len, 0);
+			zend_property_info *property_info = zend_get_property_info(ce, &zname, 1 TSRMLS_CC);
+
+			if(property_info && property_info->flags & ZEND_ACC_PUBLIC) {
+				php_value = zend_read_property(NULL, object, V8JS_CONST name, name_len, true TSRMLS_CC);
+				// special case uninitialized_zval_ptr and return an empty value
+				// (indicating that we don't intercept this property) if the
+				// property doesn't exist.
+				if (php_value == EG(uninitialized_zval_ptr)) {
+					ret_value = v8::Handle<v8::Value>();
+				} else {
+					// wrap it
+					ret_value = zval_to_v8js(php_value, isolate TSRMLS_CC);
+					/* We don't own the reference to php_value... unless the
+					 * returned refcount was 0, in which case the below code
+					 * will free it. */
+					zval_add_ref(&php_value);
+					zval_ptr_dtor(&php_value);
+				}
+			}
+			else if (zend_hash_find(&ce->function_table, "__get", 6, (void**)&method_ptr) == SUCCESS
+					 /* Allow only public methods */
+					 && ((method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) != 0)) {
+				/* Okay, let's call __get. */
+				zend_fcall_info fci;
+
+				zval fmember;
+				ZVAL_STRING(&fmember, "__get", 0);
+
+				fci.size = sizeof(fci);
+				fci.function_table = &ce->function_table;
+				fci.function_name = &fmember;
+				fci.symbol_table = NULL;
+				fci.object_ptr = object;
+				fci.retval_ptr_ptr = &php_value;
+				fci.param_count = 1;
+
+				zval *zname_ptr = &zname;
+				zval **zname_ptr_ptr = &zname_ptr;
+				fci.params = &zname_ptr_ptr;
+
+				zend_call_function(&fci, NULL TSRMLS_CC);
+
 				ret_value = zval_to_v8js(php_value, isolate TSRMLS_CC);
+
 				/* We don't own the reference to php_value... unless the
 				 * returned refcount was 0, in which case the below code
 				 * will free it. */
