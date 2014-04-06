@@ -658,12 +658,20 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 			}
 		} else if (callback_type == V8JS_PROP_SETTER) {
 			MAKE_STD_ZVAL(php_value);
-			if (v8js_to_zval(set_value, php_value, 0, isolate TSRMLS_CC) == SUCCESS) {
-				zend_update_property(scope, object, V8JS_CONST name, name_len, php_value TSRMLS_CC);
-				ret_value = set_value;
-			} else {
+			if (v8js_to_zval(set_value, php_value, 0, isolate TSRMLS_CC) != SUCCESS) {
 				ret_value = v8::Handle<v8::Value>();
 			}
+			else {
+				zval zname;
+				ZVAL_STRINGL(&zname, name, name_len, 0);
+				zend_property_info *property_info = zend_get_property_info(ce, &zname, 1 TSRMLS_CC);
+
+				if(property_info && property_info->flags & ZEND_ACC_PUBLIC) {
+					zend_update_property(scope, object, V8JS_CONST name, name_len, php_value TSRMLS_CC);
+					ret_value = set_value;
+				}
+			}
+
 			// if PHP wanted to hold on to this value, update_property would
 			// have bumped the refcount
 			zval_ptr_dtor(&php_value);
