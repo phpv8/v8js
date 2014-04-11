@@ -638,13 +638,15 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 				fci.function_table = &ce->function_table;
 				fci.function_name = &fmember;
 				fci.symbol_table = NULL;
-				fci.object_ptr = object;
 				fci.retval_ptr_ptr = &php_value;
-				fci.param_count = 1;
 
 				zval *zname_ptr = &zname;
 				zval **zname_ptr_ptr = &zname_ptr;
+				fci.param_count = 1;
 				fci.params = &zname_ptr_ptr;
+
+				fci.object_ptr = object;
+				fci.no_separation = 0;
 
 				zend_call_function(&fci, NULL TSRMLS_CC);
 
@@ -685,16 +687,17 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 					fci.function_table = &ce->function_table;
 					fci.function_name = &fmember;
 					fci.symbol_table = NULL;
-					fci.object_ptr = object;
 					fci.retval_ptr_ptr = &php_ret_value;
-					fci.param_count = 2;
 
 					zval *zname_ptr = &zname;
-
 					zval **params[2];
+					fci.param_count = 2;
 					fci.params = params;
 					fci.params[0] = &zname_ptr;
 					fci.params[1] = &php_value;
+
+					fci.object_ptr = object;
+					fci.no_separation = 1;
 
 					zend_call_function(&fci, NULL TSRMLS_CC);
 
