@@ -48,6 +48,7 @@ static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_funct
 	max_num_args = method_ptr->common.num_args;
 
 	/* Function name to call */
+	INIT_ZVAL(fname);
 	ZVAL_STRING(&fname, method_ptr->common.function_name, 0);
 
 	/* zend_fcall_info */
@@ -605,6 +606,7 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 		if (callback_type == V8JS_PROP_GETTER) {
 			/* Nope, not a method -- must be a (case-sensitive) property */
 			zval zname;
+			INIT_ZVAL(zname);
 			ZVAL_STRINGL(&zname, name, name_len, 0);
 			zend_property_info *property_info = zend_get_property_info(ce, &zname, 1 TSRMLS_CC);
 
@@ -632,6 +634,7 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 				zend_fcall_info fci;
 
 				zval fmember;
+				INIT_ZVAL(fmember);
 				ZVAL_STRING(&fmember, "__get", 0);
 
 				fci.size = sizeof(fci);
@@ -665,6 +668,7 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 			}
 			else {
 				zval zname;
+				INIT_ZVAL(zname);
 				ZVAL_STRINGL(&zname, name, name_len, 0);
 				zend_property_info *property_info = zend_get_property_info(ce, &zname, 1 TSRMLS_CC);
 
@@ -679,6 +683,7 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 					zend_fcall_info fci;
 
 					zval fmember;
+					INIT_ZVAL(fmember);
 					ZVAL_STRING(&fmember, "__set", 0);
 
 					zval *php_ret_value;

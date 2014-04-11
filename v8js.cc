@@ -932,6 +932,7 @@ static PHP_METHOD(V8Js, __construct)
 		}
 
 		zval zmember;
+		INIT_ZVAL(zmember);
 		ZVAL_STRING(&zmember, member, 0);
 
 		zend_property_info *property_info = zend_get_property_info(c->std.ce, &zmember, 1 TSRMLS_CC);
