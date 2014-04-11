@@ -1134,6 +1134,10 @@ static PHP_METHOD(V8Js, executeString)
 		php_v8js_timer_pop(TSRMLS_C);
 	}
 
+	if(c->fatal_error_abort) {
+		zend_error(E_ERROR, "V8Js caught fatal error; message lost, sorry :-)");
+	}
+
 	char exception_string[64];
 
 	if (c->time_limit_hit) {

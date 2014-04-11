@@ -30,6 +30,17 @@ extern "C" {
 #include <stdexcept>
 #include <limits>
 
+
+jmp_buf *unwind_env;
+
+static void php_v8js_error_handler(int error_num, const char *error_filename, const uint error_lineno, const char *format, va_list args)
+{
+	longjmp(*unwind_env, 1);
+}
+
+
+
+
 static void php_v8js_weak_object_callback(const v8::WeakCallbackData<v8::Object, zval> &data);
 
 /* Callback for PHP methods and functions */
@@ -42,6 +53,13 @@ static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_funct
 	zend_uint argc = info.Length(), min_num_args = 0, max_num_args = 0;
 	char *error;
 	int error_len, i, flags = V8JS_FLAG_NONE;
+
+#if PHP_V8_API_VERSION <= 3023008
+	/* Until V8 3.23.8 Isolate could only take one external pointer. */
+	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData();
+#else
+	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData(0);
+#endif
 
 	/* Set parameter limits */
 	min_num_args = method_ptr->common.required_num_args;
@@ -125,11 +143,33 @@ static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_funct
 		fcc.called_scope = ce;
 		fcc.object_ptr = value;
 
-		/* Call the method */
-		zend_call_function(&fci, &fcc TSRMLS_CC);
+		jmp_buf env;
+		int val;
+
+		void (*old_error_handler)(int, const char *, const uint, const char*, va_list);
+		old_error_handler = zend_error_cb;
+		zend_error_cb = php_v8js_error_handler;
+
+		val = setjmp (env);
+		unwind_env = &env;
+
+		if (val) {
+			ctx->fatal_error_abort = true;
+			zend_error_cb = old_error_handler;
+		}
+		else {
+			/* Call the method */
+			zend_call_function(&fci, &fcc TSRMLS_CC);
+		}
 	}
 
 	isolate->Enter();
+
+	if(ctx->fatal_error_abort) {
+		v8::V8::TerminateExecution(isolate);
+		info.GetReturnValue().Set(V8JS_NULL);
+		return;
+	}
 
 failure:
 	/* Cleanup */

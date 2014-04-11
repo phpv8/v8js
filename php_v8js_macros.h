@@ -205,6 +205,8 @@ struct php_v8js_ctx {
 
   std::vector<php_v8js_accessor_ctx *> accessor_list;
   char *tz;
+
+  bool fatal_error_abort;
 #ifdef ZTS
   void ***zts_ctx;
 #endif
