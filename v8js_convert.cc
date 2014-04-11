@@ -48,6 +48,7 @@ static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_funct
 	max_num_args = method_ptr->common.num_args;
 
 	/* Function name to call */
+	INIT_ZVAL(fname);
 	ZVAL_STRING(&fname, method_ptr->common.function_name, 0);
 
 	/* zend_fcall_info */
@@ -604,15 +605,56 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 		}
 		if (callback_type == V8JS_PROP_GETTER) {
 			/* Nope, not a method -- must be a (case-sensitive) property */
-			php_value = zend_read_property(scope, object, V8JS_CONST name, name_len, true TSRMLS_CC);
-			// special case uninitialized_zval_ptr and return an empty value
-			// (indicating that we don't intercept this property) if the
-			// property doesn't exist.
-			if (php_value == EG(uninitialized_zval_ptr)) {
-				ret_value = v8::Handle<v8::Value>();
-			} else {
-				// wrap it
+			zval zname;
+			INIT_ZVAL(zname);
+			ZVAL_STRINGL(&zname, name, name_len, 0);
+			zend_property_info *property_info = zend_get_property_info(ce, &zname, 1 TSRMLS_CC);
+
+			if(property_info && property_info->flags & ZEND_ACC_PUBLIC) {
+				php_value = zend_read_property(NULL, object, V8JS_CONST name, name_len, true TSRMLS_CC);
+				// special case uninitialized_zval_ptr and return an empty value
+				// (indicating that we don't intercept this property) if the
+				// property doesn't exist.
+				if (php_value == EG(uninitialized_zval_ptr)) {
+					ret_value = v8::Handle<v8::Value>();
+				} else {
+					// wrap it
+					ret_value = zval_to_v8js(php_value, isolate TSRMLS_CC);
+					/* We don't own the reference to php_value... unless the
+					 * returned refcount was 0, in which case the below code
+					 * will free it. */
+					zval_add_ref(&php_value);
+					zval_ptr_dtor(&php_value);
+				}
+			}
+			else if (zend_hash_find(&ce->function_table, "__get", 6, (void**)&method_ptr) == SUCCESS
+					 /* Allow only public methods */
+					 && ((method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) != 0)) {
+				/* Okay, let's call __get. */
+				zend_fcall_info fci;
+
+				zval fmember;
+				INIT_ZVAL(fmember);
+				ZVAL_STRING(&fmember, "__get", 0);
+
+				fci.size = sizeof(fci);
+				fci.function_table = &ce->function_table;
+				fci.function_name = &fmember;
+				fci.symbol_table = NULL;
+				fci.retval_ptr_ptr = &php_value;
+
+				zval *zname_ptr = &zname;
+				zval **zname_ptr_ptr = &zname_ptr;
+				fci.param_count = 1;
+				fci.params = &zname_ptr_ptr;
+
+				fci.object_ptr = object;
+				fci.no_separation = 0;
+
+				zend_call_function(&fci, NULL TSRMLS_CC);
+
 				ret_value = zval_to_v8js(php_value, isolate TSRMLS_CC);
+
 				/* We don't own the reference to php_value... unless the
 				 * returned refcount was 0, in which case the below code
 				 * will free it. */
@@ -621,12 +663,59 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 			}
 		} else if (callback_type == V8JS_PROP_SETTER) {
 			MAKE_STD_ZVAL(php_value);
-			if (v8js_to_zval(set_value, php_value, 0, isolate TSRMLS_CC) == SUCCESS) {
-				zend_update_property(scope, object, V8JS_CONST name, name_len, php_value TSRMLS_CC);
-				ret_value = set_value;
-			} else {
+			if (v8js_to_zval(set_value, php_value, 0, isolate TSRMLS_CC) != SUCCESS) {
 				ret_value = v8::Handle<v8::Value>();
 			}
+			else {
+				zval zname;
+				INIT_ZVAL(zname);
+				ZVAL_STRINGL(&zname, name, name_len, 0);
+				zend_property_info *property_info = zend_get_property_info(ce, &zname, 1 TSRMLS_CC);
+
+				if(property_info && property_info->flags & ZEND_ACC_PUBLIC) {
+					zend_update_property(scope, object, V8JS_CONST name, name_len, php_value TSRMLS_CC);
+					ret_value = set_value;
+				}
+				else if (zend_hash_find(&ce->function_table, "__set", 6, (void**)&method_ptr) == SUCCESS
+						 /* Allow only public methods */
+						 && ((method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) != 0)) {
+					/* Okay, let's call __set. */
+					zend_fcall_info fci;
+
+					zval fmember;
+					INIT_ZVAL(fmember);
+					ZVAL_STRING(&fmember, "__set", 0);
+
+					zval *php_ret_value;
+
+					fci.size = sizeof(fci);
+					fci.function_table = &ce->function_table;
+					fci.function_name = &fmember;
+					fci.symbol_table = NULL;
+					fci.retval_ptr_ptr = &php_ret_value;
+
+					zval *zname_ptr = &zname;
+					zval **params[2];
+					fci.param_count = 2;
+					fci.params = params;
+					fci.params[0] = &zname_ptr;
+					fci.params[1] = &php_value;
+
+					fci.object_ptr = object;
+					fci.no_separation = 1;
+
+					zend_call_function(&fci, NULL TSRMLS_CC);
+
+					ret_value = zval_to_v8js(php_ret_value, isolate TSRMLS_CC);
+
+					/* We don't own the reference to php_ret_value... unless the
+					 * returned refcount was 0, in which case the below code
+					 * will free it. */
+					zval_add_ref(&php_ret_value);
+					zval_ptr_dtor(&php_ret_value);
+				}
+			}
+
 			// if PHP wanted to hold on to this value, update_property would
 			// have bumped the refcount
 			zval_ptr_dtor(&php_value);
@@ -636,6 +725,7 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 			zval *prop;
 			MAKE_STD_ZVAL(prop);
 			ZVAL_STRINGL(prop, name, name_len, 1);
+
 			if (callback_type == V8JS_PROP_QUERY) {
 				if (h->has_property(object, prop, 0 ZEND_HASH_KEY_NULL TSRMLS_CC)) {
 					ret_value = V8JS_UINT(v8::None);
@@ -643,8 +733,15 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 					ret_value = v8::Handle<v8::Value>(); // empty handle
 				}
 			} else {
-				h->unset_property(object, prop ZEND_HASH_KEY_NULL TSRMLS_CC);
-				ret_value = V8JS_BOOL(true);
+				zend_property_info *property_info = zend_get_property_info(ce, prop, 1 TSRMLS_CC);
+
+				if(property_info && property_info->flags & ZEND_ACC_PUBLIC) {
+					h->unset_property(object, prop ZEND_HASH_KEY_NULL TSRMLS_CC);
+					ret_value = V8JS_BOOL(true);
+				}
+				else {
+					ret_value = v8::Handle<v8::Value>(); // empty handle
+				}
 			}
 			zval_ptr_dtor(&prop);
 		} else {
