@@ -31,14 +31,11 @@ extern "C" {
 #include <limits>
 
 
-jmp_buf *unwind_env;
-
 static void php_v8js_error_handler(int error_num, const char *error_filename, const uint error_lineno, const char *format, va_list args)
 {
-	longjmp(*unwind_env, 1);
+	V8JSG(fatal_error_abort) = true;
+	longjmp(*V8JSG(unwind_env), 1);
 }
-
-
 
 
 static void php_v8js_weak_object_callback(const v8::WeakCallbackData<v8::Object, zval> &data);
@@ -151,10 +148,9 @@ static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_funct
 		zend_error_cb = php_v8js_error_handler;
 
 		val = setjmp (env);
-		unwind_env = &env;
+		V8JSG(unwind_env) = &env;
 
 		if (val) {
-			ctx->fatal_error_abort = true;
 			zend_error_cb = old_error_handler;
 		}
 		else {
@@ -165,7 +161,7 @@ static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_funct
 
 	isolate->Enter();
 
-	if(ctx->fatal_error_abort) {
+	if (V8JSG(fatal_error_abort)) {
 		v8::V8::TerminateExecution(isolate);
 		info.GetReturnValue().Set(V8JS_NULL);
 		return;

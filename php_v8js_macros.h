@@ -205,8 +205,6 @@ struct php_v8js_ctx {
 
   std::vector<php_v8js_accessor_ctx *> accessor_list;
   char *tz;
-
-  bool fatal_error_abort;
 #ifdef ZTS
   void ***zts_ctx;
 #endif
@@ -261,6 +259,14 @@ ZEND_BEGIN_MODULE_GLOBALS(v8js)
   bool timer_stop;
 
   std::map<char *, v8::Handle<v8::Object> > modules_loaded;
+
+  // fatal error unwinding
+  bool fatal_error_abort;
+  int error_num;
+  const char *error_filename;
+  uint error_lineno;
+  char *error_message;
+  jmp_buf *unwind_env;
 ZEND_END_MODULE_GLOBALS(v8js)
 
 extern zend_v8js_globals v8js_globals;

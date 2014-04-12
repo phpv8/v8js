@@ -1134,7 +1134,7 @@ static PHP_METHOD(V8Js, executeString)
 		php_v8js_timer_pop(TSRMLS_C);
 	}
 
-	if(c->fatal_error_abort) {
+	if(V8JSG(fatal_error_abort)) {
 		zend_error(E_ERROR, "V8Js caught fatal error; message lost, sorry :-)");
 	}
 
@@ -1872,6 +1872,13 @@ static PHP_GINIT_FUNCTION(v8js)
 	new(&v8js_globals->timer_mutex) std::mutex;
 	new(&v8js_globals->timer_stack) std::stack<php_v8js_timer_ctx *>;
 	new(&v8js_globals->modules_loaded) std::map<char *, v8::Handle<v8::Object>>;
+
+	v8js_globals->fatal_error_abort = 0;
+	v8js_globals->error_num = 0;
+	v8js_globals->error_filename = NULL;
+	v8js_globals->error_lineno = 0;
+	v8js_globals->error_message = 0;
+	v8js_globals->unwind_env = NULL;
 #endif
 }
 /* }}} */
