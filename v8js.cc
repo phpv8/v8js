@@ -1135,7 +1135,7 @@ static PHP_METHOD(V8Js, executeString)
 	}
 
 	if(V8JSG(fatal_error_abort)) {
-		zend_error(E_ERROR, "V8Js caught fatal error; message lost, sorry :-)");
+		zend_error(V8JSG(error_num), "%s", V8JSG(error_message));
 	}
 
 	char exception_string[64];
@@ -1875,8 +1875,6 @@ static PHP_GINIT_FUNCTION(v8js)
 
 	v8js_globals->fatal_error_abort = 0;
 	v8js_globals->error_num = 0;
-	v8js_globals->error_filename = NULL;
-	v8js_globals->error_lineno = 0;
 	v8js_globals->error_message = 0;
 	v8js_globals->unwind_env = NULL;
 #endif

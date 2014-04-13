@@ -263,8 +263,6 @@ ZEND_BEGIN_MODULE_GLOBALS(v8js)
   // fatal error unwinding
   bool fatal_error_abort;
   int error_num;
-  const char *error_filename;
-  uint error_lineno;
   char *error_message;
   jmp_buf *unwind_env;
 ZEND_END_MODULE_GLOBALS(v8js)

@@ -33,7 +33,15 @@ extern "C" {
 
 static void php_v8js_error_handler(int error_num, const char *error_filename, const uint error_lineno, const char *format, va_list args)
 {
+	char *buffer;
+	int buffer_len;
+
+	buffer_len = vspprintf(&buffer, PG(log_errors_max_len), format, args);
+
 	V8JSG(fatal_error_abort) = true;
+	V8JSG(error_num) = error_num;
+	V8JSG(error_message) = buffer;
+
 	longjmp(*V8JSG(unwind_env), 1);
 }
 
