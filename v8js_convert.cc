@@ -149,21 +149,26 @@ static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_funct
 		fcc.object_ptr = value;
 
 		jmp_buf env;
-		int val;
+		int val = 0;
 
 		void (*old_error_handler)(int, const char *, const uint, const char*, va_list);
-		old_error_handler = zend_error_cb;
-		zend_error_cb = php_v8js_error_handler;
 
-		val = setjmp (env);
-		V8JSG(unwind_env) = &env;
+		if (V8JSG(unwind_env) == NULL) {
+			old_error_handler = zend_error_cb;
+			zend_error_cb = php_v8js_error_handler;
 
-		if (val) {
-			zend_error_cb = old_error_handler;
+			val = setjmp (env);
+			V8JSG(unwind_env) = &env;
 		}
-		else {
+
+		if (!val) {
 			/* Call the method */
 			zend_call_function(&fci, &fcc TSRMLS_CC);
+		}
+
+		if (old_error_handler != NULL) {
+			zend_error_cb = old_error_handler;
+			V8JSG(unwind_env) = NULL;
 		}
 	}
 
