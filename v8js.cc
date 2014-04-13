@@ -1134,6 +1134,8 @@ static PHP_METHOD(V8Js, executeString)
 		php_v8js_timer_pop(TSRMLS_C);
 	}
 
+	/* Check for fatal error marker possibly set by php_v8js_error_handler; just
+	 * rethrow the error since we're now out of V8. */
 	if(V8JSG(fatal_error_abort)) {
 		zend_error(V8JSG(error_num), "%s", V8JSG(error_message));
 	}

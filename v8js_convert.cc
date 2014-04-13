@@ -31,7 +31,13 @@ extern "C" {
 #include <limits>
 
 
-static void php_v8js_error_handler(int error_num, const char *error_filename, const uint error_lineno, const char *format, va_list args)
+/* Callback for PHP's zend_error_cb; catching any fatal PHP error.
+ * The callback is installed in the lowest (stack wise) php_v8js_call_php_func
+ * frame.  Just store the error message and jump right back there and fall
+ * back into V8 context. */
+static void php_v8js_error_handler(int error_num, const char *error_filename,
+								   const uint error_lineno, const char *format,
+								   va_list args) /* {{{ */
 {
 	char *buffer;
 	int buffer_len;
@@ -44,6 +50,7 @@ static void php_v8js_error_handler(int error_num, const char *error_filename, co
 
 	longjmp(*V8JSG(unwind_env), 1);
 }
+/* }}} */
 
 
 static void php_v8js_weak_object_callback(const v8::WeakCallbackData<v8::Object, zval> &data);
@@ -153,6 +160,9 @@ static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_funct
 
 		void (*old_error_handler)(int, const char *, const uint, const char*, va_list);
 
+		/* If this is the first level call from V8 back to PHP, install a
+		 * handler for fatal errors; we must fall back through V8 to keep
+		 * it from crashing. */
 		if (V8JSG(unwind_env) == NULL) {
 			old_error_handler = zend_error_cb;
 			zend_error_cb = php_v8js_error_handler;
