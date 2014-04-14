@@ -1134,6 +1134,12 @@ static PHP_METHOD(V8Js, executeString)
 		php_v8js_timer_pop(TSRMLS_C);
 	}
 
+	/* Check for fatal error marker possibly set by php_v8js_error_handler; just
+	 * rethrow the error since we're now out of V8. */
+	if(V8JSG(fatal_error_abort)) {
+		zend_error(V8JSG(error_num), "%s", V8JSG(error_message));
+	}
+
 	char exception_string[64];
 
 	if (c->time_limit_hit) {
@@ -1868,6 +1874,11 @@ static PHP_GINIT_FUNCTION(v8js)
 	new(&v8js_globals->timer_mutex) std::mutex;
 	new(&v8js_globals->timer_stack) std::stack<php_v8js_timer_ctx *>;
 	new(&v8js_globals->modules_loaded) std::map<char *, v8::Handle<v8::Object>>;
+
+	v8js_globals->fatal_error_abort = 0;
+	v8js_globals->error_num = 0;
+	v8js_globals->error_message = 0;
+	v8js_globals->unwind_env = NULL;
 #endif
 }
 /* }}} */

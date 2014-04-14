@@ -30,6 +30,29 @@ extern "C" {
 #include <stdexcept>
 #include <limits>
 
+
+/* Callback for PHP's zend_error_cb; catching any fatal PHP error.
+ * The callback is installed in the lowest (stack wise) php_v8js_call_php_func
+ * frame.  Just store the error message and jump right back there and fall
+ * back into V8 context. */
+static void php_v8js_error_handler(int error_num, const char *error_filename,
+								   const uint error_lineno, const char *format,
+								   va_list args) /* {{{ */
+{
+	char *buffer;
+	int buffer_len;
+
+	buffer_len = vspprintf(&buffer, PG(log_errors_max_len), format, args);
+
+	V8JSG(fatal_error_abort) = true;
+	V8JSG(error_num) = error_num;
+	V8JSG(error_message) = buffer;
+
+	longjmp(*V8JSG(unwind_env), 1);
+}
+/* }}} */
+
+
 static void php_v8js_weak_object_callback(const v8::WeakCallbackData<v8::Object, zval> &data);
 
 /* Callback for PHP methods and functions */
@@ -42,6 +65,13 @@ static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_funct
 	zend_uint argc = info.Length(), min_num_args = 0, max_num_args = 0;
 	char *error;
 	int error_len, i, flags = V8JS_FLAG_NONE;
+
+#if PHP_V8_API_VERSION <= 3023008
+	/* Until V8 3.23.8 Isolate could only take one external pointer. */
+	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData();
+#else
+	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData(0);
+#endif
 
 	/* Set parameter limits */
 	min_num_args = method_ptr->common.required_num_args;
@@ -125,11 +155,40 @@ static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_funct
 		fcc.called_scope = ce;
 		fcc.object_ptr = value;
 
-		/* Call the method */
-		zend_call_function(&fci, &fcc TSRMLS_CC);
+		jmp_buf env;
+		int val = 0;
+
+		void (*old_error_handler)(int, const char *, const uint, const char*, va_list);
+
+		/* If this is the first level call from V8 back to PHP, install a
+		 * handler for fatal errors; we must fall back through V8 to keep
+		 * it from crashing. */
+		if (V8JSG(unwind_env) == NULL) {
+			old_error_handler = zend_error_cb;
+			zend_error_cb = php_v8js_error_handler;
+
+			val = setjmp (env);
+			V8JSG(unwind_env) = &env;
+		}
+
+		if (!val) {
+			/* Call the method */
+			zend_call_function(&fci, &fcc TSRMLS_CC);
+		}
+
+		if (old_error_handler != NULL) {
+			zend_error_cb = old_error_handler;
+			V8JSG(unwind_env) = NULL;
+		}
 	}
 
 	isolate->Enter();
+
+	if (V8JSG(fatal_error_abort)) {
+		v8::V8::TerminateExecution(isolate);
+		info.GetReturnValue().Set(V8JS_NULL);
+		return;
+	}
 
 failure:
 	/* Cleanup */
