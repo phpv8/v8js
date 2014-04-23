@@ -36,7 +36,7 @@ extern "C" {
 #include <mutex>
 
 /* V8Js Version */
-#define V8JS_VERSION "0.1.3"
+#define V8JS_VERSION "0.1.5"
 
 /* V8 from 3.23.12 has most v8::Anything::New constructors expect isolates
    as their first argument.  Older versions don't provide these. */
