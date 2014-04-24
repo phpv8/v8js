@@ -1,5 +1,5 @@
 --TEST--
-Test V8::executeString() : Time limit
+Test V8::executeString() : Memory limit
 --SKIPIF--
 <?php require_once(dirname(__FILE__) . '/skipif.inc'); ?>
 --FILE--
