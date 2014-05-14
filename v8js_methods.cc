@@ -29,7 +29,7 @@ void php_v8js_commonjs_normalise_identifier(char *base, char *identifier, char *
 /* global.exit - terminate execution */
 V8JS_METHOD(exit) /* {{{ */
 {
-	v8::V8::TerminateExecution();
+	v8::V8::TerminateExecution(info.GetIsolate());
 }
 /* }}} */
 
