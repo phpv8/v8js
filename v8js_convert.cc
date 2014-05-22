@@ -42,13 +42,23 @@ static void php_v8js_error_handler(int error_num, const char *error_filename,
 	char *buffer;
 	int buffer_len;
 
-	buffer_len = vspprintf(&buffer, PG(log_errors_max_len), format, args);
-
-	V8JSG(fatal_error_abort) = true;
-	V8JSG(error_num) = error_num;
-	V8JSG(error_message) = buffer;
-
-	longjmp(*V8JSG(unwind_env), 1);
+	switch (error_num)
+	{
+		case E_ERROR:
+		case E_CORE_ERROR:
+		case E_USER_ERROR:
+			buffer_len = vspprintf(&buffer, PG(log_errors_max_len), format, args);
+		
+			V8JSG(fatal_error_abort) = true;
+			V8JSG(error_num) = error_num;
+			V8JSG(error_message) = buffer;
+			
+			longjmp(*V8JSG(unwind_env), 1);
+			break;
+		default:
+			V8JSG(old_error_handler)(error_num, error_filename, error_lineno, format, args);
+			break;
+	}
 }
 /* }}} */
 
@@ -158,13 +168,11 @@ static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_funct
 		jmp_buf env;
 		int val = 0;
 
-		void (*old_error_handler)(int, const char *, const uint, const char*, va_list);
-
 		/* If this is the first level call from V8 back to PHP, install a
 		 * handler for fatal errors; we must fall back through V8 to keep
 		 * it from crashing. */
 		if (V8JSG(unwind_env) == NULL) {
-			old_error_handler = zend_error_cb;
+			V8JSG(old_error_handler) = zend_error_cb;
 			zend_error_cb = php_v8js_error_handler;
 
 			val = setjmp (env);
@@ -176,8 +184,8 @@ static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_funct
 			zend_call_function(&fci, &fcc TSRMLS_CC);
 		}
 
-		if (old_error_handler != NULL) {
-			zend_error_cb = old_error_handler;
+		if (V8JSG(old_error_handler) != NULL) {
+			zend_error_cb = V8JSG(old_error_handler);
 			V8JSG(unwind_env) = NULL;
 		}
 	}
