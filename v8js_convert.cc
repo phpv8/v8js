@@ -167,11 +167,13 @@ static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_funct
 
 		jmp_buf env;
 		int val = 0;
+		bool installed_handler = false;
 
 		/* If this is the first level call from V8 back to PHP, install a
 		 * handler for fatal errors; we must fall back through V8 to keep
 		 * it from crashing. */
 		if (V8JSG(unwind_env) == NULL) {
+			installed_handler = true;
 			V8JSG(old_error_handler) = zend_error_cb;
 			zend_error_cb = php_v8js_error_handler;
 
@@ -184,7 +186,7 @@ static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_funct
 			zend_call_function(&fci, &fcc TSRMLS_CC);
 		}
 
-		if (V8JSG(old_error_handler) != NULL) {
+		if (installed_handler) {
 			zend_error_cb = V8JSG(old_error_handler);
 			V8JSG(unwind_env) = NULL;
 		}
