@@ -1879,6 +1879,7 @@ static PHP_GINIT_FUNCTION(v8js)
 	v8js_globals->error_num = 0;
 	v8js_globals->error_message = 0;
 	v8js_globals->unwind_env = NULL;
+	v8js_globals->old_error_handler = NULL;
 #endif
 }
 /* }}} */
