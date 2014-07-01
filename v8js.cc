@@ -643,6 +643,9 @@ static void php_v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 	}
 	c->weak_closures.~map();
 
+	v8::Isolate *isolate = c->isolate;
+	isolate->Dispose();
+
 	if(c->tz != NULL) {
 		free(c->tz);
 	}
