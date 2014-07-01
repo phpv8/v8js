@@ -747,6 +747,10 @@ static int _php_v8js_create_ext_strarr(const char ***retval, int count, HashTabl
 
 static void php_v8js_fatal_error_handler(const char *location, const char *message) /* {{{ */
 {
+	v8::Isolate *isolate = v8::Isolate::GetCurrent();
+	if (isolate) {
+		isolate->Exit();
+	}
 	if (location) {
 		zend_error(E_ERROR, "%s %s", location, message);
 	} else {
