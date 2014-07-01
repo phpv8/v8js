@@ -1316,7 +1316,7 @@ static PHP_METHOD(V8Js, executeString)
 		RETURN_FALSE;
 	}
 	php_v8js_execute_script(getThis(), res, flags, time_limit, memory_limit, &return_value);
-	php_v8js_script_free(res);
+	php_v8js_script_free(res, true);
 
 }
 /* }}} */
@@ -1521,19 +1521,25 @@ static void php_v8js_persistent_zval_dtor(zval **p) /* {{{ */
 }
 /* }}} */
 
-static void php_v8js_script_free(php_v8js_script *res)
+static void php_v8js_script_free(php_v8js_script *res, bool dispose_persistent)
 {
 	if (res->name) {
 		efree(res->name);
+		res->name = NULL;
 	}
-	res->script->Reset();
-	res->script->~Persistent();
+	if (dispose_persistent) {
+		res->script->~Persistent(); // does Reset()
+		res->script = NULL;
+	}
 }
 
 static void php_v8js_script_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC) /* {{{ */
 {
 	php_v8js_script *res = (php_v8js_script *)rsrc->ptr;
-	if (res) php_v8js_script_free(res);
+	if (res) {
+		php_v8js_script_free(res, false);
+		efree(res);
+	}
 }
 /* }}} */
 

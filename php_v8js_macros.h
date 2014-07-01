@@ -292,7 +292,7 @@ typedef struct _php_v8js_script {
 	v8::Persistent<v8::Script, v8::CopyablePersistentTraits<v8::Script>> *script;
 } php_v8js_script;
 
-static void php_v8js_script_free(php_v8js_script *res);
+static void php_v8js_script_free(php_v8js_script *res, bool dispose_persistent);
 
 #endif	/* PHP_V8JS_MACROS_H */
 
