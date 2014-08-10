@@ -621,7 +621,11 @@ static void php_v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 	{
 		v8::Locker locker(c->isolate);
 		v8::Isolate::Scope isolate_scope(c->isolate);
+#if PHP_V8_API_VERSION < 3028036
 		while(!v8::V8::IdleNotification()) {};
+#else
+		while(!c->isolate->IdleNotification(500)) {};
+#endif
 	}
 
 	/* Dispose yet undisposed weak refs */
