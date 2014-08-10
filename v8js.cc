@@ -497,7 +497,17 @@ static void php_v8js_v8_free_storage(void *object, zend_object_handle handle TSR
 
 	zend_object_std_dtor(&c->std TSRMLS_CC);
 
-	c->v8obj.Reset();
+	bool isolate_invalid = false;
+	for (std::list<v8::Isolate *>::iterator it = V8JSG(invalid_isolates).begin(); it != V8JSG(invalid_isolates).end(); ++it) {
+		if(*it == c->isolate) {
+			isolate_invalid = true;
+			break;
+		}
+	}
+
+	if(!isolate_invalid) {
+		c->v8obj.Reset();
+	}
 
 	efree(object);
 }
@@ -647,8 +657,8 @@ static void php_v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 	}
 	c->weak_closures.~map();
 
-	v8::Isolate *isolate = c->isolate;
-	isolate->Dispose();
+	V8JSG(invalid_isolates).push_front(c->isolate);
+	c->isolate->Dispose();
 
 	if(c->tz != NULL) {
 		free(c->tz);
@@ -842,6 +852,8 @@ static PHP_METHOD(V8Js, __construct)
 	c->time_limit_hit = false;
 	c->memory_limit_hit = false;
 	c->module_loader = NULL;
+
+	V8JSG(invalid_isolates).remove(c->isolate);
 
 	/* Include extensions used by this context */
 	/* Note: Extensions registered with auto_enable do not need to be added separately like this. */
@@ -1822,6 +1834,18 @@ static PHP_MSHUTDOWN_FUNCTION(v8js)
 }
 /* }}} */
 
+/* {{{ PHP_RINIT_FUNCTION
+ */
+static PHP_RINIT_FUNCTION(v8js)
+{
+	// Clear list of invalid isolates which might remain from requests served
+	// earlier and the list cannot be cleared in shutdown handler (as it
+	// is called too early).
+	V8JSG(invalid_isolates).clear();
+	return SUCCESS;
+}
+/* }}} */
+
 /* {{{ PHP_RSHUTDOWN_FUNCTION
  */
 static PHP_RSHUTDOWN_FUNCTION(v8js)
@@ -1831,6 +1855,10 @@ static PHP_RSHUTDOWN_FUNCTION(v8js)
 		V8JSG(timer_stop) = true;
 		V8JSG(timer_thread)->join();
 	}
+
+	// We must *not* clear invalid_isolates here, since it is still possible
+	// that some php objects have references towards v8, which we mustn't use
+	// even after shutting down now.
 
 #if V8JS_DEBUG
 	v8::HeapStatistics stats;
@@ -1885,6 +1913,7 @@ static PHP_GINIT_FUNCTION(v8js)
 	new(&v8js_globals->timer_mutex) std::mutex;
 	new(&v8js_globals->timer_stack) std::stack<php_v8js_timer_ctx *>;
 	new(&v8js_globals->modules_loaded) std::map<char *, v8::Handle<v8::Object>>;
+	new(&v8js_globals->invalid_isolates) std::list<v8::Isolate *>;
 
 	v8js_globals->fatal_error_abort = 0;
 	v8js_globals->error_num = 0;
@@ -1914,6 +1943,7 @@ static PHP_GSHUTDOWN_FUNCTION(v8js)
 	v8js_globals->timer_stack.~stack();
 	v8js_globals->timer_mutex.~mutex();
 	v8js_globals->modules_loaded.~map();
+	v8js_globals->invalid_isolates.~list();
 #endif
 }
 /* }}} */
@@ -1934,7 +1964,7 @@ zend_module_entry v8js_module_entry = {
 	v8js_functions,
 	PHP_MINIT(v8js),
 	PHP_MSHUTDOWN(v8js),
-	NULL,
+	PHP_RINIT(v8js),
 	PHP_RSHUTDOWN(v8js),
 	PHP_MINFO(v8js),
 	V8JS_VERSION,

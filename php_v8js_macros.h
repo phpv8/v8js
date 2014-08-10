@@ -32,6 +32,7 @@ extern "C" {
 #include <thread>
 
 #include <map>
+#include <list>
 #include <vector>
 #include <mutex>
 
@@ -259,6 +260,7 @@ ZEND_BEGIN_MODULE_GLOBALS(v8js)
   bool timer_stop;
 
   std::map<char *, v8::Handle<v8::Object> > modules_loaded;
+  std::list<v8::Isolate *> invalid_isolates;
 
   // fatal error unwinding
   bool fatal_error_abort;
