@@ -654,7 +654,9 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 	) {
 		if (callback_type == V8JS_PROP_GETTER) {
 			if (is_constructor) {
-				ret_value = self->GetConstructor();
+				// Don't set a return value here, i.e. indicate that we don't
+				// have a special value.  V8 "knows" the constructor anyways
+				// (from the template) and will use that.
 			} else {
 				if (is_magic_call && method_ptr==NULL) {
 					// Fake __call implementation
