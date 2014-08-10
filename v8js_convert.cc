@@ -482,6 +482,7 @@ static void php_v8js_named_property_enumerator(const v8::PropertyCallbackInfo<v8
 
 static void php_v8js_invoke_callback(const v8::FunctionCallbackInfo<v8::Value>& info) /* {{{ */
 {
+	v8::Isolate *isolate = info.GetIsolate();
 	v8::Local<v8::Object> self = info.Holder();
 	v8::Local<v8::Function> cb = v8::Local<v8::Function>::Cast(info.Data());
 	int argc = info.Length(), i;
@@ -491,11 +492,24 @@ static void php_v8js_invoke_callback(const v8::FunctionCallbackInfo<v8::Value>& 
 	for (i=0; i<argc; i++) {
 		argv[i] = info[i];
 	}
-	if (info.IsConstructCall() && self->GetConstructor()->IsFunction()) {
-		// this is a 'new obj(...)' invocation.  Handle this like PHP does;
-		// that is, treat it as synonymous with 'new obj.constructor(...)'
-		cb = v8::Local<v8::Function>::Cast(self->GetConstructor());
-		result = cb->NewInstance(argc, argv);
+
+	if (info.IsConstructCall()) {
+#if PHP_V8_API_VERSION <= 3023008
+		/* Until V8 3.23.8 Isolate could only take one external pointer. */
+		php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData();
+#else
+		php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData(0);
+#endif
+
+		v8::String::Utf8Value str(self->GetConstructorName()->ToString());
+		const char *constructor_name = ToCString(str);
+
+		zend_class_entry *ce = zend_fetch_class_by_name(constructor_name, str.length(), NULL, 0);
+		v8::Local<v8::FunctionTemplate> new_tpl;
+		new_tpl = v8::Local<v8::FunctionTemplate>::New
+			(isolate, ctx->template_cache.at(ce->name));
+
+		result = new_tpl->GetFunction()->NewInstance(argc, argv);
 	} else {
 		result = cb->Call(self, argc, argv);
 	}
