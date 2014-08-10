@@ -986,7 +986,7 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 						}
 						continue;
 					}
-					newobj->Set(V8JS_STRL(key, key_len - 1), zval_to_v8js(*data, isolate TSRMLS_CC), v8::ReadOnly);
+					newobj->Set(V8JS_STRL(key, key_len - 1), zval_to_v8js(*data, isolate TSRMLS_CC));
 				} else {
 					newobj->Set(index, zval_to_v8js(*data, isolate TSRMLS_CC));
 				}

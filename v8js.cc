@@ -914,7 +914,7 @@ static PHP_METHOD(V8Js, __construct)
 
 	/* Add the PHP object into global object */
 	v8::Local<v8::Object> php_obj = php_obj_t->InstanceTemplate()->NewInstance();
-	V8JS_GLOBAL(isolate)->Set(object_name_js, php_obj, v8::ReadOnly);
+	V8JS_GLOBAL(isolate)->ForceSet(object_name_js, php_obj, v8::ReadOnly);
 
 	/* Export public property values */
 	HashTable *properties = zend_std_get_properties(getThis() TSRMLS_CC);
