@@ -195,6 +195,7 @@ static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_funct
 	isolate->Enter();
 
 	if (V8JSG(fatal_error_abort)) {
+		isolate->Exit();
 		v8::V8::TerminateExecution(isolate);
 		info.GetReturnValue().Set(V8JS_NULL);
 		return;
