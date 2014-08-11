@@ -183,6 +183,7 @@ void php_v8js_accessor_ctx_dtor(php_v8js_accessor_ctx * TSRMLS_DC);
 /* Register accessors into passed object */
 void php_v8js_register_accessors(std::vector<php_v8js_accessor_ctx*> *accessor_list, v8::Local<v8::FunctionTemplate>, zval *, v8::Isolate * TSRMLS_DC);
 
+struct php_v8js_object;
 
 /* {{{ Context container */
 struct php_v8js_ctx {
@@ -203,6 +204,8 @@ struct php_v8js_ctx {
 
   std::map<zval *, v8js_persistent_obj_t> weak_objects;
   std::map<v8js_tmpl_t *, v8js_persistent_obj_t> weak_closures;
+
+  std::list<php_v8js_object *> php_v8js_objects;
 
   std::vector<php_v8js_accessor_ctx *> accessor_list;
   char *tz;
@@ -238,7 +241,7 @@ struct php_v8js_object {
 	zend_object std;
 	v8::Persistent<v8::Value> v8obj;
 	int flags;
-	v8::Isolate *isolate;
+	struct php_v8js_ctx *ctx;
 	HashTable *properties;
 };
 /* }}} */
@@ -260,7 +263,6 @@ ZEND_BEGIN_MODULE_GLOBALS(v8js)
   bool timer_stop;
 
   std::map<char *, v8::Handle<v8::Object> > modules_loaded;
-  std::list<v8::Isolate *> invalid_isolates;
 
   // fatal error unwinding
   bool fatal_error_abort;
