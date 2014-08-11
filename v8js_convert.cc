@@ -744,11 +744,6 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 				zend_call_function(&fci, NULL TSRMLS_CC);
 
 				ret_value = zval_to_v8js(php_value, isolate TSRMLS_CC);
-
-				/* We don't own the reference to php_value... unless the
-				 * returned refcount was 0, in which case the below code
-				 * will free it. */
-				zval_add_ref(&php_value);
 				zval_ptr_dtor(&php_value);
 			}
 		} else if (callback_type == V8JS_PROP_SETTER) {
@@ -795,13 +790,7 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 					fci.no_separation = 1;
 
 					zend_call_function(&fci, NULL TSRMLS_CC);
-
 					ret_value = zval_to_v8js(php_ret_value, isolate TSRMLS_CC);
-
-					/* We don't own the reference to php_ret_value... unless the
-					 * returned refcount was 0, in which case the below code
-					 * will free it. */
-					zval_add_ref(&php_ret_value);
 					zval_ptr_dtor(&php_ret_value);
 				}
 			}
@@ -1087,8 +1076,10 @@ v8::Handle<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate TSRMLS_DC) 
 				 if (instanceof_function(Z_OBJCE_P(value), ce TSRMLS_CC)) {
 					 zval *dtval;
 					 zend_call_method_with_0_params(&value, NULL, NULL, "getTimestamp", &dtval);
-					 if (dtval)
+					 if (dtval) {
 						 jsValue = V8JS_DATE(((double)Z_LVAL_P(dtval) * 1000.0));
+						 zval_ptr_dtor(&dtval);
+					 }
 					 else
 						 jsValue = V8JS_NULL;
 				 } else
