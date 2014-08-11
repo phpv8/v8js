@@ -42,6 +42,8 @@ static void php_v8js_error_handler(int error_num, const char *error_filename,
 	char *buffer;
 	int buffer_len;
 
+	TSRMLS_FETCH();
+
 	switch (error_num)
 	{
 		case E_ERROR:
@@ -489,6 +491,8 @@ static void php_v8js_invoke_callback(const v8::FunctionCallbackInfo<v8::Value>& 
 	v8::Local<v8::Value> argv[argc];
 	v8::Local<v8::Value> result;
 
+	V8JS_TSRMLS_FETCH();
+
 	for (i=0; i<argc; i++) {
 		argv[i] = info[i];
 	}
@@ -505,7 +509,7 @@ static void php_v8js_invoke_callback(const v8::FunctionCallbackInfo<v8::Value>& 
 		const char *constructor_name = ToCString(str);
 
 		zend_class_entry **pce;
-		zend_lookup_class(constructor_name, str.length(), &pce);
+		zend_lookup_class(constructor_name, str.length(), &pce TSRMLS_CC);
 		v8::Local<v8::FunctionTemplate> new_tpl;
 		new_tpl = v8::Local<v8::FunctionTemplate>::New
 			(isolate, ctx->template_cache.at((*pce)->name));
