@@ -20,6 +20,7 @@
 #endif
 
 #include <v8-debug.h>
+#include <libplatform/libplatform.h>
 
 #include "php_v8js_macros.h"
 
@@ -856,6 +857,11 @@ static void php_v8js_init(TSRMLS_D) /* {{{ */
 	if (V8JSG(v8_initialized)) {
 		return;
 	}
+
+#if PHP_V8_API_VERSION >= 3029036
+	v8::Platform* platform = v8::platform::CreateDefaultPlatform();
+	v8::V8::InitializePlatform(platform);
+#endif
 
 	/* Set V8 command line flags (must be done before V8::Initialize()!) */
 	if (V8JSG(v8_flags)) {

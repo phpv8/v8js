@@ -89,6 +89,30 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <v8-debug.h>]],
   LDFLAGS=$old_LDFLAGS
   CPPFLAGS=$old_CPPFLAGS
 
+  if test "$V8_API_VERSION" -ge 3029036 ; then
+    dnl building for v8 3.29.36 or later, which requires us to
+    dnl initialize and provide a platform; hence we need to
+    dnl link in libplatform to make our life easier.
+    PHP_ADD_INCLUDE($V8_DIR)
+
+    SEARCH_FOR="lib/libv8_libplatform.a"
+    AC_MSG_CHECKING([for libv8_libplatform.a])
+
+    for i in $PHP_V8JS $SEARCH_PATH ; do
+      echo $i/$SEARCH_FOR
+      if test -r $i/$SEARCH_FOR; then
+        LIBPLATFORM_DIR=$i
+        AC_MSG_RESULT(found in $i)
+      fi
+    done
+
+    if test -z "$LIBPLATFORM_DIR"; then
+      AC_MSG_RESULT([not found])
+      AC_MSG_ERROR([Please provide libv8_libplatform.a next to the libv8.so, see README.md for details])
+    fi
+
+    LDFLAGS="$LDFLAGS $LIBPLATFORM_DIR/$SEARCH_FOR"
+  fi
 
   AC_CACHE_CHECK(for C standard version, ac_cv_v8_cstd, [
     ac_cv_v8_cstd="c++11"
