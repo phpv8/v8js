@@ -130,7 +130,13 @@ static int php_v8js_v8_has_property(zval *object, zval *member, int has_set_exis
 	int retval = false;
 	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
 
-	v8::Isolate *isolate = obj->isolate;
+	if (!obj->ctx) {
+		zend_throw_exception(php_ce_v8js_script_exception,
+			"Can't access V8Object after V8Js instance is destroyed!", 0 TSRMLS_CC);
+		return retval;
+	}
+
+	v8::Isolate *isolate = obj->ctx->isolate;
 	v8::Locker locker(isolate);
 	v8::Isolate::Scope isolate_scope(isolate);
 	v8::HandleScope local_scope(isolate);
@@ -189,7 +195,13 @@ static zval *php_v8js_v8_read_property(zval *object, zval *member, int type ZEND
 	zval *retval = NULL;
 	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
 
-	v8::Isolate *isolate = obj->isolate;
+	if (!obj->ctx) {
+		zend_throw_exception(php_ce_v8js_script_exception,
+			"Can't access V8Object after V8Js instance is destroyed!", 0 TSRMLS_CC);
+		return retval;
+	}
+
+	v8::Isolate *isolate = obj->ctx->isolate;
 	v8::Locker locker(isolate);
 	v8::Isolate::Scope isolate_scope(isolate);
 	v8::HandleScope local_scope(isolate);
@@ -232,7 +244,13 @@ static void php_v8js_v8_write_property(zval *object, zval *member, zval *value Z
 {
 	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
 
-	v8::Isolate *isolate = obj->isolate;
+	if (!obj->ctx) {
+		zend_throw_exception(php_ce_v8js_script_exception,
+			"Can't access V8Object after V8Js instance is destroyed!", 0 TSRMLS_CC);
+		return;
+	}
+
+	v8::Isolate *isolate = obj->ctx->isolate;
 	v8::Locker locker(isolate);
 	v8::Isolate::Scope isolate_scope(isolate);
 	v8::HandleScope local_scope(isolate);
@@ -251,7 +269,13 @@ static void php_v8js_v8_unset_property(zval *object, zval *member ZEND_HASH_KEY_
 {
 	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
 
-	v8::Isolate *isolate = obj->isolate;
+	if (!obj->ctx) {
+		zend_throw_exception(php_ce_v8js_script_exception,
+			"Can't access V8Object after V8Js instance is destroyed!", 0 TSRMLS_CC);
+		return;
+	}
+
+	v8::Isolate *isolate = obj->ctx->isolate;
 	v8::Locker locker(isolate);
 	v8::Isolate::Scope isolate_scope(isolate);
 	v8::HandleScope local_scope(isolate);
@@ -327,7 +351,7 @@ static HashTable *php_v8js_v8_get_properties(zval *object TSRMLS_DC) /* {{{ */
 			/* the garbage collector is running, don't create more zvals */
 			return NULL;
 		}
-		if (obj->isolate == NULL) {
+		if (obj->ctx == NULL) {
 			/* Half-constructed object.  Shouldn't happen, but be safe. */
 			return NULL;
 		}
@@ -337,7 +361,13 @@ static HashTable *php_v8js_v8_get_properties(zval *object TSRMLS_DC) /* {{{ */
 		zend_hash_clean(obj->properties);
 	}
 
-	v8::Isolate *isolate = obj->isolate;
+	if (!obj->ctx) {
+		zend_throw_exception(php_ce_v8js_script_exception,
+			"Can't access V8Object after V8Js instance is destroyed!", 0 TSRMLS_CC);
+		return NULL;
+	}
+
+	v8::Isolate *isolate = obj->ctx->isolate;
 	v8::Locker locker(isolate);
 	v8::Isolate::Scope isolate_scope(isolate);
 	v8::HandleScope local_scope(isolate);
@@ -365,7 +395,13 @@ static zend_function *php_v8js_v8_get_method(zval **object_ptr, char *method, in
 	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(*object_ptr TSRMLS_CC);
 	zend_function *f;
 
-	v8::Isolate *isolate = obj->isolate;
+	if (!obj->ctx) {
+		zend_throw_exception(php_ce_v8js_script_exception,
+			"Can't access V8Object after V8Js instance is destroyed!", 0 TSRMLS_CC);
+		return NULL;
+	}
+
+	v8::Isolate *isolate = obj->ctx->isolate;
 	v8::Locker locker(isolate);
 	v8::Isolate::Scope isolate_scope(isolate);
 	v8::HandleScope local_scope(isolate);
@@ -401,6 +437,12 @@ static int php_v8js_v8_call_method(char *method, INTERNAL_FUNCTION_PARAMETERS) /
 
 	obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
 
+	if (!obj->ctx) {
+		zend_throw_exception(php_ce_v8js_script_exception,
+			"Can't access V8Object after V8Js instance is destroyed!", 0 TSRMLS_CC);
+		return FAILURE;
+	}
+
 	if (obj->v8obj.IsEmpty()) {
 		zval_ptr_dtor(&object);
 		return FAILURE;
@@ -411,7 +453,7 @@ static int php_v8js_v8_call_method(char *method, INTERNAL_FUNCTION_PARAMETERS) /
 		zend_get_parameters_array_ex(argc, argv);
 	}
 
-	v8::Isolate *isolate = obj->isolate;
+	v8::Isolate *isolate = obj->ctx->isolate;
 	v8::Locker locker(isolate);
 	v8::Isolate::Scope isolate_scope(isolate);
 	v8::HandleScope local_scope(isolate);
@@ -457,7 +499,13 @@ static int php_v8js_v8_get_closure(zval *object, zend_class_entry **ce_ptr, zend
 
 	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
 
-	v8::Isolate *isolate = obj->isolate;
+	if (!obj->ctx) {
+		zend_throw_exception(php_ce_v8js_script_exception,
+			"Can't access V8Object after V8Js instance is destroyed!", 0 TSRMLS_CC);
+		return FAILURE;
+	}
+
+	v8::Isolate *isolate = obj->ctx->isolate;
 	v8::Locker locker(isolate);
 	v8::Isolate::Scope isolate_scope(isolate);
 	v8::HandleScope local_scope(isolate);
@@ -497,7 +545,10 @@ static void php_v8js_v8_free_storage(void *object, zend_object_handle handle TSR
 
 	zend_object_std_dtor(&c->std TSRMLS_CC);
 
-	c->v8obj.Reset();
+	if(c->ctx) {
+		c->v8obj.Reset();
+		c->ctx->php_v8js_objects.remove(c);
+	}
 
 	efree(object);
 }
@@ -547,6 +598,13 @@ PHP_METHOD(V8Function,__construct)
 
 void php_v8js_create_v8(zval *res, v8::Handle<v8::Value> value, int flags, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
 {
+#if PHP_V8_API_VERSION <= 3023008
+	/* Until V8 3.23.8 Isolate could only take one external pointer. */
+	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData();
+#else
+	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData(0);
+#endif
+
 	php_v8js_object *c;
 
 	object_init_ex(res, value->IsFunction() ? php_ce_v8_function : php_ce_v8_object);
@@ -555,8 +613,10 @@ void php_v8js_create_v8(zval *res, v8::Handle<v8::Value> value, int flags, v8::I
 
 	c->v8obj.Reset(isolate, value);
 	c->flags = flags;
-	c->isolate = isolate;
+	c->ctx = ctx;
 	c->properties = NULL;
+
+	ctx->php_v8js_objects.push_front(c);
 }
 /* }}} */
 
@@ -647,6 +707,15 @@ static void php_v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 	}
 	c->weak_closures.~map();
 
+	for (std::list<php_v8js_object *>::iterator it = c->php_v8js_objects.begin();
+		 it != c->php_v8js_objects.end(); it ++) {
+		(*it)->v8obj.Reset();
+		(*it)->ctx = NULL;
+	}
+	c->php_v8js_objects.~list();
+
+	c->isolate->Dispose();
+
 	if(c->tz != NULL) {
 		free(c->tz);
 	}
@@ -685,6 +754,8 @@ static zend_object_value php_v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 
 	new(&c->weak_closures) std::map<v8js_tmpl_t *, v8js_persistent_obj_t>();
 	new(&c->weak_objects) std::map<zval *, v8js_persistent_obj_t>();
+
+	new(&c->php_v8js_objects) std::list<php_v8js_object *>();
 
 	retval.handle = zend_objects_store_put(c, NULL, (zend_objects_free_object_storage_t) php_v8js_free_storage, NULL TSRMLS_CC);
 	retval.handlers = &v8js_object_handlers;
@@ -748,6 +819,10 @@ static int _php_v8js_create_ext_strarr(const char ***retval, int count, HashTabl
 
 static void php_v8js_fatal_error_handler(const char *location, const char *message) /* {{{ */
 {
+	v8::Isolate *isolate = v8::Isolate::GetCurrent();
+	if (isolate) {
+		isolate->Exit();
+	}
 	if (location) {
 		zend_error(E_ERROR, "%s %s", location, message);
 	} else {
