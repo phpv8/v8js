@@ -96,6 +96,13 @@ PHP API
         // A time limit (milliseconds) and/or memory limit (bytes) can be provided to restrict execution. These options will throw a V8JsTimeLimitException or V8JsMemoryLimitException.
         public mixed V8Js::executeString( string $script [, string $identifier [, int $flags = V8Js::FLAG_NONE [, int $time_limit = 0 [, int $memory_limit = 0]]]])
 
+        // Compiles a script in object's context with optional identifier string.
+        public mixed V8Js::compileString( string $script [, string $identifier ])
+
+        // Executes a precompiled script in object's context.
+        // A time limit (milliseconds) and/or memory limit (bytes) can be provided to restrict execution. These options will throw a V8JsTimeLimitException or V8JsMemoryLimitException.
+        public mixed V8Js::executeScript( resource $script [, int $flags = V8Js::FLAG_NONE [, int $time_limit = 0 [, int $memory_limit = 0]]])
+
         // Returns uncaught pending exception or null if there is no pending exception.
         public V8JsScriptException V8Js::getPendingException( )
 
