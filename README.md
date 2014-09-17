@@ -37,7 +37,8 @@ make dependencies
 make native library=shared -j8
 sudo mkdir -p /usr/lib /usr/include
 sudo cp out/native/lib.target/lib*.so /usr/lib/
-sudo cp include/v8* /usr/include
+sudo cp out/native/obj.target/tools/gyp/libv8_libplatform.a /usr/lib
+sudo cp -R include/v8* /usr/include
 
 ```
 
