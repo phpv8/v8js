@@ -20,7 +20,10 @@
 #endif
 
 #include <v8-debug.h>
+
+#if PHP_V8_API_VERSION >= 3029036
 #include <libplatform/libplatform.h>
+#endif
 
 #include "php_v8js_macros.h"
 
