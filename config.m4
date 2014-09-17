@@ -99,7 +99,6 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <v8-debug.h>]],
     AC_MSG_CHECKING([for libv8_libplatform.a])
 
     for i in $PHP_V8JS $SEARCH_PATH ; do
-      echo $i/$SEARCH_FOR
       if test -r $i/$SEARCH_FOR; then
         LIBPLATFORM_DIR=$i
         AC_MSG_RESULT(found in $i)
