@@ -42,14 +42,6 @@ sudo cp -R include/v8* /usr/include
 
 ```
 
-`v8` doesn't support `g++` version 4.8 (yet; see
-<https://code.google.com/p/v8/issues/detail?id=2149>).  If your default `g++`
-is version 4.8 you may need to install `g++` 4.7 and replace the `make`
-command above with:
-```
-CXX=g++-4.7 LINK=g++-4.7 make native library=shared -j8
-```
-
 If you don't want to overwrite the system copy of v8, replace `/usr` in
 the above commands with `/tmp/v8-install` and then add
 `--with-v8js=/tmp/v8-install` to the php-v8js `./configure` command below.
