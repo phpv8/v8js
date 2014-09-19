@@ -200,6 +200,7 @@ struct php_v8js_ctx {
   zval *module_loader;
   std::vector<char *> modules_stack;
   std::vector<char *> modules_base;
+  std::map<char *, v8js_persistent_obj_t> modules_loaded;
   std::map<const char *,v8js_tmpl_t> template_cache;
 
   std::map<zval *, v8js_persistent_obj_t> weak_objects;
@@ -261,8 +262,6 @@ ZEND_BEGIN_MODULE_GLOBALS(v8js)
   std::thread *timer_thread;
   std::mutex timer_mutex;
   bool timer_stop;
-
-  std::map<char *, v8::Handle<v8::Object> > modules_loaded;
 
   // fatal error unwinding
   bool fatal_error_abort;

@@ -718,6 +718,13 @@ static void php_v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 	}
 	c->php_v8js_objects.~list();
 
+	/* Clear persistent handles in module cache */
+	for (std::map<char *, v8js_persistent_obj_t>::iterator it = c->modules_loaded.begin();
+		 it != c->modules_loaded.end(); ++it) {
+		it->second.Reset();
+	}
+	c->modules_loaded.~map();
+
 	c->isolate->Dispose();
 
 	if(c->tz != NULL) {
@@ -726,6 +733,7 @@ static void php_v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 
 	c->modules_stack.~vector();
 	c->modules_base.~vector();
+
 	efree(object);
 }
 /* }}} */
@@ -753,6 +761,8 @@ static zend_object_value php_v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 
 	new(&c->modules_stack) std::vector<char*>();
 	new(&c->modules_base) std::vector<char*>();
+	new(&c->modules_loaded) std::map<char *, v8js_persistent_obj_t>;
+
 	new(&c->template_cache) std::map<const char *,v8js_tmpl_t>();
 	new(&c->accessor_list) std::vector<php_v8js_accessor_ctx *>();
 
@@ -1957,11 +1967,11 @@ static PHP_GINIT_FUNCTION(v8js)
 	v8js_globals->extensions = NULL;
 	v8js_globals->v8_initialized = 0;
 	v8js_globals->v8_flags = NULL;
+
 	v8js_globals->timer_thread = NULL;
 	v8js_globals->timer_stop = false;
 	new(&v8js_globals->timer_mutex) std::mutex;
 	new(&v8js_globals->timer_stack) std::stack<php_v8js_timer_ctx *>;
-	new(&v8js_globals->modules_loaded) std::map<char *, v8::Handle<v8::Object>>;
 
 	v8js_globals->fatal_error_abort = 0;
 	v8js_globals->error_num = 0;
@@ -1990,7 +2000,6 @@ static PHP_GSHUTDOWN_FUNCTION(v8js)
 #ifdef ZTS
 	v8js_globals->timer_stack.~stack();
 	v8js_globals->timer_mutex.~mutex();
-	v8js_globals->modules_loaded.~map();
 #endif
 }
 /* }}} */

@@ -245,11 +245,13 @@ V8JS_METHOD(require)
     }
 
     // If we have already loaded and cached this module then use it
-	if (V8JSG(modules_loaded).count(normalised_module_id) > 0) {
+	if (c->modules_loaded.count(normalised_module_id) > 0) {
 		efree(normalised_module_id);
 		efree(normalised_path);
 
-		info.GetReturnValue().Set(V8JSG(modules_loaded)[normalised_module_id]);
+		v8::Persistent<v8::Object> newobj;
+		newobj.Reset(isolate, c->modules_loaded[normalised_module_id]);
+		info.GetReturnValue().Set(newobj);
 		return;
 	}
 
@@ -324,7 +326,7 @@ V8JS_METHOD(require)
 	v8::Locker locker(isolate);
 	v8::Isolate::Scope isolate_scope(isolate);
 
-	v8::EscapableHandleScope handle_scope(isolate);
+	v8::HandleScope handle_scope(isolate);
 
 	// Enter the module context
 	v8::Context::Scope scope(context);
@@ -357,12 +359,12 @@ V8JS_METHOD(require)
 	c->modules_stack.pop_back();
 	c->modules_base.pop_back();
 
-	efree(normalised_module_id);
 	efree(normalised_path);
 
 	// Script possibly terminated, return immediately
 	if (!try_catch.CanContinue()) {
 		info.GetReturnValue().Set(isolate->ThrowException(V8JS_SYM("Module script compile failed")));
+		efree(normalised_module_id);
 		return;
 	}
 
@@ -370,20 +372,25 @@ V8JS_METHOD(require)
 	if (try_catch.HasCaught()) {
 		// Rethrow the exception back to JS
 		info.GetReturnValue().Set(try_catch.ReThrow());
+		efree(normalised_module_id);
 		return;
 	}
+
+	v8::Handle<v8::Object> newobj;
 
 	// Cache the module so it doesn't need to be compiled and run again
 	// Ensure compatibility with CommonJS implementations such as NodeJS by playing nicely with module.exports and exports
 	if (module->Has(V8JS_SYM("exports")) && !module->Get(V8JS_SYM("exports"))->IsUndefined()) {
 		// If module.exports has been set then we cache this arbitrary value...
-		V8JSG(modules_loaded)[normalised_module_id] = handle_scope.Escape(module->Get(V8JS_SYM("exports"))->ToObject());
+		newobj = module->Get(V8JS_SYM("exports"))->ToObject();
 	} else {
 		// ...otherwise we cache the exports object itself
-		V8JSG(modules_loaded)[normalised_module_id] = handle_scope.Escape(exports);
+		newobj = exports;
 	}
 
-	info.GetReturnValue().Set(V8JSG(modules_loaded)[normalised_module_id]);
+	c->modules_loaded[normalised_module_id].Reset(isolate, newobj);
+	info.GetReturnValue().Set(newobj);
+	efree(normalised_module_id);
 }
 
 void php_v8js_register_methods(v8::Handle<v8::ObjectTemplate> global, php_v8js_ctx *c) /* {{{ */
