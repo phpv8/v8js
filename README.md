@@ -26,6 +26,9 @@ Minimum requirements
 COMPILING LATEST VERSION
 ========================
 
+Instead of compiling manually you might want to pull the [V8Js docker
+repository](https://registry.hub.docker.com/u/stesie/v8js/).
+
 Compile latest v8
 -----------------
 
