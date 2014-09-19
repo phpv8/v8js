@@ -37,7 +37,7 @@ make dependencies
 make native library=shared -j8
 sudo mkdir -p /usr/lib /usr/include
 sudo cp out/native/lib.target/lib*.so /usr/lib/
-sudo cp out/native/obj.target/tools/gyp/libv8_libplatform.a /usr/lib
+echo -e "create /usr/lib/libv8_libplatform.a\naddlib out/native/obj.target/tools/gyp/libv8_libplatform.a\nsave\nend" | sudo ar -M
 sudo cp -R include/v8* /usr/include
 
 ```
@@ -45,6 +45,11 @@ sudo cp -R include/v8* /usr/include
 If you don't want to overwrite the system copy of v8, replace `/usr` in
 the above commands with `/tmp/v8-install` and then add
 `--with-v8js=/tmp/v8-install` to the php-v8js `./configure` command below.
+
+`libv8_libplatform.a` should not be copied directly since it's a thin
+archive, i.e. it contains only pointers to  the build objects, which
+otherwise must not be deleted.  The simple mri-script converts the
+thin archive to a normal archive.
 
 Compile php-v8js itself
 -----------------------
