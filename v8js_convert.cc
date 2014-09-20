@@ -154,7 +154,9 @@ static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_funct
 	} else {
 		fci.params = NULL;
 	}
+
 	fci.no_separation = 1;
+	info.GetReturnValue().Set(V8JS_NULL);
 
 	{
 		isolate->Exit();
@@ -168,6 +170,7 @@ static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_funct
 		fcc.object_ptr = value;
 
 		jmp_buf env;
+		jmp_buf *old_env;
 		int val = 0;
 		bool installed_handler = false;
 
@@ -178,10 +181,14 @@ static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_funct
 			installed_handler = true;
 			V8JSG(old_error_handler) = zend_error_cb;
 			zend_error_cb = php_v8js_error_handler;
-
-			val = setjmp (env);
-			V8JSG(unwind_env) = &env;
 		}
+		else {
+			/* inner call, stash unwind env */
+			old_env = V8JSG(unwind_env);
+		}
+
+		val = setjmp (env);
+		V8JSG(unwind_env) = &env;
 
 		if (!val) {
 			/* Call the method */
@@ -189,19 +196,26 @@ static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_funct
 		}
 
 		if (installed_handler) {
+			/* leaving out-most frame, restore original handler. */
 			zend_error_cb = V8JSG(old_error_handler);
 			V8JSG(unwind_env) = NULL;
+		}
+		else {
+			/* leaving inner frame, restore unwind env and jump. */
+			V8JSG(unwind_env) = old_env;
+
+			if (V8JSG(fatal_error_abort)) {
+				longjmp(*V8JSG(unwind_env), 1);
+			}
+		}
+
+		if (V8JSG(fatal_error_abort)) {
+			v8::V8::TerminateExecution(isolate);
+			return;
 		}
 	}
 
 	isolate->Enter();
-
-	if (V8JSG(fatal_error_abort)) {
-		isolate->Exit();
-		v8::V8::TerminateExecution(isolate);
-		info.GetReturnValue().Set(V8JS_NULL);
-		return;
-	}
 
 failure:
 	/* Cleanup */
