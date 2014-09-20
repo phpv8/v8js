@@ -1256,6 +1256,9 @@ static void php_v8js_execute_script(zval *this_ptr, php_v8js_script *res, long f
 	/* Check for fatal error marker possibly set by php_v8js_error_handler; just
 	 * rethrow the error since we're now out of V8. */
 	if(V8JSG(fatal_error_abort)) {
+		V8JSG(fatal_error_abort) = 0;
+		V8JSG(unwind_env) = NULL;
+
 		zend_error(V8JSG(error_num), "%s", V8JSG(error_message));
 	}
 
