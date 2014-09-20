@@ -278,10 +278,24 @@ static void php_v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value
 	v8::Local<v8::External> ext_tmpl = v8::Local<v8::External>::Cast(cons_data->Get(0));
 	v8::Local<v8::External> ext_ce =  v8::Local<v8::External>::Cast(cons_data->Get(1));
 
+#if PHP_V8_API_VERSION <= 3023008
+	/* Until V8 3.23.8 Isolate could only take one external pointer. */
+	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData();
+#else
+	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData(0);
+#endif
+
 	if (info[0]->IsExternal()) {
 		// Object created by v8js in php_v8js_hash_to_jsobj, PHP object passed as v8::External.
 		php_object = v8::Local<v8::External>::Cast(info[0]);
 		value = reinterpret_cast<zval *>(php_object->Value());
+
+		if(ctx->weak_objects.count(value)) {
+			// We already exported this object, hence no need to add another
+			// ref, v8 won't give us a second weak-object callback anyways.
+			return;
+		}
+
 		// Increase the reference count of this value because we're storing it internally for use later
 		// See https://github.com/preillyme/v8js/issues/6
 		Z_ADDREF_P(value);
@@ -309,13 +323,6 @@ static void php_v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value
 
 	newobj->SetAlignedPointerInInternalField(0, ext_tmpl->Value());
 	newobj->SetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY), php_object);
-
-#if PHP_V8_API_VERSION <= 3023008
-	/* Until V8 3.23.8 Isolate could only take one external pointer. */
-	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData();
-#else
-	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData(0);
-#endif
 
 	// Since we got to decrease the reference count again, in case v8 garbage collector
 	// decides to dispose the JS object, we add a weak persistent handle and register
