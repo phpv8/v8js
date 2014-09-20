@@ -1339,7 +1339,7 @@ static PHP_METHOD(V8Js, executeString)
 	}
 	php_v8js_execute_script(getThis(), res, flags, time_limit, memory_limit, &return_value TSRMLS_CC);
 	php_v8js_script_free(res, true);
-
+	efree(res);
 }
 /* }}} */
 
@@ -1405,6 +1405,7 @@ static PHP_METHOD(V8Js, checkString)
 	}
 
 	php_v8js_script_free(res, true);
+	efree(res);
 	RETURN_TRUE;
 }
 /* }}} */
