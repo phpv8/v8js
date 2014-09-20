@@ -1148,7 +1148,7 @@ static void php_v8js_timer_thread(TSRMLS_D)
 	}
 }
 
-static void php_v8js_compile_script(zval *this_ptr, const char *str, int str_len, const char *identifier, int identifier_len, php_v8js_script **ret)
+static void php_v8js_compile_script(zval *this_ptr, const char *str, int str_len, const char *identifier, int identifier_len, php_v8js_script **ret TSRMLS_DC)
 {
 	php_v8js_script *res = NULL;
 
@@ -1179,7 +1179,7 @@ static void php_v8js_compile_script(zval *this_ptr, const char *str, int str_len
 	return;
 }
 
-static void php_v8js_execute_script(zval *this_ptr, php_v8js_script *res, long flags, long time_limit, long memory_limit, zval **return_value)
+static void php_v8js_execute_script(zval *this_ptr, php_v8js_script *res, long flags, long time_limit, long memory_limit, zval **return_value TSRMLS_DC)
 {
 	char *tz = NULL;
 
@@ -1333,11 +1333,11 @@ static PHP_METHOD(V8Js, executeString)
 		return;
 	}
 
-	php_v8js_compile_script(getThis(), str, str_len, identifier, identifier_len, &res);
+	php_v8js_compile_script(getThis(), str, str_len, identifier, identifier_len, &res TSRMLS_CC);
 	if (!res) {
 		RETURN_FALSE;
 	}
-	php_v8js_execute_script(getThis(), res, flags, time_limit, memory_limit, &return_value);
+	php_v8js_execute_script(getThis(), res, flags, time_limit, memory_limit, &return_value TSRMLS_CC);
 	php_v8js_script_free(res, true);
 
 }
@@ -1356,7 +1356,7 @@ static PHP_METHOD(V8Js, compileString)
 		return;
 	}
 
-	php_v8js_compile_script(getThis(), str, str_len, identifier, identifier_len, &res);
+	php_v8js_compile_script(getThis(), str, str_len, identifier, identifier_len, &res TSRMLS_CC);
 	if (res) {
 		ZEND_REGISTER_RESOURCE(return_value, res, le_v8js_script);
 	}
@@ -1380,7 +1380,7 @@ static PHP_METHOD(V8Js, executeScript)
 	ZEND_FETCH_RESOURCE(res, php_v8js_script*, &zscript, -1, PHP_V8JS_SCRIPT_RES_NAME, le_v8js_script);
 	ZEND_VERIFY_RESOURCE(res);
 
-	php_v8js_execute_script(getThis(), res, flags, time_limit, memory_limit, &return_value);
+	php_v8js_execute_script(getThis(), res, flags, time_limit, memory_limit, &return_value TSRMLS_CC);
 }
 /* }}} */
 
@@ -1399,7 +1399,7 @@ static PHP_METHOD(V8Js, checkString)
 		return;
 	}
 
-	php_v8js_compile_script(getThis(), str, str_len, identifier, identifier_len, &res);
+	php_v8js_compile_script(getThis(), str, str_len, identifier, identifier_len, &res TSRMLS_CC);
 	if (!res) {
 		RETURN_FALSE;
 	}
