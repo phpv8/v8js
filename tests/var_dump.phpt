@@ -88,7 +88,7 @@ array(11) {
   ["date"]=>
   object(DateTime)#%d (3) {
     ["date"]=>
-    string(19) "1976-09-27 09:00:00"
+    string(%d) "1976-09-27 09:00:00%r(\.0+)?%r"
     ["timezone_type"]=>
     int(3)
     ["timezone"]=>
@@ -199,7 +199,7 @@ array (11) {
         function () { [native code] }
     }
     ["$date"] =>
-    string(19) "1976-09-27 09:00:00"
+    string(%d) "1976-09-27 09:00:00%r(\.0+)?%r"
     ["$timezone_type"] =>
     int(3)
     ["$timezone"] =>
