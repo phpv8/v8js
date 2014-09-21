@@ -29,4 +29,4 @@ $bar->foo();
 --EXPECTF--
 nothing.
 
-Fatal error: Call to a member function foo() on a non-object in %s/fatal_error_uninstall_in_first_frame.php on line 20
+Fatal error: Call to a member function foo() on %s in %s/fatal_error_uninstall_in_first_frame.php on line 20
