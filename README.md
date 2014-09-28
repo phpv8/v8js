@@ -34,6 +34,8 @@ Compile latest v8
 
 ```
 cd /tmp
+git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+export PATH=`pwd`/depot_tools:"$PATH"
 git clone https://github.com/v8/v8.git
 cd v8
 make dependencies
