@@ -318,7 +318,7 @@ static void php_v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value
 		if (ctor_ptr != NULL) {
 			php_v8js_call_php_func(value, ce, ctor_ptr, isolate, info TSRMLS_CC);
 		}
-		php_object = V8JS_NEW(v8::External, isolate, value);
+		php_object = v8::External::New(isolate, value);
 	}
 
 	newobj->SetAlignedPointerInInternalField(0, ext_tmpl->Value());
@@ -405,7 +405,7 @@ static void php_v8js_weak_closure_callback(const v8::WeakCallbackData<v8::Object
 	!strncasecmp(key, mname, key_len - 1))
 
 #define PHP_V8JS_CALLBACK(isolate, mptr, tmpl)										\
-	V8JS_NEW(v8::FunctionTemplate, (isolate), php_v8js_php_callback, V8JS_NEW(v8::External, (isolate), mptr), V8JS_NEW(v8::Signature, (isolate), tmpl))->GetFunction()
+	v8::FunctionTemplate::New((isolate), php_v8js_php_callback, v8::External::New((isolate), mptr), v8::Signature::New((isolate), tmpl))->GetFunction()
 
 
 static void php_v8js_named_property_enumerator(const v8::PropertyCallbackInfo<v8::Array> &info) /* {{{ */
@@ -413,7 +413,7 @@ static void php_v8js_named_property_enumerator(const v8::PropertyCallbackInfo<v8
 	// note: 'special' properties like 'constructor' are not enumerated.
 	v8::Isolate *isolate = info.GetIsolate();
 	v8::Local<v8::Object> self = info.Holder();
-	v8::Local<v8::Array> result = V8JS_NEW(v8::Array, isolate, 0);
+	v8::Local<v8::Array> result = v8::Array::New(isolate, 0);
 	uint32_t result_len = 0;
 
 	V8JS_TSRMLS_FETCH();
@@ -690,9 +690,9 @@ static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8
 					// (only use this if method_ptr==NULL, which means
 					//  there is no actual PHP __call() implementation)
 					v8::Local<v8::Function> cb =
-						V8JS_NEW(v8::FunctionTemplate, isolate,
+						v8::FunctionTemplate::New(isolate,
 							php_v8js_fake_call_impl, V8JS_NULL,
-							V8JS_NEW(v8::Signature, isolate, tmpl))->GetFunction();
+							v8::Signature::New(isolate, tmpl))->GetFunction();
 					cb->SetName(property);
 					ret_value = cb;
 				} else {
@@ -931,7 +931,7 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 		}
 		catch (const std::out_of_range &) {
 			/* No cached v8::FunctionTemplate available as of yet, create one. */
-			new_tpl = V8JS_NEW(v8::FunctionTemplate, isolate, 0);
+			new_tpl = v8::FunctionTemplate::New(isolate, 0);
 
 			new_tpl->SetClassName(V8JS_STRL(ce->name, ce->name_length));
 			new_tpl->InstanceTemplate()->SetInternalFieldCount(1);
@@ -964,14 +964,14 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 					new_tpl->InstanceTemplate()->SetCallAsFunctionHandler(php_v8js_invoke_callback, PHP_V8JS_CALLBACK(isolate, invoke_method_ptr, new_tpl));
 				}
 			}
-			v8::Local<v8::Array> call_handler_data = V8JS_NEW(v8::Array, isolate, 2);
-			call_handler_data->Set(0, V8JS_NEW(v8::External, isolate, persist_tpl_));
-			call_handler_data->Set(1, V8JS_NEW(v8::External, isolate, ce));
+			v8::Local<v8::Array> call_handler_data = v8::Array::New(isolate, 2);
+			call_handler_data->Set(0, v8::External::New(isolate, persist_tpl_));
+			call_handler_data->Set(1, v8::External::New(isolate, ce));
 			new_tpl->SetCallHandler(php_v8js_construct_callback, call_handler_data);
 		}
 
 		// Create v8 wrapper object
-		v8::Handle<v8::Value> external = V8JS_NEW(v8::External, isolate, value);
+		v8::Handle<v8::Value> external = v8::External::New(isolate, value);
 		newobj = new_tpl->GetFunction()->NewInstance(1, &external);
 
 		if (ce == zend_ce_closure) {
@@ -981,7 +981,7 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 		}
 	} else {
 		// @todo re-use template likewise
-		v8::Local<v8::FunctionTemplate> new_tpl = V8JS_NEW(v8::FunctionTemplate, isolate, 0);
+		v8::Local<v8::FunctionTemplate> new_tpl = v8::FunctionTemplate::New(isolate, 0);
 
 		new_tpl->SetClassName(V8JS_SYM("Array"));
 		newobj = new_tpl->InstanceTemplate()->NewInstance();
@@ -1050,7 +1050,7 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsarr(zval *value, v8::Isolate *is
 		return V8JS_NULL;
 	}
 
-	newarr = V8JS_NEW(v8::Array, isolate, i);
+	newarr = v8::Array::New(isolate, i);
 
 	if (i > 0)
 	{
