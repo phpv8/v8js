@@ -27,3 +27,4 @@ mkinstalldirs
 modules
 v8js.la
 /run-tests.php
+.*.sw[poq]
