@@ -606,13 +606,7 @@ PHP_METHOD(V8Function,__construct)
 
 void php_v8js_create_v8(zval *res, v8::Handle<v8::Value> value, int flags, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
 {
-#if PHP_V8_API_VERSION <= 3023008
-	/* Until V8 3.23.8 Isolate could only take one external pointer. */
-	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData();
-#else
 	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData(0);
-#endif
-
 	php_v8js_object *c;
 
 	object_init_ex(res, value->IsFunction() ? php_ce_v8_function : php_ce_v8_object);
@@ -924,12 +918,7 @@ static PHP_METHOD(V8Js, __construct)
 	c->pending_exception = NULL;
 	c->in_execution = 0;
 	c->isolate = v8::Isolate::New();
-#if PHP_V8_API_VERSION <= 3023008
-	/* Until V8 3.23.8 Isolate could only take one external pointer. */
-	c->isolate->SetData(c);
-#else
 	c->isolate->SetData(0, c);
-#endif
 	c->time_limit_hit = false;
 	c->memory_limit_hit = false;
 	c->module_loader = NULL;
@@ -1212,11 +1201,7 @@ static void php_v8js_execute_script(zval *this_ptr, php_v8js_script *res, long f
 			c->tz = strdup(tz);
 		}
 		else if (strcmp(c->tz, tz) != 0) {
-#if PHP_V8_API_VERSION <= 3023012
-			v8::Date::DateTimeConfigurationChangeNotification();
-#else
 			v8::Date::DateTimeConfigurationChangeNotification(c->isolate);
-#endif
 
 			free(c->tz);
 			c->tz = strdup(tz);

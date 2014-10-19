@@ -78,12 +78,7 @@ static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_funct
 	char *error;
 	int error_len, i, flags = V8JS_FLAG_NONE;
 
-#if PHP_V8_API_VERSION <= 3023008
-	/* Until V8 3.23.8 Isolate could only take one external pointer. */
-	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData();
-#else
 	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData(0);
-#endif
 
 	/* Set parameter limits */
 	min_num_args = method_ptr->common.required_num_args;
@@ -278,12 +273,7 @@ static void php_v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value
 	v8::Local<v8::External> ext_tmpl = v8::Local<v8::External>::Cast(cons_data->Get(0));
 	v8::Local<v8::External> ext_ce =  v8::Local<v8::External>::Cast(cons_data->Get(1));
 
-#if PHP_V8_API_VERSION <= 3023008
-	/* Until V8 3.23.8 Isolate could only take one external pointer. */
-	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData();
-#else
 	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData(0);
-#endif
 
 	if (info[0]->IsExternal()) {
 		// Object created by v8js in php_v8js_hash_to_jsobj, PHP object passed as v8::External.
@@ -364,12 +354,7 @@ static void php_v8js_weak_object_callback(const v8::WeakCallbackData<v8::Object,
 	zval *value = data.GetParameter();
 	zval_ptr_dtor(&value);
 
-#if PHP_V8_API_VERSION <= 3023008
-	/* Until V8 3.23.8 Isolate could only take one external pointer. */
-	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData();
-#else
 	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData(0);
-#endif
 
 	ctx->weak_objects.at(value).Reset();
 	ctx->weak_objects.erase(value);
@@ -384,12 +369,7 @@ static void php_v8js_weak_closure_callback(const v8::WeakCallbackData<v8::Object
 	persist_tpl_->Reset();
 	delete persist_tpl_;
 
-#if PHP_V8_API_VERSION <= 3023008
-	/* Until V8 3.23.8 Isolate could only take one external pointer. */
-	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData();
-#else
 	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData(0);
-#endif
 
 	ctx->weak_closures.at(persist_tpl_).Reset();
 	ctx->weak_closures.erase(persist_tpl_);
@@ -520,12 +500,7 @@ static void php_v8js_invoke_callback(const v8::FunctionCallbackInfo<v8::Value>& 
 	}
 
 	if (info.IsConstructCall()) {
-#if PHP_V8_API_VERSION <= 3023008
-		/* Until V8 3.23.8 Isolate could only take one external pointer. */
-		php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData();
-#else
 		php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData(0);
-#endif
 
 		v8::String::Utf8Value str(self->GetConstructorName()->ToString());
 		const char *constructor_name = ToCString(str);
@@ -916,12 +891,7 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 
 		return v8obj;
 	} else if (ce) {
-#if PHP_V8_API_VERSION <= 3023008
-		/* Until V8 3.23.8 Isolate could only take one external pointer. */
-		php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData();
-#else
 		php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData(0);
-#endif
 		v8::Local<v8::FunctionTemplate> new_tpl;
 		v8js_tmpl_t *persist_tpl_;
 

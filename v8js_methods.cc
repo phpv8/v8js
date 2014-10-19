@@ -113,12 +113,10 @@ static void _php_v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int
 		// fake the fields of a PHP DateTime
 		php_printf("Date(%s)\n", valstr);
 	}
-#if PHP_V8_API_VERSION >= 2003007
 	else if (var->IsRegExp())
 	{
 		php_printf("regexp(%s)\n", valstr);
 	}
-#endif
 	else if (var->IsArray())
 	{
 		v8::Local<v8::Array> array = v8::Local<v8::Array>::Cast(var);
