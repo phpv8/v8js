@@ -39,66 +39,22 @@ extern "C" {
 /* V8Js Version */
 #define V8JS_VERSION "0.1.5"
 
-/* V8 from 3.23.12 has most v8::Anything::New constructors expect isolates
-   as their first argument.  Older versions don't provide these. */
-#if PHP_V8_API_VERSION < 3023012
-#define V8JS_NEW(t, i, v...) t::New(v)
-#else
-#define V8JS_NEW(t, i, v...) t::New(i, v)
-#endif
-
 /* Helper macros */
 #define V8JS_SYM(v)			v8::String::NewFromUtf8(isolate, v, v8::String::kInternalizedString, sizeof(v) - 1)
 #define V8JS_SYML(v, l)		v8::String::NewFromUtf8(isolate, v, v8::String::kInternalizedString, l)
 #define V8JS_STR(v)			v8::String::NewFromUtf8(isolate, v)
 #define V8JS_STRL(v, l)		v8::String::NewFromUtf8(isolate, v, v8::String::kNormalString, l)
-
-#if PHP_V8_API_VERSION < 3024010
-#define V8JS_INT(v)			v8::Integer::New(v, isolate)
-#define V8JS_UINT(v)		v8::Integer::NewFromUnsigned(v, isolate)
-#else
 #define V8JS_INT(v)			v8::Integer::New(isolate, v)
 #define V8JS_UINT(v)		v8::Integer::NewFromUnsigned(isolate, v)
-#endif
-
 #define V8JS_FLOAT(v)		v8::Number::New(isolate, v)
 #define V8JS_BOOL(v)		((v)?v8::True(isolate):v8::False(isolate))
-
-#if PHP_V8_API_VERSION <= 3023012
-#define V8JS_DATE(v)		v8::Date::New(v)
-#else
 #define V8JS_DATE(v)		v8::Date::New(isolate, v)
-#endif
-
 #define V8JS_NULL			v8::Null(isolate)
 #define V8JS_UNDEFINED		v8::Undefined(isolate)
 #define V8JS_MN(name)		v8js_method_##name
 #define V8JS_METHOD(name)	void V8JS_MN(name)(const v8::FunctionCallbackInfo<v8::Value>& info)
 #define V8JS_THROW(isolate, type, message, message_len)	(isolate)->ThrowException(v8::Exception::type(V8JS_STRL(message, message_len)))
 #define V8JS_GLOBAL(isolate)			((isolate)->GetCurrentContext()->Global())
-
-#if PHP_V8_API_VERSION < 3022000
-/* CopyablePersistentTraits is only part of V8 from 3.22.0 on,
-   to be compatible with lower versions add our own (compatible) version. */
-namespace v8 {
-	template<class T>
-	struct CopyablePersistentTraits {
-		typedef Persistent<T, CopyablePersistentTraits<T> > CopyablePersistent;
-		static const bool kResetInDestructor = true;
-		template<class S, class M>
-#if PHP_V8_API_VERSION >= 3021015
-		static V8_INLINE void Copy(const Persistent<S, M>& source,
-								   CopyablePersistent* dest)
-#else
-		V8_INLINE(static void Copy(const Persistent<S, M>& source,
-								   CopyablePersistent* dest))
-#endif
-		{
-			// do nothing, just allow copy
-		}
-	};
-}
-#endif
 
 /* Abbreviate long type names */
 typedef v8::Persistent<v8::FunctionTemplate, v8::CopyablePersistentTraits<v8::FunctionTemplate> > v8js_tmpl_t;
@@ -108,15 +64,8 @@ typedef v8::Persistent<v8::Object, v8::CopyablePersistentTraits<v8::Object> > v8
 #define PHPJS_OBJECT_KEY "phpjs::object"
 
 /* Helper macros */
-#if PHP_V8_API_VERSION < 2005009
-# define V8JS_GET_CLASS_NAME(var, obj) \
-	/* Hack to prevent calling possibly set user-defined __toString() messing class name */ \
-	v8::Local<v8::Function> constructor = v8::Local<v8::Function>::Cast(obj->Get(V8JS_SYM("constructor"))); \
-	v8::String::Utf8Value var(constructor->GetName());
-#else
-# define V8JS_GET_CLASS_NAME(var, obj) \
+#define V8JS_GET_CLASS_NAME(var, obj) \
 	v8::String::Utf8Value var(obj->GetConstructorName());
-#endif
 
 #if ZEND_MODULE_API_NO >= 20100409
 # define ZEND_HASH_KEY_DC , const zend_literal *key
@@ -217,12 +166,7 @@ struct php_v8js_ctx {
 /* }}} */
 
 #ifdef ZTS
-# if PHP_V8_API_VERSION <= 3023008
-   /* Until V8 3.23.8 Isolate could only take one external pointer. */
-#  define V8JS_TSRMLS_FETCH() TSRMLS_FETCH_FROM_CTX(((php_v8js_ctx *) isolate->GetData())->zts_ctx);
-# else
-#  define V8JS_TSRMLS_FETCH() TSRMLS_FETCH_FROM_CTX(((php_v8js_ctx *) isolate->GetData(0))->zts_ctx);
-# endif
+# define V8JS_TSRMLS_FETCH() TSRMLS_FETCH_FROM_CTX(((php_v8js_ctx *) isolate->GetData(0))->zts_ctx);
 #else
 # define V8JS_TSRMLS_FETCH()
 #endif

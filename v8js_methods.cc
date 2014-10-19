@@ -113,12 +113,10 @@ static void _php_v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int
 		// fake the fields of a PHP DateTime
 		php_printf("Date(%s)\n", valstr);
 	}
-#if PHP_V8_API_VERSION >= 2003007
 	else if (var->IsRegExp())
 	{
 		php_printf("regexp(%s)\n", valstr);
 	}
-#endif
 	else if (var->IsArray())
 	{
 		v8::Local<v8::Array> array = v8::Local<v8::Array>::Cast(var);
@@ -302,9 +300,9 @@ V8JS_METHOD(require)
 
 	// Create a template for the global object and set the built-in global functions
 	v8::Handle<v8::ObjectTemplate> global = v8::ObjectTemplate::New();
-	global->Set(V8JS_SYM("print"), V8JS_NEW(v8::FunctionTemplate, isolate, V8JS_MN(print)), v8::ReadOnly);
-	global->Set(V8JS_SYM("sleep"), V8JS_NEW(v8::FunctionTemplate, isolate, V8JS_MN(sleep)), v8::ReadOnly);
-	global->Set(V8JS_SYM("require"), V8JS_NEW(v8::FunctionTemplate, isolate, V8JS_MN(require), V8JS_NEW(v8::External, isolate, c)), v8::ReadOnly);
+	global->Set(V8JS_SYM("print"), v8::FunctionTemplate::New(isolate, V8JS_MN(print)), v8::ReadOnly);
+	global->Set(V8JS_SYM("sleep"), v8::FunctionTemplate::New(isolate, V8JS_MN(sleep)), v8::ReadOnly);
+	global->Set(V8JS_SYM("require"), v8::FunctionTemplate::New(isolate, V8JS_MN(require), v8::External::New(isolate, c)), v8::ReadOnly);
 
 	// Add the exports object in which the module can return its API
 	v8::Local<v8::ObjectTemplate> exports_template = v8::ObjectTemplate::New();
@@ -396,13 +394,13 @@ V8JS_METHOD(require)
 void php_v8js_register_methods(v8::Handle<v8::ObjectTemplate> global, php_v8js_ctx *c) /* {{{ */
 {
 	v8::Isolate *isolate = c->isolate;
-	global->Set(V8JS_SYM("exit"), V8JS_NEW(v8::FunctionTemplate, isolate, V8JS_MN(exit)), v8::ReadOnly);
-	global->Set(V8JS_SYM("sleep"), V8JS_NEW(v8::FunctionTemplate, isolate, V8JS_MN(sleep)), v8::ReadOnly);
-	global->Set(V8JS_SYM("print"), V8JS_NEW(v8::FunctionTemplate, isolate, V8JS_MN(print)), v8::ReadOnly);
-	global->Set(V8JS_SYM("var_dump"), V8JS_NEW(v8::FunctionTemplate, isolate, V8JS_MN(var_dump)), v8::ReadOnly);
+	global->Set(V8JS_SYM("exit"), v8::FunctionTemplate::New(isolate, V8JS_MN(exit)), v8::ReadOnly);
+	global->Set(V8JS_SYM("sleep"), v8::FunctionTemplate::New(isolate, V8JS_MN(sleep)), v8::ReadOnly);
+	global->Set(V8JS_SYM("print"), v8::FunctionTemplate::New(isolate, V8JS_MN(print)), v8::ReadOnly);
+	global->Set(V8JS_SYM("var_dump"), v8::FunctionTemplate::New(isolate, V8JS_MN(var_dump)), v8::ReadOnly);
 
 	c->modules_base.push_back("");
-	global->Set(V8JS_SYM("require"), V8JS_NEW(v8::FunctionTemplate, isolate, V8JS_MN(require), V8JS_NEW(v8::External, isolate, c)), v8::ReadOnly);
+	global->Set(V8JS_SYM("require"), v8::FunctionTemplate::New(isolate, V8JS_MN(require), v8::External::New(isolate, c)), v8::ReadOnly);
 }
 /* }}} */
 
