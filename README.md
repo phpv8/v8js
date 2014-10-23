@@ -77,6 +77,7 @@ sudo make install
 PHP API
 =======
 
+```php
     class V8Js
     {
         /* Constants */
@@ -149,10 +150,12 @@ PHP API
     final class V8JsMemoryLimitException extends Exception
     {
     }
+```
 
 Javascript API
 ==============
 
+```js
     // Print a string.
     print(string);
 
@@ -165,6 +168,7 @@ Javascript API
     // CommonJS Module support to require external code.
     // This makes use of the PHP module loader provided via V8Js::setModuleLoader (see PHP API above).
     require("path/to/module");
+```
 
 The JavaScript `in` operator, when applied to a wrapped PHP object,
 works the same as the PHP `isset()` function.  Similarly, when applied
