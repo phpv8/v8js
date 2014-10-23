@@ -43,7 +43,7 @@ make native library=shared -j8
 sudo mkdir -p /usr/lib /usr/include
 sudo cp out/native/lib.target/lib*.so /usr/lib/
 echo -e "create /usr/lib/libv8_libplatform.a\naddlib out/native/obj.target/tools/gyp/libv8_libplatform.a\nsave\nend" | sudo ar -M
-sudo cp -R include/v8* /usr/include
+sudo cp -R include/* /usr/include
 
 ```
 
