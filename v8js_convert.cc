@@ -283,6 +283,8 @@ static void php_v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value
 		if(ctx->weak_objects.count(value)) {
 			// We already exported this object, hence no need to add another
 			// ref, v8 won't give us a second weak-object callback anyways.
+			newobj->SetAlignedPointerInInternalField(0, ext_tmpl->Value());
+			newobj->SetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY), php_object);
 			return;
 		}
 
