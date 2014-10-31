@@ -889,8 +889,13 @@ static v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *is
 	/* Object methods */
 	if (ce == php_ce_v8_function) {
 		php_v8js_object *c = (php_v8js_object *) zend_object_store_get_object(value TSRMLS_CC);
-		v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, c->v8obj);
 
+		if(isolate != c->ctx->isolate) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "V8Function object passed to wrong V8Js instance");
+			return V8JS_NULL;
+		}
+
+		v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, c->v8obj);
 		return v8obj;
 	} else if (ce) {
 		php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData(0);
