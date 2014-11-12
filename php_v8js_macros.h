@@ -42,6 +42,14 @@ extern "C" {
 #include <vector>
 #include <mutex>
 
+#ifndef PATH_MAX
+/* Some platforms (Windows among others) don't have a PATH_MAX, for the moment
+ * just assume an arbitrary upper bound of 4096 chars.
+ * Anyways we should fix (get rid of) the code that uses PATH_MAX as it doesn't
+ * even check for buffer overflows.  FIXME */
+#define PATH_MAX 4096
+#endif
+
 /* V8Js Version */
 #define V8JS_VERSION "0.1.5"
 
