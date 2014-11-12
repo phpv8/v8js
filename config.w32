@@ -13,7 +13,7 @@ if (PHP_V8JS != "no") {
 		AC_DEFINE("PHP_V8_API_VERSION", "3017015", "", false);
 		AC_DEFINE("PHP_V8_VERSION", "3.17.15", "", true);
 
-		EXTENSION("v8js", "v8js.cc v8js_convert.cc v8js_methods.cc v8js_variables.cc", "yes");
+		EXTENSION("v8js", "v8js.cc v8js_commonjs.cc v8js_convert.cc v8js_methods.cc v8js_variables.cc", "yes");
 
 	} else {
 		WARNING("v8js not enabled, headers or libs not found");
