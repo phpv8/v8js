@@ -21,7 +21,7 @@
 
 #include <v8-debug.h>
 
-#if PHP_V8_API_VERSION >= 3029036
+#if !defined(_WIN32) && PHP_V8_API_VERSION >= 3029036
 #include <libplatform/libplatform.h>
 #endif
 
@@ -869,7 +869,7 @@ static void php_v8js_init(TSRMLS_D) /* {{{ */
 		return;
 	}
 
-#if PHP_V8_API_VERSION >= 3029036
+#if !defined(_WIN32) && PHP_V8_API_VERSION >= 3029036
 	v8::Platform* platform = v8::platform::CreateDefaultPlatform();
 	v8::V8::InitializePlatform(platform);
 #endif
