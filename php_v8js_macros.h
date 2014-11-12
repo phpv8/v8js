@@ -25,6 +25,12 @@ extern "C" {
 #include "php_v8js.h"
 }
 
+#ifdef _WIN32
+/* On Windows a symbol COMPILER is defined.  However v8.h has an enum with that
+ * name which hence would be broken unless undefined here. */
+#undef COMPILER
+#endif
+
 #include <v8.h>
 
 #include <chrono>
