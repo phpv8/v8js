@@ -46,10 +46,10 @@ object(V8Object)#%d (0) {
 }
 string(55) "Can't access V8Object after V8Js instance is destroyed!"
 
-Warning: Uncaught exception 'V8JsScriptException' with message 'Can't access V8Object after V8Js instance is destroyed!' in %s/tests/ctx_lifetime.php:35
+Warning: Uncaught exception 'V8JsScriptException' with message 'Can't access V8Object after V8Js instance is destroyed!' in %s%etests%ectx_lifetime.php:35
 Stack trace:
-#0 %s/tests/ctx_lifetime.php(35): unknown()
+#0 %s%etests%ectx_lifetime.php(35): unknown()
 #1 {main}
-  thrown in %s/tests/ctx_lifetime.php on line 35
+  thrown in %s%etests%ectx_lifetime.php on line 35
 
-Fatal error: Call to undefined method V8Object::hello() in %s/tests/ctx_lifetime.php on line 35
+Fatal error: Call to undefined method V8Object::hello() in %s%etests%ectx_lifetime.php on line 35
