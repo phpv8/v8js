@@ -478,10 +478,11 @@ static int php_v8js_v8_call_method(char *method, INTERNAL_FUNCTION_PARAMETERS) /
 		cb = v8::Local<v8::Function>::Cast(v8obj->Get(method_name));
 	}
 
-	v8::Local<v8::Value> jsArgv[argc];
+	v8::Local<v8::Value> *jsArgv = static_cast<v8::Local<v8::Value> *>(alloca(sizeof(v8::Local<v8::Value>) * argc));
 	v8::Local<v8::Value> js_retval;
 
 	for (i = 0; i < argc; i++) {
+		new(&jsArgv[i]) v8::Local<v8::Value>;
 		jsArgv[i] = v8::Local<v8::Value>::New(isolate, zval_to_v8js(*argv[i], isolate TSRMLS_CC));
 	}
 
