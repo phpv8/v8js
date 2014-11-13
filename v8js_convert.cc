@@ -471,10 +471,11 @@ static void php_v8js_named_property_enumerator(const v8::PropertyCallbackInfo<v8
 			// prefix enumerated property names with '$' so they can be
 			// dereferenced unambiguously (ie, don't conflict with method
 			// names)
-			char prefixed[key_len + 1];
+			char *prefixed = static_cast<char *>(emalloc(key_len + 1));
 			prefixed[0] = '$';
 			strncpy(prefixed + 1, key, key_len);
 			result->Set(result_len++, V8JS_STRL(prefixed, key_len));
+			efree(prefixed);
 		} else {
 			// even numeric indices are enumerated as strings in JavaScript
 			result->Set(result_len++, V8JS_FLOAT((double) index)->ToString());
@@ -492,12 +493,13 @@ static void php_v8js_invoke_callback(const v8::FunctionCallbackInfo<v8::Value>& 
 	v8::Local<v8::Object> self = info.Holder();
 	v8::Local<v8::Function> cb = v8::Local<v8::Function>::Cast(info.Data());
 	int argc = info.Length(), i;
-	v8::Local<v8::Value> argv[argc];
+	v8::Local<v8::Value> *argv = static_cast<v8::Local<v8::Value> *>(alloca(sizeof(v8::Local<v8::Value>) * argc));
 	v8::Local<v8::Value> result;
 
 	V8JS_TSRMLS_FETCH();
 
 	for (i=0; i<argc; i++) {
+		new(&argv[i]) v8::Local<v8::Value>;
 		argv[i] = info[i];
 	}
 
@@ -595,8 +597,9 @@ static void php_v8js_fake_call_impl(const v8::FunctionCallbackInfo<v8::Value>& i
 	// use php_v8js_php_callback to actually execute the method
 	v8::Local<v8::Function> cb = PHP_V8JS_CALLBACK(isolate, method_ptr, tmpl);
 	uint32_t i, argc = args->Length();
-	v8::Local<v8::Value> argv[argc];
+	v8::Local<v8::Value> *argv = static_cast<v8::Local<v8::Value> *>(alloca(sizeof(v8::Local<v8::Value>) * argc));
 	for (i=0; i<argc; i++) {
+		new(&argv[i]) v8::Local<v8::Value>;
 		argv[i] = args->Get(i);
 	}
 	return_value = cb->Call(info.This(), (int) argc, argv);
