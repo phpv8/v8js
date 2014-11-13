@@ -677,20 +677,6 @@ static void php_v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 	}
 	c->context.~Persistent();
 
-	/* Force garbage collection on our isolate, this is needed that V8 triggers
-	 * our MakeWeak callbacks.  Without these we won't remove our references
-	 * on the PHP objects leading to memory leaks in PHP context.
-	 */
-	{
-		v8::Locker locker(c->isolate);
-		v8::Isolate::Scope isolate_scope(c->isolate);
-#if PHP_V8_API_VERSION < 3028036
-		while(!v8::V8::IdleNotification()) {};
-#else
-		while(!c->isolate->IdleNotification(500)) {};
-#endif
-	}
-
 	/* Dispose yet undisposed weak refs */
 	for (std::map<zval *, v8js_persistent_obj_t>::iterator it = c->weak_objects.begin();
 		 it != c->weak_objects.end(); ++it) {
