@@ -28,3 +28,9 @@ modules
 v8js.la
 /run-tests.php
 .*.sw[poq]
+
+/tests/*.diff
+/tests/*.exp
+/tests/*.out
+/tests/*.php
+/tests/*.sh
