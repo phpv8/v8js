@@ -1120,8 +1120,12 @@ static void php_v8js_timer_thread(TSRMLS_D)
 		}
 
 		// Sleep for 10ms
+#ifdef _WIN32
+		concurrency::wait(10);
+#else
 		std::chrono::milliseconds duration(10);
 		std::this_thread::sleep_for(duration);
+#endif
 	}
 }
 
