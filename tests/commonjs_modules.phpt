@@ -1,7 +1,12 @@
 --TEST--
 Test V8Js::setModuleLoader : CommonJS modules
 --SKIPIF--
-<?php require_once(dirname(__FILE__) . '/skipif.inc'); ?>
+<?php
+if(!function_exists('json_encode')) {
+  die('SKIP');
+}
+require_once(dirname(__FILE__) . '/skipif.inc');
+?>
 --FILE--
 <?php
 
