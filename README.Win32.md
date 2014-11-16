@@ -98,6 +98,8 @@ mkdir vc12\x86\deps\lib
 * from `\v8\build\Release\lib` copy `icui18n.lib`, `icuuc.lib` and `v8.lib`
   to deps\lib folder
 * from `\v8\include copy` all v8*.h files to deps\include folder
+* within the PHP source code folder create a sub-directory named `pecl`
+* download V8Js and unpack it into a seperate directory below the `pecl` folder
 
 (still in "VS2013 x86 Native Tools Command Prompt")
 
