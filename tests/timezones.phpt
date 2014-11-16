@@ -1,7 +1,12 @@
 --TEST--
 Test V8::executeString() : Check timezone handling
 --SKIPIF--
-<?php require_once(dirname(__FILE__) . '/skipif.inc'); ?>
+<?php
+if(strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+	die('SKIP TZ not handled by v8 on Windows');
+}
+require_once(dirname(__FILE__) . '/skipif.inc');
+?>
 --FILE--
 <?php
 
