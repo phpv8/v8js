@@ -1149,12 +1149,32 @@ int v8js_to_zval(v8::Handle<v8::Value> jsValue, zval *return_value, int flags, v
 	{
 		v8::String::Utf8Value str(jsValue);
 		const char *cstr = ToCString(str);
+
+		/* cstr has two timezone specifications:
+		 *
+		 * example from Linux:
+		 * Mon Sep 08 1975 09:00:00 GMT+0000 (UTC)
+		 *
+		 * example from Windows:
+		 * Mon Sep 08 1975 11:00:00 GMT+0200 (W. Europe Daylight Time)
+		 *
+		 * ... problem is, that PHP can't parse the second timezone
+		 * specification as returned by v8 running on Windows.  And as a
+		 * matter of that fails due to inconsistent second timezone spec
+		 */
+		char *date_str = estrdup(cstr);
+		char *paren_ptr = strchr(date_str, '(');
+
+		if (paren_ptr != NULL) {
+			*paren_ptr = 0;
+		}
+
 		zend_class_entry *ce = php_date_get_date_ce();
 #if PHP_VERSION_ID < 50304
 		zval *param;
 
 		MAKE_STD_ZVAL(param);
-		ZVAL_STRING(param, cstr, 1);
+		ZVAL_STRING(param, date_str, 0);
 
 		object_init_ex(return_value, ce TSRMLS_CC);
 		zend_call_method_with_1_params(&return_value, ce, &ce->constructor, "__construct", NULL, param);
@@ -1165,9 +1185,12 @@ int v8js_to_zval(v8::Handle<v8::Value> jsValue, zval *return_value, int flags, v
 		}
 #else
 		php_date_instantiate(ce, return_value TSRMLS_CC);
-		if (!php_date_initialize((php_date_obj *) zend_object_store_get_object(return_value TSRMLS_CC), (char *) cstr, strlen(cstr), NULL, NULL, 0 TSRMLS_CC)) {
+		if (!php_date_initialize((php_date_obj *) zend_object_store_get_object(return_value TSRMLS_CC), date_str, strlen(date_str), NULL, NULL, 0 TSRMLS_CC)) {
+			efree(date_str);
 			return FAILURE;
 		}
+
+		efree(date_str);
 #endif
 	}
 	else if (jsValue->IsObject())
