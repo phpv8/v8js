@@ -33,6 +33,9 @@ repository](https://registry.hub.docker.com/u/stesie/v8js/).
 You also might want to try the Debian & Ubuntu packages available from
 the Jenkins site at https://jenkins.brokenpipe.de/
 
+Building on Microsoft Windows is more complicated, see README.Win32.md file
+for a quick run through.
+
 Compile latest v8
 -----------------
 
