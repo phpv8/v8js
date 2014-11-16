@@ -471,10 +471,11 @@ static void php_v8js_named_property_enumerator(const v8::PropertyCallbackInfo<v8
 			// prefix enumerated property names with '$' so they can be
 			// dereferenced unambiguously (ie, don't conflict with method
 			// names)
-			char prefixed[key_len + 1];
+			char *prefixed = static_cast<char *>(emalloc(key_len + 1));
 			prefixed[0] = '$';
 			strncpy(prefixed + 1, key, key_len);
 			result->Set(result_len++, V8JS_STRL(prefixed, key_len));
+			efree(prefixed);
 		} else {
 			// even numeric indices are enumerated as strings in JavaScript
 			result->Set(result_len++, V8JS_FLOAT((double) index)->ToString());
@@ -492,12 +493,13 @@ static void php_v8js_invoke_callback(const v8::FunctionCallbackInfo<v8::Value>& 
 	v8::Local<v8::Object> self = info.Holder();
 	v8::Local<v8::Function> cb = v8::Local<v8::Function>::Cast(info.Data());
 	int argc = info.Length(), i;
-	v8::Local<v8::Value> argv[argc];
+	v8::Local<v8::Value> *argv = static_cast<v8::Local<v8::Value> *>(alloca(sizeof(v8::Local<v8::Value>) * argc));
 	v8::Local<v8::Value> result;
 
 	V8JS_TSRMLS_FETCH();
 
 	for (i=0; i<argc; i++) {
+		new(&argv[i]) v8::Local<v8::Value>;
 		argv[i] = info[i];
 	}
 
@@ -595,8 +597,9 @@ static void php_v8js_fake_call_impl(const v8::FunctionCallbackInfo<v8::Value>& i
 	// use php_v8js_php_callback to actually execute the method
 	v8::Local<v8::Function> cb = PHP_V8JS_CALLBACK(isolate, method_ptr, tmpl);
 	uint32_t i, argc = args->Length();
-	v8::Local<v8::Value> argv[argc];
+	v8::Local<v8::Value> *argv = static_cast<v8::Local<v8::Value> *>(alloca(sizeof(v8::Local<v8::Value>) * argc));
 	for (i=0; i<argc; i++) {
+		new(&argv[i]) v8::Local<v8::Value>;
 		argv[i] = args->Get(i);
 	}
 	return_value = cb->Call(info.This(), (int) argc, argv);
@@ -1093,6 +1096,10 @@ v8::Handle<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate TSRMLS_DC) 
 
 		case IS_LONG:
 		    v = Z_LVAL_P(value);
+			/* On Windows there are max and min macros, which would clobber the
+			 * method names of std::numeric_limits< > otherwise. */
+#undef max
+#undef min
 			if (v < - std::numeric_limits<int32_t>::min() || v > std::numeric_limits<int32_t>::max()) {
 				jsValue = V8JS_FLOAT((double)v);
 			} else {
@@ -1142,12 +1149,32 @@ int v8js_to_zval(v8::Handle<v8::Value> jsValue, zval *return_value, int flags, v
 	{
 		v8::String::Utf8Value str(jsValue);
 		const char *cstr = ToCString(str);
+
+		/* cstr has two timezone specifications:
+		 *
+		 * example from Linux:
+		 * Mon Sep 08 1975 09:00:00 GMT+0000 (UTC)
+		 *
+		 * example from Windows:
+		 * Mon Sep 08 1975 11:00:00 GMT+0200 (W. Europe Daylight Time)
+		 *
+		 * ... problem is, that PHP can't parse the second timezone
+		 * specification as returned by v8 running on Windows.  And as a
+		 * matter of that fails due to inconsistent second timezone spec
+		 */
+		char *date_str = estrdup(cstr);
+		char *paren_ptr = strchr(date_str, '(');
+
+		if (paren_ptr != NULL) {
+			*paren_ptr = 0;
+		}
+
 		zend_class_entry *ce = php_date_get_date_ce();
 #if PHP_VERSION_ID < 50304
 		zval *param;
 
 		MAKE_STD_ZVAL(param);
-		ZVAL_STRING(param, cstr, 1);
+		ZVAL_STRING(param, date_str, 0);
 
 		object_init_ex(return_value, ce TSRMLS_CC);
 		zend_call_method_with_1_params(&return_value, ce, &ce->constructor, "__construct", NULL, param);
@@ -1158,9 +1185,12 @@ int v8js_to_zval(v8::Handle<v8::Value> jsValue, zval *return_value, int flags, v
 		}
 #else
 		php_date_instantiate(ce, return_value TSRMLS_CC);
-		if (!php_date_initialize((php_date_obj *) zend_object_store_get_object(return_value TSRMLS_CC), (char *) cstr, strlen(cstr), NULL, NULL, 0 TSRMLS_CC)) {
+		if (!php_date_initialize((php_date_obj *) zend_object_store_get_object(return_value TSRMLS_CC), date_str, strlen(date_str), NULL, NULL, 0 TSRMLS_CC)) {
+			efree(date_str);
 			return FAILURE;
 		}
+
+		efree(date_str);
 #endif
 	}
 	else if (jsValue->IsObject())

@@ -7,8 +7,11 @@ Test V8::executeString() : Time limit
 $JS = <<< EOT
 var text = "abcdefghijklmnopqrstuvwyxz0123456789";
 var memory = "";
-for (var i = 0; i < 1000000; ++i) {
-    memory += text;
+for (var i = 0; i < 100; ++i) {
+    for (var j = 0; j < 10000; ++j) {
+        memory += text;
+    }
+    sleep(0);
 }
 EOT;
 

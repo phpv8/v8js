@@ -21,7 +21,7 @@
 
 #include <v8-debug.h>
 
-#if PHP_V8_API_VERSION >= 3029036
+#if !defined(_WIN32) && PHP_V8_API_VERSION >= 3029036
 #include <libplatform/libplatform.h>
 #endif
 
@@ -478,10 +478,11 @@ static int php_v8js_v8_call_method(char *method, INTERNAL_FUNCTION_PARAMETERS) /
 		cb = v8::Local<v8::Function>::Cast(v8obj->Get(method_name));
 	}
 
-	v8::Local<v8::Value> jsArgv[argc];
+	v8::Local<v8::Value> *jsArgv = static_cast<v8::Local<v8::Value> *>(alloca(sizeof(v8::Local<v8::Value>) * argc));
 	v8::Local<v8::Value> js_retval;
 
 	for (i = 0; i < argc; i++) {
+		new(&jsArgv[i]) v8::Local<v8::Value>;
 		jsArgv[i] = v8::Local<v8::Value>::New(isolate, zval_to_v8js(*argv[i], isolate TSRMLS_CC));
 	}
 
@@ -676,20 +677,6 @@ static void php_v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 	}
 	c->context.~Persistent();
 
-	/* Force garbage collection on our isolate, this is needed that V8 triggers
-	 * our MakeWeak callbacks.  Without these we won't remove our references
-	 * on the PHP objects leading to memory leaks in PHP context.
-	 */
-	{
-		v8::Locker locker(c->isolate);
-		v8::Isolate::Scope isolate_scope(c->isolate);
-#if PHP_V8_API_VERSION < 3028036
-		while(!v8::V8::IdleNotification()) {};
-#else
-		while(!c->isolate->IdleNotification(500)) {};
-#endif
-	}
-
 	/* Dispose yet undisposed weak refs */
 	for (std::map<zval *, v8js_persistent_obj_t>::iterator it = c->weak_objects.begin();
 		 it != c->weak_objects.end(); ++it) {
@@ -869,7 +856,7 @@ static void php_v8js_init(TSRMLS_D) /* {{{ */
 		return;
 	}
 
-#if PHP_V8_API_VERSION >= 3029036
+#if !defined(_WIN32) && PHP_V8_API_VERSION >= 3029036
 	v8::Platform* platform = v8::platform::CreateDefaultPlatform();
 	v8::V8::InitializePlatform(platform);
 #endif
@@ -1133,8 +1120,12 @@ static void php_v8js_timer_thread(TSRMLS_D)
 		}
 
 		// Sleep for 10ms
+#ifdef _WIN32
+		concurrency::wait(10);
+#else
 		std::chrono::milliseconds duration(10);
 		std::this_thread::sleep_for(duration);
+#endif
 	}
 }
 

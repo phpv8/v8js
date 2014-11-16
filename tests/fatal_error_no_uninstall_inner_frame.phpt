@@ -27,4 +27,4 @@ $js->executeString("PHP.foo();");
 --EXPECTF--
 nothing.
 
-Fatal error: Call to a member function foo() on %s in %s/fatal_error_no_uninstall_inner_frame.php on line 15
+Fatal error: Call to a member function foo() on %s in %s%efatal_error_no_uninstall_inner_frame.php on line 15

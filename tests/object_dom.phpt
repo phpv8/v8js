@@ -1,7 +1,12 @@
 --TEST--
 Test V8::executeString() : DOM object passed from PHP
 --SKIPIF--
-<?php require_once(dirname(__FILE__) . '/skipif.inc'); ?>
+<?php
+if(!class_exists('DomDocument')) {
+  die('skip');
+}
+require_once(dirname(__FILE__) . '/skipif.inc');
+?>
 --FILE--
 <?php
 

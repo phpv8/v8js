@@ -23,4 +23,4 @@ $js->executeString($script);
 ?>
 ===EOF===
 --EXPECTF--
-Fatal error: Call to a member function bar() on %s in %s/fatal_error_rethrow.php on line 7
+Fatal error: Call to a member function bar() on %s in %s%efatal_error_rethrow.php on line 7
