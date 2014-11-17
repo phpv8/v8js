@@ -1466,6 +1466,25 @@ static PHP_METHOD(V8Js, getPendingException)
 }
 /* }}} */
 
+/* {{{ proto void V8Js::clearPendingException()
+ */
+static PHP_METHOD(V8Js, clearPendingException)
+{
+	php_v8js_ctx *c;
+
+	if (zend_parse_parameters_none() == FAILURE) {
+		return;
+	}
+
+	c = (php_v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
+
+	if (c->pending_exception) {
+		zval_ptr_dtor(&c->pending_exception);
+		c->pending_exception = NULL;
+	}
+}
+/* }}} */
+
 /* {{{ proto void V8Js::setModuleLoader(string module)
  */
 static PHP_METHOD(V8Js, setModuleLoader)
@@ -1694,6 +1713,9 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO(arginfo_v8js_getpendingexception, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO(arginfo_v8js_clearpendingexception, 0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_setmoduleloader, 0, 0, 1)
 	ZEND_ARG_INFO(0, callable)
 ZEND_END_ARG_INFO()
@@ -1731,6 +1753,7 @@ static const zend_function_entry v8js_methods[] = { /* {{{ */
 	PHP_ME(V8Js,    executeScript,			arginfo_v8js_executescript,			ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,    checkString,			arginfo_v8js_checkstring,			ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED)
 	PHP_ME(V8Js,	getPendingException,	arginfo_v8js_getpendingexception,	ZEND_ACC_PUBLIC)
+	PHP_ME(V8Js,	clearPendingException,	arginfo_v8js_clearpendingexception,	ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	setModuleLoader,		arginfo_v8js_setmoduleloader,		ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	registerExtension,		arginfo_v8js_registerextension,		ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
 	PHP_ME(V8Js,	getExtensions,			arginfo_v8js_getextensions,			ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
