@@ -1552,7 +1552,7 @@ static int php_v8js_register_extension(char *name, uint name_len, char *source, 
 		jsext->deps_count = zend_hash_num_elements(Z_ARRVAL_P(deps_arr));
 
 		if (_php_v8js_create_ext_strarr(&jsext->deps, jsext->deps_count, Z_ARRVAL_P(deps_arr)) == FAILURE) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Invalid dependancy array passed");
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Invalid dependency array passed");
 			php_v8js_jsext_dtor(jsext);
 			free(jsext);
 			return FAILURE;
