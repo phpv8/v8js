@@ -139,12 +139,16 @@ PHP API
         /* Properties */
         protected string JsFileName = NULL;
         protected int JsLineNumber = NULL;
+        protected int JsStartColumn = NULL;
+        protected int JsEndColumn = NULL;
         protected string JsSourceLine = NULL;
         protected string JsTrace = NULL;
         
         /* Methods */
         final public string getJsFileName( )
         final public int getJsLineNumber( )
+        final public int getJsStartColumn( )
+        final public int getJsEndColumn( )
         final public string getJsSourceLine( )
         final public string getJsTrace( )
     }

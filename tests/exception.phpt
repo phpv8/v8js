@@ -19,7 +19,7 @@ try {
 ?>
 ===EOF===
 --EXPECTF--
-object(V8JsScriptException)#%d (11) {
+object(V8JsScriptException)#%d (13) {
   ["message":protected]=>
   string(75) "exception.js:1: ReferenceError: this_function_does_not_exist is not defined"
   ["string":"Exception":private]=>
@@ -58,6 +58,10 @@ object(V8JsScriptException)#%d (11) {
   ["JsFileName":protected]=>
   string(12) "exception.js"
   ["JsLineNumber":protected]=>
+  int(1)
+  ["JsStartColumn":protected]=>
+  int(0)
+  ["JsEndColumn":protected]=>
   int(1)
   ["JsSourceLine":protected]=>
   string(31) "this_function_does_not_exist();"
