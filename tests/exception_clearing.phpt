@@ -23,7 +23,7 @@ var_dump($v8->getPendingException());
 --EXPECTF--
 NULL
 NULL
-object(V8JsScriptException)#%d (11) {
+object(V8JsScriptException)#%d (13) {
   ["message":protected]=>
   string(49) "throw_0:1: ReferenceError: fooobar is not defined"
   ["string":"Exception":private]=>
@@ -62,6 +62,10 @@ object(V8JsScriptException)#%d (11) {
   ["JsFileName":protected]=>
   string(7) "throw_0"
   ["JsLineNumber":protected]=>
+  int(1)
+  ["JsStartColumn":protected]=>
+  int(0)
+  ["JsEndColumn":protected]=>
   int(1)
   ["JsSourceLine":protected]=>
   string(7) "fooobar"
