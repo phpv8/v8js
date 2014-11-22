@@ -42,7 +42,7 @@ try {
 ctor called (php)
 Hello John
 caught js exception
-object(V8JsScriptException)#%d (11) {
+object(V8JsScriptException)#%d (13) {
   ["message":protected]=>
   string(56) "ctor-test:4: Call to protected __construct() not allowed"
   ["string":"Exception":private]=>
@@ -87,6 +87,10 @@ object(V8JsScriptException)#%d (11) {
   string(9) "ctor-test"
   ["JsLineNumber":protected]=>
   int(4)
+  ["JsStartColumn":protected]=>
+  int(18)
+  ["JsEndColumn":protected]=>
+  int(19)
   ["JsSourceLine":protected]=>
   string(55) "		var ngGreeter = new PHP.greeter.constructor("Ringo");"
   ["JsTrace":protected]=>
