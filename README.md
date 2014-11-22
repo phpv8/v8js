@@ -117,6 +117,9 @@ PHP API
         // Returns uncaught pending exception or null if there is no pending exception.
         public V8JsScriptException V8Js::getPendingException( )
 
+        // Clears the uncaught pending exception
+        public clearPendingException( )
+
         // Starts V8 debug agent for use with Google Chrome Developer Tools (Eclipse Plugin)
         public bool startDebugAgent( [ string $agent_name = "V8Js" [, $port = 9222 [, $auto_break = V8Js::DEBUG_AUTO_BREAK_NEVER ] ] ] )
 
