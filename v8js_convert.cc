@@ -948,10 +948,7 @@ static void php_v8js_array_access_length(v8::Local<v8::String> property, const v
 
 static v8::Handle<v8::Value> php_v8js_array_access_to_jsobj(zval *value, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
 {
-	v8::Local<v8::FunctionTemplate> aa_tpl = v8::FunctionTemplate::New(isolate, 0);
-	aa_tpl->SetClassName(V8JS_SYM("ArrayAccess"));
-
-	v8::Local<v8::ObjectTemplate> inst_tpl = aa_tpl->InstanceTemplate();
+	v8::Local<v8::ObjectTemplate> inst_tpl = v8::ObjectTemplate::New(isolate);
 	inst_tpl->SetIndexedPropertyHandler(php_v8js_array_access_getter);
 	inst_tpl->SetAccessor(V8JS_STR("length"), php_v8js_array_access_length);
 	inst_tpl->SetInternalFieldCount(1);
