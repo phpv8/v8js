@@ -956,9 +956,12 @@ static v8::Handle<v8::Value> php_v8js_array_access_to_jsobj(zval *value, v8::Iso
 	inst_tpl->SetAccessor(V8JS_STR("length"), php_v8js_array_access_length);
 	inst_tpl->SetInternalFieldCount(1);
 
-
 	v8::Handle<v8::Object> newobj = inst_tpl->NewInstance();
 	newobj->SetAlignedPointerInInternalField(0, value);
+
+	/* Change prototype of `newobj' to that of Array */
+	v8::Local<v8::Array> arr = v8::Array::New(isolate);
+	newobj->SetPrototype(arr->GetPrototype());
 
 	return newobj;
 }

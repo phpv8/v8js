@@ -37,6 +37,7 @@ $js = <<<EOJS
 var_dump(PHP.myarr.constructor.name);
 var_dump(PHP.myarr.length);
 var_dump(PHP.myarr[5]);
+var_dump(PHP.myarr.join(', '));
 EOJS;
 
 $v8 = new V8Js();
@@ -48,7 +49,8 @@ $v8->executeString($js);
 --EXPECT--
 int(20)
 int(14)
-string(11) "ArrayAccess"
+string(5) "Array"
 int(20)
 int(14)
+string(68) "19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0"
 ===EOF===
