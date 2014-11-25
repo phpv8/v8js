@@ -30,6 +30,8 @@ static void php_v8js_array_access_getter(uint32_t index, const v8::PropertyCallb
 	v8::Isolate *isolate = info.GetIsolate();
 	v8::Local<v8::Object> self = info.Holder();
 
+	V8JS_TSRMLS_FETCH();
+
 	zval *object = reinterpret_cast<zval *>(self->GetAlignedPointerFromInternalField(0));
 	zend_class_entry *ce = Z_OBJCE_P(object);
 
@@ -74,6 +76,8 @@ static void php_v8js_array_access_setter(uint32_t index, v8::Local<v8::Value> va
 	v8::Isolate *isolate = info.GetIsolate();
 	v8::Local<v8::Object> self = info.Holder();
 
+	V8JS_TSRMLS_FETCH();
+
 	zval *object = reinterpret_cast<zval *>(self->GetAlignedPointerFromInternalField(0));
 	zend_class_entry *ce = Z_OBJCE_P(object);
 
@@ -117,6 +121,10 @@ static void php_v8js_array_access_setter(uint32_t index, v8::Local<v8::Value> va
 	/* simply pass back the value to tell we intercepted the call
 	 * as the offsetSet function returns void. */
 	info.GetReturnValue().Set(value);
+
+	/* if PHP wanted to hold on to this value, zend_call_function would
+	 * have bumped the refcount. */
+	zval_ptr_dtor(&zvalue_ptr);
 }
 /* }}} */
 
@@ -124,6 +132,8 @@ static void php_v8js_array_access_length(v8::Local<v8::String> property, const v
 {
 	v8::Isolate *isolate = info.GetIsolate();
 	v8::Local<v8::Object> self = info.Holder();
+
+	V8JS_TSRMLS_FETCH();
 
 	zval *object = reinterpret_cast<zval *>(self->GetAlignedPointerFromInternalField(0));
 	zend_class_entry *ce = Z_OBJCE_P(object);
