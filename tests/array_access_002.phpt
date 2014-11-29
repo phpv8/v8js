@@ -28,7 +28,6 @@ class MyArray implements ArrayAccess, Countable {
     }
 
     public function count() {
-	echo 'count() = ', count($this->data), "\n";
         return count($this->data);
     }
 }
@@ -51,11 +50,8 @@ $v8->executeString('var_dump(PHP.myarr.join(","));');
 ?>
 ===EOF===
 --EXPECT--
-count() = 3
 set[3] = 23
-count() = 4
 int(4)
 int(23)
-count() = 4
 string(16) "one,two,three,23"
 ===EOF===
