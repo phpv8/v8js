@@ -841,130 +841,95 @@ static void php_v8js_named_property_deleter(v8::Local<v8::String> property, cons
 }
 /* }}} */
 
-v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
+
+
+static v8::Handle<v8::Object> php_v8js_wrap_object(v8::Isolate *isolate, zend_class_entry *ce, zval *value) /* {{{ */
 {
-	v8::Handle<v8::Object> newobj;
-	int i;
-	char *key = NULL;
-	ulong index;
-	uint key_len;
-	HashTable *myht;
-	HashPosition pos;
-	zend_class_entry *ce = NULL;
+	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData(0);
+	v8::Local<v8::FunctionTemplate> new_tpl;
+	v8js_tmpl_t *persist_tpl_;
 
-	if (Z_TYPE_P(value) == IS_ARRAY) {
-		myht = HASH_OF(value);
-	} else {
-		myht = Z_OBJPROP_P(value);
-		ce = Z_OBJCE_P(value);
+	try {
+		new_tpl = v8::Local<v8::FunctionTemplate>::New
+			(isolate, ctx->template_cache.at(ce->name));
 	}
+	catch (const std::out_of_range &) {
+		/* No cached v8::FunctionTemplate available as of yet, create one. */
+		new_tpl = v8::FunctionTemplate::New(isolate, 0);
 
-	/* Prevent recursion */
-	if (myht && myht->nApplyCount > 1) {
-		return V8JS_NULL;
-	}
-
-	/* Check for ArrayAccess object */
-	if (V8JSG(use_array_access) && ce) {
-		bool has_array_access = false;
-		bool has_countable = false;
-
-		for (int i = 0; i < ce->num_interfaces; i ++) {
-			if (strcmp (ce->interfaces[i]->name, "ArrayAccess") == 0) {
-				has_array_access = true;
-			}
-			else if (strcmp (ce->interfaces[i]->name, "Countable") == 0) {
-				has_countable = true;
-			}
-		}
-
-		if(has_array_access && has_countable) {
-			return php_v8js_array_access_to_jsobj(value, isolate TSRMLS_CC);
-		}
-	}
-
-	/* Object methods */
-	if (ce == php_ce_v8_function) {
-		php_v8js_object *c = (php_v8js_object *) zend_object_store_get_object(value TSRMLS_CC);
-
-		if(isolate != c->ctx->isolate) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "V8Function object passed to wrong V8Js instance");
-			return V8JS_NULL;
-		}
-
-		v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, c->v8obj);
-		return v8obj;
-	} else if (ce) {
-		php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData(0);
-		v8::Local<v8::FunctionTemplate> new_tpl;
-		v8js_tmpl_t *persist_tpl_;
-
-		try {
-			new_tpl = v8::Local<v8::FunctionTemplate>::New
-				(isolate, ctx->template_cache.at(ce->name));
-		}
-		catch (const std::out_of_range &) {
-			/* No cached v8::FunctionTemplate available as of yet, create one. */
-			new_tpl = v8::FunctionTemplate::New(isolate, 0);
-
-			new_tpl->SetClassName(V8JS_STRL(ce->name, ce->name_length));
-			new_tpl->InstanceTemplate()->SetInternalFieldCount(1);
-
-			if (ce == zend_ce_closure) {
-				/* Got a closure, mustn't cache ... */
-				persist_tpl_ = new v8js_tmpl_t(isolate, new_tpl);
-				/* We'll free persist_tpl_ via php_v8js_weak_closure_callback, below */
-				new_tpl->InstanceTemplate()->SetCallAsFunctionHandler(php_v8js_php_callback);
-			} else {
-				/* Add new v8::FunctionTemplate to tpl_map, as long as it is not a closure. */
-				persist_tpl_ = &ctx->template_cache[ce->name];
-				persist_tpl_->Reset(isolate, new_tpl);
-				/* We'll free persist_tpl_ when template_cache is destroyed */
-				// Finish setup of new_tpl
-				new_tpl->InstanceTemplate()->SetNamedPropertyHandler
-					(php_v8js_named_property_getter, /* getter */
-					 php_v8js_named_property_setter, /* setter */
-					 php_v8js_named_property_query, /* query */
-					 php_v8js_named_property_deleter, /* deleter */
-					 php_v8js_named_property_enumerator, /* enumerator */
-					 V8JS_NULL /* data */
-					 );
-				// add __invoke() handler
-				zend_function *invoke_method_ptr;
-				if (zend_hash_find(&ce->function_table, ZEND_INVOKE_FUNC_NAME,
-								   sizeof(ZEND_INVOKE_FUNC_NAME),
-								   (void**)&invoke_method_ptr) == SUCCESS &&
-					invoke_method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) {
-					new_tpl->InstanceTemplate()->SetCallAsFunctionHandler(php_v8js_invoke_callback, PHP_V8JS_CALLBACK(isolate, invoke_method_ptr, new_tpl));
-				}
-			}
-			v8::Local<v8::Array> call_handler_data = v8::Array::New(isolate, 2);
-			call_handler_data->Set(0, v8::External::New(isolate, persist_tpl_));
-			call_handler_data->Set(1, v8::External::New(isolate, ce));
-			new_tpl->SetCallHandler(php_v8js_construct_callback, call_handler_data);
-		}
-
-		// Create v8 wrapper object
-		v8::Handle<v8::Value> external = v8::External::New(isolate, value);
-		newobj = new_tpl->GetFunction()->NewInstance(1, &external);
+		new_tpl->SetClassName(V8JS_STRL(ce->name, ce->name_length));
+		new_tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
 		if (ce == zend_ce_closure) {
-			// free uncached function template when object is freed
-			ctx->weak_closures[persist_tpl_].Reset(isolate, newobj);
-			ctx->weak_closures[persist_tpl_].SetWeak(persist_tpl_, php_v8js_weak_closure_callback);
+			/* Got a closure, mustn't cache ... */
+			persist_tpl_ = new v8js_tmpl_t(isolate, new_tpl);
+			/* We'll free persist_tpl_ via php_v8js_weak_closure_callback, below */
+			new_tpl->InstanceTemplate()->SetCallAsFunctionHandler(php_v8js_php_callback);
+		} else {
+			/* Add new v8::FunctionTemplate to tpl_map, as long as it is not a closure. */
+			persist_tpl_ = &ctx->template_cache[ce->name];
+			persist_tpl_->Reset(isolate, new_tpl);
+			/* We'll free persist_tpl_ when template_cache is destroyed */
+			// Finish setup of new_tpl
+			new_tpl->InstanceTemplate()->SetNamedPropertyHandler
+				(php_v8js_named_property_getter, /* getter */
+				 php_v8js_named_property_setter, /* setter */
+				 php_v8js_named_property_query, /* query */
+				 php_v8js_named_property_deleter, /* deleter */
+				 php_v8js_named_property_enumerator, /* enumerator */
+				 V8JS_NULL /* data */
+				 );
+			// add __invoke() handler
+			zend_function *invoke_method_ptr;
+			if (zend_hash_find(&ce->function_table, ZEND_INVOKE_FUNC_NAME,
+							   sizeof(ZEND_INVOKE_FUNC_NAME),
+							   (void**)&invoke_method_ptr) == SUCCESS &&
+				invoke_method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) {
+				new_tpl->InstanceTemplate()->SetCallAsFunctionHandler(php_v8js_invoke_callback, PHP_V8JS_CALLBACK(isolate, invoke_method_ptr, new_tpl));
+			}
 		}
-	} else {
-		// @todo re-use template likewise
-		v8::Local<v8::FunctionTemplate> new_tpl = v8::FunctionTemplate::New(isolate, 0);
-
-		new_tpl->SetClassName(V8JS_SYM("Array"));
-		newobj = new_tpl->InstanceTemplate()->NewInstance();
+		v8::Local<v8::Array> call_handler_data = v8::Array::New(isolate, 2);
+		call_handler_data->Set(0, v8::External::New(isolate, persist_tpl_));
+		call_handler_data->Set(1, v8::External::New(isolate, ce));
+		new_tpl->SetCallHandler(php_v8js_construct_callback, call_handler_data);
 	}
 
-	/* Object properties */
+	// Create v8 wrapper object
+	v8::Handle<v8::Value> external = v8::External::New(isolate, value);
+	v8::Handle<v8::Object> newobj = new_tpl->GetFunction()->NewInstance(1, &external);
+
+	if (ce == zend_ce_closure) {
+		// free uncached function template when object is freed
+		ctx->weak_closures[persist_tpl_].Reset(isolate, newobj);
+		ctx->weak_closures[persist_tpl_].SetWeak(persist_tpl_, php_v8js_weak_closure_callback);
+	}
+
+	return newobj;
+}
+/* }}} */
+
+
+v8::Handle<v8::Object> php_v8js_wrap_array_to_object(v8::Isolate *isolate, zval *value) /* {{{ */
+{
+	int i;
+	HashPosition pos;
+	char *key = NULL;
+	uint key_len;
+	ulong index;
+
+	// @todo re-use template likewise
+	v8::Local<v8::FunctionTemplate> new_tpl = v8::FunctionTemplate::New(isolate, 0);
+
+	/* Call it Array, but it is not a native array, especially it doesn't have
+	 * have the typical Array.prototype functions. */
+	new_tpl->SetClassName(V8JS_SYM("Array"));
+
+	v8::Handle<v8::Object> newobj = new_tpl->InstanceTemplate()->NewInstance();
+
+	HashTable *myht = HASH_OF(value);
 	i = myht ? zend_hash_num_elements(myht) : 0;
 
-	if (i > 0 && !ce)
+	if (i > 0)
 	{
 		zval **data;
 		HashTable *tmp_ht;
@@ -1003,7 +968,68 @@ v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *isolate T
 			}
 		}
 	}
+
 	return newobj;
+}
+/* }}} */
+
+
+v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
+{
+	HashTable *myht;
+	zend_class_entry *ce = NULL;
+
+	if (Z_TYPE_P(value) == IS_ARRAY) {
+		myht = HASH_OF(value);
+	} else {
+		myht = Z_OBJPROP_P(value);
+		ce = Z_OBJCE_P(value);
+	}
+
+	/* Prevent recursion */
+	if (myht && myht->nApplyCount > 1) {
+		return V8JS_NULL;
+	}
+
+	/* Check for ArrayAccess object */
+	if (V8JSG(use_array_access) && ce) {
+		bool has_array_access = false;
+		bool has_countable = false;
+
+		for (int i = 0; i < ce->num_interfaces; i ++) {
+			if (strcmp (ce->interfaces[i]->name, "ArrayAccess") == 0) {
+				has_array_access = true;
+			}
+			else if (strcmp (ce->interfaces[i]->name, "Countable") == 0) {
+				has_countable = true;
+			}
+		}
+
+		if(has_array_access && has_countable) {
+			return php_v8js_array_access_to_jsobj(value, isolate TSRMLS_CC);
+		}
+	}
+
+	/* Special case, passing back object originating from JS to JS */
+	if (ce == php_ce_v8_function) {
+		php_v8js_object *c = (php_v8js_object *) zend_object_store_get_object(value TSRMLS_CC);
+
+		if(isolate != c->ctx->isolate) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "V8Function object passed to wrong V8Js instance");
+			return V8JS_NULL;
+		}
+
+		return v8::Local<v8::Value>::New(isolate, c->v8obj);
+	}
+
+	/* If it's a PHP object, wrap it */
+	if (ce) {
+		return php_v8js_wrap_object(isolate, ce, value);
+	}
+
+	/* Associative PHP arrays cannot be wrapped to JS arrays, convert them to
+	 * JS objects and attach all their array keys as properties. */
+	return php_v8js_wrap_array_to_object(isolate, value);
 }
 /* }}} */
 
