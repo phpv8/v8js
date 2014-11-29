@@ -32,7 +32,8 @@ static void php_v8js_array_access_getter(uint32_t index, const v8::PropertyCallb
 
 	V8JS_TSRMLS_FETCH();
 
-	zval *object = reinterpret_cast<zval *>(self->GetAlignedPointerFromInternalField(0));
+	v8::Local<v8::Value> php_object = self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY));
+	zval *object = reinterpret_cast<zval *>(v8::External::Cast(*php_object)->Value());
 	zend_class_entry *ce = Z_OBJCE_P(object);
 
 	/* Okay, let's call offsetGet. */
@@ -78,7 +79,8 @@ static void php_v8js_array_access_setter(uint32_t index, v8::Local<v8::Value> va
 
 	V8JS_TSRMLS_FETCH();
 
-	zval *object = reinterpret_cast<zval *>(self->GetAlignedPointerFromInternalField(0));
+	v8::Local<v8::Value> php_object = self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY));
+	zval *object = reinterpret_cast<zval *>(v8::External::Cast(*php_object)->Value());
 	zend_class_entry *ce = Z_OBJCE_P(object);
 
 	/* Okay, let's call offsetSet. */
@@ -135,7 +137,8 @@ static void php_v8js_array_access_length(v8::Local<v8::String> property, const v
 
 	V8JS_TSRMLS_FETCH();
 
-	zval *object = reinterpret_cast<zval *>(self->GetAlignedPointerFromInternalField(0));
+	v8::Local<v8::Value> php_object = self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY));
+	zval *object = reinterpret_cast<zval *>(v8::External::Cast(*php_object)->Value());
 	zend_class_entry *ce = Z_OBJCE_P(object);
 
 	zend_fcall_info fci;
@@ -173,10 +176,9 @@ v8::Handle<v8::Value> php_v8js_array_access_to_jsobj(zval *value, v8::Isolate *i
 	inst_tpl->SetIndexedPropertyHandler(php_v8js_array_access_getter,
 										php_v8js_array_access_setter);
 	inst_tpl->SetAccessor(V8JS_STR("length"), php_v8js_array_access_length);
-	inst_tpl->SetInternalFieldCount(1);
 
 	v8::Handle<v8::Object> newobj = inst_tpl->NewInstance();
-	newobj->SetAlignedPointerInInternalField(0, value);
+	newobj->SetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY), v8::External::New(isolate, value));
 
 	/* Change prototype of `newobj' to that of Array */
 	v8::Local<v8::Array> arr = v8::Array::New(isolate);
