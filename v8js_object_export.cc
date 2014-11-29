@@ -836,7 +836,7 @@ static void php_v8js_named_property_deleter(v8::Local<v8::String> property, cons
 
 
 
-static v8::Handle<v8::Object> php_v8js_wrap_object(v8::Isolate *isolate, zend_class_entry *ce, zval *value) /* {{{ */
+static v8::Handle<v8::Object> php_v8js_wrap_object(v8::Isolate *isolate, zend_class_entry *ce, zval *value TSRMLS_DC) /* {{{ */
 {
 	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData(0);
 	v8::Local<v8::FunctionTemplate> new_tpl;
@@ -932,7 +932,7 @@ static v8::Handle<v8::Object> php_v8js_wrap_object(v8::Isolate *isolate, zend_cl
 /* }}} */
 
 
-v8::Handle<v8::Object> php_v8js_wrap_array_to_object(v8::Isolate *isolate, zval *value) /* {{{ */
+static v8::Handle<v8::Object> php_v8js_wrap_array_to_object(v8::Isolate *isolate, zval *value TSRMLS_DC) /* {{{ */
 {
 	int i;
 	HashPosition pos;
@@ -1028,12 +1028,12 @@ v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *isolate T
 
 	/* If it's a PHP object, wrap it */
 	if (ce) {
-		return php_v8js_wrap_object(isolate, ce, value);
+		return php_v8js_wrap_object(isolate, ce, value TSRMLS_CC);
 	}
 
 	/* Associative PHP arrays cannot be wrapped to JS arrays, convert them to
 	 * JS objects and attach all their array keys as properties. */
-	return php_v8js_wrap_array_to_object(isolate, value);
+	return php_v8js_wrap_array_to_object(isolate, value TSRMLS_CC);
 }
 /* }}} */
 
