@@ -13,6 +13,16 @@
 #ifndef V8JS_ARRAY_ACCESS_H
 #define V8JS_ARRAY_ACCESS_H
 
-v8::Handle<v8::Value> php_v8js_array_access_to_jsobj(zval *value, v8::Isolate *isolate TSRMLS_DC);
+/* Indexed Property Handlers */
+void php_v8js_array_access_getter(uint32_t index,
+				  const v8::PropertyCallbackInfo<v8::Value>& info);
+void php_v8js_array_access_setter(uint32_t index, v8::Local<v8::Value> value,
+				  const v8::PropertyCallbackInfo<v8::Value>& info);
+void php_v8js_array_access_length(v8::Local<v8::String> property,
+				  const v8::PropertyCallbackInfo<v8::Value>& info);
+
+/* Named Property Handlers */
+void php_v8js_array_access_named_getter(v8::Local<v8::String> property,
+					const v8::PropertyCallbackInfo<v8::Value> &info);
 
 #endif /* V8JS_ARRAY_ACCESS_H */

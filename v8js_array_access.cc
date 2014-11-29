@@ -24,8 +24,9 @@ extern "C" {
 
 #include "php_v8js_macros.h"
 #include "v8js_array_access.h"
+#include "v8js_object_export.h"
 
-static void php_v8js_array_access_getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& info) /* {{{ */
+void php_v8js_array_access_getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& info) /* {{{ */
 {
 	v8::Isolate *isolate = info.GetIsolate();
 	v8::Local<v8::Object> self = info.Holder();
@@ -71,8 +72,8 @@ static void php_v8js_array_access_getter(uint32_t index, const v8::PropertyCallb
 }
 /* }}} */
 
-static void php_v8js_array_access_setter(uint32_t index, v8::Local<v8::Value> value,
-										 const v8::PropertyCallbackInfo<v8::Value>& info) /* {{{ */
+void php_v8js_array_access_setter(uint32_t index, v8::Local<v8::Value> value,
+								  const v8::PropertyCallbackInfo<v8::Value>& info) /* {{{ */
 {
 	v8::Isolate *isolate = info.GetIsolate();
 	v8::Local<v8::Object> self = info.Holder();
@@ -130,7 +131,7 @@ static void php_v8js_array_access_setter(uint32_t index, v8::Local<v8::Value> va
 }
 /* }}} */
 
-static void php_v8js_array_access_length(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<v8::Value>& info) /* {{{ */
+void php_v8js_array_access_length(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<v8::Value>& info) /* {{{ */
 {
 	v8::Isolate *isolate = info.GetIsolate();
 	v8::Local<v8::Object> self = info.Holder();
@@ -169,25 +170,34 @@ static void php_v8js_array_access_length(v8::Local<v8::String> property, const v
 }
 /* }}} */
 
-
-v8::Handle<v8::Value> php_v8js_array_access_to_jsobj(zval *value, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
+void php_v8js_array_access_named_getter(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<v8::Value> &info) /* {{{ */
 {
-	v8::Local<v8::ObjectTemplate> inst_tpl = v8::ObjectTemplate::New(isolate);
-	inst_tpl->SetIndexedPropertyHandler(php_v8js_array_access_getter,
-										php_v8js_array_access_setter);
-	inst_tpl->SetAccessor(V8JS_STR("length"), php_v8js_array_access_length);
+	v8::String::Utf8Value cstr(property);
+	const char *name = ToCString(cstr);
 
-	v8::Handle<v8::Object> newobj = inst_tpl->NewInstance();
-	newobj->SetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY), v8::External::New(isolate, value));
+	if(strcmp(name, "length") == 0) {
+		php_v8js_array_access_length(property, info);
+		return;
+	}
 
-	/* Change prototype of `newobj' to that of Array */
-	v8::Local<v8::Array> arr = v8::Array::New(isolate);
-	newobj->SetPrototype(arr->GetPrototype());
+	v8::Local<v8::Value> ret_value = php_v8js_named_property_callback(property, info, V8JS_PROP_GETTER);
 
-	return newobj;
+	if(ret_value.IsEmpty()) {
+		v8::Isolate *isolate = info.GetIsolate();
+		v8::Local<v8::Array> arr = v8::Array::New(isolate);
+		v8::Local<v8::Value> prototype = arr->GetPrototype();
+
+		if(!prototype->IsObject()) {
+			/* ehh?  Array.prototype not an object? strange, stop. */
+			info.GetReturnValue().Set(ret_value);
+		}
+
+		ret_value = prototype->ToObject()->Get(property);
+	}
+
+	info.GetReturnValue().Set(ret_value);
 }
 /* }}} */
-
 
 /*
  * Local variables:

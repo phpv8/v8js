@@ -582,16 +582,9 @@ static void php_v8js_fake_call_impl(const v8::FunctionCallbackInfo<v8::Value>& i
 }
 /* }}} */
 
-typedef enum {
-	V8JS_PROP_GETTER,
-	V8JS_PROP_SETTER,
-	V8JS_PROP_QUERY,
-	V8JS_PROP_DELETER
-} property_op_t;
-
 /* This method handles named property and method get/set/query/delete. */
 template<typename T>
-static inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<T> &info, property_op_t callback_type, v8::Local<v8::Value> set_value = v8::Local<v8::Value>()) /* {{{ */
+inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<T> &info, property_op_t callback_type, v8::Local<v8::Value> set_value = v8::Local<v8::Value>()) /* {{{ */
 {
 	v8::Isolate *isolate = info.GetIsolate();
 	v8::String::Utf8Value cstr(property);
@@ -870,9 +863,39 @@ static v8::Handle<v8::Object> php_v8js_wrap_object(v8::Isolate *isolate, zend_cl
 			persist_tpl_ = &ctx->template_cache[ce->name];
 			persist_tpl_->Reset(isolate, new_tpl);
 			/* We'll free persist_tpl_ when template_cache is destroyed */
+
+			v8::Local<v8::ObjectTemplate> inst_tpl = new_tpl->InstanceTemplate();
+			v8::NamedPropertyGetterCallback getter = php_v8js_named_property_getter;
+
+			/* Check for ArrayAccess object */
+			if (V8JSG(use_array_access) && ce) {
+				bool has_array_access = false;
+				bool has_countable = false;
+
+				for (int i = 0; i < ce->num_interfaces; i ++) {
+					if (strcmp (ce->interfaces[i]->name, "ArrayAccess") == 0) {
+						has_array_access = true;
+					}
+					else if (strcmp (ce->interfaces[i]->name, "Countable") == 0) {
+						has_countable = true;
+					}
+				}
+
+				if(has_array_access && has_countable) {
+					inst_tpl->SetIndexedPropertyHandler(php_v8js_array_access_getter,
+														php_v8js_array_access_setter);
+
+					/* Switch to special ArrayAccess getter, which falls back to
+					 * php_v8js_named_property_getter, but possibly bridges the
+					 * call to Array.prototype functions. */
+					getter = php_v8js_array_access_named_getter;
+				}
+			}
+
+
 			// Finish setup of new_tpl
-			new_tpl->InstanceTemplate()->SetNamedPropertyHandler
-				(php_v8js_named_property_getter, /* getter */
+			inst_tpl->SetNamedPropertyHandler
+				(getter, /* getter */
 				 php_v8js_named_property_setter, /* setter */
 				 php_v8js_named_property_query, /* query */
 				 php_v8js_named_property_deleter, /* deleter */
@@ -989,25 +1012,6 @@ v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *isolate T
 	/* Prevent recursion */
 	if (myht && myht->nApplyCount > 1) {
 		return V8JS_NULL;
-	}
-
-	/* Check for ArrayAccess object */
-	if (V8JSG(use_array_access) && ce) {
-		bool has_array_access = false;
-		bool has_countable = false;
-
-		for (int i = 0; i < ce->num_interfaces; i ++) {
-			if (strcmp (ce->interfaces[i]->name, "ArrayAccess") == 0) {
-				has_array_access = true;
-			}
-			else if (strcmp (ce->interfaces[i]->name, "Countable") == 0) {
-				has_countable = true;
-			}
-		}
-
-		if(has_array_access && has_countable) {
-			return php_v8js_array_access_to_jsobj(value, isolate TSRMLS_CC);
-		}
 	}
 
 	/* Special case, passing back object originating from JS to JS */
