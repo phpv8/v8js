@@ -36,6 +36,11 @@ class MyArray implements ArrayAccess, Countable {
 	echo "push << $value\n";
 	$this->data[] = $value;
     }
+
+    public function push($value) {
+	echo "php-side-push << $value\n";
+	$this->data[] = $value;
+    }
 }
 
 $v8 = new V8Js();
@@ -50,6 +55,16 @@ var_dump($v8->myarr[3]);
 /* And JS should see the changes due to live binding. */
 $v8->executeString('var_dump(PHP.myarr.join(","));');
 
+
+/* Call `push' method, this should trigger the PHP method. */
+$v8->executeString('PHP.myarr.push(42);');
+
+var_dump(count($v8->myarr));
+var_dump($v8->myarr[4]);
+
+/* And JS should see the changes due to live binding. */
+$v8->executeString('var_dump(PHP.myarr.join(","));');
+
 ?>
 ===EOF===
 --EXPECT--
@@ -59,4 +74,10 @@ int(4)
 int(23)
 count() = 4
 string(16) "one,two,three,23"
+php-side-push << 42
+count() = 5
+int(5)
+int(42)
+count() = 5
+string(19) "one,two,three,23,42"
 ===EOF===
