@@ -229,6 +229,50 @@ void php_v8js_array_access_length(v8::Local<v8::String> property, const v8::Prop
 }
 /* }}} */
 
+void php_v8js_array_access_deleter(uint32_t index, const v8::PropertyCallbackInfo<v8::Boolean>& info) /* {{{ */
+{
+	v8::Isolate *isolate = info.GetIsolate();
+	v8::Local<v8::Object> self = info.Holder();
+
+	V8JS_TSRMLS_FETCH();
+
+	v8::Local<v8::Value> php_object = self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY));
+	zval *object = reinterpret_cast<zval *>(v8::External::Cast(*php_object)->Value());
+	zend_class_entry *ce = Z_OBJCE_P(object);
+
+	/* Okay, let's call offsetUnset. */
+	zend_fcall_info fci;
+	zval *php_value;
+
+	zval fmember;
+	INIT_ZVAL(fmember);
+	ZVAL_STRING(&fmember, "offsetUnset", 0);
+
+	zval zindex;
+	INIT_ZVAL(zindex);
+	ZVAL_LONG(&zindex, index);
+
+	fci.size = sizeof(fci);
+	fci.function_table = &ce->function_table;
+	fci.function_name = &fmember;
+	fci.symbol_table = NULL;
+	fci.retval_ptr_ptr = &php_value;
+
+	zval *zindex_ptr = &zindex;
+	zval **zindex_ptr_ptr = &zindex_ptr;
+	fci.param_count = 1;
+	fci.params = &zindex_ptr_ptr;
+
+	fci.object_ptr = object;
+	fci.no_separation = 0;
+
+	zend_call_function(&fci, NULL TSRMLS_CC);
+	zval_ptr_dtor(&php_value);
+	info.GetReturnValue().Set(V8JS_BOOL(true));
+}
+/* }}} */
+
+
 void php_v8js_array_access_enumerator(const v8::PropertyCallbackInfo<v8::Array>& info) /* {{{ */
 {
 	v8::Isolate *isolate = info.GetIsolate();

@@ -886,7 +886,7 @@ static v8::Handle<v8::Object> php_v8js_wrap_object(v8::Isolate *isolate, zend_cl
 					inst_tpl->SetIndexedPropertyHandler(php_v8js_array_access_getter,
 														php_v8js_array_access_setter,
 														0, /* query */
-														0, /* deleter */
+														php_v8js_array_access_deleter,
 														php_v8js_array_access_enumerator);
 
 					/* Switch to special ArrayAccess getter, which falls back to
