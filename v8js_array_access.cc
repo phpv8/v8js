@@ -76,7 +76,7 @@ void php_v8js_array_access_getter(uint32_t index, const v8::PropertyCallbackInfo
 	v8::Local<v8::Value> php_object = self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY));
 	zval *object = reinterpret_cast<zval *>(v8::External::Cast(*php_object)->Value());
 
-	zval *php_value = php_v8js_array_access_dispatch(object, "offsetGet", 1, index, NULL);
+	zval *php_value = php_v8js_array_access_dispatch(object, "offsetGet", 1, index, NULL TSRMLS_CC);
 	v8::Local<v8::Value> ret_value = zval_to_v8js(php_value, isolate TSRMLS_CC);
 	zval_ptr_dtor(&php_value);
 
@@ -102,7 +102,7 @@ void php_v8js_array_access_setter(uint32_t index, v8::Local<v8::Value> value,
 		return;
 	}
 
-	zval *php_value = php_v8js_array_access_dispatch(object, "offsetSet", 2, index, zvalue_ptr);
+	zval *php_value = php_v8js_array_access_dispatch(object, "offsetSet", 2, index, zvalue_ptr TSRMLS_CC);
 	zval_ptr_dtor(&php_value);
 
 	/* simply pass back the value to tell we intercepted the call
@@ -118,7 +118,7 @@ void php_v8js_array_access_setter(uint32_t index, v8::Local<v8::Value> value,
 
 static int php_v8js_array_access_get_count_result(zval *object TSRMLS_DC) /* {{{ */
 {
-	zval *php_value = php_v8js_array_access_dispatch(object, "count", 0, 0, NULL);
+	zval *php_value = php_v8js_array_access_dispatch(object, "count", 0, 0, NULL TSRMLS_CC);
 
 	if(Z_TYPE_P(php_value) != IS_LONG) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Non-numeric return value from count() method");
@@ -134,7 +134,7 @@ static int php_v8js_array_access_get_count_result(zval *object TSRMLS_DC) /* {{{
 
 static bool php_v8js_array_access_isset_p(zval *object, int index TSRMLS_DC) /* {{{ */
 {
-	zval *php_value = php_v8js_array_access_dispatch(object, "offsetExists", 1, index, NULL);
+	zval *php_value = php_v8js_array_access_dispatch(object, "offsetExists", 1, index, NULL TSRMLS_CC);
 
 	if(Z_TYPE_P(php_value) != IS_BOOL) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Non-boolean return value from offsetExists() method");
@@ -174,7 +174,7 @@ void php_v8js_array_access_deleter(uint32_t index, const v8::PropertyCallbackInf
 	v8::Local<v8::Value> php_object = self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY));
 	zval *object = reinterpret_cast<zval *>(v8::External::Cast(*php_object)->Value());
 
-	zval *php_value = php_v8js_array_access_dispatch(object, "offsetUnset", 1, index, NULL);
+	zval *php_value = php_v8js_array_access_dispatch(object, "offsetUnset", 1, index, NULL TSRMLS_CC);
 	zval_ptr_dtor(&php_value);
 
 	info.GetReturnValue().Set(V8JS_BOOL(true));
