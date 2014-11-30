@@ -131,15 +131,9 @@ void php_v8js_array_access_setter(uint32_t index, v8::Local<v8::Value> value,
 }
 /* }}} */
 
-void php_v8js_array_access_length(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<v8::Value>& info) /* {{{ */
+
+static int php_v8js_array_access_get_count_result(zval *object TSRMLS_DC) /* {{{ */
 {
-	v8::Isolate *isolate = info.GetIsolate();
-	v8::Local<v8::Object> self = info.Holder();
-
-	V8JS_TSRMLS_FETCH();
-
-	v8::Local<v8::Value> php_object = self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY));
-	zval *object = reinterpret_cast<zval *>(v8::External::Cast(*php_object)->Value());
 	zend_class_entry *ce = Z_OBJCE_P(object);
 
 	zend_fcall_info fci;
@@ -163,12 +157,105 @@ void php_v8js_array_access_length(v8::Local<v8::String> property, const v8::Prop
 
 	zend_call_function(&fci, NULL TSRMLS_CC);
 
-	v8::Local<v8::Value> ret_value = zval_to_v8js(php_value, isolate TSRMLS_CC);
+	if(Z_TYPE_P(php_value) != IS_LONG) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Non-numeric return value from count() method");
+		return 0;
+	}
+
+	int result = Z_LVAL_P(php_value);
 	zval_ptr_dtor(&php_value);
 
-	info.GetReturnValue().Set(ret_value);
+	return result;
 }
 /* }}} */
+
+static bool php_v8js_array_access_isset_p(zval *object, int index TSRMLS_DC) /* {{{ */
+{
+	zend_class_entry *ce = Z_OBJCE_P(object);
+
+	/* Okay, let's call offsetExists. */
+	zend_fcall_info fci;
+	zval *php_value;
+
+	zval fmember;
+	INIT_ZVAL(fmember);
+	ZVAL_STRING(&fmember, "offsetExists", 0);
+
+	zval zindex;
+	INIT_ZVAL(zindex);
+	ZVAL_LONG(&zindex, index);
+
+	fci.size = sizeof(fci);
+	fci.function_table = &ce->function_table;
+	fci.function_name = &fmember;
+	fci.symbol_table = NULL;
+	fci.retval_ptr_ptr = &php_value;
+
+	zval *zindex_ptr = &zindex;
+	zval **zindex_ptr_ptr = &zindex_ptr;
+	fci.param_count = 1;
+	fci.params = &zindex_ptr_ptr;
+
+	fci.object_ptr = object;
+	fci.no_separation = 0;
+
+	zend_call_function(&fci, NULL TSRMLS_CC);
+
+	if(Z_TYPE_P(php_value) != IS_BOOL) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Non-boolean return value from offsetExists() method");
+		return false;
+	}
+
+	bool result = Z_LVAL_P(php_value);
+	zval_ptr_dtor(&php_value);
+
+	return result;
+}
+/* }}} */
+
+
+void php_v8js_array_access_length(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<v8::Value>& info) /* {{{ */
+{
+	v8::Isolate *isolate = info.GetIsolate();
+	v8::Local<v8::Object> self = info.Holder();
+
+	V8JS_TSRMLS_FETCH();
+
+	v8::Local<v8::Value> php_object = self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY));
+	zval *object = reinterpret_cast<zval *>(v8::External::Cast(*php_object)->Value());
+
+	int length = php_v8js_array_access_get_count_result(object TSRMLS_CC);
+	info.GetReturnValue().Set(V8JS_INT(length));
+}
+/* }}} */
+
+void php_v8js_array_access_enumerator(const v8::PropertyCallbackInfo<v8::Array>& info) /* {{{ */
+{
+	v8::Isolate *isolate = info.GetIsolate();
+	v8::Local<v8::Object> self = info.Holder();
+
+	V8JS_TSRMLS_FETCH();
+
+	v8::Local<v8::Value> php_object = self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY));
+	zval *object = reinterpret_cast<zval *>(v8::External::Cast(*php_object)->Value());
+
+	int length = php_v8js_array_access_get_count_result(object TSRMLS_CC);
+	v8::Local<v8::Array> result = v8::Array::New(isolate, length);
+
+	int i = 0;
+
+	for(int j = 0; j < length; j ++) {
+		if(php_v8js_array_access_isset_p(object, j TSRMLS_CC)) {
+			result->Set(i ++, V8JS_INT(j));
+		}
+	}
+
+	result->Set(V8JS_STR("length"), V8JS_INT(i));
+	info.GetReturnValue().Set(result);
+}
+/* }}} */
+
+
 
 void php_v8js_array_access_named_getter(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<v8::Value> &info) /* {{{ */
 {

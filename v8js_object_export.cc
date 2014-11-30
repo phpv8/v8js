@@ -866,6 +866,7 @@ static v8::Handle<v8::Object> php_v8js_wrap_object(v8::Isolate *isolate, zend_cl
 
 			v8::Local<v8::ObjectTemplate> inst_tpl = new_tpl->InstanceTemplate();
 			v8::NamedPropertyGetterCallback getter = php_v8js_named_property_getter;
+			v8::NamedPropertyEnumeratorCallback enumerator = php_v8js_named_property_enumerator;
 
 			/* Check for ArrayAccess object */
 			if (V8JSG(use_array_access) && ce) {
@@ -883,12 +884,19 @@ static v8::Handle<v8::Object> php_v8js_wrap_object(v8::Isolate *isolate, zend_cl
 
 				if(has_array_access && has_countable) {
 					inst_tpl->SetIndexedPropertyHandler(php_v8js_array_access_getter,
-														php_v8js_array_access_setter);
+														php_v8js_array_access_setter,
+														0, /* query */
+														0, /* deleter */
+														php_v8js_array_access_enumerator);
 
 					/* Switch to special ArrayAccess getter, which falls back to
 					 * php_v8js_named_property_getter, but possibly bridges the
 					 * call to Array.prototype functions. */
 					getter = php_v8js_array_access_named_getter;
+
+					/* Overwrite enumerator, since for(... in ...) loop should
+					 * not see the methods but iterate over the elements. */
+					enumerator = 0;
 				}
 			}
 
@@ -899,7 +907,7 @@ static v8::Handle<v8::Object> php_v8js_wrap_object(v8::Isolate *isolate, zend_cl
 				 php_v8js_named_property_setter, /* setter */
 				 php_v8js_named_property_query, /* query */
 				 php_v8js_named_property_deleter, /* deleter */
-				 php_v8js_named_property_enumerator, /* enumerator */
+				 enumerator, /* enumerator */
 				 V8JS_NULL /* data */
 				 );
 			// add __invoke() handler
