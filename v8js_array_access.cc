@@ -272,6 +272,24 @@ void php_v8js_array_access_deleter(uint32_t index, const v8::PropertyCallbackInf
 }
 /* }}} */
 
+void php_v8js_array_access_query(uint32_t index, const v8::PropertyCallbackInfo<v8::Integer>& info) /* {{{ */
+{
+	v8::Isolate *isolate = info.GetIsolate();
+	v8::Local<v8::Object> self = info.Holder();
+
+	V8JS_TSRMLS_FETCH();
+
+	v8::Local<v8::Value> php_object = self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY));
+	zval *object = reinterpret_cast<zval *>(v8::External::Cast(*php_object)->Value());
+
+	/* If index is set, then return an integer encoding a v8::PropertyAttribute;
+	 * otherwise we're expected to return an empty handle. */
+	if(php_v8js_array_access_isset_p(object, index TSRMLS_CC)) {
+		info.GetReturnValue().Set(V8JS_UINT(v8::PropertyAttribute::None));
+	}
+}
+/* }}} */
+
 
 void php_v8js_array_access_enumerator(const v8::PropertyCallbackInfo<v8::Array>& info) /* {{{ */
 {
