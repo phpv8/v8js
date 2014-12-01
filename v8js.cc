@@ -486,12 +486,20 @@ static int php_v8js_v8_call_method(char *method, INTERNAL_FUNCTION_PARAMETERS) /
 		jsArgv[i] = v8::Local<v8::Value>::New(isolate, zval_to_v8js(*argv[i], isolate TSRMLS_CC));
 	}
 
+	/* Catch JS exceptions */
+	v8::TryCatch try_catch;
+
 	js_retval = cb->Call(V8JS_GLOBAL(isolate), argc, jsArgv);
 
 	zval_ptr_dtor(&object);
 
 	if (argc > 0) {
 		efree(argv);
+	}
+
+	if (try_catch.HasCaught()) {
+		php_v8js_throw_script_exception(&try_catch TSRMLS_CC);
+		return FAILURE;
 	}
 
 	if (return_value_used) {
