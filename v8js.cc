@@ -35,6 +35,8 @@ extern "C" {
 #include "zend_exceptions.h"
 }
 
+#include <functional>
+
 /* Forward declarations */
 static void php_v8js_throw_script_exception(v8::TryCatch * TSRMLS_DC);
 static void php_v8js_create_script_exception(zval *, v8::TryCatch * TSRMLS_DC);
@@ -1172,18 +1174,14 @@ static void php_v8js_compile_script(zval *this_ptr, const char *str, int str_len
 	return;
 }
 
-static void php_v8js_execute_script(zval *this_ptr, php_v8js_script *res, long flags, long time_limit, long memory_limit, zval **return_value TSRMLS_DC)
+
+static void php_v8js_call_v8(zval *this_ptr, zval **return_value,
+							 long flags, long time_limit, long memory_limit,
+							 std::function< v8::Local<v8::Value>(v8::Isolate *) >& v8_call TSRMLS_DC) /* {{{ */
 {
 	char *tz = NULL;
 
 	V8JS_BEGIN_CTX(c, this_ptr)
-
-	if (res->isolate != c->isolate) {
-		zend_error(E_WARNING, "Script resource from wrong V8Js object passed");
-		ZVAL_BOOL(*return_value, 0); 
-		return;
-	}
-
 
 	V8JSG(timer_mutex).lock();
 	c->time_limit_hit = false;
@@ -1211,14 +1209,6 @@ static void php_v8js_execute_script(zval *this_ptr, php_v8js_script *res, long f
 		}
 	}
 
-	if (!c->in_execution && time_limit == 0) {
-		time_limit = c->time_limit;
-	}
-
-	if (!c->in_execution && memory_limit == 0) {
-		memory_limit = c->memory_limit;
-	}
-
 	if (time_limit > 0 || memory_limit > 0) {
 		// If timer thread is not running then start it
 		if (!V8JSG(timer_thread)) {
@@ -1242,8 +1232,7 @@ static void php_v8js_execute_script(zval *this_ptr, php_v8js_script *res, long f
 
 	/* Execute script */
 	c->in_execution++;
-	v8::Local<v8::Script> script = v8::Local<v8::Script>::New(c->isolate, *res->script);
-	v8::Local<v8::Value> result = script->Run();
+	v8::Local<v8::Value> result = v8_call(c->isolate);
 	c->in_execution--;
 
 	if (time_limit > 0 || memory_limit > 0) {
@@ -1315,6 +1304,33 @@ static void php_v8js_execute_script(zval *this_ptr, php_v8js_script *res, long f
 	if (!result.IsEmpty()) {
 		v8js_to_zval(result, *return_value, flags, c->isolate TSRMLS_CC);
 	}
+}
+/* }}} */
+
+static void php_v8js_execute_script(zval *this_ptr, php_v8js_script *res, long flags, long time_limit, long memory_limit, zval **return_value TSRMLS_DC)
+{
+	php_v8js_ctx *c = (php_v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
+
+	if (res->isolate != c->isolate) {
+		zend_error(E_WARNING, "Script resource from wrong V8Js object passed");
+		ZVAL_BOOL(*return_value, 0);
+		return;
+	}
+
+	if (!c->in_execution && time_limit == 0) {
+		time_limit = c->time_limit;
+	}
+
+	if (!c->in_execution && memory_limit == 0) {
+		memory_limit = c->memory_limit;
+	}
+
+	std::function< v8::Local<v8::Value>(v8::Isolate *) > v8_call = [res](v8::Isolate *isolate) {
+		v8::Local<v8::Script> script = v8::Local<v8::Script>::New(isolate, *res->script);
+		return script->Run();
+	};
+
+	php_v8js_call_v8(this_ptr, return_value, flags, time_limit, memory_limit, v8_call TSRMLS_CC);
 }
 
 /* {{{ proto mixed V8Js::executeString(string script [, string identifier [, int flags]])
