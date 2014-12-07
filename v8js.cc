@@ -1074,21 +1074,6 @@ static void php_v8js_timer_push(long time_limit, long memory_limit, php_v8js_ctx
 	V8JSG(timer_mutex).unlock();
 }
 
-static void php_v8js_timer_pop(TSRMLS_D)
-{
-	V8JSG(timer_mutex).lock();
-
-	if (V8JSG(timer_stack).size()) {
-		php_v8js_timer_ctx *timer_ctx = V8JSG(timer_stack).top();
-		// Remove the timer context from the stack
-		V8JSG(timer_stack).pop();
-		// Free the timer context memory
-		efree(timer_ctx);
-	}
-
-	V8JSG(timer_mutex).unlock();
-}
-
 static void php_v8js_terminate_execution(php_v8js_ctx *c TSRMLS_DC)
 {
 	// Forcefully terminate the current thread of V8 execution in the isolate
@@ -1213,9 +1198,11 @@ static void php_v8js_call_v8(php_v8js_ctx *c, zval **return_value,
 			// If not, start timer thread
 			V8JSG(timer_thread) = new std::thread(php_v8js_timer_thread TSRMLS_CC);
 		}
-
-		php_v8js_timer_push(time_limit, memory_limit, c TSRMLS_CC);
 	}
+
+	/* Always pass the timer to the stack so there can be follow-up changes to
+	 * the time & memory limit. */
+	php_v8js_timer_push(time_limit, memory_limit, c TSRMLS_CC);
 
 #ifdef ENABLE_DEBUGGER_SUPPORT
 	if(c == v8js_debug_context && v8js_debug_auto_break_mode != V8JS_DEBUG_AUTO_BREAK_NEVER) {
@@ -1233,9 +1220,17 @@ static void php_v8js_call_v8(php_v8js_ctx *c, zval **return_value,
 	v8::Local<v8::Value> result = v8_call(c->isolate);
 	c->in_execution--;
 
-	if (time_limit > 0 || memory_limit > 0) {
-		php_v8js_timer_pop(TSRMLS_C);
-	}
+	/* Pop our context from the stack and read (possibly updated) limits
+	 * into local variables. */
+	V8JSG(timer_mutex).lock();
+	php_v8js_timer_ctx *timer_ctx = V8JSG(timer_stack).top();
+	V8JSG(timer_stack).pop();
+	V8JSG(timer_mutex).unlock();
+
+	time_limit = timer_ctx->time_limit;
+	memory_limit = timer_ctx->memory_limit;
+
+	efree(timer_ctx);
 
 	/* Check for fatal error marker possibly set by php_v8js_error_handler; just
 	 * rethrow the error since we're now out of V8. */
