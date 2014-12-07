@@ -34,7 +34,7 @@ extern "C" {
 #include <v8.h>
 
 #include <chrono>
-#include <stack>
+#include <deque>
 #include <thread>
 
 #include <map>
@@ -222,7 +222,7 @@ ZEND_BEGIN_MODULE_GLOBALS(v8js)
   bool use_date; /* Generate JS Date objects instead of PHP DateTime */
 
   // Timer thread globals
-  std::stack<php_v8js_timer_ctx *> timer_stack;
+  std::deque<php_v8js_timer_ctx *> timer_stack;
   std::thread *timer_thread;
   std::mutex timer_mutex;
   bool timer_stop;

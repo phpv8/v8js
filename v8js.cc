@@ -1069,7 +1069,7 @@ static void php_v8js_timer_push(long time_limit, long memory_limit, php_v8js_ctx
 	timer_ctx->time_point = from + duration;
 	timer_ctx->v8js_ctx = c;
 	timer_ctx->killed = false;
-	V8JSG(timer_stack).push(timer_ctx);
+	V8JSG(timer_stack).push_front(timer_ctx);
 
 	V8JSG(timer_mutex).unlock();
 }
@@ -1089,7 +1089,7 @@ static void php_v8js_timer_thread(TSRMLS_D)
 
 		if (V8JSG(timer_stack).size()) {
 			// Get the current timer context
-			php_v8js_timer_ctx *timer_ctx = V8JSG(timer_stack).top();
+			php_v8js_timer_ctx *timer_ctx = V8JSG(timer_stack).front();
 			php_v8js_ctx *c = timer_ctx->v8js_ctx;
 
 			// Get memory usage statistics for the isolate
@@ -1223,8 +1223,8 @@ static void php_v8js_call_v8(php_v8js_ctx *c, zval **return_value,
 	/* Pop our context from the stack and read (possibly updated) limits
 	 * into local variables. */
 	V8JSG(timer_mutex).lock();
-	php_v8js_timer_ctx *timer_ctx = V8JSG(timer_stack).top();
-	V8JSG(timer_stack).pop();
+	php_v8js_timer_ctx *timer_ctx = V8JSG(timer_stack).front();
+	V8JSG(timer_stack).pop_front();
 	V8JSG(timer_mutex).unlock();
 
 	time_limit = timer_ctx->time_limit;
@@ -2180,7 +2180,7 @@ static PHP_GINIT_FUNCTION(v8js)
 	v8js_globals->timer_thread = NULL;
 	v8js_globals->timer_stop = false;
 	new(&v8js_globals->timer_mutex) std::mutex;
-	new(&v8js_globals->timer_stack) std::stack<php_v8js_timer_ctx *>;
+	new(&v8js_globals->timer_stack) std::deque<php_v8js_timer_ctx *>;
 
 	v8js_globals->fatal_error_abort = 0;
 	v8js_globals->error_num = 0;
@@ -2207,7 +2207,7 @@ static PHP_GSHUTDOWN_FUNCTION(v8js)
 	}
 
 #ifdef ZTS
-	v8js_globals->timer_stack.~stack();
+	v8js_globals->timer_stack.~deque();
 	v8js_globals->timer_mutex.~mutex();
 #endif
 }
