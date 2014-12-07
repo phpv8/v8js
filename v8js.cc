@@ -1575,6 +1575,15 @@ static PHP_METHOD(V8Js, setMemoryLimit)
 
 	c = (php_v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
 	c->memory_limit = memory_limit;
+
+	V8JSG(timer_mutex).lock();
+	for (std::deque< php_v8js_timer_ctx* >::iterator it = V8JSG(timer_stack).begin();
+		 it != V8JSG(timer_stack).end(); it ++) {
+		if((*it)->v8js_ctx == c && !(*it)->killed) {
+			(*it)->memory_limit = memory_limit;
+		}
+	}
+	V8JSG(timer_mutex).unlock();
 }
 /* }}} */
 
