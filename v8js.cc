@@ -1545,6 +1545,20 @@ static PHP_METHOD(V8Js, setTimeLimit)
 
 	c = (php_v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
 	c->time_limit = time_limit;
+
+	V8JSG(timer_mutex).lock();
+	for (std::deque< php_v8js_timer_ctx* >::iterator it = V8JSG(timer_stack).begin();
+		 it != V8JSG(timer_stack).end(); it ++) {
+		if((*it)->v8js_ctx == c && !(*it)->killed) {
+			(*it)->time_limit = time_limit;
+
+			// Calculate the time point when the time limit is exceeded
+			std::chrono::milliseconds duration(time_limit);
+			std::chrono::time_point<std::chrono::high_resolution_clock> from = std::chrono::high_resolution_clock::now();
+			(*it)->time_point = from + duration;
+		}
+	}
+	V8JSG(timer_mutex).unlock();
 }
 /* }}} */
 
