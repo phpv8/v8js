@@ -914,8 +914,12 @@ static PHP_METHOD(V8Js, __construct)
 	c->in_execution = 0;
 	c->isolate = v8::Isolate::New();
 	c->isolate->SetData(0, c);
+
+	c->time_limit = 0;
 	c->time_limit_hit = false;
+	c->memory_limit = 0;
 	c->memory_limit_hit = false;
+
 	c->module_loader = NULL;
 
 	/* Include extensions used by this context */
@@ -1205,6 +1209,14 @@ static void php_v8js_execute_script(zval *this_ptr, php_v8js_script *res, long f
 			free(c->tz);
 			c->tz = strdup(tz);
 		}
+	}
+
+	if (!c->in_execution && time_limit == 0) {
+		time_limit = c->time_limit;
+	}
+
+	if (!c->in_execution && memory_limit == 0) {
+		memory_limit = c->memory_limit;
 	}
 
 	if (time_limit > 0 || memory_limit > 0) {
@@ -1511,6 +1523,38 @@ static PHP_METHOD(V8Js, setModuleLoader)
 }
 /* }}} */
 
+/* {{{ proto void V8Js::setTimeLimit(int time_limit)
+ */
+static PHP_METHOD(V8Js, setTimeLimit)
+{
+	php_v8js_ctx *c;
+	long time_limit = 0;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &time_limit) == FAILURE) {
+		return;
+	}
+
+	c = (php_v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
+	c->time_limit = time_limit;
+}
+/* }}} */
+
+/* {{{ proto void V8Js::setMemoryLimit(int memory_limit)
+ */
+static PHP_METHOD(V8Js, setMemoryLimit)
+{
+	php_v8js_ctx *c;
+	long memory_limit = 0;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &memory_limit) == FAILURE) {
+		return;
+	}
+
+	c = (php_v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
+	c->memory_limit = memory_limit;
+}
+/* }}} */
+
 static void php_v8js_persistent_zval_ctor(zval **p) /* {{{ */
 {
 	zval *orig_ptr = *p;
@@ -1738,6 +1782,14 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO(arginfo_v8js_getextensions, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_settimelimit, 0, 0, 1)
+	ZEND_ARG_INFO(0, time_limit)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_setmemorylimit, 0, 0, 1)
+	ZEND_ARG_INFO(0, memory_limit)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO(arginfo_v8jsscriptexception_no_args, 0)
 ZEND_END_ARG_INFO()
 /* }}} */
@@ -1765,6 +1817,8 @@ static const zend_function_entry v8js_methods[] = { /* {{{ */
 	PHP_ME(V8Js,	setModuleLoader,		arginfo_v8js_setmoduleloader,		ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	registerExtension,		arginfo_v8js_registerextension,		ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
 	PHP_ME(V8Js,	getExtensions,			arginfo_v8js_getextensions,			ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
+	PHP_ME(V8Js,	setTimeLimit,			arginfo_v8js_settimelimit,			ZEND_ACC_PUBLIC)
+	PHP_ME(V8Js,	setMemoryLimit,			arginfo_v8js_setmemorylimit,		ZEND_ACC_PUBLIC)
 #ifdef ENABLE_DEBUGGER_SUPPORT
 	PHP_ME(V8Js,	__destruct,				arginfo_v8js_destruct,				ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
 	PHP_ME(V8Js,	startDebugAgent,		arginfo_v8js_startdebugagent,		ZEND_ACC_PUBLIC)

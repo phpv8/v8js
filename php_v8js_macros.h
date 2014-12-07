@@ -157,9 +157,14 @@ struct php_v8js_ctx {
   zval *pending_exception;
   int in_execution;
   v8::Isolate *isolate;
+
+  long time_limit;
   bool time_limit_hit;
+  long memory_limit;
   bool memory_limit_hit;
+
   v8::Persistent<v8::FunctionTemplate> global_template;
+
   zval *module_loader;
   std::vector<char *> modules_stack;
   std::vector<char *> modules_base;
