@@ -7,10 +7,16 @@ Test V8::setTimeLimit() : Time limit can be prolonged
 
 $JS = <<< EOT
 var text = "abcdefghijklmnopqrstuvwyxz0123456789";
-for (var j = 0; j < 100; ++j) {
+/* Spend 20 * >10ms in the loop, i.e. at least 200ms; hence
+ * it should be killed if prolonging doesn't work. */
+for (var j = 0; j < 20; ++j) {
     PHP.prolongTimeLimit();
-    for (var i = 0; i < 3000; ++i) {
-	var encoded = encodeURI(text);
+    var start = (new Date()).getTime();
+    var encoded = encodeURI(text);
+
+    while ((new Date()).getTime() - start < 10) {
+        /* pass about 10ms in the loop, then prolong */
+        var encoded = encodeURI(text);
     }
 }
 EOT;

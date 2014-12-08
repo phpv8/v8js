@@ -8,8 +8,12 @@ Test V8::setTimeLimit() : Time limit can be changed
 $JS = <<< EOT
 var jsfunc = function() {
     PHP.incrTimeLimit();
+    var start = (new Date()).getTime();
+
     var text = "abcdefghijklmnopqrstuvwyxz0123456789";
-    for (var i = 0; i < 10000000; ++i) {
+    while ((new Date()).getTime() - start < 150) {
+        /* pass at least 150ms in the loop so the timer loop has plenty of
+         * time to trigger. */
 	var encoded = encodeURI(text);
     }
 };
@@ -17,7 +21,8 @@ jsfunc;
 EOT;
 
 $v8 = new V8Js();
-$v8->setTimeLimit(10);
+/* Set very short time limit, but enough so v8 can start up safely. */
+$v8->setTimeLimit(20);
 
 $v8->incrTimeLimit = function() use ($v8) {
     $v8->setTimeLimit(100);
