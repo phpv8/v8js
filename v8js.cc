@@ -446,7 +446,7 @@ static int php_v8js_v8_call_method(char *method, INTERNAL_FUNCTION_PARAMETERS) /
 #endif
 {
 	zval *object = this_ptr, ***argv = NULL;
-	int i = 0, argc = ZEND_NUM_ARGS();
+	int argc = ZEND_NUM_ARGS();
 	php_v8js_object *obj;
 
 	obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
@@ -467,33 +467,27 @@ static int php_v8js_v8_call_method(char *method, INTERNAL_FUNCTION_PARAMETERS) /
 		zend_get_parameters_array_ex(argc, argv);
 	}
 
-	v8::Isolate *isolate = obj->ctx->isolate;
-	v8::Locker locker(isolate);
-	v8::Isolate::Scope isolate_scope(isolate);
-	v8::HandleScope local_scope(isolate);
-	v8::Local<v8::Context> temp_context = v8::Context::New(isolate);
-	v8::Context::Scope temp_scope(temp_context);
+	std::function< v8::Local<v8::Value>(v8::Isolate *) > v8_call = [obj, method, argc, argv TSRMLS_CC](v8::Isolate *isolate) {
+		int i = 0;
 
-	v8::Local<v8::String> method_name = V8JS_SYML(method, strlen(method));
-	v8::Local<v8::Object> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj)->ToObject();
-	v8::Local<v8::Function> cb;
+		v8::Local<v8::String> method_name = V8JS_SYML(method, strlen(method));
+		v8::Local<v8::Object> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj)->ToObject();
+		v8::Local<v8::Function> cb;
 
-	if (method_name->Equals(V8JS_SYM(V8JS_V8_INVOKE_FUNC_NAME))) {
-		cb = v8::Local<v8::Function>::Cast(v8obj);
-	} else {
-		cb = v8::Local<v8::Function>::Cast(v8obj->Get(method_name));
-	}
+		if (method_name->Equals(V8JS_SYM(V8JS_V8_INVOKE_FUNC_NAME))) {
+			cb = v8::Local<v8::Function>::Cast(v8obj);
+		} else {
+			cb = v8::Local<v8::Function>::Cast(v8obj->Get(method_name));
+		}
 
-	v8::Local<v8::Value> *jsArgv = static_cast<v8::Local<v8::Value> *>(alloca(sizeof(v8::Local<v8::Value>) * argc));
-	v8::Local<v8::Value> js_retval;
+		v8::Local<v8::Value> *jsArgv = static_cast<v8::Local<v8::Value> *>(alloca(sizeof(v8::Local<v8::Value>) * argc));
+		v8::Local<v8::Value> js_retval;
 
-	for (i = 0; i < argc; i++) {
-		new(&jsArgv[i]) v8::Local<v8::Value>;
-		jsArgv[i] = v8::Local<v8::Value>::New(isolate, zval_to_v8js(*argv[i], isolate TSRMLS_CC));
-	}
+		for (i = 0; i < argc; i++) {
+			new(&jsArgv[i]) v8::Local<v8::Value>;
+			jsArgv[i] = v8::Local<v8::Value>::New(isolate, zval_to_v8js(*argv[i], isolate TSRMLS_CC));
+		}
 
-
-	std::function< v8::Local<v8::Value>(v8::Isolate *) > v8_call = [cb, argc, jsArgv](v8::Isolate *isolate) {
 		return cb->Call(V8JS_GLOBAL(isolate), argc, jsArgv);
 	};
 
