@@ -1263,10 +1263,7 @@ static void php_v8js_call_v8(php_v8js_ctx *c, zval **return_value,
 	/* Check for fatal error marker possibly set by php_v8js_error_handler; just
 	 * rethrow the error since we're now out of V8. */
 	if(V8JSG(fatal_error_abort)) {
-		V8JSG(fatal_error_abort) = 0;
-		V8JSG(unwind_env) = NULL;
-
-		zend_error(V8JSG(error_num), "%s", V8JSG(error_message));
+		zend_bailout();
 	}
 
 	char exception_string[64];
@@ -2246,10 +2243,6 @@ static PHP_GINIT_FUNCTION(v8js)
 	new(&v8js_globals->timer_stack) std::deque<php_v8js_timer_ctx *>;
 
 	v8js_globals->fatal_error_abort = 0;
-	v8js_globals->error_num = 0;
-	v8js_globals->error_message = 0;
-	v8js_globals->unwind_env = NULL;
-	v8js_globals->old_error_handler = NULL;
 #endif
 }
 /* }}} */

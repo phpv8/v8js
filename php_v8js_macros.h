@@ -227,12 +227,7 @@ ZEND_BEGIN_MODULE_GLOBALS(v8js)
   std::mutex timer_mutex;
   bool timer_stop;
 
-  // fatal error unwinding
   bool fatal_error_abort;
-  int error_num;
-  char *error_message;
-  jmp_buf *unwind_env;
-  void (*old_error_handler)(int, const char *, const uint, const char*, va_list);
 ZEND_END_MODULE_GLOBALS(v8js)
 
 extern zend_v8js_globals v8js_globals;

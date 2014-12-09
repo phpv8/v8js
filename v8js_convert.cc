@@ -29,41 +29,7 @@ extern "C" {
 #include <v8.h>
 #include <stdexcept>
 #include <limits>
-
-
-/* Callback for PHP's zend_error_cb; catching any fatal PHP error.
- * The callback is installed in the lowest (stack wise) php_v8js_call_php_func
- * frame.  Just store the error message and jump right back there and fall
- * back into V8 context. */
-static void php_v8js_error_handler(int error_num, const char *error_filename,
-								   const uint error_lineno, const char *format,
-								   va_list args) /* {{{ */
-{
-	char *buffer;
-	int buffer_len;
-
-	TSRMLS_FETCH();
-
-	switch (error_num)
-	{
-		case E_ERROR:
-		case E_CORE_ERROR:
-		case E_USER_ERROR:
-			buffer_len = vspprintf(&buffer, PG(log_errors_max_len), format, args);
-		
-			V8JSG(fatal_error_abort) = true;
-			V8JSG(error_num) = error_num;
-			V8JSG(error_message) = buffer;
-			
-			longjmp(*V8JSG(unwind_env), 1);
-			break;
-		default:
-			V8JSG(old_error_handler)(error_num, error_filename, error_lineno, format, args);
-			break;
-	}
-}
-/* }}} */
-
+#include <iostream>
 
 static void php_v8js_weak_object_callback(const v8::WeakCallbackData<v8::Object, zval> &data);
 
@@ -153,64 +119,28 @@ static void php_v8js_call_php_func(zval *value, zend_class_entry *ce, zend_funct
 	fci.no_separation = 1;
 	info.GetReturnValue().Set(V8JS_NULL);
 
-	{
-		isolate->Exit();
-		v8::Unlocker unlocker(isolate);
+	zend_try {
+		{
+			isolate->Exit();
+			v8::Unlocker unlocker(isolate);
 
-		/* zend_fcall_info_cache */
-		fcc.initialized = 1;
-		fcc.function_handler = method_ptr;
-		fcc.calling_scope = ce;
-		fcc.called_scope = ce;
-		fcc.object_ptr = value;
+			/* zend_fcall_info_cache */
+			fcc.initialized = 1;
+			fcc.function_handler = method_ptr;
+			fcc.calling_scope = ce;
+			fcc.called_scope = ce;
+			fcc.object_ptr = value;
 
-		jmp_buf env;
-		jmp_buf *old_env;
-		int val = 0;
-		bool installed_handler = false;
-
-		/* If this is the first level call from V8 back to PHP, install a
-		 * handler for fatal errors; we must fall back through V8 to keep
-		 * it from crashing. */
-		if (V8JSG(unwind_env) == NULL) {
-			installed_handler = true;
-			V8JSG(old_error_handler) = zend_error_cb;
-			zend_error_cb = php_v8js_error_handler;
-		}
-		else {
-			/* inner call, stash unwind env */
-			old_env = V8JSG(unwind_env);
-		}
-
-		val = setjmp (env);
-		V8JSG(unwind_env) = &env;
-
-		if (!val) {
-			/* Call the method */
 			zend_call_function(&fci, &fcc TSRMLS_CC);
 		}
 
-		if (installed_handler) {
-			/* leaving out-most frame, restore original handler. */
-			zend_error_cb = V8JSG(old_error_handler);
-			V8JSG(unwind_env) = NULL;
-		}
-		else {
-			/* leaving inner frame, restore unwind env and jump. */
-			V8JSG(unwind_env) = old_env;
-
-			if (V8JSG(fatal_error_abort)) {
-				longjmp(*V8JSG(unwind_env), 1);
-			}
-		}
-
-		if (V8JSG(fatal_error_abort)) {
-			v8::V8::TerminateExecution(isolate);
-			return;
-		}
+		isolate->Enter();
 	}
-
-	isolate->Enter();
+	zend_catch {
+		v8::V8::TerminateExecution(isolate);
+		V8JSG(fatal_error_abort) = 1;
+	}
+	zend_end_try();
 
 failure:
 	/* Cleanup */
