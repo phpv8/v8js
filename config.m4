@@ -123,7 +123,7 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <v8-debug.h>]],
     CPPFLAGS=$old_CPPFLAGS
   ]);
   
-  PHP_NEW_EXTENSION(v8js, v8js.cc v8js_convert.cc v8js_methods.cc v8js_variables.cc v8js_commonjs.cc, $ext_shared, , "-std="$ac_cv_v8_cstd)
+  PHP_NEW_EXTENSION(v8js, v8js.cc v8js_array_access.cc v8js_convert.cc v8js_methods.cc v8js_object_export.cc v8js_variables.cc v8js_commonjs.cc, $ext_shared, , "-std="$ac_cv_v8_cstd)
 
   PHP_ADD_MAKEFILE_FRAGMENT
 fi

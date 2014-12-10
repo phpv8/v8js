@@ -222,3 +222,34 @@ $v8->executeString('print(PHP.foo.$bar, "\n");');
 $v8->executeString('PHP.foo.__call("bar", ["function"]);');
 ?>
 ```
+
+Mapping Rules
+=============
+
+Native Arrays
+-------------
+
+Despite the common name the concept of arrays is very different between PHP and JavaScript.  In JavaScript an array is a contiguous collection of elements indexed by integral numbers from zero on upwards.  In PHP arrays can be sparse, i.e. integral keys need not be contiguous and may even be negative.  Besides PHP arrays may not only use integral numbers as keys but also strings (so-called associative arrays).  Contrary JavaScript arrays allow for properties to be attached to arrays, which isn't supported by PHP.  Those properties are not part of the arrays collection, for example `Array.prototype.forEach` method doesn't "see" these.
+
+Generally PHP arrays are mapped to JavaScript "native" arrays if this is possible, i.e. the PHP array uses contiguous numeric keys from zero on upwards.  Both associative and sparse arrays are mapped to JavaScript objects.  Those objects have a constructor also called "Array", but they are not native arrays and don't share the Array.prototype, hence they don't (directly) support the typical array functions like `join`, `forEach`, etc.
+PHP arrays are immediately exported value by value without live binding.  This is if you change a value on JavaScript side or push further values onto the array, this change is *not* reflected on PHP side.
+
+If JavaScript arrays are passed back to PHP the JavaScript array is always converted to a PHP array.  If the JavaScript array has (own) properties attached, these are also converted to keys of the PHP array.
+
+
+Native Objects
+--------------
+
+PHP objects passed to JavaScript are mapped to native JavaScript objects which have a "virtual" constructor function with the name of the PHP object's class.  This constructor function can be used to create new instances of the PHP class as long as the PHP class doesn't have a non-public `__construct` method.
+All public methods and properties are visible to JavaScript code and the properties are live-bound, i.e. if a property's value is changed by JavaScript code, the PHP object is also affected.
+
+If a native JavaScript object is passed to PHP the JavaScript object is mapped to a PHP object of `V8Object` class.  This object has all properties the JavaScript object has and is fully mutable.  If a function is assigned to one of those properties, it's also callable by PHP code.
+The `executeString` function can be configured to always map JavaScript objects to PHP arrays by setting the `V8Js::FLAG_FORCE_ARRAY` flag.  Then the standard array behaviour applies that values are not live-bound, i.e. if you change values of the resulting PHP array, the JavaScript object is *not* affected.
+
+
+PHP Objects implementing ArrayAccess, Countable
+-----------------------------------------------
+
+The above rule that PHP objects are generally converted to JavaScript objects also applies to PHP objects of `ArrayObject` type or other classes, that implement both the `ArrayAccess` and the `Countable` interface -- even so they behave like PHP arrays.
+
+This behaviour can be changed by enabling the php.ini flag `v8js.use_array_access`.  If set, objects of PHP classes that implement the aforementioned interfaces are converted to JavaScript Array-like objects.  This is by-index access of this object results in immediate calls to the `offsetGet` or `offsetSet` PHP methods (effectively this is live-binding of JavaScript against the PHP object).  Such an Array-esque object also supports calling every attached public method of the PHP object + methods of JavaScript's native Array.prototype methods (as long as they are not overloaded by PHP methods).

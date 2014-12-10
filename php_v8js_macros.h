@@ -220,6 +220,7 @@ ZEND_BEGIN_MODULE_GLOBALS(v8js)
   /* Ini globals */
   char *v8_flags; /* V8 command line flags */
   bool use_date; /* Generate JS Date objects instead of PHP DateTime */
+  bool use_array_access; /* Convert ArrayAccess, Countable objects to array-like objects */
 
   // Timer thread globals
   std::deque<php_v8js_timer_ctx *> timer_stack;
