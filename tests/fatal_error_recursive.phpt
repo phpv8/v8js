@@ -35,4 +35,4 @@ $js->executeString("PHP.nofail(); PHP.foo();");
 foo
 foo
 
-Fatal error: Call to a member function bar() on %s in %s/fatal_error_recursive.php on line 7
+Fatal error: Call to a member function bar() on %s in %s%efatal_error_recursive.php on line 7
