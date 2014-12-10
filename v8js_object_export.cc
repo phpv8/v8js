@@ -584,7 +584,7 @@ static void php_v8js_fake_call_impl(const v8::FunctionCallbackInfo<v8::Value>& i
 
 /* This method handles named property and method get/set/query/delete. */
 template<typename T>
-inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<T> &info, property_op_t callback_type, v8::Local<v8::Value> set_value = v8::Local<v8::Value>()) /* {{{ */
+inline v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<T> &info, property_op_t callback_type, v8::Local<v8::Value> set_value) /* {{{ */
 {
 	v8::Isolate *isolate = info.GetIsolate();
 	v8::String::Utf8Value cstr(property);
