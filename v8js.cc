@@ -1491,8 +1491,15 @@ static PHP_METHOD(V8Js, checkString)
    __destruct for V8Js */
 static PHP_METHOD(V8Js, __destruct)
 {
-	V8JS_BEGIN_CTX(c, getThis());
+	php_v8js_ctx *c = (php_v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
 
+	if(!c->isolate) {
+		/* c->isolate is initialized by __construct, which wasn't called if this
+		 * instance was deserialized (which we already caught in __wakeup). */
+		return;
+	}
+
+	V8JS_CTX_PROLOGUE(c);
 	if(v8js_debug_context == c) {
 		v8::Debug::DisableAgent();
 		v8js_debug_context = NULL;
