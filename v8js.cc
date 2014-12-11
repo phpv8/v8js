@@ -649,6 +649,26 @@ PHP_METHOD(V8Function,__construct)
 }
 /* }}} */
 
+/* {{{ proto V8Function::__sleep()
+ */
+PHP_METHOD(V8Function, __sleep)
+{
+	zend_throw_exception(php_ce_v8js_exception,
+		"You cannot serialize or unserialize V8Function instances", 0 TSRMLS_CC);
+	RETURN_FALSE;
+}
+/* }}} */
+
+/* {{{ proto V8Function::__wakeup()
+ */
+PHP_METHOD(V8Function, __wakeup)
+{
+	zend_throw_exception(php_ce_v8js_exception,
+		"You cannot serialize or unserialize V8Function instances", 0 TSRMLS_CC);
+	RETURN_FALSE;
+}
+/* }}} */
+
 void php_v8js_create_v8(zval *res, v8::Handle<v8::Value> value, int flags, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
 {
 	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData(0);
@@ -1954,6 +1974,8 @@ static const zend_function_entry v8_object_methods[] = { /* {{{ */
 
 static const zend_function_entry v8_function_methods[] = { /* {{{ */
 	PHP_ME(V8Function,	__construct,			NULL,				ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+	PHP_ME(V8Function,	__sleep,				NULL,				ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
+	PHP_ME(V8Function,	__wakeup,				NULL,				ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
 	{NULL, NULL, NULL}
 };
 /* }}} */
