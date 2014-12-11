@@ -9,12 +9,12 @@ Test V8::executeString() : direct construction is prohibited
 echo "-- NOT ALLOWED --\n";
 try {
 	$a = new V8Object;
-} catch (V8JsScriptException $e) {
+} catch (V8JsException $e) {
 	var_dump($e->getMessage());
 }
 try {
 	$a = new V8Function;
-} catch (V8JsScriptException $e) {
+} catch (V8JsException $e) {
 	var_dump($e->getMessage());
 }
 
@@ -30,12 +30,12 @@ var_dump($f);
 echo "-- NOT ALLOWED --\n";
 try {
 	$oo = new $o();
-} catch (V8JsScriptException $e) {
+} catch (V8JsException $e) {
 	var_dump($e->getMessage());
 }
 try {
 	$ff = new $f;
-} catch (V8JsScriptException $e) {
+} catch (V8JsException $e) {
 	var_dump($e->getMessage());
 }
 

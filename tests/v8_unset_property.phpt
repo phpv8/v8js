@@ -21,7 +21,7 @@ try {
 	// unset not valid, if $v8 object is disposed
 	unset($a->bla);
 }
-catch(V8JsScriptException $e) {
+catch(V8JsException $e) {
 	var_dump($e->getMessage());
 }
 ?>

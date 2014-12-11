@@ -26,7 +26,7 @@ unset($v8);
 try {
 	var_dump(property_exists($foo->x, 'bla'));
 }
-catch(V8JsScriptException $e) {
+catch(V8JsException $e) {
 	var_dump($e->getMessage());
 }
 ?>

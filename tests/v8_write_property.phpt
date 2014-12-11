@@ -21,7 +21,7 @@ try {
 	// writing not valid, if $v8 object is disposed
 	$a->bla = 5;
 }
-catch(V8JsScriptException $e) {
+catch(V8JsException $e) {
 	var_dump($e->getMessage());
 }
 ?>

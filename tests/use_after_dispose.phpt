@@ -26,7 +26,7 @@ unset($v8);
 try {
 	var_dump($foo->x);
 }
-catch(V8JsScriptException $e) {
+catch(V8JsException $e) {
 	var_dump($e->getMessage());
 }
 ?>

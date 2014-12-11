@@ -46,7 +46,7 @@ object(V8Object)#%d (0) {
 }
 string(55) "Can't access V8Object after V8Js instance is destroyed!"
 
-Warning: Uncaught exception 'V8JsScriptException' with message 'Can't access V8Object after V8Js instance is destroyed!' in %s%etests%ectx_lifetime.php:35
+Warning: Uncaught exception 'V8JsException' with message 'Can't access V8Object after V8Js instance is destroyed!' in %s%etests%ectx_lifetime.php:35
 Stack trace:
 #0 %s%etests%ectx_lifetime.php(35): unknown()
 #1 {main}

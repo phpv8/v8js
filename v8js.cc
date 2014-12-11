@@ -164,7 +164,7 @@ static int php_v8js_v8_has_property(zval *object, zval *member, int has_set_exis
 	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
 
 	if (!obj->ctx) {
-		zend_throw_exception(php_ce_v8js_script_exception,
+		zend_throw_exception(php_ce_v8js_exception,
 			"Can't access V8Object after V8Js instance is destroyed!", 0 TSRMLS_CC);
 		return retval;
 	}
@@ -229,7 +229,7 @@ static zval *php_v8js_v8_read_property(zval *object, zval *member, int type ZEND
 	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
 
 	if (!obj->ctx) {
-		zend_throw_exception(php_ce_v8js_script_exception,
+		zend_throw_exception(php_ce_v8js_exception,
 			"Can't access V8Object after V8Js instance is destroyed!", 0 TSRMLS_CC);
 		ALLOC_INIT_ZVAL(retval);
 		return retval;
@@ -279,7 +279,7 @@ static void php_v8js_v8_write_property(zval *object, zval *member, zval *value Z
 	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
 
 	if (!obj->ctx) {
-		zend_throw_exception(php_ce_v8js_script_exception,
+		zend_throw_exception(php_ce_v8js_exception,
 			"Can't access V8Object after V8Js instance is destroyed!", 0 TSRMLS_CC);
 		return;
 	}
@@ -304,7 +304,7 @@ static void php_v8js_v8_unset_property(zval *object, zval *member ZEND_HASH_KEY_
 	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
 
 	if (!obj->ctx) {
-		zend_throw_exception(php_ce_v8js_script_exception,
+		zend_throw_exception(php_ce_v8js_exception,
 			"Can't access V8Object after V8Js instance is destroyed!", 0 TSRMLS_CC);
 		return;
 	}
@@ -396,7 +396,7 @@ static HashTable *php_v8js_v8_get_properties(zval *object TSRMLS_DC) /* {{{ */
 	}
 
 	if (!obj->ctx) {
-		zend_throw_exception(php_ce_v8js_script_exception,
+		zend_throw_exception(php_ce_v8js_exception,
 			"Can't access V8Object after V8Js instance is destroyed!", 0 TSRMLS_CC);
 		return NULL;
 	}
@@ -430,7 +430,7 @@ static zend_function *php_v8js_v8_get_method(zval **object_ptr, char *method, in
 	zend_function *f;
 
 	if (!obj->ctx) {
-		zend_throw_exception(php_ce_v8js_script_exception,
+		zend_throw_exception(php_ce_v8js_exception,
 			"Can't access V8Object after V8Js instance is destroyed!", 0 TSRMLS_CC);
 		return NULL;
 	}
@@ -472,7 +472,7 @@ static int php_v8js_v8_call_method(char *method, INTERNAL_FUNCTION_PARAMETERS) /
 	obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
 
 	if (!obj->ctx) {
-		zend_throw_exception(php_ce_v8js_script_exception,
+		zend_throw_exception(php_ce_v8js_exception,
 			"Can't access V8Object after V8Js instance is destroyed!", 0 TSRMLS_CC);
 		return FAILURE;
 	}
@@ -529,7 +529,7 @@ static int php_v8js_v8_get_closure(zval *object, zend_class_entry **ce_ptr, zend
 	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
 
 	if (!obj->ctx) {
-		zend_throw_exception(php_ce_v8js_script_exception,
+		zend_throw_exception(php_ce_v8js_exception,
 			"Can't access V8Object after V8Js instance is destroyed!", 0 TSRMLS_CC);
 		return FAILURE;
 	}
@@ -609,7 +609,7 @@ static zend_object_value php_v8js_v8_new(zend_class_entry *ce TSRMLS_DC) /* {{{ 
  */
 PHP_METHOD(V8Object,__construct)
 {
-	zend_throw_exception(php_ce_v8js_script_exception,
+	zend_throw_exception(php_ce_v8js_exception,
 		"Can't directly construct V8 objects!", 0 TSRMLS_CC);
 	RETURN_FALSE;
 }
@@ -619,7 +619,7 @@ PHP_METHOD(V8Object,__construct)
  */
 PHP_METHOD(V8Function,__construct)
 {
-	zend_throw_exception(php_ce_v8js_script_exception,
+	zend_throw_exception(php_ce_v8js_exception,
 		"Can't directly construct V8 objects!", 0 TSRMLS_CC);
 	RETURN_FALSE;
 }
