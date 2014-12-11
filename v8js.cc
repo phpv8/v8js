@@ -615,6 +615,26 @@ PHP_METHOD(V8Object,__construct)
 }
 /* }}} */
 
+/* {{{ proto V8Object::__sleep()
+ */
+PHP_METHOD(V8Object, __sleep)
+{
+	zend_throw_exception(php_ce_v8js_exception,
+		"You cannot serialize or unserialize V8Object instances", 0 TSRMLS_CC);
+	RETURN_FALSE;
+}
+/* }}} */
+
+/* {{{ proto V8Object::__wakeup()
+ */
+PHP_METHOD(V8Object, __wakeup)
+{
+	zend_throw_exception(php_ce_v8js_exception,
+		"You cannot serialize or unserialize V8Object instances", 0 TSRMLS_CC);
+	RETURN_FALSE;
+}
+/* }}} */
+
 /* {{{ proto V8Function::__construct()
  */
 PHP_METHOD(V8Function,__construct)
@@ -1922,6 +1942,8 @@ ZEND_END_ARG_INFO()
 
 static const zend_function_entry v8_object_methods[] = { /* {{{ */
 	PHP_ME(V8Object,	__construct,			NULL,				ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+	PHP_ME(V8Object,	__sleep,				NULL,				ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
+	PHP_ME(V8Object,	__wakeup,				NULL,				ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
 	{NULL, NULL, NULL}
 };
 /* }}} */
