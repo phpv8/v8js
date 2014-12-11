@@ -385,12 +385,16 @@ static HashTable *php_v8js_v8_get_properties(zval *object TSRMLS_DC) /* {{{ */
 			/* the garbage collector is running, don't create more zvals */
 			return NULL;
 		}
-		if (obj->ctx == NULL) {
-			/* Half-constructed object.  Shouldn't happen, but be safe. */
-			return NULL;
-		}
+
 		ALLOC_HASHTABLE(obj->properties);
 		zend_hash_init(obj->properties, 0, NULL, ZVAL_PTR_DTOR, 0);
+
+		if (!obj->ctx) {
+			/* Half-constructed object, probably due to unserialize call.
+			 * Just pass back properties hash so unserialize can write to
+			 * it (instead of crashing the engine). */
+			return obj->properties;
+		}
 	} else {
 		zend_hash_clean(obj->properties);
 	}

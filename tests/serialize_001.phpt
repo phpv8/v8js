@@ -21,6 +21,18 @@ catch(\V8JsException $e) {
 $stored = 'O:8:"V8Object":0:{}';
 
 try {
+    $obj2 = unserialize($stored);
+}
+catch(\V8JsException $e) {
+    var_dump(get_class($e));
+    var_dump($e->getMessage());
+}
+
+var_dump(isset($obj2));
+
+$stored = 'O:8:"V8Object":1:{s:3:"foo";i:23;}';
+
+try {
     $obj = unserialize($stored);
 }
 catch(\V8JsException $e) {
@@ -28,8 +40,7 @@ catch(\V8JsException $e) {
     var_dump($e->getMessage());
 }
 
-$v8->foo = $obj;
-
+var_dump(isset($obj3));
 
 ?>
 ===EOF===
@@ -42,4 +53,8 @@ string(13) "V8JsException"
 string(54) "You cannot serialize or unserialize V8Object instances"
 string(13) "V8JsException"
 string(54) "You cannot serialize or unserialize V8Object instances"
+bool(false)
+string(13) "V8JsException"
+string(54) "You cannot serialize or unserialize V8Object instances"
+bool(false)
 ===EOF===
