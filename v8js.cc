@@ -730,7 +730,11 @@ static void php_v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 	}
 	c->modules_loaded.~map();
 
-	c->isolate->Dispose();
+	if(c->isolate) {
+		/* c->isolate is initialized by V8Js::__construct, but __wakeup calls
+		 * are not fully constructed and hence this would cause a NPE. */
+		c->isolate->Dispose();
+	}
 
 	if(c->tz != NULL) {
 		free(c->tz);
@@ -1045,6 +1049,26 @@ static PHP_METHOD(V8Js, __construct)
 	}
 
 
+}
+/* }}} */
+
+/* {{{ proto V8JS::__sleep()
+ */
+PHP_METHOD(V8Js, __sleep)
+{
+	zend_throw_exception(php_ce_v8js_exception,
+		"You cannot serialize or unserialize V8Js instances", 0 TSRMLS_CC);
+	RETURN_FALSE;
+}
+/* }}} */
+
+/* {{{ proto V8JS::__wakeup()
+ */
+PHP_METHOD(V8Js, __wakeup)
+{
+	zend_throw_exception(php_ce_v8js_exception,
+		"You cannot serialize or unserialize V8Js instances", 0 TSRMLS_CC);
+	RETURN_FALSE;
 }
 /* }}} */
 
@@ -1816,6 +1840,12 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, report_uncaught_exceptions)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO(arginfo_v8js_sleep, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO(arginfo_v8js_wakeup, 0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_executestring, 0, 0, 1)
 	ZEND_ARG_INFO(0, script)
 	ZEND_ARG_INFO(0, identifier)
@@ -1897,6 +1927,8 @@ static const zend_function_entry v8_function_methods[] = { /* {{{ */
 
 static const zend_function_entry v8js_methods[] = { /* {{{ */
 	PHP_ME(V8Js,	__construct,			arginfo_v8js_construct,				ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+	PHP_ME(V8Js,	__sleep,				arginfo_v8js_sleep,					ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
+	PHP_ME(V8Js,	__wakeup,				arginfo_v8js_sleep,					ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
 	PHP_ME(V8Js,	executeString,			arginfo_v8js_executestring,			ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	compileString,			arginfo_v8js_compilestring,			ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,    executeScript,			arginfo_v8js_executescript,			ZEND_ACC_PUBLIC)
