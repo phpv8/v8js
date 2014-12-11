@@ -134,7 +134,11 @@ PHP API
         public static array V8Js::getExtensions( )
     }
 
-    final class V8JsScriptException extends Exception
+    class V8JsException extends RuntimeException
+    {
+    }
+
+    final class V8JsScriptException extends V8JsException
     {
         /* Properties */
         protected string JsFileName = NULL;
@@ -153,11 +157,11 @@ PHP API
         final public string getJsTrace( )
     }
 
-    final class V8JsTimeLimitException extends Exception
+    final class V8JsTimeLimitException extends V8JsException
     {
     }
 
-    final class V8JsMemoryLimitException extends Exception
+    final class V8JsMemoryLimitException extends V8JsException
     {
     }
 ```

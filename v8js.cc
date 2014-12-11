@@ -32,6 +32,7 @@ extern "C" {
 #include "ext/standard/info.h"
 #include "ext/standard/php_string.h"
 #include "ext/standard/php_smart_str.h"
+#include "ext/spl/spl_exceptions.h"
 #include "zend_exceptions.h"
 }
 
@@ -115,6 +116,7 @@ ZEND_INI_END()
 zend_class_entry *php_ce_v8_object;
 zend_class_entry *php_ce_v8_function;
 static zend_class_entry *php_ce_v8js;
+static zend_class_entry *php_ce_v8js_exception;
 static zend_class_entry *php_ce_v8js_script_exception;
 static zend_class_entry *php_ce_v8js_time_limit_exception;
 static zend_class_entry *php_ce_v8js_memory_limit_exception;
@@ -1954,6 +1956,14 @@ static void php_v8js_unset_property(zval *object, zval *member ZEND_HASH_KEY_DC 
 
 /* }}} V8Js */
 
+/* {{{ Class: V8JsException */
+
+static const zend_function_entry v8js_exception_methods[] = { /* {{{ */
+	{NULL, NULL, NULL}
+};
+
+/* }}} */
+
 /* {{{ Class: V8JsScriptException */
 
 static void php_v8js_create_script_exception(zval *return_value, v8::TryCatch *try_catch TSRMLS_DC) /* {{{ */
@@ -2156,9 +2166,13 @@ static PHP_MINIT_FUNCTION(v8js)
 	zend_declare_class_constant_long(php_ce_v8js, ZEND_STRL("DEBUG_AUTO_BREAK_ALWAYS"),	V8JS_DEBUG_AUTO_BREAK_ALWAYS		TSRMLS_CC);
 #endif
 
+	/* V8JsException Class */
+	INIT_CLASS_ENTRY(ce, "V8JsException", v8js_exception_methods);
+	php_ce_v8js_exception = zend_register_internal_class_ex(&ce, spl_ce_RuntimeException, NULL TSRMLS_CC);
+
 	/* V8JsScriptException Class */
 	INIT_CLASS_ENTRY(ce, "V8JsScriptException", v8js_script_exception_methods);
-	php_ce_v8js_script_exception = zend_register_internal_class_ex(&ce, zend_exception_get_default(TSRMLS_C), NULL TSRMLS_CC);
+	php_ce_v8js_script_exception = zend_register_internal_class_ex(&ce, php_ce_v8js_exception, NULL TSRMLS_CC);
 	php_ce_v8js_script_exception->ce_flags |= ZEND_ACC_FINAL;
 
 	/* Add custom JS specific properties */
@@ -2171,12 +2185,12 @@ static PHP_MINIT_FUNCTION(v8js)
 
 	/* V8JsTimeLimitException Class */
 	INIT_CLASS_ENTRY(ce, "V8JsTimeLimitException", v8js_time_limit_exception_methods);
-	php_ce_v8js_time_limit_exception = zend_register_internal_class_ex(&ce, zend_exception_get_default(TSRMLS_C), NULL TSRMLS_CC);
+	php_ce_v8js_time_limit_exception = zend_register_internal_class_ex(&ce, php_ce_v8js_exception, NULL TSRMLS_CC);
 	php_ce_v8js_time_limit_exception->ce_flags |= ZEND_ACC_FINAL;
 
 	/* V8JsMemoryLimitException Class */
 	INIT_CLASS_ENTRY(ce, "V8JsMemoryLimitException", v8js_memory_limit_exception_methods);
-	php_ce_v8js_memory_limit_exception = zend_register_internal_class_ex(&ce, zend_exception_get_default(TSRMLS_C), NULL TSRMLS_CC);
+	php_ce_v8js_memory_limit_exception = zend_register_internal_class_ex(&ce, php_ce_v8js_exception, NULL TSRMLS_CC);
 	php_ce_v8js_memory_limit_exception->ce_flags |= ZEND_ACC_FINAL;
 
 	le_v8js_script = zend_register_list_destructors_ex(php_v8js_script_dtor, NULL, PHP_V8JS_SCRIPT_RES_NAME, module_number);
