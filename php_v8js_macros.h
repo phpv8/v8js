@@ -121,9 +121,6 @@ static inline const char * ToCString(const v8::String::Utf8Value &value) /* {{{ 
 /* Create PHP V8 object */
 void php_v8js_create_v8(zval *, v8::Handle<v8::Value>, int, v8::Isolate * TSRMLS_DC);
 
-/* Fetch V8 object properties */
-int php_v8js_v8_get_properties_hash(v8::Handle<v8::Value>, HashTable *, int, v8::Isolate * TSRMLS_DC);
-
 /* Convert zval into V8 value */
 v8::Handle<v8::Value> zval_to_v8js(zval *, v8::Isolate * TSRMLS_DC);
 

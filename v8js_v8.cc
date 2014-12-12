@@ -205,6 +205,61 @@ void v8js_terminate_execution(php_v8js_ctx *c TSRMLS_DC) /* {{{ */
 }
 /* }}} */
 
+
+int v8js_get_properties_hash(v8::Handle<v8::Value> jsValue, HashTable *retval, int flags, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
+{
+	v8::Local<v8::Object> jsObj = jsValue->ToObject();
+
+	if (!jsObj.IsEmpty()) {
+		v8::Local<v8::Array> jsKeys = jsObj->GetPropertyNames();
+
+		for (unsigned i = 0; i < jsKeys->Length(); i++)
+		{
+			v8::Local<v8::String> jsKey = jsKeys->Get(i)->ToString();
+
+			/* Skip any prototype properties */
+			if (!jsObj->HasOwnProperty(jsKey) && !jsObj->HasRealNamedProperty(jsKey) && !jsObj->HasRealNamedCallbackProperty(jsKey)) {
+				continue;
+			}
+
+			v8::Local<v8::Value> jsVal = jsObj->Get(jsKey);
+			v8::String::Utf8Value cstr(jsKey);
+			const char *key = ToCString(cstr);
+			zval *value = NULL;
+
+			v8::Local<v8::Value> php_object;
+			if (jsVal->IsObject()) {
+				php_object = v8::Local<v8::Object>::Cast(jsVal)->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY));
+			}
+			if (!php_object.IsEmpty()) {
+				/* This is a PHP object, passed to JS and back. */
+				value = reinterpret_cast<zval *>(v8::External::Cast(*php_object)->Value());
+				Z_ADDREF_P(value);
+			}
+			else {
+				MAKE_STD_ZVAL(value);
+
+				if (v8js_to_zval(jsVal, value, flags, isolate TSRMLS_CC) == FAILURE) {
+					zval_ptr_dtor(&value);
+					return FAILURE;
+				}
+			}
+
+			if ((flags & V8JS_FLAG_FORCE_ARRAY) || jsValue->IsArray()) {
+				zend_symtable_update(retval, key, strlen(key) + 1, (void *)&value, sizeof(zval *), NULL);
+			} else {
+				zend_hash_update(retval, key, strlen(key) + 1, (void *) &value, sizeof(zval *), NULL);
+			}
+		}
+		return SUCCESS;
+	}
+	return FAILURE;
+}
+/* }}} */
+
+
+
+
 /*
  * Local variables:
  * tab-width: 4

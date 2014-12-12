@@ -20,6 +20,8 @@ void v8js_v8_call(php_v8js_ctx *c, zval **return_value,
 				  std::function< v8::Local<v8::Value>(v8::Isolate *) >& v8_call TSRMLS_DC);
 void v8js_terminate_execution(php_v8js_ctx *c TSRMLS_DC);
 
+/* Fetch V8 object properties */
+int v8js_get_properties_hash(v8::Handle<v8::Value> jsValue, HashTable *retval, int flags, v8::Isolate *isolate TSRMLS_DC);
 
 #define V8JS_CTX_PROLOGUE(ctx) \
 	if (!V8JSG(v8_initialized)) { \

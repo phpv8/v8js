@@ -27,6 +27,7 @@ extern "C" {
 
 #include "php_v8js_macros.h"
 #include "v8js_object_export.h"
+#include "v8js_v8.h"
 
 #include <stdexcept>
 #include <limits>
@@ -246,7 +247,7 @@ int v8js_to_zval(v8::Handle<v8::Value> jsValue, zval *return_value, int flags, v
 		}
 		if ((flags & V8JS_FLAG_FORCE_ARRAY) || jsValue->IsArray()) {
 			array_init(return_value);
-			return php_v8js_v8_get_properties_hash(jsValue, Z_ARRVAL_P(return_value), flags, isolate TSRMLS_CC);
+			return v8js_get_properties_hash(jsValue, Z_ARRVAL_P(return_value), flags, isolate TSRMLS_CC);
 		} else {
 			php_v8js_create_v8(return_value, jsValue, flags, isolate TSRMLS_CC);
 			return SUCCESS;

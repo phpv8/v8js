@@ -14,8 +14,8 @@
 #ifndef V8JS_V8OBJECT_CLASS_H
 #define V8JS_V8OBJECT_CLASS_H
 
-extern zend_class_entry *php_ce_v8_object;
-extern zend_class_entry *php_ce_v8_function;
+extern zend_class_entry *php_ce_v8object;
+extern zend_class_entry *php_ce_v8function;
 
 PHP_MINIT_FUNCTION(v8js_v8object_class);
 
