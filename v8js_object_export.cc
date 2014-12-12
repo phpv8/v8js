@@ -26,6 +26,7 @@ extern "C" {
 #include "php_v8js_macros.h"
 #include "v8js_array_access.h"
 #include "v8js_object_export.h"
+#include "v8js_v8object_class.h"
 
 static void php_v8js_weak_object_callback(const v8::WeakCallbackData<v8::Object, zval> &data);
 

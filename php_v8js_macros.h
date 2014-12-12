@@ -118,10 +118,6 @@ static inline const char * ToCString(const v8::String::Utf8Value &value) /* {{{ 
 }
 /* }}} */
 
-/* Extern Class entries */
-extern zend_class_entry *php_ce_v8_object;
-extern zend_class_entry *php_ce_v8_function;
-
 /* Create PHP V8 object */
 void php_v8js_create_v8(zval *, v8::Handle<v8::Value>, int, v8::Isolate * TSRMLS_DC);
 
