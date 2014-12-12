@@ -14,6 +14,16 @@
 #ifndef V8JS_V8OBJECT_CLASS_H
 #define V8JS_V8OBJECT_CLASS_H
 
+/* {{{ Object container */
+struct v8js_v8object {
+	zend_object std;
+	v8::Persistent<v8::Value> v8obj;
+	int flags;
+	struct php_v8js_ctx *ctx;
+	HashTable *properties;
+};
+/* }}} */
+
 extern zend_class_entry *php_ce_v8object;
 extern zend_class_entry *php_ce_v8function;
 

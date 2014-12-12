@@ -28,6 +28,7 @@ extern "C" {
 #include "php_v8js_macros.h"
 #include "v8js_exceptions.h"
 #include "v8js_v8.h"
+#include "v8js_v8object_class.h"
 
 /* {{{ Class Entries */
 zend_class_entry *php_ce_v8object;
