@@ -1,5 +1,3 @@
-dnl $Id$
-
 PHP_ARG_WITH(v8js, for V8 Javascript Engine,
 [  --with-v8js           Include V8 JavaScript Engine])
 
