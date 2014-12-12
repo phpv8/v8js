@@ -51,7 +51,7 @@ static int php_v8js_v8_has_property(zval *object, zval *member, int has_set_exis
 	 * 2 (exists) whether property exists               - property_exists()
 	 */
 	int retval = false;
-	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
+	v8js_v8object *obj = (v8js_v8object *) zend_object_store_get_object(object TSRMLS_CC);
 
 	if (!obj->ctx) {
 		zend_throw_exception(php_ce_v8js_exception,
@@ -116,7 +116,7 @@ static int php_v8js_v8_has_property(zval *object, zval *member, int has_set_exis
 static zval *php_v8js_v8_read_property(zval *object, zval *member, int type ZEND_HASH_KEY_DC TSRMLS_DC) /* {{{ */
 {
 	zval *retval = NULL;
-	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
+	v8js_v8object *obj = (v8js_v8object *) zend_object_store_get_object(object TSRMLS_CC);
 
 	if (!obj->ctx) {
 		zend_throw_exception(php_ce_v8js_exception,
@@ -166,7 +166,7 @@ static zval *php_v8js_v8_read_property(zval *object, zval *member, int type ZEND
 
 static void php_v8js_v8_write_property(zval *object, zval *member, zval *value ZEND_HASH_KEY_DC TSRMLS_DC) /* {{{ */
 {
-	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
+	v8js_v8object *obj = (v8js_v8object *) zend_object_store_get_object(object TSRMLS_CC);
 
 	if (!obj->ctx) {
 		zend_throw_exception(php_ce_v8js_exception,
@@ -191,7 +191,7 @@ static void php_v8js_v8_write_property(zval *object, zval *member, zval *value Z
 
 static void php_v8js_v8_unset_property(zval *object, zval *member ZEND_HASH_KEY_DC TSRMLS_DC) /* {{{ */
 {
-	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
+	v8js_v8object *obj = (v8js_v8object *) zend_object_store_get_object(object TSRMLS_CC);
 
 	if (!obj->ctx) {
 		zend_throw_exception(php_ce_v8js_exception,
@@ -267,7 +267,7 @@ int php_v8js_v8_get_properties_hash(v8::Handle<v8::Value> jsValue, HashTable *re
 
 static HashTable *php_v8js_v8_get_properties(zval *object TSRMLS_DC) /* {{{ */
 {
-	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
+	v8js_v8object *obj = (v8js_v8object *) zend_object_store_get_object(object TSRMLS_CC);
 	HashTable *retval;
 
 	if (obj->properties == NULL) {
@@ -320,7 +320,7 @@ static HashTable *php_v8js_v8_get_debug_info(zval *object, int *is_temp TSRMLS_D
 
 static zend_function *php_v8js_v8_get_method(zval **object_ptr, char *method, int method_len ZEND_HASH_KEY_DC TSRMLS_DC) /* {{{ */
 {
-	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(*object_ptr TSRMLS_CC);
+	v8js_v8object *obj = (v8js_v8object *) zend_object_store_get_object(*object_ptr TSRMLS_CC);
 	zend_function *f;
 
 	if (!obj->ctx) {
@@ -361,9 +361,9 @@ static int php_v8js_v8_call_method(char *method, INTERNAL_FUNCTION_PARAMETERS) /
 {
 	zval *object = this_ptr, ***argv = NULL;
 	int argc = ZEND_NUM_ARGS();
-	php_v8js_object *obj;
+	v8js_v8object *obj;
 
-	obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
+	obj = (v8js_v8object *) zend_object_store_get_object(object TSRMLS_CC);
 
 	if (!obj->ctx) {
 		zend_throw_exception(php_ce_v8js_exception,
@@ -420,7 +420,7 @@ static int php_v8js_v8_get_closure(zval *object, zend_class_entry **ce_ptr, zend
 {
 	zend_function *invoke;
 
-	php_v8js_object *obj = (php_v8js_object *) zend_object_store_get_object(object TSRMLS_CC);
+	v8js_v8object *obj = (v8js_v8object *) zend_object_store_get_object(object TSRMLS_CC);
 
 	if (!obj->ctx) {
 		zend_throw_exception(php_ce_v8js_exception,
@@ -458,7 +458,7 @@ static int php_v8js_v8_get_closure(zval *object, zend_class_entry **ce_ptr, zend
 
 static void php_v8js_v8_free_storage(void *object, zend_object_handle handle TSRMLS_DC) /* {{{ */
 {
-	php_v8js_object *c = (php_v8js_object *) object;
+	v8js_v8object *c = (v8js_v8object *) object;
 
 	if (c->properties) {
 		zend_hash_destroy(c->properties);
@@ -470,7 +470,7 @@ static void php_v8js_v8_free_storage(void *object, zend_object_handle handle TSR
 
 	if(c->ctx) {
 		c->v8obj.Reset();
-		c->ctx->php_v8js_objects.remove(c);
+		c->ctx->v8js_v8objects.remove(c);
 	}
 
 	efree(object);
@@ -480,9 +480,9 @@ static void php_v8js_v8_free_storage(void *object, zend_object_handle handle TSR
 static zend_object_value php_v8js_v8_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 {
 	zend_object_value retval;
-	php_v8js_object *c;
+	v8js_v8object *c;
 	
-	c = (php_v8js_object *) ecalloc(1, sizeof(*c));
+	c = (v8js_v8object *) ecalloc(1, sizeof(*c));
 
 	zend_object_std_init(&c->std, ce TSRMLS_CC);
 	new(&c->v8obj) v8::Persistent<v8::Value>();
@@ -562,18 +562,18 @@ PHP_METHOD(V8Function, __wakeup)
 void php_v8js_create_v8(zval *res, v8::Handle<v8::Value> value, int flags, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
 {
 	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData(0);
-	php_v8js_object *c;
+	v8js_v8object *c;
 
 	object_init_ex(res, value->IsFunction() ? php_ce_v8_function : php_ce_v8_object);
 
-	c = (php_v8js_object *) zend_object_store_get_object(res TSRMLS_CC);
+	c = (v8js_v8object *) zend_object_store_get_object(res TSRMLS_CC);
 
 	c->v8obj.Reset(isolate, value);
 	c->flags = flags;
 	c->ctx = ctx;
 	c->properties = NULL;
 
-	ctx->php_v8js_objects.push_front(c);
+	ctx->v8js_v8objects.push_front(c);
 }
 /* }}} */
 

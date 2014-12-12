@@ -129,12 +129,12 @@ static void php_v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 	}
 	c->weak_closures.~map();
 
-	for (std::list<php_v8js_object *>::iterator it = c->php_v8js_objects.begin();
-		 it != c->php_v8js_objects.end(); it ++) {
+	for (std::list<v8js_v8object *>::iterator it = c->v8js_v8objects.begin();
+		 it != c->v8js_v8objects.end(); it ++) {
 		(*it)->v8obj.Reset();
 		(*it)->ctx = NULL;
 	}
-	c->php_v8js_objects.~list();
+	c->v8js_v8objects.~list();
 
 	/* Clear persistent handles in module cache */
 	for (std::map<char *, v8js_persistent_obj_t>::iterator it = c->modules_loaded.begin();
@@ -191,7 +191,7 @@ static zend_object_value php_v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 	new(&c->weak_closures) std::map<v8js_tmpl_t *, v8js_persistent_obj_t>();
 	new(&c->weak_objects) std::map<zval *, v8js_persistent_obj_t>();
 
-	new(&c->php_v8js_objects) std::list<php_v8js_object *>();
+	new(&c->v8js_v8objects) std::list<v8js_v8object *>();
 
 	retval.handle = zend_objects_store_put(c, NULL, (zend_objects_free_object_storage_t) php_v8js_free_storage, NULL TSRMLS_CC);
 	retval.handlers = &v8js_object_handlers;
