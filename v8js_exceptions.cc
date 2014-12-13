@@ -38,7 +38,7 @@ zend_class_entry *php_ce_v8js_memory_limit_exception;
 
 /* {{{ Class: V8JsScriptException */
 
-void php_v8js_create_script_exception(zval *return_value, v8::TryCatch *try_catch TSRMLS_DC) /* {{{ */
+void v8js_create_script_exception(zval *return_value, v8::TryCatch *try_catch TSRMLS_DC) /* {{{ */
 {
 	v8::String::Utf8Value exception(try_catch->Exception());
 	const char *exception_string = ToCString(exception);
@@ -89,7 +89,7 @@ void php_v8js_create_script_exception(zval *return_value, v8::TryCatch *try_catc
 }
 /* }}} */
 
-void php_v8js_throw_script_exception(v8::TryCatch *try_catch TSRMLS_DC) /* {{{ */
+void v8js_throw_script_exception(v8::TryCatch *try_catch TSRMLS_DC) /* {{{ */
 {
 	v8::String::Utf8Value exception(try_catch->Exception());
 	const char *exception_string = ToCString(exception);
@@ -99,7 +99,7 @@ void php_v8js_throw_script_exception(v8::TryCatch *try_catch TSRMLS_DC) /* {{{ *
 		zend_throw_exception(php_ce_v8js_script_exception, (char *) exception_string, 0 TSRMLS_CC);
 	} else {
 		MAKE_STD_ZVAL(zexception);
-		php_v8js_create_script_exception(zexception, try_catch TSRMLS_CC);
+		v8js_create_script_exception(zexception, try_catch TSRMLS_CC);
 		zend_throw_exception_object(zexception TSRMLS_CC);
 	}
 }

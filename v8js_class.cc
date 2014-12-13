@@ -43,10 +43,18 @@ static zend_class_entry *php_ce_v8js;
 static zend_object_handlers v8js_object_handlers;
 /* }}} */
 
+typedef struct _v8js_script {
+	char *name;
+	v8::Isolate *isolate;	
+	v8::Persistent<v8::Script, v8::CopyablePersistentTraits<v8::Script>> *script;
+} v8js_script;
+
+static void v8js_script_free(v8js_script *res, bool dispose_persistent);
+
 int le_v8js_script;
 
 /* {{{ Extension container */
-struct php_v8js_jsext {
+struct v8js_jsext {
 	zend_bool auto_enable;
 	HashTable *deps_ht;
 	const char **deps;
@@ -61,7 +69,7 @@ static v8js_ctx *v8js_debug_context;
 static int v8js_debug_auto_break_mode;
 #endif
 
-static void php_v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
+static void v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 {
 	v8js_ctx *c = (v8js_ctx *) object;
 
@@ -161,7 +169,7 @@ static void php_v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 }
 /* }}} */
 
-static zend_object_value php_v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
+static zend_object_value v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 {
 	zend_object_value retval;
 	v8js_ctx *c;
@@ -194,14 +202,14 @@ static zend_object_value php_v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 
 	new(&c->v8js_v8objects) std::list<v8js_v8object *>();
 
-	retval.handle = zend_objects_store_put(c, NULL, (zend_objects_free_object_storage_t) php_v8js_free_storage, NULL TSRMLS_CC);
+	retval.handle = zend_objects_store_put(c, NULL, (zend_objects_free_object_storage_t) v8js_free_storage, NULL TSRMLS_CC);
 	retval.handlers = &v8js_object_handlers;
 
 	return retval;
 }
 /* }}} */
 
-static void _php_v8js_free_ext_strarr(const char **arr, int count) /* {{{ */
+static void v8js_free_ext_strarr(const char **arr, int count) /* {{{ */
 {
 	int i;
 
@@ -216,21 +224,21 @@ static void _php_v8js_free_ext_strarr(const char **arr, int count) /* {{{ */
 }
 /* }}} */
 
-static void php_v8js_jsext_dtor(php_v8js_jsext *jsext) /* {{{ */
+static void v8js_jsext_dtor(v8js_jsext *jsext) /* {{{ */
 {
 	if (jsext->deps_ht) {
 		zend_hash_destroy(jsext->deps_ht);
 		free(jsext->deps_ht);
 	}
 	if (jsext->deps) {
-		_php_v8js_free_ext_strarr(jsext->deps, jsext->deps_count);
+		v8js_free_ext_strarr(jsext->deps, jsext->deps_count);
 	}
 	free(jsext->name);
 	free(jsext->source);
 }
 /* }}} */
 
-static int _php_v8js_create_ext_strarr(const char ***retval, int count, HashTable *ht) /* {{{ */
+static int v8js_create_ext_strarr(const char ***retval, int count, HashTable *ht) /* {{{ */
 {
 	const char **exts = NULL;
 	HashPosition pos;
@@ -243,7 +251,7 @@ static int _php_v8js_create_ext_strarr(const char ***retval, int count, HashTabl
 		if (Z_TYPE_PP(tmp) == IS_STRING) {
 			exts[i++] = zend_strndup(Z_STRVAL_PP(tmp), Z_STRLEN_PP(tmp));
 		} else {
-			_php_v8js_free_ext_strarr(exts, i);
+			v8js_free_ext_strarr(exts, i);
 			return FAILURE;
 		}
 		zend_hash_move_forward_ex(ht, &pos);
@@ -254,7 +262,7 @@ static int _php_v8js_create_ext_strarr(const char ***retval, int count, HashTabl
 }
 /* }}} */
 
-static void php_v8js_fatal_error_handler(const char *location, const char *message) /* {{{ */
+static void v8js_fatal_error_handler(const char *location, const char *message) /* {{{ */
 {
 	v8::Isolate *isolate = v8::Isolate::GetCurrent();
 	if (isolate) {
@@ -332,7 +340,7 @@ static PHP_METHOD(V8Js, __construct)
 	if (exts_arr)
 	{
 		exts_count = zend_hash_num_elements(Z_ARRVAL_P(exts_arr));
-		if (_php_v8js_create_ext_strarr(&exts, exts_count, Z_ARRVAL_P(exts_arr)) == FAILURE) {
+		if (v8js_create_ext_strarr(&exts, exts_count, Z_ARRVAL_P(exts_arr)) == FAILURE) {
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Invalid extensions array passed");
 			return;
 		}
@@ -351,7 +359,7 @@ static PHP_METHOD(V8Js, __construct)
 
 	/* Redirect fatal errors to PHP error handler */
 	// This needs to be done within the context isolate
-	v8::V8::SetFatalErrorHandler(php_v8js_fatal_error_handler);
+	v8::V8::SetFatalErrorHandler(v8js_fatal_error_handler);
 
 	/* Create global template for global object */
 	// Now we are using multiple isolates this needs to be created for every context
@@ -362,7 +370,7 @@ static PHP_METHOD(V8Js, __construct)
 	c->global_template.Reset(isolate, tpl);
 
 	/* Register builtin methods */
-	php_v8js_register_methods(tpl->InstanceTemplate(), c);
+	v8js_register_methods(tpl->InstanceTemplate(), c);
 
 	/* Create context */
 	v8::Local<v8::Context> context = v8::Context::New(isolate, &extension_conf, tpl->InstanceTemplate());
@@ -370,7 +378,7 @@ static PHP_METHOD(V8Js, __construct)
 	c->context.Reset(isolate, context);
 
 	if (exts) {
-		_php_v8js_free_ext_strarr(exts, exts_count);
+		v8js_free_ext_strarr(exts, exts_count);
 	}
 
 	/* If extensions have errors, context will be empty. (NOTE: This is V8 stuff, they expect the passed sources to compile :) */
@@ -400,7 +408,7 @@ static PHP_METHOD(V8Js, __construct)
 
 	/* Register Get accessor for passed variables */
 	if (vars_arr && zend_hash_num_elements(Z_ARRVAL_P(vars_arr)) > 0) {
-		php_v8js_register_accessors(&c->accessor_list, php_obj_t, vars_arr, isolate TSRMLS_CC);
+		v8js_register_accessors(&c->accessor_list, php_obj_t, vars_arr, isolate TSRMLS_CC);
 	}
 
 	/* Set name for the PHP JS object */
@@ -461,7 +469,7 @@ PHP_METHOD(V8Js, __wakeup)
 }
 /* }}} */
 
-static void php_v8js_compile_script(zval *this_ptr, const char *str, int str_len, const char *identifier, int identifier_len, v8js_script **ret TSRMLS_DC)
+static void v8js_compile_script(zval *this_ptr, const char *str, int str_len, const char *identifier, int identifier_len, v8js_script **ret TSRMLS_DC)
 {
 	v8js_script *res = NULL;
 
@@ -479,7 +487,7 @@ static void php_v8js_compile_script(zval *this_ptr, const char *str, int str_len
 
 	/* Compile errors? */
 	if (script.IsEmpty()) {
-		php_v8js_throw_script_exception(&try_catch TSRMLS_CC);
+		v8js_throw_script_exception(&try_catch TSRMLS_CC);
 		return;
 	}
 	res = (v8js_script *)emalloc(sizeof(v8js_script));
@@ -492,7 +500,7 @@ static void php_v8js_compile_script(zval *this_ptr, const char *str, int str_len
 	return;
 }
 
-static void php_v8js_execute_script(zval *this_ptr, v8js_script *res, long flags, long time_limit, long memory_limit, zval **return_value TSRMLS_DC)
+static void v8js_execute_script(zval *this_ptr, v8js_script *res, long flags, long time_limit, long memory_limit, zval **return_value TSRMLS_DC)
 {
 	v8js_ctx *c = (v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
 
@@ -531,11 +539,11 @@ static PHP_METHOD(V8Js, executeString)
 		return;
 	}
 
-	php_v8js_compile_script(getThis(), str, str_len, identifier, identifier_len, &res TSRMLS_CC);
+	v8js_compile_script(getThis(), str, str_len, identifier, identifier_len, &res TSRMLS_CC);
 	if (!res) {
 		RETURN_FALSE;
 	}
-	php_v8js_execute_script(getThis(), res, flags, time_limit, memory_limit, &return_value TSRMLS_CC);
+	v8js_execute_script(getThis(), res, flags, time_limit, memory_limit, &return_value TSRMLS_CC);
 	v8js_script_free(res, true);
 	efree(res);
 }
@@ -554,7 +562,7 @@ static PHP_METHOD(V8Js, compileString)
 		return;
 	}
 
-	php_v8js_compile_script(getThis(), str, str_len, identifier, identifier_len, &res TSRMLS_CC);
+	v8js_compile_script(getThis(), str, str_len, identifier, identifier_len, &res TSRMLS_CC);
 	if (res) {
 		ZEND_REGISTER_RESOURCE(return_value, res, le_v8js_script);
 	}
@@ -578,7 +586,7 @@ static PHP_METHOD(V8Js, executeScript)
 	ZEND_FETCH_RESOURCE(res, v8js_script*, &zscript, -1, PHP_V8JS_SCRIPT_RES_NAME, le_v8js_script);
 	ZEND_VERIFY_RESOURCE(res);
 
-	php_v8js_execute_script(getThis(), res, flags, time_limit, memory_limit, &return_value TSRMLS_CC);
+	v8js_execute_script(getThis(), res, flags, time_limit, memory_limit, &return_value TSRMLS_CC);
 }
 /* }}} */
 
@@ -597,7 +605,7 @@ static PHP_METHOD(V8Js, checkString)
 		return;
 	}
 
-	php_v8js_compile_script(getThis(), str, str_len, identifier, identifier_len, &res TSRMLS_CC);
+	v8js_compile_script(getThis(), str, str_len, identifier, identifier_len, &res TSRMLS_CC);
 	if (!res) {
 		RETURN_FALSE;
 	}
@@ -798,7 +806,7 @@ static PHP_METHOD(V8Js, setMemoryLimit)
 }
 /* }}} */
 
-static void php_v8js_persistent_zval_ctor(zval **p) /* {{{ */
+static void v8js_persistent_zval_ctor(zval **p) /* {{{ */
 {
 	zval *orig_ptr = *p;
 	*p = (zval *) malloc(sizeof(zval));
@@ -814,7 +822,7 @@ static void php_v8js_persistent_zval_ctor(zval **p) /* {{{ */
 }
 /* }}} */
 
-static void php_v8js_persistent_zval_dtor(zval **p) /* {{{ */
+static void v8js_persistent_zval_dtor(zval **p) /* {{{ */
 {
 	switch (Z_TYPE_P(*p)) {
 		case IS_STRING:
@@ -849,25 +857,25 @@ static void v8js_script_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC) /* {{{ */
 }
 /* }}} */
 
-static int php_v8js_register_extension(char *name, uint name_len, char *source, uint source_len, zval *deps_arr, zend_bool auto_enable TSRMLS_DC) /* {{{ */
+static int v8js_register_extension(char *name, uint name_len, char *source, uint source_len, zval *deps_arr, zend_bool auto_enable TSRMLS_DC) /* {{{ */
 {
-	php_v8js_jsext *jsext = NULL;
+	v8js_jsext *jsext = NULL;
 
 	if (!V8JSG(extensions)) {
 		V8JSG(extensions) = (HashTable *) malloc(sizeof(HashTable));
-		zend_hash_init(V8JSG(extensions), 1, NULL, (dtor_func_t) php_v8js_jsext_dtor, 1);
+		zend_hash_init(V8JSG(extensions), 1, NULL, (dtor_func_t) v8js_jsext_dtor, 1);
 	} else if (zend_hash_exists(V8JSG(extensions), name, name_len + 1)) {
 		return FAILURE;
 	}
 
-	jsext = (php_v8js_jsext *) calloc(1, sizeof(php_v8js_jsext));
+	jsext = (v8js_jsext *) calloc(1, sizeof(v8js_jsext));
 
 	if (deps_arr) {
 		jsext->deps_count = zend_hash_num_elements(Z_ARRVAL_P(deps_arr));
 
-		if (_php_v8js_create_ext_strarr(&jsext->deps, jsext->deps_count, Z_ARRVAL_P(deps_arr)) == FAILURE) {
+		if (v8js_create_ext_strarr(&jsext->deps, jsext->deps_count, Z_ARRVAL_P(deps_arr)) == FAILURE) {
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Invalid dependency array passed");
-			php_v8js_jsext_dtor(jsext);
+			v8js_jsext_dtor(jsext);
 			free(jsext);
 			return FAILURE;
 		}
@@ -879,12 +887,12 @@ static int php_v8js_register_extension(char *name, uint name_len, char *source, 
 
 	if (jsext->deps) {
 		jsext->deps_ht = (HashTable *) malloc(sizeof(HashTable));
-		zend_hash_init(jsext->deps_ht, jsext->deps_count, NULL, (dtor_func_t) php_v8js_persistent_zval_dtor, 1);
-		zend_hash_copy(jsext->deps_ht, Z_ARRVAL_P(deps_arr), (copy_ctor_func_t) php_v8js_persistent_zval_ctor, NULL, sizeof(zval *));
+		zend_hash_init(jsext->deps_ht, jsext->deps_count, NULL, (dtor_func_t) v8js_persistent_zval_dtor, 1);
+		zend_hash_copy(jsext->deps_ht, Z_ARRVAL_P(deps_arr), (copy_ctor_func_t) v8js_persistent_zval_ctor, NULL, sizeof(zval *));
 	}
 
-	if (zend_hash_add(V8JSG(extensions), name, name_len + 1, jsext, sizeof(php_v8js_jsext), NULL) == FAILURE) {
-		php_v8js_jsext_dtor(jsext);
+	if (zend_hash_add(V8JSG(extensions), name, name_len + 1, jsext, sizeof(v8js_jsext), NULL) == FAILURE) {
+		v8js_jsext_dtor(jsext);
 		free(jsext);
 		return FAILURE;
 	}
@@ -916,7 +924,7 @@ static PHP_METHOD(V8Js, registerExtension)
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Extension name cannot be empty");
 	} else if (!script_len) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Script cannot be empty");
-	} else if (php_v8js_register_extension(ext_name, ext_name_len, script, script_len, deps_arr, auto_enable TSRMLS_CC) == SUCCESS) {
+	} else if (v8js_register_extension(ext_name, ext_name_len, script, script_len, deps_arr, auto_enable TSRMLS_CC) == SUCCESS) {
 		RETURN_TRUE;
 	}
 	RETURN_FALSE;
@@ -929,7 +937,7 @@ static PHP_METHOD(V8Js, registerExtension)
  */
 static PHP_METHOD(V8Js, getExtensions)
 {
-	php_v8js_jsext *jsext;
+	v8js_jsext *jsext;
 	zval *ext, *deps_arr;
 	HashPosition pos;
 	ulong index;
@@ -1067,7 +1075,7 @@ static const zend_function_entry v8js_methods[] = { /* {{{ */
 
 /* V8Js object handlers */
 
-static void php_v8js_write_property(zval *object, zval *member, zval *value ZEND_HASH_KEY_DC TSRMLS_DC) /* {{{ */
+static void v8js_write_property(zval *object, zval *member, zval *value ZEND_HASH_KEY_DC TSRMLS_DC) /* {{{ */
 {
 	V8JS_BEGIN_CTX(c, object)
 
@@ -1087,7 +1095,7 @@ static void php_v8js_write_property(zval *object, zval *member, zval *value ZEND
 }
 /* }}} */
 
-static void php_v8js_unset_property(zval *object, zval *member ZEND_HASH_KEY_DC TSRMLS_DC) /* {{{ */
+static void v8js_unset_property(zval *object, zval *member ZEND_HASH_KEY_DC TSRMLS_DC) /* {{{ */
 {
 	V8JS_BEGIN_CTX(c, object)
 
@@ -1110,13 +1118,13 @@ PHP_MINIT_FUNCTION(v8js_class) /* {{{ */
 	/* V8Js Class */
 	INIT_CLASS_ENTRY(ce, "V8Js", v8js_methods);
 	php_ce_v8js = zend_register_internal_class(&ce TSRMLS_CC);
-	php_ce_v8js->create_object = php_v8js_new;
+	php_ce_v8js->create_object = v8js_new;
 
 	/* V8Js handlers */
 	memcpy(&v8js_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
 	v8js_object_handlers.clone_obj = NULL;
-	v8js_object_handlers.write_property = php_v8js_write_property;
-	v8js_object_handlers.unset_property = php_v8js_unset_property;
+	v8js_object_handlers.write_property = v8js_write_property;
+	v8js_object_handlers.unset_property = v8js_unset_property;
 
 	/* V8Js Class Constants */
 	zend_declare_class_constant_string(php_ce_v8js, ZEND_STRL("V8_VERSION"),		PHP_V8_VERSION			TSRMLS_CC);

@@ -133,7 +133,7 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 
 	efree(timer_ctx);
 
-	/* Check for fatal error marker possibly set by php_v8js_error_handler; just
+	/* Check for fatal error marker possibly set by v8js_error_handler; just
 	 * rethrow the error since we're now out of V8. */
 	if(V8JSG(fatal_error_abort)) {
 		zend_bailout();
@@ -174,14 +174,14 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 
 			/* Report immediately if report_uncaught is true */
 			if (c->report_uncaught) {
-				php_v8js_throw_script_exception(&try_catch TSRMLS_CC);
+				v8js_throw_script_exception(&try_catch TSRMLS_CC);
 				return;
 			}
 
 			/* Exception thrown from JS, preserve it for future execution */
 			if (result.IsEmpty()) {
 				MAKE_STD_ZVAL(c->pending_exception);
-				php_v8js_create_script_exception(c->pending_exception, &try_catch TSRMLS_CC);
+				v8js_create_script_exception(c->pending_exception, &try_catch TSRMLS_CC);
 				return;
 			}
 		}

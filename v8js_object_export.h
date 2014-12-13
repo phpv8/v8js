@@ -14,7 +14,7 @@
 #ifndef V8JS_OBJECT_EXPORT_H
 #define V8JS_OBJECT_EXPORT_H
 
-v8::Handle<v8::Value> php_v8js_hash_to_jsobj(zval *value, v8::Isolate *isolate TSRMLS_DC);
+v8::Handle<v8::Value> v8js_hash_to_jsobj(zval *value, v8::Isolate *isolate TSRMLS_DC);
 
 
 typedef enum {
@@ -25,7 +25,7 @@ typedef enum {
 } property_op_t;
 
 template<typename T>
-v8::Local<v8::Value> php_v8js_named_property_callback(v8::Local<v8::String> property,
+v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> property,
 						      const v8::PropertyCallbackInfo<T> &info,
 						      property_op_t callback_type,
 						      v8::Local<v8::Value> set_value = v8::Local<v8::Value>());
