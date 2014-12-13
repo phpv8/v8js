@@ -509,7 +509,7 @@ PHP_METHOD(V8Function, __wakeup)
 }
 /* }}} */
 
-void php_v8js_create_v8(zval *res, v8::Handle<v8::Value> value, int flags, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
+void v8js_v8object_create(zval *res, v8::Handle<v8::Value> value, int flags, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
 {
 	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
 	v8js_v8object *c;

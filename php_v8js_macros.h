@@ -92,9 +92,6 @@ extern "C" {
 #define V8JS_DEBUG_AUTO_BREAK_ONCE		1
 #define V8JS_DEBUG_AUTO_BREAK_ALWAYS	2
 
-/* Create PHP V8 object */
-void php_v8js_create_v8(zval *, v8::Handle<v8::Value>, int, v8::Isolate * TSRMLS_DC);
-
 /* Convert zval into V8 value */
 v8::Handle<v8::Value> zval_to_v8js(zval *, v8::Isolate * TSRMLS_DC);
 
