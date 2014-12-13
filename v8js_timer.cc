@@ -44,10 +44,10 @@ static void v8js_timer_interrupt_handler(v8::Isolate *isolate, void *data) { /* 
 
 	V8JSG(timer_mutex).lock();
 
-	for (std::deque< php_v8js_timer_ctx* >::iterator it = V8JSG(timer_stack).begin();
+	for (std::deque< v8js_timer_ctx* >::iterator it = V8JSG(timer_stack).begin();
 		 it != V8JSG(timer_stack).end(); it ++) {
-		php_v8js_timer_ctx *timer_ctx = *it;
-		php_v8js_ctx *c = timer_ctx->v8js_ctx;
+		v8js_timer_ctx *timer_ctx = *it;
+		v8js_ctx *c = timer_ctx->ctx;
 
 		if(c->isolate != isolate || timer_ctx->killed) {
 			continue;
@@ -70,8 +70,8 @@ void v8js_timer_thread(TSRMLS_D) /* {{{ */
 
 		V8JSG(timer_mutex).lock();
 		if (V8JSG(timer_stack).size()) {
-			php_v8js_timer_ctx *timer_ctx = V8JSG(timer_stack).front();
-			php_v8js_ctx *c = timer_ctx->v8js_ctx;
+			v8js_timer_ctx *timer_ctx = V8JSG(timer_stack).front();
+			v8js_ctx *c = timer_ctx->ctx;
 			std::chrono::time_point<std::chrono::high_resolution_clock> now = std::chrono::high_resolution_clock::now();
 
 			if(timer_ctx->killed) {
@@ -110,12 +110,12 @@ void v8js_timer_thread(TSRMLS_D) /* {{{ */
 /* }}} */
 
 
-void v8js_timer_push(long time_limit, long memory_limit, php_v8js_ctx *c TSRMLS_DC) /* {{{ */
+void v8js_timer_push(long time_limit, long memory_limit, v8js_ctx *c TSRMLS_DC) /* {{{ */
 {
 	V8JSG(timer_mutex).lock();
 
 	// Create context for this timer
-	php_v8js_timer_ctx *timer_ctx = (php_v8js_timer_ctx *)emalloc(sizeof(php_v8js_timer_ctx));
+	v8js_timer_ctx *timer_ctx = (v8js_timer_ctx *)emalloc(sizeof(v8js_timer_ctx));
 
 	// Calculate the time point when the time limit is exceeded
 	std::chrono::milliseconds duration(time_limit);
@@ -125,7 +125,7 @@ void v8js_timer_push(long time_limit, long memory_limit, php_v8js_ctx *c TSRMLS_
 	timer_ctx->time_limit = time_limit;
 	timer_ctx->memory_limit = memory_limit;
 	timer_ctx->time_point = from + duration;
-	timer_ctx->v8js_ctx = c;
+	timer_ctx->ctx = c;
 	timer_ctx->killed = false;
 	V8JSG(timer_stack).push_front(timer_ctx);
 

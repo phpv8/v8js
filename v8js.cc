@@ -186,7 +186,7 @@ static PHP_GINIT_FUNCTION(v8js)
 	v8js_globals->timer_thread = NULL;
 	v8js_globals->timer_stop = false;
 	new(&v8js_globals->timer_mutex) std::mutex;
-	new(&v8js_globals->timer_stack) std::deque<php_v8js_timer_ctx *>;
+	new(&v8js_globals->timer_stack) std::deque<v8js_timer_ctx *>;
 
 	v8js_globals->fatal_error_abort = 0;
 #endif

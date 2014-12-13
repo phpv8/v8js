@@ -57,13 +57,13 @@ struct php_v8js_jsext {
 /* }}} */
 
 #ifdef ENABLE_DEBUGGER_SUPPORT
-static php_v8js_ctx *v8js_debug_context;
+static v8js_ctx *v8js_debug_context;
 static int v8js_debug_auto_break_mode;
 #endif
 
 static void php_v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 {
-	php_v8js_ctx *c = (php_v8js_ctx *) object;
+	v8js_ctx *c = (v8js_ctx *) object;
 
 	zend_object_std_dtor(&c->std TSRMLS_CC);
 
@@ -99,9 +99,9 @@ static void php_v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 	c->template_cache.~map();
 
 	/* Clear contexts */
-	for (std::vector<php_v8js_accessor_ctx*>::iterator it = c->accessor_list.begin();
+	for (std::vector<v8js_accessor_ctx*>::iterator it = c->accessor_list.begin();
 		 it != c->accessor_list.end(); ++it) {
-		php_v8js_accessor_ctx_dtor(*it TSRMLS_CC);
+		v8js_accessor_ctx_dtor(*it TSRMLS_CC);
 	}
 	c->accessor_list.~vector();
 
@@ -164,9 +164,9 @@ static void php_v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 static zend_object_value php_v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 {
 	zend_object_value retval;
-	php_v8js_ctx *c;
+	v8js_ctx *c;
 
-	c = (php_v8js_ctx *) ecalloc(1, sizeof(*c));
+	c = (v8js_ctx *) ecalloc(1, sizeof(*c));
 	zend_object_std_init(&c->std, ce TSRMLS_CC);
 	TSRMLS_SET_CTX(c->zts_ctx);
 
@@ -187,7 +187,7 @@ static zend_object_value php_v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 	new(&c->modules_loaded) std::map<char *, v8js_persistent_obj_t>;
 
 	new(&c->template_cache) std::map<const char *,v8js_tmpl_t>();
-	new(&c->accessor_list) std::vector<php_v8js_accessor_ctx *>();
+	new(&c->accessor_list) std::vector<v8js_accessor_ctx *>();
 
 	new(&c->weak_closures) std::map<v8js_tmpl_t *, v8js_persistent_obj_t>();
 	new(&c->weak_objects) std::map<zval *, v8js_persistent_obj_t>();
@@ -299,7 +299,7 @@ static PHP_METHOD(V8Js, __construct)
 	const char **exts = NULL;
 	int exts_count = 0;
 
-	php_v8js_ctx *c = (php_v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
+	v8js_ctx *c = (v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
 
 	if (!c->context.IsEmpty()) {
 		/* called __construct() twice, bail out */
@@ -461,9 +461,9 @@ PHP_METHOD(V8Js, __wakeup)
 }
 /* }}} */
 
-static void php_v8js_compile_script(zval *this_ptr, const char *str, int str_len, const char *identifier, int identifier_len, php_v8js_script **ret TSRMLS_DC)
+static void php_v8js_compile_script(zval *this_ptr, const char *str, int str_len, const char *identifier, int identifier_len, v8js_script **ret TSRMLS_DC)
 {
-	php_v8js_script *res = NULL;
+	v8js_script *res = NULL;
 
 	V8JS_BEGIN_CTX(c, this_ptr)
 
@@ -482,7 +482,7 @@ static void php_v8js_compile_script(zval *this_ptr, const char *str, int str_len
 		php_v8js_throw_script_exception(&try_catch TSRMLS_CC);
 		return;
 	}
-	res = (php_v8js_script *)emalloc(sizeof(php_v8js_script));
+	res = (v8js_script *)emalloc(sizeof(v8js_script));
 	res->script = new v8::Persistent<v8::Script, v8::CopyablePersistentTraits<v8::Script>>(c->isolate, script);
 
 	v8::String::Utf8Value _sname(sname);
@@ -492,9 +492,9 @@ static void php_v8js_compile_script(zval *this_ptr, const char *str, int str_len
 	return;
 }
 
-static void php_v8js_execute_script(zval *this_ptr, php_v8js_script *res, long flags, long time_limit, long memory_limit, zval **return_value TSRMLS_DC)
+static void php_v8js_execute_script(zval *this_ptr, v8js_script *res, long flags, long time_limit, long memory_limit, zval **return_value TSRMLS_DC)
 {
-	php_v8js_ctx *c = (php_v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
+	v8js_ctx *c = (v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
 
 	if (res->isolate != c->isolate) {
 		zend_error(E_WARNING, "Script resource from wrong V8Js object passed");
@@ -525,7 +525,7 @@ static PHP_METHOD(V8Js, executeString)
 	char *str = NULL, *identifier = NULL, *tz = NULL;
 	int str_len = 0, identifier_len = 0;
 	long flags = V8JS_FLAG_NONE, time_limit = 0, memory_limit = 0;
-	php_v8js_script *res = NULL;
+	v8js_script *res = NULL;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|slll", &str, &str_len, &identifier, &identifier_len, &flags, &time_limit, &memory_limit) == FAILURE) {
 		return;
@@ -536,7 +536,7 @@ static PHP_METHOD(V8Js, executeString)
 		RETURN_FALSE;
 	}
 	php_v8js_execute_script(getThis(), res, flags, time_limit, memory_limit, &return_value TSRMLS_CC);
-	php_v8js_script_free(res, true);
+	v8js_script_free(res, true);
 	efree(res);
 }
 /* }}} */
@@ -548,7 +548,7 @@ static PHP_METHOD(V8Js, compileString)
 {
 	char *str = NULL, *identifier = NULL;
 	int str_len = 0, identifier_len = 0;
-	php_v8js_script *res = NULL;
+	v8js_script *res = NULL;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|s", &str, &str_len, &identifier, &identifier_len) == FAILURE) {
 		return;
@@ -569,13 +569,13 @@ static PHP_METHOD(V8Js, executeScript)
 {
 	long flags = V8JS_FLAG_NONE, time_limit = 0, memory_limit = 0;
 	zval *zscript;
-	php_v8js_script *res;
+	v8js_script *res;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r|lll", &zscript, &flags, &time_limit, &memory_limit) == FAILURE) {
 		return;
 	}
 
-	ZEND_FETCH_RESOURCE(res, php_v8js_script*, &zscript, -1, PHP_V8JS_SCRIPT_RES_NAME, le_v8js_script);
+	ZEND_FETCH_RESOURCE(res, v8js_script*, &zscript, -1, PHP_V8JS_SCRIPT_RES_NAME, le_v8js_script);
 	ZEND_VERIFY_RESOURCE(res);
 
 	php_v8js_execute_script(getThis(), res, flags, time_limit, memory_limit, &return_value TSRMLS_CC);
@@ -591,7 +591,7 @@ static PHP_METHOD(V8Js, checkString)
 	const char *identifier = "V8Js::checkString()";
 	int identifier_len = 19;
 
-	php_v8js_script *res = NULL;
+	v8js_script *res = NULL;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &str, &str_len) == FAILURE) {
 		return;
@@ -602,7 +602,7 @@ static PHP_METHOD(V8Js, checkString)
 		RETURN_FALSE;
 	}
 
-	php_v8js_script_free(res, true);
+	v8js_script_free(res, true);
 	efree(res);
 	RETURN_TRUE;
 }
@@ -614,7 +614,7 @@ static PHP_METHOD(V8Js, checkString)
    __destruct for V8Js */
 static PHP_METHOD(V8Js, __destruct)
 {
-	php_v8js_ctx *c = (php_v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
+	v8js_ctx *c = (v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
 
 	if(!c->isolate) {
 		/* c->isolate is initialized by __construct, which wasn't called if this
@@ -680,13 +680,13 @@ static PHP_METHOD(V8Js, startDebugAgent)
  */
 static PHP_METHOD(V8Js, getPendingException)
 {
-	php_v8js_ctx *c;
+	v8js_ctx *c;
 
 	if (zend_parse_parameters_none() == FAILURE) {
 		return;
 	}
 
-	c = (php_v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
+	c = (v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
 
 	if (c->pending_exception) {
 		RETURN_ZVAL(c->pending_exception, 1, 0);
@@ -698,13 +698,13 @@ static PHP_METHOD(V8Js, getPendingException)
  */
 static PHP_METHOD(V8Js, clearPendingException)
 {
-	php_v8js_ctx *c;
+	v8js_ctx *c;
 
 	if (zend_parse_parameters_none() == FAILURE) {
 		return;
 	}
 
-	c = (php_v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
+	c = (v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
 
 	if (c->pending_exception) {
 		zval_ptr_dtor(&c->pending_exception);
@@ -717,14 +717,14 @@ static PHP_METHOD(V8Js, clearPendingException)
  */
 static PHP_METHOD(V8Js, setModuleLoader)
 {
-	php_v8js_ctx *c;
+	v8js_ctx *c;
 	zval *callable;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &callable) == FAILURE) {
 		return;
 	}
 
-	c = (php_v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
+	c = (v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
 
 	c->module_loader = callable;
 	Z_ADDREF_P(c->module_loader);
@@ -735,20 +735,20 @@ static PHP_METHOD(V8Js, setModuleLoader)
  */
 static PHP_METHOD(V8Js, setTimeLimit)
 {
-	php_v8js_ctx *c;
+	v8js_ctx *c;
 	long time_limit = 0;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &time_limit) == FAILURE) {
 		return;
 	}
 
-	c = (php_v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
+	c = (v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
 	c->time_limit = time_limit;
 
 	V8JSG(timer_mutex).lock();
-	for (std::deque< php_v8js_timer_ctx* >::iterator it = V8JSG(timer_stack).begin();
+	for (std::deque< v8js_timer_ctx* >::iterator it = V8JSG(timer_stack).begin();
 		 it != V8JSG(timer_stack).end(); it ++) {
-		if((*it)->v8js_ctx == c && !(*it)->killed) {
+		if((*it)->ctx == c && !(*it)->killed) {
 			(*it)->time_limit = time_limit;
 
 			// Calculate the time point when the time limit is exceeded
@@ -771,20 +771,20 @@ static PHP_METHOD(V8Js, setTimeLimit)
  */
 static PHP_METHOD(V8Js, setMemoryLimit)
 {
-	php_v8js_ctx *c;
+	v8js_ctx *c;
 	long memory_limit = 0;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &memory_limit) == FAILURE) {
 		return;
 	}
 
-	c = (php_v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
+	c = (v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
 	c->memory_limit = memory_limit;
 
 	V8JSG(timer_mutex).lock();
-	for (std::deque< php_v8js_timer_ctx* >::iterator it = V8JSG(timer_stack).begin();
+	for (std::deque< v8js_timer_ctx* >::iterator it = V8JSG(timer_stack).begin();
 		 it != V8JSG(timer_stack).end(); it ++) {
-		if((*it)->v8js_ctx == c && !(*it)->killed) {
+		if((*it)->ctx == c && !(*it)->killed) {
 			(*it)->memory_limit = memory_limit;
 		}
 	}
@@ -827,7 +827,7 @@ static void php_v8js_persistent_zval_dtor(zval **p) /* {{{ */
 }
 /* }}} */
 
-static void php_v8js_script_free(php_v8js_script *res, bool dispose_persistent)
+static void v8js_script_free(v8js_script *res, bool dispose_persistent)
 {
 	if (res->name) {
 		efree(res->name);
@@ -839,11 +839,11 @@ static void php_v8js_script_free(php_v8js_script *res, bool dispose_persistent)
 	}
 }
 
-static void php_v8js_script_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC) /* {{{ */
+static void v8js_script_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC) /* {{{ */
 {
-	php_v8js_script *res = (php_v8js_script *)rsrc->ptr;
+	v8js_script *res = (v8js_script *)rsrc->ptr;
 	if (res) {
-		php_v8js_script_free(res, false);
+		v8js_script_free(res, false);
 		efree(res);
 	}
 }
@@ -1130,7 +1130,7 @@ PHP_MINIT_FUNCTION(v8js_class) /* {{{ */
 	zend_declare_class_constant_long(php_ce_v8js, ZEND_STRL("DEBUG_AUTO_BREAK_ALWAYS"),	V8JS_DEBUG_AUTO_BREAK_ALWAYS		TSRMLS_CC);
 #endif
 
-	le_v8js_script = zend_register_list_destructors_ex(php_v8js_script_dtor, NULL, PHP_V8JS_SCRIPT_RES_NAME, module_number);
+	le_v8js_script = zend_register_list_destructors_ex(v8js_script_dtor, NULL, PHP_V8JS_SCRIPT_RES_NAME, module_number);
 } /* }}} */
 
 /*

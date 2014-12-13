@@ -59,7 +59,7 @@ void v8js_v8_init(TSRMLS_D) /* {{{ */
 /* }}} */
 
 
-void v8js_v8_call(php_v8js_ctx *c, zval **return_value,
+void v8js_v8_call(v8js_ctx *c, zval **return_value,
 				  long flags, long time_limit, long memory_limit,
 				  std::function< v8::Local<v8::Value>(v8::Isolate *) >& v8_call TSRMLS_DC) /* {{{ */
 {
@@ -124,7 +124,7 @@ void v8js_v8_call(php_v8js_ctx *c, zval **return_value,
 	/* Pop our context from the stack and read (possibly updated) limits
 	 * into local variables. */
 	V8JSG(timer_mutex).lock();
-	php_v8js_timer_ctx *timer_ctx = V8JSG(timer_stack).front();
+	v8js_timer_ctx *timer_ctx = V8JSG(timer_stack).front();
 	V8JSG(timer_stack).pop_front();
 	V8JSG(timer_mutex).unlock();
 
@@ -198,7 +198,7 @@ void v8js_v8_call(php_v8js_ctx *c, zval **return_value,
 }
 /* }}} */
 
-void v8js_terminate_execution(php_v8js_ctx *c TSRMLS_DC) /* {{{ */
+void v8js_terminate_execution(v8js_ctx *c TSRMLS_DC) /* {{{ */
 {
 	// Forcefully terminate the current thread of V8 execution in the isolate
 	v8::V8::TerminateExecution(c->isolate);

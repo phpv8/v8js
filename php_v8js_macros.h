@@ -101,17 +101,17 @@ v8::Handle<v8::Value> zval_to_v8js(zval *, v8::Isolate * TSRMLS_DC);
 /* Convert V8 value into zval */
 int v8js_to_zval(v8::Handle<v8::Value>, zval *, int, v8::Isolate * TSRMLS_DC);
 
-struct php_v8js_accessor_ctx
+struct v8js_accessor_ctx
 {
     char *variable_name_string;
     uint variable_name_string_len;
     v8::Isolate *isolate;
 };
 
-void php_v8js_accessor_ctx_dtor(php_v8js_accessor_ctx * TSRMLS_DC);
+void v8js_accessor_ctx_dtor(v8js_accessor_ctx * TSRMLS_DC);
 
 /* Register accessors into passed object */
-void php_v8js_register_accessors(std::vector<php_v8js_accessor_ctx*> *accessor_list, v8::Local<v8::FunctionTemplate>, zval *, v8::Isolate * TSRMLS_DC);
+void php_v8js_register_accessors(std::vector<v8js_accessor_ctx*> *accessor_list, v8::Local<v8::FunctionTemplate>, zval *, v8::Isolate * TSRMLS_DC);
 
 /* Resource declaration */
 
@@ -126,7 +126,7 @@ ZEND_BEGIN_MODULE_GLOBALS(v8js)
   bool use_array_access; /* Convert ArrayAccess, Countable objects to array-like objects */
 
   // Timer thread globals
-  std::deque<php_v8js_timer_ctx *> timer_stack;
+  std::deque<v8js_timer_ctx *> timer_stack;
   std::thread *timer_thread;
   std::mutex timer_mutex;
   bool timer_stop;
@@ -145,15 +145,15 @@ ZEND_EXTERN_MODULE_GLOBALS(v8js)
 #endif
 
 /* Register builtin methods into passed object */
-void php_v8js_register_methods(v8::Handle<v8::ObjectTemplate>, php_v8js_ctx *c);
+void php_v8js_register_methods(v8::Handle<v8::ObjectTemplate>, v8js_ctx *c);
 
-typedef struct _php_v8js_script {
+typedef struct _v8js_script {
 	char *name;
 	v8::Isolate *isolate;	
 	v8::Persistent<v8::Script, v8::CopyablePersistentTraits<v8::Script>> *script;
-} php_v8js_script;
+} v8js_script;
 
-static void php_v8js_script_free(php_v8js_script *res, bool dispose_persistent);
+static void v8js_script_free(v8js_script *res, bool dispose_persistent);
 
 #endif	/* PHP_V8JS_MACROS_H */
 

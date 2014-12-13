@@ -15,17 +15,17 @@
 #define V8JS_TIMER_H
 
 // Timer context
-struct php_v8js_timer_ctx
+struct v8js_timer_ctx
 {
   long time_limit;
   long memory_limit;
   std::chrono::time_point<std::chrono::high_resolution_clock> time_point;
-  php_v8js_ctx *v8js_ctx;
+  v8js_ctx *ctx;
   bool killed;
 };
 
 void v8js_timer_thread(TSRMLS_D);
-void v8js_timer_push(long time_limit, long memory_limit, php_v8js_ctx *c TSRMLS_DC);
+void v8js_timer_push(long time_limit, long memory_limit, v8js_ctx *c TSRMLS_DC);
 
 #endif /* V8JS_TIMER_H */
 

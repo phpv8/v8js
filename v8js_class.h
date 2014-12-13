@@ -21,10 +21,10 @@ typedef v8::Persistent<v8::Object, v8::CopyablePersistentTraits<v8::Object> > v8
 
 /* Forward declarations */
 struct v8js_v8object;
-struct php_v8js_accessor_ctx;
+struct v8js_accessor_ctx;
 
 /* {{{ Context container */
-struct php_v8js_ctx {
+struct v8js_ctx {
   zend_object std;
   v8::Persistent<v8::String> object_name;
   v8::Persistent<v8::Context> context;
@@ -51,7 +51,7 @@ struct php_v8js_ctx {
 
   std::list<v8js_v8object *> v8js_v8objects;
 
-  std::vector<php_v8js_accessor_ctx *> accessor_list;
+  std::vector<v8js_accessor_ctx *> accessor_list;
   char *tz;
 #ifdef ZTS
   void ***zts_ctx;
@@ -60,7 +60,7 @@ struct php_v8js_ctx {
 /* }}} */
 
 #ifdef ZTS
-# define V8JS_TSRMLS_FETCH() TSRMLS_FETCH_FROM_CTX(((php_v8js_ctx *) isolate->GetData(0))->zts_ctx);
+# define V8JS_TSRMLS_FETCH() TSRMLS_FETCH_FROM_CTX(((v8js_ctx *) isolate->GetData(0))->zts_ctx);
 #else
 # define V8JS_TSRMLS_FETCH()
 #endif

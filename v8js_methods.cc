@@ -199,7 +199,7 @@ V8JS_METHOD(require)
 
 	// Get the extension context
 	v8::Handle<v8::External> data = v8::Handle<v8::External>::Cast(info.Data());
-	php_v8js_ctx *c = static_cast<php_v8js_ctx*>(data->Value());
+	v8js_ctx *c = static_cast<v8js_ctx*>(data->Value());
 
 	// Check that we have a module loader
 	if (c->module_loader == NULL) {
@@ -389,7 +389,7 @@ V8JS_METHOD(require)
 	efree(normalised_module_id);
 }
 
-void php_v8js_register_methods(v8::Handle<v8::ObjectTemplate> global, php_v8js_ctx *c) /* {{{ */
+void php_v8js_register_methods(v8::Handle<v8::ObjectTemplate> global, v8js_ctx *c) /* {{{ */
 {
 	v8::Isolate *isolate = c->isolate;
 	global->Set(V8JS_SYM("exit"), v8::FunctionTemplate::New(isolate, V8JS_MN(exit)), v8::ReadOnly);

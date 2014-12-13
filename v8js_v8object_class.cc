@@ -511,7 +511,7 @@ PHP_METHOD(V8Function, __wakeup)
 
 void php_v8js_create_v8(zval *res, v8::Handle<v8::Value> value, int flags, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
 {
-	php_v8js_ctx *ctx = (php_v8js_ctx *) isolate->GetData(0);
+	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
 	v8js_v8object *c;
 
 	object_init_ex(res, value->IsFunction() ? php_ce_v8function : php_ce_v8object);

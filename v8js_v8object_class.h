@@ -19,7 +19,7 @@ struct v8js_v8object {
 	zend_object std;
 	v8::Persistent<v8::Value> v8obj;
 	int flags;
-	struct php_v8js_ctx *ctx;
+	struct v8js_ctx *ctx;
 	HashTable *properties;
 };
 /* }}} */
