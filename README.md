@@ -107,6 +107,12 @@ PHP API
         // A time limit (milliseconds) and/or memory limit (bytes) can be provided to restrict execution. These options will throw a V8JsTimeLimitException or V8JsMemoryLimitException.
         public mixed V8Js::executeString( string $script [, string $identifier [, int $flags = V8Js::FLAG_NONE [, int $time_limit = 0 [, int $memory_limit = 0]]]])
 
+        // Set the time limit (in milliseconds) for this V8Js object works similar to the set_time_limit php function
+        public setTimeLimit( int $limit )
+
+        // Set the memory limit (in bytes) for this V8Js object
+        public setMemoryLimit( int $limit )
+
         // Compiles a script in object's context with optional identifier string.
         public mixed V8Js::compileString( string $script [, string $identifier ])
 
