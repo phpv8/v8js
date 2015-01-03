@@ -11,8 +11,6 @@
   +----------------------------------------------------------------------+
 */
 
-/* $Id$ */
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -24,7 +22,7 @@ extern "C" {
 }
 
 /* Forward declarations */
-void php_v8js_commonjs_normalise_identifier(char *base, char *identifier, char *normalised_path, char *module_name);
+void v8js_commonjs_normalise_identifier(char *base, char *identifier, char *normalised_path, char *module_name);
 
 /* global.exit - terminate execution */
 V8JS_METHOD(exit) /* {{{ */
@@ -56,7 +54,7 @@ V8JS_METHOD(print) /* {{{ */
 }
 /* }}} */
 
-static void _php_v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int level TSRMLS_DC) /* {{{ */
+static void v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int level TSRMLS_DC) /* {{{ */
 {
 	if (level > 1) {
 		php_printf("%*c", (level - 1) * 2, ' ');
@@ -126,7 +124,7 @@ static void _php_v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int
 
 		for (unsigned i = 0; i < length; i++) {
 			php_printf("%*c[%d] =>\n", level * 2, ' ', i);
-			_php_v8js_dumper(isolate, array->Get(i), level + 1 TSRMLS_CC);
+			v8js_dumper(isolate, array->Get(i), level + 1 TSRMLS_CC);
 		}
 
 		if (level > 1) {
@@ -163,7 +161,7 @@ static void _php_v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int
 				v8::Local<v8::String> key = keys->Get(i)->ToString();
 				v8::String::Utf8Value kname(key);
 				php_printf("%*c[\"%s\"] =>\n", level * 2, ' ', ToCString(kname));
-				_php_v8js_dumper(isolate, object->Get(key), level + 1 TSRMLS_CC);
+				v8js_dumper(isolate, object->Get(key), level + 1 TSRMLS_CC);
 			}
 		}
 
@@ -187,7 +185,7 @@ V8JS_METHOD(var_dump) /* {{{ */
 	V8JS_TSRMLS_FETCH();
 
 	for (int i = 0; i < info.Length(); i++) {
-		_php_v8js_dumper(isolate, info[i], 1 TSRMLS_CC);
+		v8js_dumper(isolate, info[i], 1 TSRMLS_CC);
 	}
 
 	info.GetReturnValue().Set(V8JS_NULL);
@@ -201,7 +199,7 @@ V8JS_METHOD(require)
 
 	// Get the extension context
 	v8::Handle<v8::External> data = v8::Handle<v8::External>::Cast(info.Data());
-	php_v8js_ctx *c = static_cast<php_v8js_ctx*>(data->Value());
+	v8js_ctx *c = static_cast<v8js_ctx*>(data->Value());
 
 	// Check that we have a module loader
 	if (c->module_loader == NULL) {
@@ -216,7 +214,7 @@ V8JS_METHOD(require)
 	char *normalised_path = (char *)emalloc(PATH_MAX);
 	char *module_name = (char *)emalloc(PATH_MAX);
 
-	php_v8js_commonjs_normalise_identifier(c->modules_base.back(), module_id, normalised_path, module_name);
+	v8js_commonjs_normalise_identifier(c->modules_base.back(), module_id, normalised_path, module_name);
 	efree(module_id);
 
 	char *normalised_module_id = (char *)emalloc(strlen(normalised_path)+1+strlen(module_name)+1);
@@ -391,7 +389,7 @@ V8JS_METHOD(require)
 	efree(normalised_module_id);
 }
 
-void php_v8js_register_methods(v8::Handle<v8::ObjectTemplate> global, php_v8js_ctx *c) /* {{{ */
+void v8js_register_methods(v8::Handle<v8::ObjectTemplate> global, v8js_ctx *c) /* {{{ */
 {
 	v8::Isolate *isolate = c->isolate;
 	global->Set(V8JS_SYM("exit"), v8::FunctionTemplate::New(isolate, V8JS_MN(exit)), v8::ReadOnly);

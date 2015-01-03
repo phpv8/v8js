@@ -22,7 +22,7 @@ extern "C" {
 
 #include "php_v8js_macros.h"
 
-void php_v8js_commonjs_split_terms(char *identifier, std::vector<char *> &terms)
+void v8js_commonjs_split_terms(char *identifier, std::vector<char *> &terms)
 {
     char *term = (char *)malloc(PATH_MAX), *ptr = term;
 
@@ -58,14 +58,14 @@ void php_v8js_commonjs_split_terms(char *identifier, std::vector<char *> &terms)
     }
 }
 
-void php_v8js_commonjs_normalise_identifier(char *base, char *identifier, char *normalised_path, char *module_name)
+void v8js_commonjs_normalise_identifier(char *base, char *identifier, char *normalised_path, char *module_name)
 {
     std::vector<char *> id_terms, terms;
-    php_v8js_commonjs_split_terms(identifier, id_terms);
+    v8js_commonjs_split_terms(identifier, id_terms);
 
     // If we have a relative module identifier then include the base terms
     if (!strcmp(id_terms.front(), ".") || !strcmp(id_terms.front(), "..")) {
-        php_v8js_commonjs_split_terms(base, terms);
+        v8js_commonjs_split_terms(base, terms);
     }
 
     terms.insert(terms.end(), id_terms.begin(), id_terms.end());

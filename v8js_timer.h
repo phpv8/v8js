@@ -11,23 +11,29 @@
   +----------------------------------------------------------------------+
 */
 
-#ifndef V8JS_OBJECT_EXPORT_H
-#define V8JS_OBJECT_EXPORT_H
+#ifndef V8JS_TIMER_H
+#define V8JS_TIMER_H
 
-v8::Handle<v8::Value> v8js_hash_to_jsobj(zval *value, v8::Isolate *isolate TSRMLS_DC);
+// Timer context
+struct v8js_timer_ctx
+{
+  long time_limit;
+  long memory_limit;
+  std::chrono::time_point<std::chrono::high_resolution_clock> time_point;
+  v8js_ctx *ctx;
+  bool killed;
+};
 
+void v8js_timer_thread(TSRMLS_D);
+void v8js_timer_push(long time_limit, long memory_limit, v8js_ctx *c TSRMLS_DC);
 
-typedef enum {
-	V8JS_PROP_GETTER,
-	V8JS_PROP_SETTER,
-	V8JS_PROP_QUERY,
-	V8JS_PROP_DELETER
-} property_op_t;
+#endif /* V8JS_TIMER_H */
 
-template<typename T>
-v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> property,
-						      const v8::PropertyCallbackInfo<T> &info,
-						      property_op_t callback_type,
-						      v8::Local<v8::Value> set_value = v8::Local<v8::Value>());
-
-#endif /* V8JS_OBJECT_EXPORT_H */
+/*
+ * Local variables:
+ * tab-width: 4
+ * c-basic-offset: 4
+ * End:
+ * vim600: noet sw=4 ts=4 fdm=marker
+ * vim<600: noet sw=4 ts=4
+ */

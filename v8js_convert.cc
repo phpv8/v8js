@@ -11,8 +11,6 @@
   +----------------------------------------------------------------------+
 */
 
-/* $Id$ */
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -27,11 +25,13 @@ extern "C" {
 
 #include "php_v8js_macros.h"
 #include "v8js_object_export.h"
+#include "v8js_v8object_class.h"
+#include "v8js_v8.h"
 
 #include <stdexcept>
 #include <limits>
 
-static int _php_v8js_is_assoc_array(HashTable *myht TSRMLS_DC) /* {{{ */
+static int v8js_is_assoc_array(HashTable *myht TSRMLS_DC) /* {{{ */
 {
 	int i;
 	char *key;
@@ -54,14 +54,14 @@ static int _php_v8js_is_assoc_array(HashTable *myht TSRMLS_DC) /* {{{ */
 /* }}} */
 
 
-static v8::Handle<v8::Value> php_v8js_hash_to_jsarr(zval *value, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
+static v8::Handle<v8::Value> v8js_hash_to_jsarr(zval *value, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
 {
 	HashTable *myht = HASH_OF(value);
 	int i = myht ? zend_hash_num_elements(myht) : 0;
 
 	/* Return object if dealing with assoc array */
-	if (i > 0 && _php_v8js_is_assoc_array(myht TSRMLS_CC)) {
-		return php_v8js_hash_to_jsobj(value, isolate TSRMLS_CC);
+	if (i > 0 && v8js_is_assoc_array(myht TSRMLS_CC)) {
+		return v8js_hash_to_jsobj(value, isolate TSRMLS_CC);
 	}
 
 	v8::Local<v8::Array> newarr;
@@ -110,7 +110,7 @@ v8::Handle<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate TSRMLS_DC) 
 	switch (Z_TYPE_P(value))
 	{
 		case IS_ARRAY:
-			jsValue = php_v8js_hash_to_jsarr(value, isolate TSRMLS_CC);
+			jsValue = v8js_hash_to_jsarr(value, isolate TSRMLS_CC);
 			break;
 
 		case IS_OBJECT:
@@ -126,9 +126,9 @@ v8::Handle<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate TSRMLS_DC) 
 					 else
 						 jsValue = V8JS_NULL;
 				 } else
-					 jsValue = php_v8js_hash_to_jsobj(value, isolate TSRMLS_CC);
+					 jsValue = v8js_hash_to_jsobj(value, isolate TSRMLS_CC);
 			 } else
-				 jsValue = php_v8js_hash_to_jsobj(value, isolate TSRMLS_CC);
+				 jsValue = v8js_hash_to_jsobj(value, isolate TSRMLS_CC);
 			break;
 
 		case IS_STRING:
@@ -246,9 +246,9 @@ int v8js_to_zval(v8::Handle<v8::Value> jsValue, zval *return_value, int flags, v
 		}
 		if ((flags & V8JS_FLAG_FORCE_ARRAY) || jsValue->IsArray()) {
 			array_init(return_value);
-			return php_v8js_v8_get_properties_hash(jsValue, Z_ARRVAL_P(return_value), flags, isolate TSRMLS_CC);
+			return v8js_get_properties_hash(jsValue, Z_ARRVAL_P(return_value), flags, isolate TSRMLS_CC);
 		} else {
-			php_v8js_create_v8(return_value, jsValue, flags, isolate TSRMLS_CC);
+			v8js_v8object_create(return_value, jsValue, flags, isolate TSRMLS_CC);
 			return SUCCESS;
 		}
 	}

@@ -11,23 +11,34 @@
   +----------------------------------------------------------------------+
 */
 
-#ifndef V8JS_OBJECT_EXPORT_H
-#define V8JS_OBJECT_EXPORT_H
+#ifndef V8JS_V8OBJECT_CLASS_H
+#define V8JS_V8OBJECT_CLASS_H
 
-v8::Handle<v8::Value> v8js_hash_to_jsobj(zval *value, v8::Isolate *isolate TSRMLS_DC);
+/* {{{ Object container */
+struct v8js_v8object {
+	zend_object std;
+	v8::Persistent<v8::Value> v8obj;
+	int flags;
+	struct v8js_ctx *ctx;
+	HashTable *properties;
+};
+/* }}} */
 
+extern zend_class_entry *php_ce_v8object;
+extern zend_class_entry *php_ce_v8function;
 
-typedef enum {
-	V8JS_PROP_GETTER,
-	V8JS_PROP_SETTER,
-	V8JS_PROP_QUERY,
-	V8JS_PROP_DELETER
-} property_op_t;
+/* Create PHP V8 object */
+void v8js_v8object_create(zval *, v8::Handle<v8::Value>, int, v8::Isolate * TSRMLS_DC);
 
-template<typename T>
-v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> property,
-						      const v8::PropertyCallbackInfo<T> &info,
-						      property_op_t callback_type,
-						      v8::Local<v8::Value> set_value = v8::Local<v8::Value>());
+PHP_MINIT_FUNCTION(v8js_v8object_class);
 
-#endif /* V8JS_OBJECT_EXPORT_H */
+#endif /* V8JS_V8OBJECT_CLASS_H */
+
+/*
+ * Local variables:
+ * tab-width: 4
+ * c-basic-offset: 4
+ * End:
+ * vim600: noet sw=4 ts=4 fdm=marker
+ * vim<600: noet sw=4 ts=4
+ */

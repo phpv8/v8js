@@ -11,23 +11,26 @@
   +----------------------------------------------------------------------+
 */
 
-#ifndef V8JS_OBJECT_EXPORT_H
-#define V8JS_OBJECT_EXPORT_H
+#ifndef V8JS_EXCEPTIONS_H
+#define V8JS_EXCEPTIONS_H
 
-v8::Handle<v8::Value> v8js_hash_to_jsobj(zval *value, v8::Isolate *isolate TSRMLS_DC);
+extern zend_class_entry *php_ce_v8js_exception;
+extern zend_class_entry *php_ce_v8js_script_exception;
+extern zend_class_entry *php_ce_v8js_time_limit_exception;
+extern zend_class_entry *php_ce_v8js_memory_limit_exception;
 
+void v8js_create_script_exception(zval *return_value, v8::TryCatch *try_catch TSRMLS_DC);
+void v8js_throw_script_exception(v8::TryCatch *try_catch TSRMLS_DC);
 
-typedef enum {
-	V8JS_PROP_GETTER,
-	V8JS_PROP_SETTER,
-	V8JS_PROP_QUERY,
-	V8JS_PROP_DELETER
-} property_op_t;
+PHP_MINIT_FUNCTION(v8js_exceptions);
 
-template<typename T>
-v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> property,
-						      const v8::PropertyCallbackInfo<T> &info,
-						      property_op_t callback_type,
-						      v8::Local<v8::Value> set_value = v8::Local<v8::Value>());
+#endif /* V8JS_EXCEPTIONS_H */
 
-#endif /* V8JS_OBJECT_EXPORT_H */
+/*
+ * Local variables:
+ * tab-width: 4
+ * c-basic-offset: 4
+ * End:
+ * vim600: noet sw=4 ts=4 fdm=marker
+ * vim<600: noet sw=4 ts=4
+ */
