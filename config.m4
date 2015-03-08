@@ -6,7 +6,14 @@ if test "$PHP_V8JS" != "no"; then
   SEARCH_FOR="include/v8.h"
   
   if test -r $PHP_V8JS/$SEARCH_FOR; then
-    LDFLAGS="$LDFLAGS -Wl,--rpath=$PHP_V8JS/$PHP_LIBDIR"
+    case $host_os in
+      darwin* )
+        # MacOS does not support --rpath
+        ;;
+      * )
+        LDFLAGS="$LDFLAGS -Wl,--rpath=$PHP_V8JS/$PHP_LIBDIR"
+        ;;
+    esac
     V8_DIR=$PHP_V8JS
   else
     AC_MSG_CHECKING([for V8 files in default path])
@@ -31,7 +38,17 @@ if test "$PHP_V8JS" != "no"; then
   old_LIBS=$LIBS
   old_LDFLAGS=$LDFLAGS
   old_CPPFLAGS=$CPPFLAGS
-  LDFLAGS="-Wl,--rpath=$V8_DIR/$PHP_LIBDIR -L$V8_DIR/$PHP_LIBDIR"
+
+  case $host_os in
+    darwin* )
+      # MacOS does not support --rpath
+      LDFLAGS="-L$V8_DIR/$PHP_LIBDIR"
+      ;;
+    * )
+      LDFLAGS="-Wl,--rpath=$V8_DIR/$PHP_LIBDIR -L$V8_DIR/$PHP_LIBDIR"
+      ;;
+  esac
+
   LIBS=-lv8
   CPPFLAGS=-I$V8_DIR/include
   AC_LANG_SAVE
