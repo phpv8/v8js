@@ -6,7 +6,14 @@ if test "$PHP_V8JS" != "no"; then
   SEARCH_FOR="include/v8.h"
   
   if test -r $PHP_V8JS/$SEARCH_FOR; then
-    LDFLAGS="$LDFLAGS -Wl,--rpath=$PHP_V8JS/$PHP_LIBDIR"
+    case $host_os in
+      darwin* )
+        # MacOS does not support --rpath
+        ;;
+      * )
+        LDFLAGS="$LDFLAGS -Wl,--rpath=$PHP_V8JS/$PHP_LIBDIR"
+        ;;
+    esac
     V8_DIR=$PHP_V8JS
   else
     AC_MSG_CHECKING([for V8 files in default path])
@@ -31,7 +38,17 @@ if test "$PHP_V8JS" != "no"; then
   old_LIBS=$LIBS
   old_LDFLAGS=$LDFLAGS
   old_CPPFLAGS=$CPPFLAGS
-  LDFLAGS="-Wl,--rpath=$V8_DIR/$PHP_LIBDIR -L$V8_DIR/$PHP_LIBDIR"
+
+  case $host_os in
+    darwin* )
+      # MacOS does not support --rpath
+      LDFLAGS="-L$V8_DIR/$PHP_LIBDIR"
+      ;;
+    * )
+      LDFLAGS="-Wl,--rpath=$V8_DIR/$PHP_LIBDIR -L$V8_DIR/$PHP_LIBDIR"
+      ;;
+  esac
+
   LIBS=-lv8
   CPPFLAGS=-I$V8_DIR/include
   AC_LANG_SAVE
@@ -93,22 +110,32 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <v8-debug.h>]],
     dnl link in libplatform to make our life easier.
     PHP_ADD_INCLUDE($V8_DIR)
 
-    SEARCH_FOR="lib/libv8_libplatform.a"
-    AC_MSG_CHECKING([for libv8_libplatform.a])
+    case $host_os in
+      darwin* )
+        static_link_extra="libv8_libplatform.a libv8_libbase.a"
+        ;;
+      * )
+        static_link_extra="libv8_libplatform.a"
+        ;;
+    esac
 
-    for i in $PHP_V8JS $SEARCH_PATH ; do
-      if test -r $i/$SEARCH_FOR; then
-        LIBPLATFORM_DIR=$i
-        AC_MSG_RESULT(found in $i)
+    for static_link_extra_file in $static_link_extra; do
+      AC_MSG_CHECKING([for $static_link_extra_file])
+
+      for i in $PHP_V8JS $SEARCH_PATH ; do
+        if test -r $i/lib/$static_link_extra_file; then
+          static_link_dir=$i
+          AC_MSG_RESULT(found in $i)
+        fi
+      done
+
+      if test -z "$static_link_dir"; then
+        AC_MSG_RESULT([not found])
+        AC_MSG_ERROR([Please provide $static_link_extra_file next to the libv8.so, see README.md for details])
       fi
+
+      LDFLAGS="$LDFLAGS $static_link_dir/lib/$static_link_extra_file"
     done
-
-    if test -z "$LIBPLATFORM_DIR"; then
-      AC_MSG_RESULT([not found])
-      AC_MSG_ERROR([Please provide libv8_libplatform.a next to the libv8.so, see README.md for details])
-    fi
-
-    LDFLAGS="$LDFLAGS $LIBPLATFORM_DIR/$SEARCH_FOR"
   fi
 
   AC_CACHE_CHECK(for C standard version, ac_cv_v8_cstd, [

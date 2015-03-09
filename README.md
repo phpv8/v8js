@@ -23,58 +23,22 @@ Minimum requirements
 
   This embedded implementation of the V8 engine uses thread locking so it should work with ZTS enabled.
   However, this has not been tested yet.
-  
-COMPILING LATEST VERSION
-========================
 
-Instead of compiling manually you might want to pull from the [V8Js docker
-repository](https://registry.hub.docker.com/u/stesie/v8js/).
+
+Compiling latest version
+------------------------
+
+For some very first steps, instead of compiling manually you might want to try out the [V8Js docker
+image](https://registry.hub.docker.com/u/stesie/v8js/).  It has v8, v8js and php-cli pre-installed
+so you can give it a try with PHP in "interactive mode".  There is no Apache, etc. running however.
 
 You also might want to try the Debian & Ubuntu packages available from
 the Jenkins site at https://jenkins.brokenpipe.de/
 
-Building on Microsoft Windows is more complicated, see README.Win32.md file
-for a quick run through.
-
-Compile latest v8
------------------
-
-```
-cd /tmp
-git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
-export PATH=`pwd`/depot_tools:"$PATH"
-git clone https://github.com/v8/v8.git
-cd v8
-make dependencies
-make native library=shared -j8
-sudo mkdir -p /usr/lib /usr/include
-sudo cp out/native/lib.target/lib*.so /usr/lib/
-echo -e "create /usr/lib/libv8_libplatform.a\naddlib out/native/obj.target/tools/gyp/libv8_libplatform.a\nsave\nend" | sudo ar -M
-sudo cp -R include/* /usr/include
-
-```
-
-If you don't want to overwrite the system copy of v8, replace `/usr` in
-the above commands with `/tmp/v8-install` and then add
-`--with-v8js=/tmp/v8-install` to the php-v8js `./configure` command below.
-
-`libv8_libplatform.a` should not be copied directly since it's a thin
-archive, i.e. it contains only pointers to  the build objects, which
-otherwise must not be deleted.  The simple mri-script converts the
-thin archive to a normal archive.
-
-Compile php-v8js itself
------------------------
-
-```
-cd /tmp
-git clone https://github.com/preillyme/v8js.git
-cd v8js
-phpize
-./configure
-make
-sudo make install
-```
+Building on Microsoft Windows is a bit more involved, see README.Win32.md file
+for a quick run through.  Building on GNU/Linux and MacOS X is straight forward,
+see README.Linux.md and README.MacOS.md files for a walk through with platform
+specific notes.
 
 
 PHP API
