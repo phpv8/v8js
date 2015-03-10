@@ -210,7 +210,7 @@ static void v8js_v8object_unset_property(zval *object, zval *member ZEND_HASH_KE
 	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
 	if (v8obj->IsObject() && !v8obj->IsFunction()) {
-		v8obj->ToObject()->ForceDelete(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)));
+		v8obj->ToObject()->Delete(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)));
 	}
 }
 /* }}} */

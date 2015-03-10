@@ -1104,7 +1104,7 @@ static void v8js_unset_property(zval *object, zval *member ZEND_HASH_KEY_DC TSRM
 	v8::Local<v8::Object> jsobj = V8JS_GLOBAL(isolate)->Get(object_name_js)->ToObject();
 	
 	/* Delete value from PHP JS object */
-	jsobj->ForceDelete(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)));
+	jsobj->Delete(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)));
 
 	/* Unset from PHP object */
 	std_object_handlers.unset_property(object, member ZEND_HASH_KEY_CC TSRMLS_CC);
