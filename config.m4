@@ -35,6 +35,18 @@ if test "$PHP_V8JS" != "no"; then
   PHP_SUBST(V8JS_SHARED_LIBADD)
   PHP_REQUIRE_CXX()
 
+
+  AC_CACHE_CHECK(for C standard version, ac_cv_v8_cstd, [
+    ac_cv_v8_cstd="c++11"
+    old_CPPFLAGS=$CPPFLAGS
+    AC_LANG_PUSH([C++])
+    CPPFLAGS="-std="$ac_cv_v8_cstd
+    AC_TRY_RUN([int main() { return 0; }],[],[ac_cv_v8_cstd="c++0x"],[])
+    AC_LANG_POP([C++])
+    CPPFLAGS=$old_CPPFLAGS
+  ]);
+
+
   old_LIBS=$LIBS
   old_LDFLAGS=$LDFLAGS
   old_CPPFLAGS=$CPPFLAGS
@@ -50,7 +62,7 @@ if test "$PHP_V8JS" != "no"; then
   esac
 
   LIBS=-lv8
-  CPPFLAGS=-I$V8_DIR/include
+  CPPFLAGS="-I$V8_DIR/include -std=$ac_cv_v8_cstd"
   AC_LANG_SAVE
   AC_LANG_CPLUSPLUS
 
@@ -138,16 +150,6 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <v8-debug.h>]],
     done
   fi
 
-  AC_CACHE_CHECK(for C standard version, ac_cv_v8_cstd, [
-    ac_cv_v8_cstd="c++11"
-    old_CPPFLAGS=$CPPFLAGS
-    AC_LANG_PUSH([C++])
-    CPPFLAGS="-std="$ac_cv_v8_cstd
-    AC_TRY_RUN([int main() { return 0; }],[],[ac_cv_v8_cstd="c++0x"],[])
-    AC_LANG_POP([C++])
-    CPPFLAGS=$old_CPPFLAGS
-  ]);
-  
   PHP_NEW_EXTENSION(v8js, [	\
     v8js_array_access.cc	\
     v8js.cc					\
