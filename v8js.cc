@@ -17,8 +17,6 @@
 #include "config.h"
 #endif
 
-#include <v8-debug.h>
-
 #include "php_v8js_macros.h"
 
 extern "C" {

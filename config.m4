@@ -156,6 +156,7 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <v8-debug.h>]],
     v8js_class.cc			\
     v8js_commonjs.cc		\
     v8js_convert.cc			\
+    v8js_debug.cc			\
     v8js_exceptions.cc		\
     v8js_methods.cc			\
     v8js_object_export.cc	\
