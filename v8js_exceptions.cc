@@ -232,6 +232,7 @@ PHP_MINIT_FUNCTION(v8js_exceptions) /* {{{ */
 	php_ce_v8js_memory_limit_exception = zend_register_internal_class_ex(&ce, php_ce_v8js_exception, NULL TSRMLS_CC);
 	php_ce_v8js_memory_limit_exception->ce_flags |= ZEND_ACC_FINAL;
 
+	return SUCCESS;
 } /* }}} */
 
 /*

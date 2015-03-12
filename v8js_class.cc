@@ -1049,6 +1049,8 @@ PHP_MINIT_FUNCTION(v8js_class) /* {{{ */
 #endif
 
 	le_v8js_script = zend_register_list_destructors_ex(v8js_script_dtor, NULL, PHP_V8JS_SCRIPT_RES_NAME, module_number);
+
+	return SUCCESS;
 } /* }}} */
 
 /*
