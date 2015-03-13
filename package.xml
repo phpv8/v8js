@@ -17,10 +17,10 @@
   <active>yes</active>
  </lead>
  <date>2015-03-13</date>
- <time>15:15:25</time>
+ <time>15:32:08</time>
  <version>
-  <release>0.1.5</release>
-  <api>0.1.5</api>
+  <release>0.2.0</release>
+  <api>0.2.0</api>
  </version>
  <stability>
   <release>beta</release>
@@ -28,7 +28,15 @@
  </stability>
  <license uri="http://www.php.net/license">The MIT License (MIT)</license>
  <notes>
-- Fix package
+- adapt to latest v8 API (v8 versions from 3.24.6 up to latest 4.3 branch supported now)
+- v8 debugging support
+- apply time &amp; memory limits to V8Function calls
+- support mapping of PHP objects implementing ArrayAccess to native arrays
+- new API to set limits: setTimeLimit &amp; setMemoryLimit methods on V8Js object
+- typesafe JavaScript function wrappers
+- improved back-and-forth object passing (rewrapping, correcty isolate unlocking)
+- fix property and method visibility issues
+- fix memory leaks
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -160,14 +168,14 @@
    <file baseinstalldir="/" md5sum="25260e0bc3111b01f700fad13544d6a9" name="Makefile.frag" role="src" />
    <file baseinstalldir="/" md5sum="31e331386def7ce98943694151c0d5cb" name="Makefile.travis" role="src" />
    <file baseinstalldir="/" md5sum="0e23fa6446e52a3b1cff8b18a6e0bd79" name="php_v8js.h" role="src" />
-   <file baseinstalldir="/" md5sum="68f3f324078999eb6fcb5bb668b20835" name="php_v8js_macros.h" role="src" />
+   <file baseinstalldir="/" md5sum="b81ab8ff4f87d883363b02fe358da87c" name="php_v8js_macros.h" role="src" />
    <file baseinstalldir="/" md5sum="8d36541e788d9f2de7d19d4e167a1b3b" name="README.Linux.md" role="doc" />
    <file baseinstalldir="/" md5sum="4a65a3f9995d325a2c2ccb23224ea503" name="README.MacOS.md" role="doc" />
    <file baseinstalldir="/" md5sum="2aa7decfd057c4277bda9e0a4520abd8" name="README.md" role="doc" />
    <file baseinstalldir="/" md5sum="f7baf040ec2145f7eeccd5540ebb085f" name="README.Win32.md" role="doc" />
    <file baseinstalldir="/" md5sum="542f52c54898f33ac53b173970cba305" name="test.php" role="php" />
    <file baseinstalldir="/" md5sum="65294fadb5ed766094b1f587fc20ad37" name="TODO" role="doc" />
-   <file baseinstalldir="/" md5sum="3c96c93a7b1606c27109042fd7b5cc2c" name="v8js.cc" role="src" />
+   <file baseinstalldir="/" md5sum="f98b2e6a5b84623e827aad5eaf526bea" name="v8js.cc" role="src" />
    <file baseinstalldir="/" md5sum="358c628b2627319e40fd7e5092f19872" name="v8js_array_access.cc" role="src" />
    <file baseinstalldir="/" md5sum="7baf3fe5b77d1374b39a1d8332e05df4" name="v8js_array_access.h" role="src" />
    <file baseinstalldir="/" md5sum="8a719bd62dd5eda1a89568968dcbd1a6" name="v8js_class.cc" role="src" />
@@ -283,6 +291,29 @@
    <license uri="http://www.php.net/license">The MIT License (MIT)</license>
    <notes>
 - Fix package
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>0.2.0</release>
+    <api>0.2.0</api>
+   </version>
+   <stability>
+    <release>beta</release>
+    <api>beta</api>
+   </stability>
+   <date>2015-03-13</date>
+   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <notes>
+- adapt to latest v8 API (v8 versions from 3.24.6 up to latest 4.3 branch supported now)
+- v8 debugging support
+- apply time &amp; memory limits to V8Function calls
+- support mapping of PHP objects implementing ArrayAccess to native arrays
+- new API to set limits: setTimeLimit &amp; setMemoryLimit methods on V8Js object
+- typesafe JavaScript function wrappers
+- improved back-and-forth object passing (rewrapping, correcty isolate unlocking)
+- fix property and method visibility issues
+- fix memory leaks
    </notes>
   </release>
  </changelog>
