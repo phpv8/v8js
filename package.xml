@@ -10,8 +10,14 @@
   <email>preilly@php.net</email>
   <active>yes</active>
  </lead>
+ <lead>
+  <name>Stefan Siegl</name>
+  <user>stesie</user>
+  <email>stesie@php.net</email>
+  <active>yes</active>
+ </lead>
  <date>2015-03-13</date>
- <time>15:06:18</time>
+ <time>15:15:25</time>
  <version>
   <release>0.1.5</release>
   <api>0.1.5</api>
