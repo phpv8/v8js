@@ -155,7 +155,7 @@ static PHP_MINFO_FUNCTION(v8js)
 	php_info_print_table_header(2, "V8 Javascript Engine", "enabled");
 	php_info_print_table_header(2, "V8 Engine Compiled Version", PHP_V8_VERSION);
 	php_info_print_table_header(2, "V8 Engine Linked Version", v8::V8::GetVersion());
-	php_info_print_table_header(2, "Version", V8JS_VERSION);
+	php_info_print_table_header(2, "Version", PHP_V8JS_VERSION);
 	php_info_print_table_end();
 
 	DISPLAY_INI_ENTRIES();
@@ -232,7 +232,7 @@ zend_module_entry v8js_module_entry = {
 	NULL,
 	PHP_RSHUTDOWN(v8js),
 	PHP_MINFO(v8js),
-	V8JS_VERSION,
+	PHP_V8JS_VERSION,
 	PHP_MODULE_GLOBALS(v8js),
 	PHP_GINIT(v8js),
 	PHP_GSHUTDOWN(v8js),
