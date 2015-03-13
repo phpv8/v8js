@@ -3,7 +3,7 @@
  <name>v8js</name>
  <channel>pecl.php.net</channel>
  <summary>V8 Javascript Engine for PHP</summary>
- <description>This extension embeds the Google&apos;s V8 Javascript Engine into PHP.</description>
+ <description>This extension embeds Google&apos;s V8 Javascript Engine into PHP.</description>
  <lead>
   <name>Patrick Reilly</name>
   <user>preilly</user>
