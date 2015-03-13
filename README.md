@@ -16,9 +16,6 @@ Minimum requirements
 	V8 implements ECMAScript as specified in ECMA-262, 5th edition.
     This extension makes use of V8 isolates to ensure separation between multiple V8Js instances and uses the new isolate-based mechanism to throw exceptions, hence the need for 3.24.6 or above.
 
-    For a detailed overview of which V8 version V8Js can be successfully built against, see the
-    [Jenkins V8Js build matrix](https://jenkins.brokenpipe.de/job/docker-v8js-matrix/).
-
 - PHP 5.3.3+
 
   This embedded implementation of the V8 engine uses thread locking so it should work with ZTS enabled.
@@ -31,9 +28,6 @@ Compiling latest version
 For some very first steps, instead of compiling manually you might want to try out the [V8Js docker
 image](https://registry.hub.docker.com/u/stesie/v8js/).  It has v8, v8js and php-cli pre-installed
 so you can give it a try with PHP in "interactive mode".  There is no Apache, etc. running however.
-
-You also might want to try the Debian & Ubuntu packages available from
-the Jenkins site at https://jenkins.brokenpipe.de/
 
 Building on Microsoft Windows is a bit more involved, see README.Win32.md file
 for a quick run through.  Building on GNU/Linux and MacOS X is straight forward,
