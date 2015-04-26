@@ -648,8 +648,9 @@ inline v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> p
 				zval_ptr_dtor(&php_value);
 			}
 		} else if (callback_type == V8JS_PROP_SETTER) {
+			int flags = V8JS_GLOBAL_GET_FLAGS(isolate);
 			MAKE_STD_ZVAL(php_value);
-			if (v8js_to_zval(set_value, php_value, 0, isolate TSRMLS_CC) != SUCCESS) {
+			if (v8js_to_zval(set_value, php_value, flags, isolate TSRMLS_CC) != SUCCESS) {
 				ret_value = v8::Handle<v8::Value>();
 			}
 			else {

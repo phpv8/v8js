@@ -1,5 +1,5 @@
 --TEST--
-Test V8::executeString() : Forcing to arrays
+Test V8::executeString() : Forcing to arrays (argument passing)
 --SKIPIF--
 <?php require_once(dirname(__FILE__) . '/skipif.inc'); ?>
 --FILE--
