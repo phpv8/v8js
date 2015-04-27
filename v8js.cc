@@ -130,6 +130,7 @@ static PHP_RSHUTDOWN_FUNCTION(v8js)
 		V8JSG(timer_stop) = true;
 		V8JSG(timer_thread)->join();
 		V8JSG(timer_stop) = false;
+		delete V8JSG(timer_thread);
 		V8JSG(timer_thread) = NULL;
 	}
 
