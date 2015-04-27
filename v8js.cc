@@ -129,6 +129,8 @@ static PHP_RSHUTDOWN_FUNCTION(v8js)
 	if (V8JSG(timer_thread)) {
 		V8JSG(timer_stop) = true;
 		V8JSG(timer_thread)->join();
+		V8JSG(timer_stop) = false;
+		V8JSG(timer_thread) = NULL;
 	}
 
 #if V8JS_DEBUG
