@@ -352,19 +352,20 @@ static PHP_METHOD(V8Js, __construct)
 
 	/* Create context */
 	v8::Local<v8::Context> context = v8::Context::New(isolate, &extension_conf, tpl->InstanceTemplate());
-	context->SetAlignedPointerInEmbedderData(1, c);
-	c->context.Reset(isolate, context);
 
 	if (exts) {
 		v8js_free_ext_strarr(exts, exts_count);
 	}
 
 	/* If extensions have errors, context will be empty. (NOTE: This is V8 stuff, they expect the passed sources to compile :) */
-	if (c->context.IsEmpty()) {
+	if (context.IsEmpty()) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Failed to create V8 context. Check that registered extensions do not have errors.");
 		ZVAL_NULL(getThis());
 		return;
 	}
+
+	context->SetAlignedPointerInEmbedderData(1, c);
+	c->context.Reset(isolate, context);
 
 	/* Enter context */
 	v8::Context::Scope context_scope(context);
