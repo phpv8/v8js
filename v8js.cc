@@ -11,7 +11,6 @@
   +----------------------------------------------------------------------+
 */
 
-#define V8JS_DEBUG 0
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -133,17 +132,6 @@ static PHP_RSHUTDOWN_FUNCTION(v8js)
 		delete V8JSG(timer_thread);
 		V8JSG(timer_thread) = NULL;
 	}
-
-#if V8JS_DEBUG
-	v8::HeapStatistics stats;
-	v8::V8::GetHeapStatistics(&stats);
-	float used = stats.used_heap_size() / 1024.0 / 1024.0;
-	float total = stats.total_heap_size() / 1024.0 / 1024.0;
-
-	fprintf(stderr, "### RSHUTDOWN ###\n");
-	fprintf(stderr, "############ Heap Used/Total %.2f/%.2f MB ############\n", used, total);
-	fflush(stderr);
-#endif
 
 	return SUCCESS;
 }
