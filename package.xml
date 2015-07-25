@@ -16,11 +16,11 @@
   <email>stesie@php.net</email>
   <active>yes</active>
  </lead>
- <date>2015-03-13</date>
- <time>15:32:08</time>
+ <date>2015-07-26</date>
+ <time>00:04:15</time>
  <version>
-  <release>0.2.0</release>
-  <api>0.2.0</api>
+  <release>0.2.1</release>
+  <api>0.2.1</api>
  </version>
  <stability>
   <release>beta</release>
@@ -28,15 +28,10 @@
  </stability>
  <license uri="http://www.php.net/license">The MIT License (MIT)</license>
  <notes>
-- adapt to latest v8 API (v8 versions from 3.24.6 up to latest 4.3 branch supported now)
-- v8 debugging support
-- apply time &amp; memory limits to V8Function calls
-- support mapping of PHP objects implementing ArrayAccess to native arrays
-- new API to set limits: setTimeLimit &amp; setMemoryLimit methods on V8Js object
-- typesafe JavaScript function wrappers
-- improved back-and-forth object passing (rewrapping, correcty isolate unlocking)
-- fix property and method visibility issues
-- fix memory leaks
+- adapt to latest v8 API (v8 versions from 3.24.6 up to latest 4.6 branch supported now)
+- fixed FLAG_FORCE_ARRAY behaviour regarding property assignments
+- properly stop (and restart) timer thread (for memory &amp; cpu limits)
+- fixed crash on failed module bootstrapping
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -96,10 +91,12 @@
    <file baseinstalldir="/" md5sum="74026d3872c248782bf98dcc8e05ef41" name="tests/exception_propagation_2.phpt" role="test" />
    <file baseinstalldir="/" md5sum="f90813f9ac47107b4630461816ad6221" name="tests/exception_propagation_3.phpt" role="test" />
    <file baseinstalldir="/" md5sum="cf4ef4abb30a47214e7f368b378f54a8" name="tests/exception_start_column.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="582c9d3a7b4203ff6566e14c6bf2cb57" name="tests/execute_flags.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="5d69f048e86f9f5e459038c6e2808ce5" name="tests/execute_flags_args.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="8ed403ca3798d987b0f29e0132c7686f" name="tests/execute_flags.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="c0e9df92043bdc6c589da7155e2eb38d" name="tests/execute_flags_args.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="b2853876eaf71577361e443f1be1fc7d" name="tests/execute_flags_property_writing.phpt" role="test" />
    <file baseinstalldir="/" md5sum="c6bb03e78b889428564d43a918c6579d" name="tests/extensions_basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="f139b05a86a9f3495493f1232d8296d7" name="tests/extensions_circular_dependency.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="16b5e55a9df752469db6da67e4652074" name="tests/extensions_error.phpt" role="test" />
    <file baseinstalldir="/" md5sum="11390b75f900defae70e86fbcb41d4fe" name="tests/fatal_error_ignore_non_fatals.phpt" role="test" />
    <file baseinstalldir="/" md5sum="d2e64a253ef63fa1503bd5ccd87f2dc6" name="tests/fatal_error_no_uninstall_inner_frame.phpt" role="test" />
    <file baseinstalldir="/" md5sum="694f603b037e2337bf82999c6be8e215" name="tests/fatal_error_recursive.phpt" role="test" />
@@ -161,7 +158,7 @@
    <file baseinstalldir="/" md5sum="35ce3816ae00e697fca26142c46e0c79" name="tests/v8_write_property.phpt" role="test" />
    <file baseinstalldir="/" md5sum="ae504a63e5ff800e3aa7d529835d0e8e" name="tests/variable_passing.phpt" role="test" />
    <file baseinstalldir="/" md5sum="1bd7738aeeb5cf80d80561554f59f2ed" name="tests/var_dump.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="791304b70e87f7d0557f1f5d7fb58954" name="config.m4" role="src" />
+   <file baseinstalldir="/" md5sum="19150f213fb00790c51f22989b39ff55" name="config.m4" role="src" />
    <file baseinstalldir="/" md5sum="987d834d2edc84ead98dc1fddba2ad73" name="config.w32" role="src" />
    <file baseinstalldir="/" md5sum="cea72666538d5b0b80a64ccdbda24919" name="CREDITS" role="doc" />
    <file baseinstalldir="/" md5sum="9f5b5f41204bcde55d9df87d5a970b30" name="LICENSE" role="doc" />
@@ -171,14 +168,14 @@
    <file baseinstalldir="/" md5sum="b81ab8ff4f87d883363b02fe358da87c" name="php_v8js_macros.h" role="src" />
    <file baseinstalldir="/" md5sum="8d36541e788d9f2de7d19d4e167a1b3b" name="README.Linux.md" role="doc" />
    <file baseinstalldir="/" md5sum="4a65a3f9995d325a2c2ccb23224ea503" name="README.MacOS.md" role="doc" />
-   <file baseinstalldir="/" md5sum="2aa7decfd057c4277bda9e0a4520abd8" name="README.md" role="doc" />
+   <file baseinstalldir="/" md5sum="00cc5dd1c69120c7156abd08efafacba" name="README.md" role="doc" />
    <file baseinstalldir="/" md5sum="f7baf040ec2145f7eeccd5540ebb085f" name="README.Win32.md" role="doc" />
    <file baseinstalldir="/" md5sum="542f52c54898f33ac53b173970cba305" name="test.php" role="php" />
    <file baseinstalldir="/" md5sum="65294fadb5ed766094b1f587fc20ad37" name="TODO" role="doc" />
-   <file baseinstalldir="/" md5sum="f98b2e6a5b84623e827aad5eaf526bea" name="v8js.cc" role="src" />
+   <file baseinstalldir="/" md5sum="d1e8223596fac67062055261b6cf1180" name="v8js.cc" role="src" />
    <file baseinstalldir="/" md5sum="358c628b2627319e40fd7e5092f19872" name="v8js_array_access.cc" role="src" />
    <file baseinstalldir="/" md5sum="7baf3fe5b77d1374b39a1d8332e05df4" name="v8js_array_access.h" role="src" />
-   <file baseinstalldir="/" md5sum="8a719bd62dd5eda1a89568968dcbd1a6" name="v8js_class.cc" role="src" />
+   <file baseinstalldir="/" md5sum="5504a5f186152a48ef3b3819bd53a676" name="v8js_class.cc" role="src" />
    <file baseinstalldir="/" md5sum="afd1c86428a25cc71c35a6f9e3ea04bb" name="v8js_class.h" role="src" />
    <file baseinstalldir="/" md5sum="795e65a077e963de413eb6947edd1f94" name="v8js_commonjs.cc" role="src" />
    <file baseinstalldir="/" md5sum="6b3d174805b6c97bdec88b9479e8ce6c" name="v8js_convert.cc" role="src" />
@@ -186,8 +183,8 @@
    <file baseinstalldir="/" md5sum="cbdb6ed29c9ece278aa2aeab75dbe61f" name="v8js_debug.h" role="src" />
    <file baseinstalldir="/" md5sum="1867ebcefbc577aed051f40d9ccc58ad" name="v8js_exceptions.cc" role="src" />
    <file baseinstalldir="/" md5sum="587370513a019c34f2ddaac3b1f4cbf8" name="v8js_exceptions.h" role="src" />
-   <file baseinstalldir="/" md5sum="3eb3f5003c00ce773975bca370c8ae2e" name="v8js_methods.cc" role="src" />
-   <file baseinstalldir="/" md5sum="63f824c1efacf15136191f8aedd26754" name="v8js_object_export.cc" role="src" />
+   <file baseinstalldir="/" md5sum="3b5845c5f4109366257a9e35975703ac" name="v8js_methods.cc" role="src" />
+   <file baseinstalldir="/" md5sum="55bfab106f9a92e8909aa6fba344037c" name="v8js_object_export.cc" role="src" />
    <file baseinstalldir="/" md5sum="281fb591fbebc3d23e04196cdb3ec64a" name="v8js_object_export.h" role="src" />
    <file baseinstalldir="/" md5sum="767d38eec0b407fba5e30398444e180e" name="v8js_timer.cc" role="src" />
    <file baseinstalldir="/" md5sum="49f609c8cea6033f2ad1e6c9c829a571" name="v8js_timer.h" role="src" />
@@ -314,6 +311,24 @@
 - improved back-and-forth object passing (rewrapping, correcty isolate unlocking)
 - fix property and method visibility issues
 - fix memory leaks
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>0.2.1</release>
+    <api>0.2.1</api>
+   </version>
+   <stability>
+    <release>beta</release>
+    <api>beta</api>
+   </stability>
+   <date>2015-07-26</date>
+   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <notes>
+- adapt to latest v8 API (v8 versions from 3.24.6 up to latest 4.6 branch supported now)
+- fixed FLAG_FORCE_ARRAY behaviour regarding property assignments
+- properly stop (and restart) timer thread (for memory &amp; cpu limits)
+- fixed crash on failed module bootstrapping
    </notes>
   </release>
  </changelog>
