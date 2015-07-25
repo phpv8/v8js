@@ -46,6 +46,16 @@ if test "$PHP_V8JS" != "no"; then
     CPPFLAGS=$old_CPPFLAGS
   ]);
 
+  AC_CACHE_CHECK(how to disable c++11 narrowing warning, ac_cv_v8_narrowing, [
+    ac_cv_v8_narrowing=""
+    old_CXXFLAGS=$CXXFLAGS
+    AC_LANG_PUSH([C++])
+    CXXFLAGS="-Wno-c++11-narrowing"
+    AC_TRY_RUN([int main() { unsigned int a[1] = { -1 }; (void) a; return 0; }],[ac_cv_v8_narrowing="-Wno-c++11-narrowing"],[],[])
+    AC_LANG_POP([C++])
+    CXXFLAGS=$old_CXXFLAGS
+  ]);
+
 
   old_LIBS=$LIBS
   old_LDFLAGS=$LDFLAGS
@@ -164,7 +174,7 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <v8-debug.h>]],
 	v8js_v8.cc				\
     v8js_v8object_class.cc	\
     v8js_variables.cc		\
-  ], $ext_shared, , "-std="$ac_cv_v8_cstd)
+  ], $ext_shared, , "$ac_cv_v8_narrowing -std="$ac_cv_v8_cstd)
 
   PHP_ADD_MAKEFILE_FRAGMENT
 fi
