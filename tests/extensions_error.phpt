@@ -17,7 +17,7 @@ var_dump($v8);
 -- registerExtension --
 -- creating V8Js object --
 Exception thrown during bootstrapping
-Extension or internal compilation error in handlebars at line 1.
+Extension or internal compilation error%sin handlebars at line 1.
 Error installing extension 'handlebars'.
 
 Warning: V8Js::__construct(): Failed to create V8 context. Check that registered extensions do not have errors. in %s on line %d
