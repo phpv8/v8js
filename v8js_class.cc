@@ -65,6 +65,17 @@ struct v8js_jsext {
 };
 /* }}} */
 
+#if PHP_V8_API_VERSION >= 4004010
+class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
+public:
+	virtual void* Allocate(size_t length) {
+		void* data = AllocateUninitialized(length);
+		return data == NULL ? data : memset(data, 0, length);
+	}
+	virtual void* AllocateUninitialized(size_t length) { return malloc(length); }
+	virtual void Free(void* data, size_t) { free(data); }
+};
+#endif
 
 static void v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 {
@@ -303,7 +314,16 @@ static PHP_METHOD(V8Js, __construct)
 	c->report_uncaught = report_uncaught;
 	c->pending_exception = NULL;
 	c->in_execution = 0;
+
+#if PHP_V8_API_VERSION >= 4004044
+	static ArrayBufferAllocator array_buffer_allocator;
+	static v8::Isolate::CreateParams create_params;
+	create_params.array_buffer_allocator = &array_buffer_allocator;
+	c->isolate = v8::Isolate::New(create_params);
+#else
 	c->isolate = v8::Isolate::New();
+#endif
+
 	c->isolate->SetData(0, c);
 
 	c->time_limit = 0;
@@ -1050,6 +1070,11 @@ PHP_MINIT_FUNCTION(v8js_class) /* {{{ */
 #endif
 
 	le_v8js_script = zend_register_list_destructors_ex(v8js_script_dtor, NULL, PHP_V8JS_SCRIPT_RES_NAME, module_number);
+
+#if PHP_V8_API_VERSION >= 4004010 && PHP_V8_API_VERSION < 4004044
+	static ArrayBufferAllocator array_buffer_allocator;
+	v8::V8::SetArrayBufferAllocator(&array_buffer_allocator);
+#endif
 
 	return SUCCESS;
 } /* }}} */
