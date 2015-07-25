@@ -65,7 +65,7 @@ struct v8js_jsext {
 };
 /* }}} */
 
-#if PHP_V8_API_VERSION >= 4004044
+#if PHP_V8_API_VERSION >= 4004010
 class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
 public:
 	virtual void* Allocate(size_t length) {
@@ -1070,6 +1070,11 @@ PHP_MINIT_FUNCTION(v8js_class) /* {{{ */
 #endif
 
 	le_v8js_script = zend_register_list_destructors_ex(v8js_script_dtor, NULL, PHP_V8JS_SCRIPT_RES_NAME, module_number);
+
+#if PHP_V8_API_VERSION >= 4004010 && PHP_V8_API_VERSION < 4004044
+	static ArrayBufferAllocator array_buffer_allocator;
+	v8::V8::SetArrayBufferAllocator(&array_buffer_allocator);
+#endif
 
 	return SUCCESS;
 } /* }}} */
