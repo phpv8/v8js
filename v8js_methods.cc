@@ -221,13 +221,11 @@ V8JS_METHOD(require)
 
 	v8::String::Utf8Value module_id_v8(info[0]);
 
-	// Make sure to duplicate the module name string so it doesn't get freed by the V8 garbage collector
-	char *module_id = estrdup(ToCString(module_id_v8));
+	const char *module_id = ToCString(module_id_v8);
 	char *normalised_path = (char *)emalloc(PATH_MAX);
 	char *module_name = (char *)emalloc(PATH_MAX);
 
 	v8js_commonjs_normalise_identifier(c->modules_base.back(), module_id, normalised_path, module_name);
-	efree(module_id);
 
 	char *normalised_module_id = (char *)emalloc(strlen(normalised_path)+1+strlen(module_name)+1);
 	*normalised_module_id = 0;
