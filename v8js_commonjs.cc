@@ -22,7 +22,7 @@ extern "C" {
 
 #include "php_v8js_macros.h"
 
-void v8js_commonjs_split_terms(char *identifier, std::vector<char *> &terms)
+static void v8js_commonjs_split_terms(char *identifier, std::vector<char *> &terms)
 {
     char *term = (char *)malloc(PATH_MAX), *ptr = term;
 

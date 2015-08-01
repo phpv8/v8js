@@ -16,13 +16,11 @@
 #endif
 
 #include "php_v8js_macros.h"
+#include "v8js_commonjs.h"
 
 extern "C" {
 #include "zend_exceptions.h"
 }
-
-/* Forward declarations */
-void v8js_commonjs_normalise_identifier(char *base, char *identifier, char *normalised_path, char *module_name);
 
 /* global.exit - terminate execution */
 V8JS_METHOD(exit) /* {{{ */
