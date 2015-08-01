@@ -2,9 +2,6 @@
 Test V8Function::__call() : Check v8::TryCatch behaviour
 --SKIPIF--
 <?php
-if(!function_exists('json_encode')) {
-  die('SKIP');
-}
 require_once(dirname(__FILE__) . '/skipif.inc');
 ?>
 --FILE--
