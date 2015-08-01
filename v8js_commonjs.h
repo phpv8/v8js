@@ -13,6 +13,6 @@
 #ifndef V8JS_COMMONJS_H
 #define V8JS_COMMONJS_H
 
-void v8js_commonjs_normalise_identifier(char *base, char *identifier, char *normalised_path, char *module_name);
+void v8js_commonjs_normalise_identifier(const char *base, const char *identifier, char *normalised_path, char *module_name);
 
 #endif /* V8JS_COMMONJS_H */
