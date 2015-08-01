@@ -398,7 +398,6 @@ V8JS_METHOD(require)
 
 	c->modules_loaded[normalised_module_id].Reset(isolate, newobj);
 	info.GetReturnValue().Set(newobj);
-	efree(normalised_module_id);
 }
 
 void v8js_register_methods(v8::Handle<v8::ObjectTemplate> global, v8js_ctx *c) /* {{{ */
