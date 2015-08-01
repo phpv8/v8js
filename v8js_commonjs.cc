@@ -24,7 +24,7 @@ extern "C" {
 
 static void v8js_commonjs_split_terms(char *identifier, std::vector<char *> &terms)
 {
-    char *term = (char *)malloc(PATH_MAX), *ptr = term;
+    char *term = (char *) emalloc(PATH_MAX), *ptr = term;
 
     // Initialise the term string
     *term = 0;
@@ -34,7 +34,7 @@ static void v8js_commonjs_split_terms(char *identifier, std::vector<char *> &ter
             if (strlen(term) > 0) {
                 // Terminate term string and add to terms vector
                 *ptr++ = 0;
-                terms.push_back(strdup(term));
+                terms.push_back(estrdup(term));
 
                 // Reset term string
                 memset(term, 0, strlen(term));
@@ -50,12 +50,10 @@ static void v8js_commonjs_split_terms(char *identifier, std::vector<char *> &ter
     if (strlen(term) > 0) {
         // Terminate term string and add to terms vector
         *ptr++ = 0;
-        terms.push_back(strdup(term));
+        terms.push_back(estrdup(term));
     }
 
-    if (term > 0) {
-        free(term);
-    }
+    efree(term);
 }
 
 void v8js_commonjs_normalise_identifier(char *base, char *identifier, char *normalised_path, char *module_name)
@@ -92,6 +90,8 @@ void v8js_commonjs_normalise_identifier(char *base, char *identifier, char *norm
     *module_name = 0;
 
     strcat(module_name, normalised_terms.back());
+
+    efree(normalised_terms.back());
     normalised_terms.pop_back();
 
     for (std::vector<char *>::iterator it = normalised_terms.begin(); it != normalised_terms.end(); it++) {
