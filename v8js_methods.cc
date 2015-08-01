@@ -254,12 +254,13 @@ V8JS_METHOD(require)
 
     // If we have already loaded and cached this module then use it
 	if (c->modules_loaded.count(normalised_module_id) > 0) {
-		efree(normalised_module_id);
-		efree(normalised_path);
-
 		v8::Persistent<v8::Object> newobj;
 		newobj.Reset(isolate, c->modules_loaded[normalised_module_id]);
 		info.GetReturnValue().Set(newobj);
+
+		efree(normalised_module_id);
+		efree(normalised_path);
+
 		return;
 	}
 
