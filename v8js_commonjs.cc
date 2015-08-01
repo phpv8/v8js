@@ -76,12 +76,19 @@ void v8js_commonjs_normalise_identifier(char *base, char *identifier, char *norm
         if (!strcmp(term, "..")) {
             // Ignore parent term (..) if it's the first normalised term
             if (normalised_terms.size() > 0) {
-                // Remove the parent normalized term
+                // Remove the parent normalized term (and free it)
+                efree(normalised_terms.back());
                 normalised_terms.pop_back();
             }
+
+            // free the ".." term
+            efree(term);
         } else if (strcmp(term, ".")) {
             // Add the term if it's not the current term (.)
             normalised_terms.push_back(term);
+        } else {
+            // Discard "." term
+            efree(term);
         }
     }
 
@@ -102,5 +109,6 @@ void v8js_commonjs_normalise_identifier(char *base, char *identifier, char *norm
         }
 
         strcat(normalised_path, term);
+        efree(term);
     }
 }
