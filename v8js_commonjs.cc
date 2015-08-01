@@ -26,9 +26,6 @@ static void v8js_commonjs_split_terms(const char *identifier, std::vector<char *
 {
     char *term = (char *) emalloc(PATH_MAX), *ptr = term;
 
-    // Initialise the term string
-    *term = 0;
-
     while (*identifier > 0) {
         if (*identifier == '/') {
             if (ptr > term) {
@@ -37,7 +34,6 @@ static void v8js_commonjs_split_terms(const char *identifier, std::vector<char *
                 terms.push_back(estrdup(term));
 
                 // Reset term string
-                memset(term, 0, strlen(term));
                 ptr = term;
             }
         } else {
