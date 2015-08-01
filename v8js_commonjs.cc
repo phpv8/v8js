@@ -31,7 +31,7 @@ static void v8js_commonjs_split_terms(const char *identifier, std::vector<char *
 
     while (*identifier > 0) {
         if (*identifier == '/') {
-            if (strlen(term) > 0) {
+            if (ptr > term) {
                 // Terminate term string and add to terms vector
                 *ptr++ = 0;
                 terms.push_back(estrdup(term));
@@ -47,7 +47,7 @@ static void v8js_commonjs_split_terms(const char *identifier, std::vector<char *
         identifier++;
     }
 
-    if (strlen(term) > 0) {
+    if (ptr > term) {
         // Terminate term string and add to terms vector
         *ptr++ = 0;
         terms.push_back(estrdup(term));

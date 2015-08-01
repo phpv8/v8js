@@ -8,6 +8,7 @@ Test V8Js::setModuleLoader : Path normalisation #003
 $JS = <<< EOT
 var foo = require("foo/test");
 var foo = require("foo/bar/baz/test");
+var foo = require("foo//bar//baz//blub");
 EOT;
 
 $v8 = new V8Js();
@@ -22,4 +23,5 @@ $v8->executeString($JS, 'module.js');
 --EXPECT--
 setModuleLoader called for foo/test
 setModuleLoader called for foo/bar/baz/test
+setModuleLoader called for foo/bar/baz/blub
 ===EOF===
