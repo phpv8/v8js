@@ -62,6 +62,7 @@ struct v8js_jsext {
 	int deps_count;
 	char *name;
 	char *source;
+	v8::Extension *extension;
 };
 /* }}} */
 
@@ -241,6 +242,7 @@ static void v8js_jsext_dtor(v8js_jsext *jsext) /* {{{ */
 	if (jsext->deps) {
 		v8js_free_ext_strarr(jsext->deps, jsext->deps_count);
 	}
+	delete jsext->extension;
 	free(jsext->name);
 	free(jsext->source);
 }
@@ -822,15 +824,16 @@ static int v8js_register_extension(char *name, uint name_len, char *source, uint
 		zend_hash_copy(jsext->deps_ht, Z_ARRVAL_P(deps_arr), (copy_ctor_func_t) v8js_persistent_zval_ctor, NULL, sizeof(zval *));
 	}
 
+	jsext->extension = new v8::Extension(jsext->name, jsext->source, jsext->deps_count, jsext->deps);
+
 	if (zend_hash_add(V8JSG(extensions), name, name_len + 1, jsext, sizeof(v8js_jsext), NULL) == FAILURE) {
 		v8js_jsext_dtor(jsext);
 		free(jsext);
 		return FAILURE;
 	}
 
-	v8::Extension *extension = new v8::Extension(jsext->name, jsext->source, jsext->deps_count, jsext->deps);
-	extension->set_auto_enable(auto_enable ? true : false);
-	v8::RegisterExtension(extension);
+	jsext->extension->set_auto_enable(auto_enable ? true : false);
+	v8::RegisterExtension(jsext->extension);
 
 	free(jsext);
 
