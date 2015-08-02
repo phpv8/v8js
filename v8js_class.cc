@@ -50,7 +50,7 @@ typedef struct _v8js_script {
 	v8::Persistent<v8::Script, v8::CopyablePersistentTraits<v8::Script>> *script;
 } v8js_script;
 
-static void v8js_script_free(v8js_script *res, bool dispose_persistent);
+static void v8js_script_free(v8js_script *res);
 
 int le_v8js_script;
 
@@ -545,7 +545,7 @@ static PHP_METHOD(V8Js, executeString)
 		RETURN_FALSE;
 	}
 	v8js_execute_script(getThis(), res, flags, time_limit, memory_limit, &return_value TSRMLS_CC);
-	v8js_script_free(res, true);
+	v8js_script_free(res);
 	efree(res);
 }
 /* }}} */
@@ -611,7 +611,7 @@ static PHP_METHOD(V8Js, checkString)
 		RETURN_FALSE;
 	}
 
-	v8js_script_free(res, true);
+	v8js_script_free(res);
 	efree(res);
 	RETURN_TRUE;
 }
@@ -768,23 +768,17 @@ static void v8js_persistent_zval_dtor(zval **p) /* {{{ */
 }
 /* }}} */
 
-static void v8js_script_free(v8js_script *res, bool dispose_persistent)
+static void v8js_script_free(v8js_script *res)
 {
-	if (res->name) {
-		efree(res->name);
-		res->name = NULL;
-	}
-	if (dispose_persistent) {
-		delete res->script; // does Reset()
-		res->script = NULL;
-	}
+	efree(res->name);
+	delete res->script; // does Reset()
 }
 
 static void v8js_script_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC) /* {{{ */
 {
 	v8js_script *res = (v8js_script *)rsrc->ptr;
 	if (res) {
-		v8js_script_free(res, false);
+		v8js_script_free(res);
 		efree(res);
 	}
 }
