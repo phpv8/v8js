@@ -33,6 +33,7 @@ extern "C" {
 #include "v8js_timer.h"
 
 #include <functional>
+#include <algorithm>
 
 #define PHP_V8JS_SCRIPT_RES_NAME "V8Js script"
 
@@ -46,7 +47,7 @@ static zend_object_handlers v8js_object_handlers;
 
 typedef struct _v8js_script {
 	char *name;
-	v8::Isolate *isolate;	
+	v8js_ctx *ctx;
 	v8::Persistent<v8::Script, v8::CopyablePersistentTraits<v8::Script>> *script;
 } v8js_script;
 
@@ -154,6 +155,13 @@ static void v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 	}
 	c->v8js_v8objects.~list();
 
+	for (std::vector<v8js_script *>::iterator it = c->script_objects.begin();
+		 it != c->script_objects.end(); it ++) {
+		(*it)->ctx = NULL;
+		(*it)->script->Reset();
+	}
+	c->script_objects.~vector();
+
 	/* Clear persistent handles in module cache */
 	for (std::map<char *, v8js_persistent_obj_t>::iterator it = c->modules_loaded.begin();
 		 it != c->modules_loaded.end(); ++it) {
@@ -210,6 +218,7 @@ static zend_object_value v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 	new(&c->weak_objects) std::map<zval *, v8js_persistent_obj_t>();
 
 	new(&c->v8js_v8objects) std::list<v8js_v8object *>();
+	new(&c->script_objects) std::vector<v8js_script *>();
 
 	retval.handle = zend_objects_store_put(c, NULL, (zend_objects_free_object_storage_t) v8js_free_storage, NULL TSRMLS_CC);
 	retval.handlers = &v8js_object_handlers;
@@ -496,7 +505,7 @@ static void v8js_compile_script(zval *this_ptr, const char *str, int str_len, co
 
 	v8::String::Utf8Value _sname(sname);
 	res->name = estrndup(ToCString(_sname), _sname.length());
-	res->isolate = c->isolate;
+	res->ctx = c;
 	*ret = res;
 	return;
 }
@@ -505,7 +514,7 @@ static void v8js_execute_script(zval *this_ptr, v8js_script *res, long flags, lo
 {
 	v8js_ctx *c = (v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
 
-	if (res->isolate != c->isolate) {
+	if (res->ctx != c) {
 		zend_error(E_WARNING, "Script resource from wrong V8Js object passed");
 		ZVAL_BOOL(*return_value, 0);
 		return;
@@ -566,6 +575,10 @@ static PHP_METHOD(V8Js, compileString)
 	v8js_compile_script(getThis(), str, str_len, identifier, identifier_len, &res TSRMLS_CC);
 	if (res) {
 		ZEND_REGISTER_RESOURCE(return_value, res, le_v8js_script);
+
+		v8js_ctx *ctx;
+		ctx = (v8js_ctx *) zend_object_store_get_object(this_ptr TSRMLS_CC);
+		ctx->script_objects.push_back(res);
 	}
 	return;
 }
@@ -778,6 +791,11 @@ static void v8js_script_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC) /* {{{ */
 {
 	v8js_script *res = (v8js_script *)rsrc->ptr;
 	if (res) {
+		if(res->ctx) {
+			std::vector<v8js_script *>::iterator it = std::find(res->ctx->script_objects.begin(), res->ctx->script_objects.end(), res);
+			res->ctx->script_objects.erase(it);
+		}
+
 		v8js_script_free(res);
 		efree(res);
 	}
