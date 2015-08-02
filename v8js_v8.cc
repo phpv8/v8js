@@ -15,10 +15,6 @@
 #include "config.h"
 #endif
 
-#if !defined(_WIN32) && PHP_V8_API_VERSION >= 3029036
-#include <libplatform/libplatform.h>
-#endif
-
 extern "C" {
 #include "php.h"
 #include "ext/date/php_date.h"
@@ -27,6 +23,10 @@ extern "C" {
 #include "zend_closures.h"
 #include "zend_exceptions.h"
 }
+
+#if !defined(_WIN32) && PHP_V8_API_VERSION >= 3029036
+#include <libplatform/libplatform.h>
+#endif
 
 #include "php_v8js_macros.h"
 #include "v8js_v8.h"
