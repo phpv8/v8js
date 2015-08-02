@@ -34,3 +34,4 @@ v8js.la
 /tests/*.out
 /tests/*.php
 /tests/*.sh
+/tests/*.mem
