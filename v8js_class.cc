@@ -775,7 +775,7 @@ static void v8js_script_free(v8js_script *res, bool dispose_persistent)
 		res->name = NULL;
 	}
 	if (dispose_persistent) {
-		res->script->~Persistent(); // does Reset()
+		delete res->script; // does Reset()
 		res->script = NULL;
 	}
 }
