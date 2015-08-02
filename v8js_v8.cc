@@ -42,8 +42,8 @@ void v8js_v8_init(TSRMLS_D) /* {{{ */
 	}
 
 #if !defined(_WIN32) && PHP_V8_API_VERSION >= 3029036
-	v8::Platform* platform = v8::platform::CreateDefaultPlatform();
-	v8::V8::InitializePlatform(platform);
+	V8JSG(v8_platform) = v8::platform::CreateDefaultPlatform();
+	v8::V8::InitializePlatform(V8JSG(v8_platform));
 #endif
 
 	/* Set V8 command line flags (must be done before V8::Initialize()!) */
