@@ -115,6 +115,9 @@ void v8js_register_accessors(std::vector<v8js_accessor_ctx*> *accessor_list, v8:
 /* Module globals */
 ZEND_BEGIN_MODULE_GLOBALS(v8js)
   int v8_initialized;
+#if !defined(_WIN32) && PHP_V8_API_VERSION >= 3029036
+  v8::Platform *v8_platform;
+#endif
   HashTable *extensions;
 
   /* Ini globals */

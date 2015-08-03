@@ -22,6 +22,7 @@ typedef v8::Persistent<v8::Object, v8::CopyablePersistentTraits<v8::Object> > v8
 /* Forward declarations */
 struct v8js_v8object;
 struct v8js_accessor_ctx;
+struct _v8js_script;
 
 /* {{{ Context container */
 struct v8js_ctx {
@@ -52,6 +53,7 @@ struct v8js_ctx {
   std::list<v8js_v8object *> v8js_v8objects;
 
   std::vector<v8js_accessor_ctx *> accessor_list;
+  std::vector<struct _v8js_script *> script_objects;
   char *tz;
 #ifdef ZTS
   void ***zts_ctx;
