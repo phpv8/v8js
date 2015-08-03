@@ -22,22 +22,18 @@ extern "C" {
 
 #include "php_v8js_macros.h"
 
-void v8js_commonjs_split_terms(char *identifier, std::vector<char *> &terms)
+static void v8js_commonjs_split_terms(const char *identifier, std::vector<char *> &terms)
 {
-    char *term = (char *)malloc(PATH_MAX), *ptr = term;
-
-    // Initialise the term string
-    *term = 0;
+    char *term = (char *) emalloc(PATH_MAX), *ptr = term;
 
     while (*identifier > 0) {
         if (*identifier == '/') {
-            if (strlen(term) > 0) {
+            if (ptr > term) {
                 // Terminate term string and add to terms vector
                 *ptr++ = 0;
-                terms.push_back(strdup(term));
+                terms.push_back(estrdup(term));
 
                 // Reset term string
-                memset(term, 0, strlen(term));
                 ptr = term;
             }
         } else {
@@ -47,18 +43,16 @@ void v8js_commonjs_split_terms(char *identifier, std::vector<char *> &terms)
         identifier++;
     }
 
-    if (strlen(term) > 0) {
+    if (ptr > term) {
         // Terminate term string and add to terms vector
         *ptr++ = 0;
-        terms.push_back(strdup(term));
+        terms.push_back(estrdup(term));
     }
 
-    if (term > 0) {
-        free(term);
-    }
+    efree(term);
 }
 
-void v8js_commonjs_normalise_identifier(char *base, char *identifier, char *normalised_path, char *module_name)
+void v8js_commonjs_normalise_identifier(const char *base, const char *identifier, char *normalised_path, char *module_name)
 {
     std::vector<char *> id_terms, terms;
     v8js_commonjs_split_terms(identifier, id_terms);
@@ -78,12 +72,19 @@ void v8js_commonjs_normalise_identifier(char *base, char *identifier, char *norm
         if (!strcmp(term, "..")) {
             // Ignore parent term (..) if it's the first normalised term
             if (normalised_terms.size() > 0) {
-                // Remove the parent normalized term
+                // Remove the parent normalized term (and free it)
+                efree(normalised_terms.back());
                 normalised_terms.pop_back();
             }
+
+            // free the ".." term
+            efree(term);
         } else if (strcmp(term, ".")) {
             // Add the term if it's not the current term (.)
             normalised_terms.push_back(term);
+        } else {
+            // Discard "." term
+            efree(term);
         }
     }
 
@@ -92,6 +93,8 @@ void v8js_commonjs_normalise_identifier(char *base, char *identifier, char *norm
     *module_name = 0;
 
     strcat(module_name, normalised_terms.back());
+
+    efree(normalised_terms.back());
     normalised_terms.pop_back();
 
     for (std::vector<char *>::iterator it = normalised_terms.begin(); it != normalised_terms.end(); it++) {
@@ -102,5 +105,6 @@ void v8js_commonjs_normalise_identifier(char *base, char *identifier, char *norm
         }
 
         strcat(normalised_path, term);
+        efree(term);
     }
 }

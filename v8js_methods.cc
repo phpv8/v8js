@@ -16,13 +16,11 @@
 #endif
 
 #include "php_v8js_macros.h"
+#include "v8js_commonjs.h"
 
 extern "C" {
 #include "zend_exceptions.h"
 }
-
-/* Forward declarations */
-void v8js_commonjs_normalise_identifier(char *base, char *identifier, char *normalised_path, char *module_name);
 
 /* global.exit - terminate execution */
 V8JS_METHOD(exit) /* {{{ */
@@ -223,13 +221,11 @@ V8JS_METHOD(require)
 
 	v8::String::Utf8Value module_id_v8(info[0]);
 
-	// Make sure to duplicate the module name string so it doesn't get freed by the V8 garbage collector
-	char *module_id = estrdup(ToCString(module_id_v8));
+	const char *module_id = ToCString(module_id_v8);
 	char *normalised_path = (char *)emalloc(PATH_MAX);
 	char *module_name = (char *)emalloc(PATH_MAX);
 
 	v8js_commonjs_normalise_identifier(c->modules_base.back(), module_id, normalised_path, module_name);
-	efree(module_id);
 
 	char *normalised_module_id = (char *)emalloc(strlen(normalised_path)+1+strlen(module_name)+1);
 	*normalised_module_id = 0;
@@ -256,12 +252,13 @@ V8JS_METHOD(require)
 
     // If we have already loaded and cached this module then use it
 	if (c->modules_loaded.count(normalised_module_id) > 0) {
-		efree(normalised_module_id);
-		efree(normalised_path);
-
 		v8::Persistent<v8::Object> newobj;
 		newobj.Reset(isolate, c->modules_loaded[normalised_module_id]);
 		info.GetReturnValue().Set(newobj);
+
+		efree(normalised_module_id);
+		efree(normalised_path);
+
 		return;
 	}
 
@@ -400,7 +397,6 @@ V8JS_METHOD(require)
 
 	c->modules_loaded[normalised_module_id].Reset(isolate, newobj);
 	info.GetReturnValue().Set(newobj);
-	efree(normalised_module_id);
 }
 
 void v8js_register_methods(v8::Handle<v8::ObjectTemplate> global, v8js_ctx *c) /* {{{ */

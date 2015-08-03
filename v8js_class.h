@@ -24,6 +24,12 @@ struct v8js_v8object;
 struct v8js_accessor_ctx;
 struct _v8js_script;
 
+struct cmp_str {
+    bool operator()(char const *a, char const *b) const {
+        return strcmp(a, b) < 0;
+    }
+};
+
 /* {{{ Context container */
 struct v8js_ctx {
   zend_object std;
@@ -44,7 +50,7 @@ struct v8js_ctx {
   zval *module_loader;
   std::vector<char *> modules_stack;
   std::vector<char *> modules_base;
-  std::map<char *, v8js_persistent_obj_t> modules_loaded;
+  std::map<char *, v8js_persistent_obj_t, cmp_str> modules_loaded;
   std::map<const char *,v8js_tmpl_t> template_cache;
 
   std::map<zval *, v8js_persistent_obj_t> weak_objects;
