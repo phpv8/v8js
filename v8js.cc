@@ -203,8 +203,8 @@ static PHP_GSHUTDOWN_FUNCTION(v8js)
 
 	if (v8js_globals->v8_initialized) {
 		v8::V8::Dispose();
-		v8::V8::ShutdownPlatform();
 #if !defined(_WIN32) && PHP_V8_API_VERSION >= 3029036
+		v8::V8::ShutdownPlatform();
 		delete v8js_globals->v8_platform;
 #endif
 	}
