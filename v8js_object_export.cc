@@ -134,10 +134,14 @@ static void v8js_call_php_func(zval *value, zend_class_entry *ce, zend_function 
 		isolate->Enter();
 	}
 	zend_catch {
-		v8::V8::TerminateExecution(isolate);
+		v8js_terminate_execution(isolate);
 		V8JSG(fatal_error_abort) = 1;
 	}
 	zend_end_try();
+
+	if(EG(exception)) {
+		v8js_terminate_execution(isolate);
+	}
 
 failure:
 	/* Cleanup */

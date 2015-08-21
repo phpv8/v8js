@@ -1,6 +1,7 @@
 --TEST--
 Test V8::executeString() : Exception propagation test 2
 --SKIPIF--
+SKIP needs discussion, see issue #144
 <?php require_once(dirname(__FILE__) . '/skipif.inc'); ?>
 --FILE--
 <?php
