@@ -39,7 +39,7 @@ static void v8js_call_php_func(zval *value, zend_class_entry *ce, zend_function 
 	zval fname, *retval_ptr = NULL, **argv = NULL;
 	zend_uint argc = info.Length(), min_num_args = 0, max_num_args = 0;
 	char *error;
-	int error_len, i, flags = V8JS_FLAG_NONE;
+	int error_len, i;
 
 	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
 
@@ -84,7 +84,6 @@ static void v8js_call_php_func(zval *value, zend_class_entry *ce, zend_function 
 
 	/* Convert parameters passed from V8 */
 	if (argc) {
-		flags = V8JS_GLOBAL_GET_FLAGS(isolate);
 		fci.params = (zval ***) safe_emalloc(argc, sizeof(zval **), 0);
 		argv = (zval **) safe_emalloc(argc, sizeof(zval *), 0);
 		for (i = 0; i < argc; i++) {
@@ -98,7 +97,7 @@ static void v8js_call_php_func(zval *value, zend_class_entry *ce, zend_function 
 				Z_ADDREF_P(argv[i]);
 			} else {
 				MAKE_STD_ZVAL(argv[i]);
-				if (v8js_to_zval(info[i], argv[i], flags, isolate TSRMLS_CC) == FAILURE) {
+				if (v8js_to_zval(info[i], argv[i], ctx->flags, isolate TSRMLS_CC) == FAILURE) {
 					fci.param_count++;
 					error_len = spprintf(&error, 0, "converting parameter #%d passed to %s() failed", i + 1, method_ptr->common.function_name);
 					return_value = V8JS_THROW(isolate, Error, error, error_len);
@@ -529,6 +528,8 @@ inline v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> p
 	const char *method_name;
 	uint method_name_len;
 
+	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
+
 	v8::Local<v8::Object> self = info.Holder();
 	v8::Local<v8::Value> ret_value;
 	v8::Local<v8::Function> cb;
@@ -652,9 +653,8 @@ inline v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> p
 				zval_ptr_dtor(&php_value);
 			}
 		} else if (callback_type == V8JS_PROP_SETTER) {
-			int flags = V8JS_GLOBAL_GET_FLAGS(isolate);
 			MAKE_STD_ZVAL(php_value);
-			if (v8js_to_zval(set_value, php_value, flags, isolate TSRMLS_CC) != SUCCESS) {
+			if (v8js_to_zval(set_value, php_value, ctx->flags, isolate TSRMLS_CC) != SUCCESS) {
 				ret_value = v8::Handle<v8::Value>();
 			}
 			else {

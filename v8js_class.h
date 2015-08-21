@@ -40,6 +40,8 @@ struct v8js_ctx {
   int in_execution;
   v8::Isolate *isolate;
 
+  long flags;
+
   long time_limit;
   bool time_limit_hit;
   long memory_limit;

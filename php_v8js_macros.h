@@ -80,10 +80,6 @@ extern "C" {
 # define V8JS_CONST (char *)
 #endif
 
-/* Global flags */
-#define V8JS_GLOBAL_SET_FLAGS(isolate,flags)	V8JS_GLOBAL(isolate)->SetHiddenValue(V8JS_SYM("__php_flags__"), V8JS_INT(flags))
-#define V8JS_GLOBAL_GET_FLAGS(isolate)			V8JS_GLOBAL(isolate)->GetHiddenValue(V8JS_SYM("__php_flags__"))->IntegerValue();
-
 /* Options */
 #define V8JS_FLAG_NONE			(1<<0)
 #define V8JS_FLAG_FORCE_ARRAY	(1<<1)

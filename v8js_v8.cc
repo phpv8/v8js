@@ -77,7 +77,7 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 	v8::TryCatch try_catch;
 
 	/* Set flags for runtime use */
-	V8JS_GLOBAL_SET_FLAGS(isolate, flags);
+	c->flags = flags;
 
 	/* Check if timezone has been changed and notify V8 */
 	tz = getenv("TZ");
