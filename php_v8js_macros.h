@@ -83,6 +83,7 @@ extern "C" {
 /* Options */
 #define V8JS_FLAG_NONE			(1<<0)
 #define V8JS_FLAG_FORCE_ARRAY	(1<<1)
+#define V8JS_FLAG_PROPAGATE_PHP_EXCEPTIONS	(1<<2)
 
 #define V8JS_DEBUG_AUTO_BREAK_NEVER		0
 #define V8JS_DEBUG_AUTO_BREAK_ONCE		1

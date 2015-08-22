@@ -21,6 +21,7 @@ extern "C" {
 #include "ext/standard/php_string.h"
 #include "zend_interfaces.h"
 #include "zend_closures.h"
+#include "zend_exceptions.h"
 }
 
 #include "php_v8js_macros.h"
@@ -33,7 +34,7 @@ static void v8js_weak_object_callback(const v8::WeakCallbackData<v8::Object, zva
 /* Callback for PHP methods and functions */
 static void v8js_call_php_func(zval *value, zend_class_entry *ce, zend_function *method_ptr, v8::Isolate *isolate, const v8::FunctionCallbackInfo<v8::Value>& info TSRMLS_DC) /* {{{ */
 {
-	v8::Handle<v8::Value> return_value;
+	v8::Handle<v8::Value> return_value = V8JS_NULL;
 	zend_fcall_info fci;
 	zend_fcall_info_cache fcc;
 	zval fname, *retval_ptr = NULL, **argv = NULL;
@@ -138,10 +139,6 @@ static void v8js_call_php_func(zval *value, zend_class_entry *ce, zend_function 
 	}
 	zend_end_try();
 
-	if(EG(exception)) {
-		v8js_terminate_execution(isolate);
-	}
-
 failure:
 	/* Cleanup */
 	if (argc) {
@@ -152,11 +149,19 @@ failure:
 		efree(fci.params);
 	}
 
-	if (retval_ptr != NULL) {
+	if(EG(exception)) {
+		if(ctx->flags & V8JS_FLAG_PROPAGATE_PHP_EXCEPTIONS) {
+			return_value = isolate->ThrowException(zval_to_v8js(EG(exception), isolate TSRMLS_CC));
+			zend_clear_exception(TSRMLS_C);
+		} else {
+			v8js_terminate_execution(isolate);
+		}
+	} else if (retval_ptr != NULL) {
 		return_value = zval_to_v8js(retval_ptr, isolate TSRMLS_CC);
+	}
+
+	if (retval_ptr != NULL) {
 		zval_ptr_dtor(&retval_ptr);
-	} else {
-		return_value = V8JS_NULL;
 	}
 
 	info.GetReturnValue().Set(return_value);
