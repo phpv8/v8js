@@ -89,7 +89,11 @@ void v8js_create_script_exception(zval *return_value, v8::Isolate *isolate, v8::
 			if(!php_ref.IsEmpty()) {
 				assert(php_ref->IsExternal());
 				zval *php_exception = reinterpret_cast<zval *>(v8::External::Cast(*php_ref)->Value());
-				zend_exception_set_previous(return_value, php_exception TSRMLS_CC);
+
+				zend_class_entry *exception_ce = zend_exception_get_default(TSRMLS_C);
+				if (Z_TYPE_P(php_exception) == IS_OBJECT && instanceof_function(Z_OBJCE_P(php_exception), exception_ce TSRMLS_CC)) {
+					zend_exception_set_previous(return_value, php_exception TSRMLS_CC);
+				}
 			}
 		}
 
