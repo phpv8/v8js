@@ -48,13 +48,12 @@ static void v8js_call_php_func(zval *value, zend_class_entry *ce, zend_function 
 	max_num_args = method_ptr->common.num_args;
 
 	/* Function name to call */
-	INIT_ZVAL(fname);
-	ZVAL_STRING(&fname, method_ptr->common.function_name, 0);
+	ZVAL_STRING(&fname, method_ptr->common.function_name);
 
 	/* zend_fcall_info */
 	fci.size = sizeof(fci);
 	fci.function_table = &ce->function_table;
-	fci.function_name = &fname;
+	fci.function_name = fname;
 	fci.symbol_table = NULL;
 	fci.object_ptr = value;
 	fci.retval_ptr_ptr = &retval_ptr;
@@ -598,7 +597,7 @@ inline v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> p
 			/* Nope, not a method -- must be a (case-sensitive) property */
 			zval zname;
 			INIT_ZVAL(zname);
-			ZVAL_STRINGL(&zname, name, name_len, 0);
+			ZVAL_STRINGL(&zname, name, name_len);
 			zend_property_info *property_info = zend_get_property_info(ce, &zname, 1 TSRMLS_CC);
 
 			if(property_info && property_info->flags & ZEND_ACC_PUBLIC) {
@@ -625,8 +624,7 @@ inline v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> p
 				zend_fcall_info fci;
 
 				zval fmember;
-				INIT_ZVAL(fmember);
-				ZVAL_STRING(&fmember, "__get", 0);
+				ZVAL_STRING(&fmember, "__get");
 
 				fci.size = sizeof(fci);
 				fci.function_table = &ce->function_table;
@@ -655,8 +653,7 @@ inline v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> p
 			}
 			else {
 				zval zname;
-				INIT_ZVAL(zname);
-				ZVAL_STRINGL(&zname, name, name_len, 0);
+				ZVAL_STRINGL(&zname, name, name_len);
 				zend_property_info *property_info = zend_get_property_info(ce, &zname, 1 TSRMLS_CC);
 
 				if(property_info && property_info->flags & ZEND_ACC_PUBLIC) {
@@ -670,8 +667,7 @@ inline v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> p
 					zend_fcall_info fci;
 
 					zval fmember;
-					INIT_ZVAL(fmember);
-					ZVAL_STRING(&fmember, "__set", 0);
+					ZVAL_STRING(&fmember, "__set");
 
 					zval *php_ret_value;
 
@@ -705,7 +701,7 @@ inline v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> p
 			const zend_object_handlers *h = Z_OBJ_HT_P(object);
 			zval *prop;
 			MAKE_STD_ZVAL(prop);
-			ZVAL_STRINGL(prop, name, name_len, 1);
+			ZVAL_STRINGL(prop, name, name_len);
 
 			if (callback_type == V8JS_PROP_QUERY) {
 				if (h->has_property(object, prop, 0 ZEND_HASH_KEY_NULL TSRMLS_CC)) {

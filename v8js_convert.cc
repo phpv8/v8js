@@ -171,8 +171,7 @@ int v8js_to_zval(v8::Handle<v8::Value> jsValue, zval *return_value, int flags, v
 	{
 		v8::String::Utf8Value str(jsValue);
 		const char *cstr = ToCString(str);
-		RETVAL_STRINGL(cstr, jsValue->ToString()->Utf8Length(), 1);
-//		RETVAL_STRING(cstr, 1);
+		RETVAL_STRINGL(cstr, jsValue->ToString()->Utf8Length());
 	}
 	else if (jsValue->IsBoolean())
 	{

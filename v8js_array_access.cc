@@ -37,11 +37,9 @@ static zval *v8js_array_access_dispatch(zval *object, const char *method_name, i
 	zval *php_value;
 
 	zval fmember;
-	INIT_ZVAL(fmember);
-	ZVAL_STRING(&fmember, method_name, 0);
+	ZVAL_STRING(&fmember, method_name);
 
 	zval zindex;
-	INIT_ZVAL(zindex);
 	ZVAL_LONG(&zindex, index);
 
 	fci.size = sizeof(fci);

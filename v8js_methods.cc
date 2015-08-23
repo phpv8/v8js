@@ -268,7 +268,7 @@ V8JS_METHOD(require)
 	zval *normalised_path_zend;
 
 	MAKE_STD_ZVAL(normalised_path_zend);
-	ZVAL_STRING(normalised_path_zend, normalised_module_id, 1);
+	ZVAL_STRING(normalised_path_zend, normalised_module_id);
 
 	zval **params[1] = {&normalised_path_zend};
 	if (FAILURE == call_user_function_ex(EG(function_table), NULL, c->module_loader, &module_code, 1, params, 0, NULL TSRMLS_CC)) {
