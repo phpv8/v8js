@@ -303,11 +303,7 @@ static zend_function *v8js_v8object_get_method(zval **object_ptr, char *method, 
 }
 /* }}} */
 
-#if PHP_VERSION_ID >= 50400
 static int v8js_v8object_call_method(const char *method, INTERNAL_FUNCTION_PARAMETERS) /* {{{ */
-#else
-static int v8js_v8object_call_method(char *method, INTERNAL_FUNCTION_PARAMETERS) /* {{{ */
-#endif
 {
 	zval *object = this_ptr, ***argv = NULL;
 	int argc = ZEND_NUM_ARGS();

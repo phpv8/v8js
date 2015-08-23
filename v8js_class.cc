@@ -196,13 +196,7 @@ static zend_object_value v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 	zend_object_std_init(&c->std, ce TSRMLS_CC);
 	TSRMLS_SET_CTX(c->zts_ctx);
 
-#if PHP_VERSION_ID >= 50400
 	object_properties_init(&c->std, ce);
-#else
-	zval *tmp;
-	zend_hash_copy(c->std.properties, &ce->default_properties,
-				   (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
-#endif
 
 	new(&c->object_name) v8::Persistent<v8::String>();
 	new(&c->context) v8::Persistent<v8::Context>();
@@ -406,11 +400,7 @@ static PHP_METHOD(V8Js, __construct)
 	v8::Local<v8::FunctionTemplate> php_obj_t = v8::FunctionTemplate::New(isolate, 0);
 
 	/* Set class name for PHP object */
-#if PHP_VERSION_ID >= 50400
 	free = !zend_get_object_classname(getThis(), const_cast<const char**>(&class_name), &class_name_len TSRMLS_CC);
-#else
-	free = !zend_get_object_classname(getThis(), &class_name, &class_name_len TSRMLS_CC);
-#endif
 	php_obj_t->SetClassName(V8JS_SYML(class_name, class_name_len));
 
 	if (free) {

@@ -211,20 +211,6 @@ int v8js_to_zval(v8::Handle<v8::Value> jsValue, zval *return_value, int flags, v
 		}
 
 		zend_class_entry *ce = php_date_get_date_ce();
-#if PHP_VERSION_ID < 50304
-		zval *param;
-
-		MAKE_STD_ZVAL(param);
-		ZVAL_STRING(param, date_str, 0);
-
-		object_init_ex(return_value, ce TSRMLS_CC);
-		zend_call_method_with_1_params(&return_value, ce, &ce->constructor, "__construct", NULL, param);
-		zval_ptr_dtor(&param);
-
-		if (EG(exception)) {
-			return FAILURE;
-		}
-#else
 		php_date_instantiate(ce, return_value TSRMLS_CC);
 		if (!php_date_initialize((php_date_obj *) zend_object_store_get_object(return_value TSRMLS_CC), date_str, strlen(date_str), NULL, NULL, 0 TSRMLS_CC)) {
 			efree(date_str);
@@ -232,7 +218,6 @@ int v8js_to_zval(v8::Handle<v8::Value> jsValue, zval *return_value, int flags, v
 		}
 
 		efree(date_str);
-#endif
 	}
 	else if (jsValue->IsObject())
 	{
