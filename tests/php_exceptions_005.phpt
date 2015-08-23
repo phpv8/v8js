@@ -34,7 +34,7 @@ catch(V8JsScriptException $e) {
 --EXPECTF--
 after getException
 Got V8JsScriptException
-string(329) "php_exceptions_005:3: exception 'Exception' with message 'Test-Exception' in %s
+string(%d) "php_exceptions_005:3: exception 'Exception' with message 'Test-Exception' in %s
 Stack trace:
 #0 [internal function]: Foo->getException()
 #1 %s: V8Js->executeString('var ex = PHP.fo...', 'php_exceptions_...')
