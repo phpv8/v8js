@@ -21,7 +21,6 @@ extern "C" {
 #include "php_ini.h"
 #include "ext/standard/info.h"
 #include "ext/standard/php_string.h"
-#include "ext/standard/php_smart_str.h"
 }
 
 #include "v8js_class.h"
