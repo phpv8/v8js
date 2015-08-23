@@ -2,12 +2,13 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2013 The PHP Group                                |
+  | Copyright (c) 1997-2015 The PHP Group                                |
   +----------------------------------------------------------------------+
   | http://www.opensource.org/licenses/mit-license.php  MIT License      |
   +----------------------------------------------------------------------+
   | Author: Jani Taskinen <jani.taskinen@iki.fi>                         |
   | Author: Patrick Reilly <preilly@php.net>                             |
+  | Author: Stefan Siegl <stesie@php.net>                                |
   +----------------------------------------------------------------------+
 */
 
@@ -175,14 +176,14 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 
 			/* Report immediately if report_uncaught is true */
 			if (c->report_uncaught) {
-				v8js_throw_script_exception(&try_catch TSRMLS_CC);
+				v8js_throw_script_exception(c->isolate, &try_catch TSRMLS_CC);
 				return;
 			}
 
 			/* Exception thrown from JS, preserve it for future execution */
 			if (result.IsEmpty()) {
 				MAKE_STD_ZVAL(c->pending_exception);
-				v8js_create_script_exception(c->pending_exception, &try_catch TSRMLS_CC);
+				v8js_create_script_exception(c->pending_exception, c->isolate, &try_catch TSRMLS_CC);
 				return;
 			}
 		}

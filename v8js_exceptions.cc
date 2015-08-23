@@ -2,12 +2,13 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2013 The PHP Group                                |
+  | Copyright (c) 1997-2015 The PHP Group                                |
   +----------------------------------------------------------------------+
   | http://www.opensource.org/licenses/mit-license.php  MIT License      |
   +----------------------------------------------------------------------+
   | Author: Jani Taskinen <jani.taskinen@iki.fi>                         |
   | Author: Patrick Reilly <preilly@php.net>                             |
+  | Author: Stefan Siegl <stesie@php.net>                                |
   +----------------------------------------------------------------------+
 */
 
@@ -38,7 +39,7 @@ zend_class_entry *php_ce_v8js_memory_limit_exception;
 
 /* {{{ Class: V8JsScriptException */
 
-void v8js_create_script_exception(zval *return_value, v8::TryCatch *try_catch TSRMLS_DC) /* {{{ */
+void v8js_create_script_exception(zval *return_value, v8::Isolate *isolate, v8::TryCatch *try_catch TSRMLS_DC) /* {{{ */
 {
 	v8::String::Utf8Value exception(try_catch->Exception());
 	const char *exception_string = ToCString(exception);
@@ -81,6 +82,17 @@ void v8js_create_script_exception(zval *return_value, v8::TryCatch *try_catch TS
 			const char* stacktrace_string = ToCString(stacktrace);
 			PHPV8_EXPROP(_string, JsTrace, stacktrace_string);
 		}
+
+		if(try_catch->Exception()->IsObject()) {
+			v8::Local<v8::Value> php_ref = try_catch->Exception()->ToObject()->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY));
+
+			if(!php_ref.IsEmpty()) {
+				assert(php_ref->IsExternal());
+				zval *php_exception = reinterpret_cast<zval *>(v8::External::Cast(*php_ref)->Value());
+				zend_exception_set_previous(return_value, php_exception TSRMLS_CC);
+			}
+		}
+
 	}
 
 	PHPV8_EXPROP(_string, message, message_string);
@@ -89,7 +101,7 @@ void v8js_create_script_exception(zval *return_value, v8::TryCatch *try_catch TS
 }
 /* }}} */
 
-void v8js_throw_script_exception(v8::TryCatch *try_catch TSRMLS_DC) /* {{{ */
+void v8js_throw_script_exception(v8::Isolate *isolate, v8::TryCatch *try_catch TSRMLS_DC) /* {{{ */
 {
 	v8::String::Utf8Value exception(try_catch->Exception());
 	const char *exception_string = ToCString(exception);
@@ -99,7 +111,7 @@ void v8js_throw_script_exception(v8::TryCatch *try_catch TSRMLS_DC) /* {{{ */
 		zend_throw_exception(php_ce_v8js_script_exception, (char *) exception_string, 0 TSRMLS_CC);
 	} else {
 		MAKE_STD_ZVAL(zexception);
-		v8js_create_script_exception(zexception, try_catch TSRMLS_CC);
+		v8js_create_script_exception(zexception, isolate, try_catch TSRMLS_CC);
 		zend_throw_exception_object(zexception TSRMLS_CC);
 	}
 }
