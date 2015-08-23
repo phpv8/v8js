@@ -48,6 +48,7 @@ class V8Js
 
     const FLAG_NONE = 1;
     const FLAG_FORCE_ARRAY = 2;
+    const FLAG_PROPAGATE_PHP_EXCEPTIONS = 4;
 
     const DEBUG_AUTO_BREAK_NEVER = 1;
     const DEBUG_AUTO_BREAK_ONCE = 2;
@@ -297,3 +298,21 @@ PHP Objects implementing ArrayAccess, Countable
 The above rule that PHP objects are generally converted to JavaScript objects also applies to PHP objects of `ArrayObject` type or other classes, that implement both the `ArrayAccess` and the `Countable` interface -- even so they behave like PHP arrays.
 
 This behaviour can be changed by enabling the php.ini flag `v8js.use_array_access`.  If set, objects of PHP classes that implement the aforementioned interfaces are converted to JavaScript Array-like objects.  This is by-index access of this object results in immediate calls to the `offsetGet` or `offsetSet` PHP methods (effectively this is live-binding of JavaScript against the PHP object).  Such an Array-esque object also supports calling every attached public method of the PHP object + methods of JavaScript's native Array.prototype methods (as long as they are not overloaded by PHP methods).
+
+Exceptions
+----------
+
+If the JavaScript code throws (without catching), causes errors or doesn't
+compile, `V8JsScriptException` exceptions are thrown unless the `V8Js` object
+is constructed with `report_uncaught_exceptions` set `FALSE`.
+
+PHP exceptions that occur due to calls from JavaScript code by default are
+*not* re-thrown into JavaScript context but cause the JavaScript execution to
+be stopped immediately.
+
+This behaviour can be changed by setting the `FLAG_PROPAGATE_PHP_EXCEPTIONS`
+flag.  If it is set, PHP exception (objects) are converted to JavaScript
+objects obeying the above rules and re-thrown in JavaScript context.  If they
+are not caught by JavaScript code the execution stops and a
+`V8JsScriptException` is thrown, which has the original PHP exception accessible
+via `getPrevious` method.
