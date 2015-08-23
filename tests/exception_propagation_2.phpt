@@ -1,7 +1,6 @@
 --TEST--
 Test V8::executeString() : Exception propagation test 2
 --SKIPIF--
-SKIP needs discussion, see issue #144
 <?php require_once(dirname(__FILE__) . '/skipif.inc'); ?>
 --FILE--
 <?php
@@ -15,6 +14,9 @@ class Foo {
 		$this->v8->foo = $this;
 		$this->v8->executeString('fooobar', 'throw_0');
 		var_dump($this->v8->getPendingException());
+		// the exception is not cleared before the next executeString call,
+		// hence the next *exiting* executeString will throw.
+		// In this case this is the executeString call in bar() function.
 		$this->v8->executeString('try { PHP.foo.bar(); } catch (e) { print(e + " caught!\n"); }', 'trycatch1');
 		$this->v8->executeString('try { PHP.foo.bar(); } catch (e) { print(e + " caught!\n"); }', 'trycatch2');
 	}
@@ -22,6 +24,8 @@ class Foo {
 	public function bar()
 	{
 		echo "To Bar!\n";
+		// This executeString call throws a PHP exception, not propagated
+		// to JS, hence immediately triggering the top-level catch handler.
 		$this->v8->executeString('throw new Error();', 'throw_1');
 	}
 }
@@ -72,7 +76,7 @@ object(V8JsScriptException)#%d (13) {
       ["file"]=>
       string(%d) "%s"
       ["line"]=>
-      int(24)
+      int(29)
       ["function"]=>
       string(11) "__construct"
       ["class"]=>
@@ -101,6 +105,5 @@ object(V8JsScriptException)#%d (13) {
     at throw_0:1:1"
 }
 To Bar!
-Error caught!
 PHP Exception: throw_0:1: ReferenceError: fooobar is not defined
 ===EOF===
