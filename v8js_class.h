@@ -36,7 +36,7 @@ struct v8js_ctx {
   v8::Persistent<v8::String> object_name;
   v8::Persistent<v8::Context> context;
   zend_bool report_uncaught;
-  zval *pending_exception;
+  zval pending_exception;
   int in_execution;
   v8::Isolate *isolate;
 
@@ -47,13 +47,13 @@ struct v8js_ctx {
 
   v8::Persistent<v8::FunctionTemplate> global_template;
 
-  zval *module_loader;
+  zval module_loader;
   std::vector<char *> modules_stack;
   std::vector<char *> modules_base;
   std::map<char *, v8js_persistent_obj_t, cmp_str> modules_loaded;
   std::map<const char *,v8js_tmpl_t> template_cache;
 
-  std::map<zval *, v8js_persistent_obj_t> weak_objects;
+  std::map<zend_object *, v8js_persistent_obj_t> weak_objects;
   std::map<v8js_tmpl_t *, v8js_persistent_obj_t> weak_closures;
 
   std::list<v8js_v8object *> v8js_v8objects;

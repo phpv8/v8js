@@ -189,7 +189,7 @@ static void v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value>& i
 	// @todo assert constructor call
 	v8::Handle<v8::Object> newobj = info.This();
 	v8::Local<v8::External> php_object;
-	zval *value;
+	zval value;
 
 	if (!info.IsConstructCall()) {
 		return;
@@ -205,9 +205,9 @@ static void v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value>& i
 		// Object created by v8js in v8js_hash_to_jsobj, PHP object passed as v8::External.
 		php_object = v8::Local<v8::External>::Cast(info[0]);
 		zend_object *object = reinterpret_cast<zval *>(php_object->Value());
-		value = NULL; // @fixme wrap object in zval
+		ZVAL_OBJ(&value, object);
 
-		if(ctx->weak_objects.count(value)) {
+		if(ctx->weak_objects.count(object)) {
 			// We already exported this object, hence no need to add another
 			// ref, v8 won't give us a second weak-object callback anyways.
 			newobj->SetAlignedPointerInInternalField(0, ext_tmpl->Value());
@@ -246,8 +246,8 @@ static void v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value>& i
 	// Since we got to decrease the reference count again, in case v8 garbage collector
 	// decides to dispose the JS object, we add a weak persistent handle and register
 	// a callback function that removes the reference.
-	ctx->weak_objects[value].Reset(isolate, newobj);
-	ctx->weak_objects[value].SetWeak(value, v8js_weak_object_callback);
+	ctx->weak_objects[Z_OBJ(value)].Reset(isolate, newobj);
+	ctx->weak_objects[Z_OBJ(value)].SetWeak(value, v8js_weak_object_callback);
 
 	// Just tell v8 that we're allocating some external memory
 	// (for the moment we just always tell 1k instead of trying to find out actual values)
@@ -256,16 +256,18 @@ static void v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value>& i
 /* }}} */
 
 
-static void v8js_weak_object_callback(const v8::WeakCallbackData<v8::Object, zval> &data) {
+static void v8js_weak_object_callback(const v8::WeakCallbackData<v8::Object, zend_object> &data) {
 	v8::Isolate *isolate = data.GetIsolate();
 
-	zval *value = data.GetParameter();
-	zval_ptr_dtor(&value);
+	zend_object *object = data.GetParameter();
+	zval value;
+	ZVAL_OBJ(&value, object);
+	zval_dtor(&value);
 
 	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
 
-	ctx->weak_objects.at(value).Reset();
-	ctx->weak_objects.erase(value);
+	ctx->weak_objects.at(object).Reset();
+	ctx->weak_objects.erase(object);
 
 	isolate->AdjustAmountOfExternalAllocatedMemory(-1024);
 }

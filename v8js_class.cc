@@ -61,8 +61,8 @@ struct v8js_jsext {
 	HashTable *deps_ht;
 	const char **deps;
 	int deps_count;
-	char *name;
-	char *source;
+	zend_string *name;
+	zend_string *source;
 	v8::Extension *extension;
 };
 /* }}} */
@@ -84,14 +84,8 @@ static void v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 	v8js_ctx *c = (v8js_ctx *) object;
 
 	zend_object_std_dtor(&c->std TSRMLS_CC);
-
-	if (c->pending_exception) {
-		zval_ptr_dtor(&c->pending_exception);
-	}
-
-	if (c->module_loader) {
-		zval_ptr_dtor(&c->module_loader);
-	}
+	zval_dtor(&c->pending_exception);
+	zval_dtor(&c->module_loader);
 
 	/* Delete PHP global object from JavaScript */
 	if (!c->context.IsEmpty()) {
@@ -130,10 +124,12 @@ static void v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 	c->context.~Persistent();
 
 	/* Dispose yet undisposed weak refs */
-	for (std::map<zval *, v8js_persistent_obj_t>::iterator it = c->weak_objects.begin();
+	for (std::map<zend_object *, v8js_persistent_obj_t>::iterator it = c->weak_objects.begin();
 		 it != c->weak_objects.end(); ++it) {
-		zval *value = it->first;
-		zval_ptr_dtor(&value);
+		zend_object *object = it->first;
+		zval value;
+		ZVAL_OBJ(&value, object);
+		zval_dtor(&value);
 		c->isolate->AdjustAmountOfExternalAllocatedMemory(-1024);
 		it->second.Reset();
 	}
@@ -187,7 +183,7 @@ static void v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 }
 /* }}} */
 
-static zend_object_value v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
+static zend_object* v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 {
 	zend_object_value retval;
 	v8js_ctx *c;
@@ -210,7 +206,7 @@ static zend_object_value v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 	new(&c->accessor_list) std::vector<v8js_accessor_ctx *>();
 
 	new(&c->weak_closures) std::map<v8js_tmpl_t *, v8js_persistent_obj_t>();
-	new(&c->weak_objects) std::map<zval *, v8js_persistent_obj_t>();
+	new(&c->weak_objects) std::map<zend_object *, v8js_persistent_obj_t>();
 
 	new(&c->v8js_v8objects) std::list<v8js_v8object *>();
 	new(&c->script_objects) std::vector<v8js_script *>();
@@ -247,8 +243,8 @@ static void v8js_jsext_dtor(v8js_jsext *jsext) /* {{{ */
 		v8js_free_ext_strarr(jsext->deps, jsext->deps_count);
 	}
 	delete jsext->extension;
-	free(jsext->name);
-	free(jsext->source);
+	zend_string_release(jsext->name);
+	zend_string_release(jsext->source);
 }
 /* }}} */
 
@@ -318,7 +314,7 @@ static PHP_METHOD(V8Js, __construct)
 
 	/* Throw PHP exception if uncaught exceptions exist */
 	c->report_uncaught = report_uncaught;
-	c->pending_exception = NULL;
+	ZVAL_NULL(&c->pending_exception);
 	c->in_execution = 0;
 
 #if PHP_V8_API_VERSION >= 4004044
@@ -337,7 +333,7 @@ static PHP_METHOD(V8Js, __construct)
 	c->memory_limit = 0;
 	c->memory_limit_hit = false;
 
-	c->module_loader = NULL;
+	ZVAL_NULL(&c->module_loader);
 
 	/* Include extensions used by this context */
 	/* Note: Extensions registered with auto_enable do not need to be added separately like this. */
@@ -662,7 +658,7 @@ static PHP_METHOD(V8Js, clearPendingException)
 static PHP_METHOD(V8Js, setModuleLoader)
 {
 	v8js_ctx *c;
-	zval *callable;
+	zval callable;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &callable) == FAILURE) {
 		return;
@@ -670,8 +666,7 @@ static PHP_METHOD(V8Js, setModuleLoader)
 
 	c = (v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
 
-	c->module_loader = callable;
-	Z_ADDREF_P(c->module_loader);
+	ZVAL_COPY(&c->module_loader, &callable);
 }
 /* }}} */
 
@@ -792,14 +787,14 @@ static void v8js_script_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC) /* {{{ */
 }
 /* }}} */
 
-static int v8js_register_extension(char *name, uint name_len, char *source, uint source_len, zval *deps_arr, zend_bool auto_enable TSRMLS_DC) /* {{{ */
+static int v8js_register_extension(zend_string *name, zend_string *source, zval *deps_arr, zend_bool auto_enable TSRMLS_DC) /* {{{ */
 {
 	v8js_jsext *jsext = NULL;
 
 	if (!V8JSG(extensions)) {
 		V8JSG(extensions) = (HashTable *) malloc(sizeof(HashTable));
 		zend_hash_init(V8JSG(extensions), 1, NULL, (dtor_func_t) v8js_jsext_dtor, 1);
-	} else if (zend_hash_exists(V8JSG(extensions), name, name_len + 1)) {
+	} else if (zend_hash_exists(V8JSG(extensions), name)) {
 		return FAILURE;
 	}
 
@@ -817,8 +812,8 @@ static int v8js_register_extension(char *name, uint name_len, char *source, uint
 	}
 
 	jsext->auto_enable = auto_enable;
-	jsext->name = zend_strndup(name, name_len);
-	jsext->source = zend_strndup(source, source_len);
+	jsext->name = zend_string_copy(name);
+	jsext->source = zend_string_copy(source);
 
 	if (jsext->deps) {
 		jsext->deps_ht = (HashTable *) malloc(sizeof(HashTable));
@@ -826,9 +821,9 @@ static int v8js_register_extension(char *name, uint name_len, char *source, uint
 		zend_hash_copy(jsext->deps_ht, Z_ARRVAL_P(deps_arr), (copy_ctor_func_t) v8js_persistent_zval_ctor, NULL, sizeof(zval *));
 	}
 
-	jsext->extension = new v8::Extension(jsext->name, jsext->source, jsext->deps_count, jsext->deps);
+	jsext->extension = new v8::Extension(jsext->name->val, jsext->source, jsext->deps_count, jsext->deps);
 
-	if (zend_hash_add(V8JSG(extensions), name, name_len + 1, jsext, sizeof(v8js_jsext), NULL) == FAILURE) {
+	if (zend_hash_add_ptr(V8JSG(extensions), name, jsext) == FAILURE) {
 		v8js_jsext_dtor(jsext);
 		free(jsext);
 		return FAILURE;
