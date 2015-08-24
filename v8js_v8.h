@@ -65,7 +65,7 @@ int v8js_get_properties_hash(v8::Handle<v8::Value> jsValue, HashTable *retval, i
 
 #define V8JS_BEGIN_CTX(ctx, object) \
 	v8js_ctx *(ctx); \
-	(ctx) = (v8js_ctx *) zend_object_store_get_object(object TSRMLS_CC); \
+	(ctx) = Z_V8JS_CTX_OBJ_P(object); \
 	V8JS_CTX_PROLOGUE(ctx);
 
 

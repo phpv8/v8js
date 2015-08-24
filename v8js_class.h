@@ -74,6 +74,12 @@ struct v8js_ctx {
 # define V8JS_TSRMLS_FETCH()
 #endif
 
+static inline struct v8js_ctx *v8js_ctx_fetch_object(zend_object *obj) {
+	return (struct v8js_ctx *)((char *)obj - XtOffsetOf(struct v8js_ctx, std));
+}
+
+#define Z_V8JS_CTX_OBJ_P(zv) v8js_ctx_fetch_object(Z_OBJ_P(zv));
+
 
 PHP_MINIT_FUNCTION(v8js_class);
 
