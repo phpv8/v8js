@@ -79,9 +79,13 @@ public:
 };
 #endif
 
-static void v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
+static inline struct v8js_ctx *v8js_fetch_object(zend_object *obj) {
+	return (struct v8js_ctx *)((char *)obj - XtOffsetOf(struct v8js_ctx, std));
+}
+
+static void v8js_free_storage(zend_object *object TSRMLS_DC) /* {{{ */
 {
-	v8js_ctx *c = (v8js_ctx *) object;
+	v8js_ctx *c = v8js_fetch_object(object);
 
 	zend_object_std_dtor(&c->std TSRMLS_CC);
 	zval_dtor(&c->pending_exception);
@@ -185,14 +189,11 @@ static void v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 
 static zend_object* v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 {
-	zend_object_value retval;
 	v8js_ctx *c;
 
-	c = (v8js_ctx *) ecalloc(1, sizeof(*c));
+	c = (v8js_ctx *) ecalloc(1, sizeof(*c) + zend_object_properties_size(ce));
 	zend_object_std_init(&c->std, ce TSRMLS_CC);
 	TSRMLS_SET_CTX(c->zts_ctx);
-
-	object_properties_init(&c->std, ce);
 
 	new(&c->object_name) v8::Persistent<v8::String>();
 	new(&c->context) v8::Persistent<v8::Context>();
@@ -211,10 +212,11 @@ static zend_object* v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 	new(&c->v8js_v8objects) std::list<v8js_v8object *>();
 	new(&c->script_objects) std::vector<v8js_script *>();
 
-	retval.handle = zend_objects_store_put(c, NULL, (zend_objects_free_object_storage_t) v8js_free_storage, NULL TSRMLS_CC);
-	retval.handlers = &v8js_object_handlers;
+	// @fixme following is const, run on startup
+	v8js_object_handlers.offset = XtOffsetOf(struct v8js_ctx, std);
+	v8js_object_handlers.free_obj = v8js_free_storage;
 
-	return retval;
+	return &c->std;
 }
 /* }}} */
 

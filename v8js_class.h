@@ -32,7 +32,6 @@ struct cmp_str {
 
 /* {{{ Context container */
 struct v8js_ctx {
-  zend_object std;
   v8::Persistent<v8::String> object_name;
   v8::Persistent<v8::Context> context;
   zend_bool report_uncaught;
@@ -64,6 +63,8 @@ struct v8js_ctx {
 #ifdef ZTS
   void ***zts_ctx;
 #endif
+
+  zend_object std;
 };
 /* }}} */
 
