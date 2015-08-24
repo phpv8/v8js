@@ -38,10 +38,10 @@ static ZEND_INI_MH(v8js_OnUpdateV8Flags) /* {{{ */
 			free(V8JSG(v8_flags));
 			V8JSG(v8_flags) = NULL;
 		}
-		if (!new_value[0]) {
+		if (!new_value->val[0]) {
 			return FAILURE;
 		}
-		V8JSG(v8_flags) = zend_strndup(new_value, new_value_length);
+		V8JSG(v8_flags) = zend_strndup(new_value->val, new_value->len);
 	}
 
 	return SUCCESS;
@@ -50,14 +50,14 @@ static ZEND_INI_MH(v8js_OnUpdateV8Flags) /* {{{ */
 static ZEND_INI_MH(v8js_OnUpdateUseDate) /* {{{ */
 {
 	bool value;
-	if (new_value_length==2 && strcasecmp("on", new_value)==0) {
+	if (new_value->len == 2 && strcasecmp("on", new_value->val) == 0) {
 		value = (bool) 1;
-    } else if (new_value_length==3 && strcasecmp("yes", new_value)==0) {
+    } else if (new_value->len == 3 && strcasecmp("yes", new_value->val) == 0) {
 		value = (bool) 1;
-	} else if (new_value_length==4 && strcasecmp("true", new_value)==0) {
+	} else if (new_value->len == 4 && strcasecmp("true", new_value->val) == 0) {
 		value = (bool) 1;
 	} else {
-		value = (bool) atoi(new_value);
+		value = (bool) atoi(new_value->val);
 	}
 	V8JSG(use_date) = value;
 	return SUCCESS;
@@ -67,14 +67,14 @@ static ZEND_INI_MH(v8js_OnUpdateUseDate) /* {{{ */
 static ZEND_INI_MH(v8js_OnUpdateUseArrayAccess) /* {{{ */
 {
 	bool value;
-	if (new_value_length==2 && strcasecmp("on", new_value)==0) {
+	if (new_value->len == 2 && strcasecmp("on", new_value->val) == 0) {
 		value = (bool) 1;
-    } else if (new_value_length==3 && strcasecmp("yes", new_value)==0) {
+    } else if (new_value->len == 3 && strcasecmp("yes", new_value->val) == 0) {
 		value = (bool) 1;
-	} else if (new_value_length==4 && strcasecmp("true", new_value)==0) {
+	} else if (new_value->len == 4 && strcasecmp("true", new_value->val) == 0) {
 		value = (bool) 1;
 	} else {
-		value = (bool) atoi(new_value);
+		value = (bool) atoi(new_value->val);
 	}
 	V8JSG(use_array_access) = value;
 	return SUCCESS;
