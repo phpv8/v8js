@@ -224,8 +224,10 @@ int v8js_to_zval(v8::Handle<v8::Value> jsValue, zval *return_value, int flags, v
 		// if this is a wrapped PHP object, then just unwrap it.
 		v8::Local<v8::Value> php_object = self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY));
 		if (!php_object.IsEmpty()) {
-			zval *object = reinterpret_cast<zval *>(v8::External::Cast(*php_object)->Value());
-			RETVAL_ZVAL(object, 1, 0);
+			zend_object *object = reinterpret_cast<zend_object *>(v8::External::Cast(*php_object)->Value());
+			zval zval_object;
+			ZVAL_OBJ(&zval_object, object)
+			RETVAL_ZVAL(zval_object, 1, 0);
 			return SUCCESS;
 		}
 		if ((flags & V8JS_FLAG_FORCE_ARRAY) || jsValue->IsArray()) {

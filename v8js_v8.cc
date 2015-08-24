@@ -226,7 +226,8 @@ int v8js_get_properties_hash(v8::Handle<v8::Value> jsValue, HashTable *retval, i
 			v8::Local<v8::Value> jsVal = jsObj->Get(jsKey);
 			v8::String::Utf8Value cstr(jsKey);
 			const char *key = ToCString(cstr);
-			zval *value = NULL;
+			zval value;
+			ZVAL_UNDEF(&value);
 
 			v8::Local<v8::Value> php_object;
 			if (jsVal->IsObject()) {
@@ -234,14 +235,13 @@ int v8js_get_properties_hash(v8::Handle<v8::Value> jsValue, HashTable *retval, i
 			}
 			if (!php_object.IsEmpty()) {
 				/* This is a PHP object, passed to JS and back. */
-				value = reinterpret_cast<zval *>(v8::External::Cast(*php_object)->Value());
+				zend_object object = reinterpret_cast<zend_object *>(v8::External::Cast(*php_object)->Value());
+				ZVAL_OBJ(&value, object);
 				Z_ADDREF_P(value);
 			}
 			else {
-				MAKE_STD_ZVAL(value);
-
 				if (v8js_to_zval(jsVal, value, flags, isolate TSRMLS_CC) == FAILURE) {
-					zval_ptr_dtor(&value);
+					zval_dtor(&value);
 					return FAILURE;
 				}
 			}
