@@ -93,7 +93,7 @@ extern "C" {
 #define V8JS_DEBUG_AUTO_BREAK_ALWAYS	2
 
 /* Convert zval into V8 value */
-v8::Handle<v8::Value> zval_to_v8js(zval *, v8::Isolate * TSRMLS_DC);
+v8::Handle<v8::Value> zval_to_v8js(zval, v8::Isolate * TSRMLS_DC);
 
 /* Convert V8 value into zval */
 int v8js_to_zval(v8::Handle<v8::Value>, zval *, int, v8::Isolate * TSRMLS_DC);
