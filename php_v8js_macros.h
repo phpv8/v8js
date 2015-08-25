@@ -62,16 +62,6 @@ extern "C" {
 #define V8JS_GET_CLASS_NAME(var, obj) \
 	v8::String::Utf8Value var(obj->GetConstructorName());
 
-#if ZEND_MODULE_API_NO >= 20100409
-# define ZEND_HASH_KEY_DC , const zend_literal *key
-# define ZEND_HASH_KEY_CC , key
-# define ZEND_HASH_KEY_NULL , NULL
-#else
-# define ZEND_HASH_KEY_DC
-# define ZEND_HASH_KEY_CC
-# define ZEND_HASH_KEY_NULL
-#endif
-
 /* method signatures of zend_update_property and zend_read_property were
  * declared as 'char *' instead of 'const char *' before PHP 5.4 */
 #if ZEND_MODULE_API_NO >= 20100525
@@ -93,7 +83,7 @@ extern "C" {
 #define V8JS_DEBUG_AUTO_BREAK_ALWAYS	2
 
 /* Convert zval into V8 value */
-v8::Handle<v8::Value> zval_to_v8js(zval, v8::Isolate * TSRMLS_DC);
+v8::Handle<v8::Value> zval_to_v8js(zval *, v8::Isolate * TSRMLS_DC);
 
 /* Convert V8 value into zval */
 int v8js_to_zval(v8::Handle<v8::Value>, zval *, int, v8::Isolate * TSRMLS_DC);

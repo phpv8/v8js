@@ -433,7 +433,7 @@ static PHP_METHOD(V8Js, __construct)
 		zend_property_info *property_info = zend_get_property_info(c->std.ce, member, 1 TSRMLS_CC);
 		if(property_info && property_info->flags & ZEND_ACC_PUBLIC) {
 			/* Write value to PHP JS object */
-			php_obj->ForceSet(V8JS_SYML(ZSTR_VAL(member), ZSTR_LEN(member) - 1), zval_to_v8js(*value, isolate TSRMLS_CC), v8::ReadOnly);
+			php_obj->ForceSet(V8JS_SYML(ZSTR_VAL(member), ZSTR_LEN(member) - 1), zval_to_v8js(value, isolate TSRMLS_CC), v8::ReadOnly);
 		}
 	}
 
@@ -733,32 +733,17 @@ static PHP_METHOD(V8Js, setMemoryLimit)
 }
 /* }}} */
 
-static void v8js_persistent_zval_ctor(zval **p) /* {{{ */
+static void v8js_persistent_zval_ctor(zval *p) /* {{{ */
 {
-	zval *orig_ptr = *p;
-	*p = (zval *) malloc(sizeof(zval));
-	**p = *orig_ptr;
-	switch (Z_TYPE_P(*p)) {
-		case IS_STRING:
-			Z_STRVAL_P(*p) = (char *) zend_strndup(Z_STRVAL_P(*p), Z_STRLEN_P(*p));
-			break;
-		default:
-			zend_bailout();
-	}
-	INIT_PZVAL(*p);
+	assert(Z_TYPE_P(p) == IS_STRING);
+	Z_STR_P(p) = zend_string_dup(Z_STR_P(p), 1);
 }
 /* }}} */
 
-static void v8js_persistent_zval_dtor(zval **p) /* {{{ */
+static void v8js_persistent_zval_dtor(zval *p) /* {{{ */
 {
-	switch (Z_TYPE_P(*p)) {
-		case IS_STRING:
-			free(Z_STRVAL_P(*p));
-			break;
-		default:
-			zend_bailout();
-	}
-	free(*p);
+	assert(Z_TYPE_P(p) == IS_STRING);
+	free(Z_STR_P(p));
 }
 /* }}} */
 
@@ -768,7 +753,7 @@ static void v8js_script_free(v8js_script *res)
 	delete res->script; // does Reset()
 }
 
-static void v8js_script_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC) /* {{{ */
+static void v8js_script_dtor(zend_resource *rsrc) /* {{{ */
 {
 	v8js_script *res = (v8js_script *)rsrc->ptr;
 	if (res) {
@@ -813,13 +798,13 @@ static int v8js_register_extension(zend_string *name, zend_string *source, zval 
 
 	if (jsext->deps) {
 		jsext->deps_ht = (HashTable *) malloc(sizeof(HashTable));
-		zend_hash_init(jsext->deps_ht, jsext->deps_count, NULL, (dtor_func_t) v8js_persistent_zval_dtor, 1);
-		zend_hash_copy(jsext->deps_ht, Z_ARRVAL_P(deps_arr), (copy_ctor_func_t) v8js_persistent_zval_ctor, NULL, sizeof(zval *));
+		zend_hash_init(jsext->deps_ht, jsext->deps_count, NULL, v8js_persistent_zval_dtor, 1);
+		zend_hash_copy(jsext->deps_ht, Z_ARRVAL_P(deps_arr), v8js_persistent_zval_ctor);
 	}
 
-	jsext->extension = new v8::Extension(jsext->name->val, jsext->source, jsext->deps_count, jsext->deps);
+	jsext->extension = new v8::Extension(ZSTR_VAL(jsext->name), ZSTR_VAL(jsext->source), jsext->deps_count, jsext->deps);
 
-	if (zend_hash_add_ptr(V8JSG(extensions), name, jsext) == FAILURE) {
+	if (!zend_hash_add_ptr(V8JSG(extensions), name, jsext)) {
 		v8js_jsext_dtor(jsext);
 		free(jsext);
 		return FAILURE;
@@ -838,12 +823,12 @@ static int v8js_register_extension(zend_string *name, zend_string *source, zval 
  */
 static PHP_METHOD(V8Js, registerExtension)
 {
-	char *ext_name, *script;
+	zend_string *ext_name, *script;
 	zval *deps_arr = NULL;
 	int ext_name_len, script_len;
 	zend_bool auto_enable = 0;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss|ab", &ext_name, &ext_name_len, &script, &script_len, &deps_arr, &auto_enable) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "SS|ab", &ext_name, &script, &deps_arr, &auto_enable) == FAILURE) {
 		return;
 	}
 
@@ -851,7 +836,7 @@ static PHP_METHOD(V8Js, registerExtension)
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Extension name cannot be empty");
 	} else if (!script_len) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Script cannot be empty");
-	} else if (v8js_register_extension(ext_name, ext_name_len, script, script_len, deps_arr, auto_enable TSRMLS_CC) == SUCCESS) {
+	} else if (v8js_register_extension(ext_name, script, deps_arr, auto_enable TSRMLS_CC) == SUCCESS) {
 		RETURN_TRUE;
 	}
 	RETURN_FALSE;
@@ -865,34 +850,31 @@ static PHP_METHOD(V8Js, registerExtension)
 static PHP_METHOD(V8Js, getExtensions)
 {
 	v8js_jsext *jsext;
-	zval *ext, *deps_arr;
-	HashPosition pos;
 	ulong index;
-	char *key;
-	uint key_len;
+	zend_string *key;
+	zval *val, ext;
 
 	if (zend_parse_parameters_none() == FAILURE) {
 		return;
 	}
 
 	array_init(return_value);
+
 	if (V8JSG(extensions)) {
-		zend_hash_internal_pointer_reset_ex(V8JSG(extensions), &pos);
-		while (zend_hash_get_current_data_ex(V8JSG(extensions), (void **) &jsext, &pos) == SUCCESS) {
-			if (zend_hash_get_current_key_ex(V8JSG(extensions), &key, &key_len, &index, 0, &pos) == HASH_KEY_IS_STRING) {
-				MAKE_STD_ZVAL(ext)
-				array_init(ext);
-				add_assoc_bool_ex(ext, ZEND_STRS("auto_enable"), jsext->auto_enable);
+		ZEND_HASH_FOREACH_KEY_VAL(V8JSG(extensions), index, key, val) {
+			if (key) {
+				jsext = (v8js_jsext *) Z_PTR_P(val);
+				array_init(&ext);
+				add_assoc_bool_ex(&ext, ZEND_STRS("auto_enable"), jsext->auto_enable);
 				if (jsext->deps_ht) {
-					MAKE_STD_ZVAL(deps_arr);
-					array_init(deps_arr);
-					zend_hash_copy(Z_ARRVAL_P(deps_arr), jsext->deps_ht, (copy_ctor_func_t) zval_add_ref, NULL, sizeof(zval *));
-					add_assoc_zval_ex(ext, ZEND_STRS("deps"), deps_arr);
+					zval deps_arr;
+					array_init(&deps_arr);
+					zend_hash_copy(Z_ARRVAL_P(&deps_arr), jsext->deps_ht, (copy_ctor_func_t) zval_add_ref);
+					add_assoc_zval_ex(&ext, ZEND_STRS("deps"), &deps_arr);
 				}
-				add_assoc_zval_ex(return_value, key, key_len, ext);
+				add_assoc_zval_ex(return_value, ZSTR_VAL(key), ZSTR_LEN(key), &ext);
 			}
-			zend_hash_move_forward_ex(V8JSG(extensions), &pos);
-		}
+		} ZEND_HASH_FOREACH_END();
 	}
 }
 /* }}} */
@@ -1002,12 +984,12 @@ static const zend_function_entry v8js_methods[] = { /* {{{ */
 
 /* V8Js object handlers */
 
-static void v8js_write_property(zval *object, zval *member, zval *value ZEND_HASH_KEY_DC TSRMLS_DC) /* {{{ */
+static void v8js_write_property(zval *object, zval *member, zval *value, void **cache_slot TSRMLS_DC) /* {{{ */
 {
 	V8JS_BEGIN_CTX(c, object)
 
 	/* Check whether member is public, if so, export to V8. */
-	zend_property_info *property_info = zend_get_property_info(c->std.ce, member, 1 TSRMLS_CC);
+	zend_property_info *property_info = zend_get_property_info(c->std.ce, Z_STR_P(member), 1 TSRMLS_CC);
 	if(property_info->flags & ZEND_ACC_PUBLIC) {
 		/* Global PHP JS object */
 		v8::Local<v8::String> object_name_js = v8::Local<v8::String>::New(isolate, c->object_name);
@@ -1018,11 +1000,11 @@ static void v8js_write_property(zval *object, zval *member, zval *value ZEND_HAS
 	}
 
 	/* Write value to PHP object */
-	std_object_handlers.write_property(object, member, value ZEND_HASH_KEY_CC TSRMLS_CC);
+	std_object_handlers.write_property(object, member, value, cache_slot TSRMLS_CC);
 }
 /* }}} */
 
-static void v8js_unset_property(zval *object, zval *member ZEND_HASH_KEY_DC TSRMLS_DC) /* {{{ */
+static void v8js_unset_property(zval *object, zval *member, void **cache_slot TSRMLS_DC) /* {{{ */
 {
 	V8JS_BEGIN_CTX(c, object)
 
@@ -1034,7 +1016,7 @@ static void v8js_unset_property(zval *object, zval *member ZEND_HASH_KEY_DC TSRM
 	jsobj->Delete(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)));
 
 	/* Unset from PHP object */
-	std_object_handlers.unset_property(object, member ZEND_HASH_KEY_CC TSRMLS_CC);
+	std_object_handlers.unset_property(object, member, cache_slot TSRMLS_CC);
 }
 /* }}} */
 

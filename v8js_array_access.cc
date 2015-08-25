@@ -71,7 +71,7 @@ void v8js_array_access_getter(uint32_t index, const v8::PropertyCallbackInfo<v8:
 	ZVAL_UNDEF(&zvalue);
 
 	zval php_value = v8js_array_access_dispatch(object, "offsetGet", 1, index, zvalue TSRMLS_CC);
-	v8::Local<v8::Value> ret_value = zval_to_v8js(php_value, isolate TSRMLS_CC);
+	v8::Local<v8::Value> ret_value = zval_to_v8js(&php_value, isolate TSRMLS_CC);
 	zval_dtor(&php_value);
 
 	info.GetReturnValue().Set(ret_value);

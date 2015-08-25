@@ -707,7 +707,7 @@ inline v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> p
 			ZVAL_STRINGL(prop, name, name_len);
 
 			if (callback_type == V8JS_PROP_QUERY) {
-				if (h->has_property(object, prop, 0 ZEND_HASH_KEY_NULL TSRMLS_CC)) {
+				if (h->has_property(object, prop, 0, NULL TSRMLS_CC)) {
 					ret_value = V8JS_UINT(v8::None);
 				} else {
 					ret_value = v8::Handle<v8::Value>(); // empty handle
@@ -716,7 +716,7 @@ inline v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> p
 				zend_property_info *property_info = zend_get_property_info(ce, prop, 1 TSRMLS_CC);
 
 				if(property_info && property_info->flags & ZEND_ACC_PUBLIC) {
-					h->unset_property(object, prop ZEND_HASH_KEY_NULL TSRMLS_CC);
+					h->unset_property(object, prop, NULL TSRMLS_CC);
 					ret_value = V8JS_BOOL(true);
 				}
 				else {
