@@ -9,7 +9,7 @@ The extension allows you to execute Javascript code in a secure sandbox from PHP
 Minimum requirements
 --------------------
 
-- V8 Javascript Engine library (libv8) master <https://github.com/v8/v8/> (trunk)
+- V8 Javascript Engine library (libv8) master <https://github.com/v8/v8-git-mirror> (trunk)
 
 	V8 is Google's open source Javascript engine.
 	V8 is written in C++ and is used in Google Chrome, the open source browser from Google.
