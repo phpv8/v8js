@@ -60,13 +60,7 @@ static int v8js_v8object_has_property(zval *object, zval *member, int has_set_ex
 		return retval;
 	}
 
-	v8::Isolate *isolate = obj->ctx->isolate;
-	v8::Locker locker(isolate);
-	v8::Isolate::Scope isolate_scope(isolate);
-	v8::HandleScope local_scope(isolate);
-	v8::Local<v8::Context> temp_context = v8::Context::New(isolate);
-	v8::Context::Scope temp_scope(temp_context);
-
+	V8JS_CTX_PROLOGUE_EX(obj->ctx, retval);
 	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
 	if (Z_TYPE_P(member) == IS_STRING && v8obj->IsObject() && !v8obj->IsFunction())
@@ -126,13 +120,7 @@ static zval *v8js_v8object_read_property(zval *object, zval *member, int type ZE
 		return retval;
 	}
 
-	v8::Isolate *isolate = obj->ctx->isolate;
-	v8::Locker locker(isolate);
-	v8::Isolate::Scope isolate_scope(isolate);
-	v8::HandleScope local_scope(isolate);
-	v8::Local<v8::Context> temp_context = v8::Context::New(isolate);
-	v8::Context::Scope temp_scope(temp_context);
-
+	V8JS_CTX_PROLOGUE_EX(obj->ctx, retval);
 	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
 	if (Z_TYPE_P(member) == IS_STRING && v8obj->IsObject() && !v8obj->IsFunction())
@@ -175,13 +163,7 @@ static void v8js_v8object_write_property(zval *object, zval *member, zval *value
 		return;
 	}
 
-	v8::Isolate *isolate = obj->ctx->isolate;
-	v8::Locker locker(isolate);
-	v8::Isolate::Scope isolate_scope(isolate);
-	v8::HandleScope local_scope(isolate);
-	v8::Local<v8::Context> temp_context = v8::Context::New(isolate);
-	v8::Context::Scope temp_scope(temp_context);
-
+	V8JS_CTX_PROLOGUE(obj->ctx);
 	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
 	if (v8obj->IsObject() && !v8obj->IsFunction()) {
@@ -200,13 +182,7 @@ static void v8js_v8object_unset_property(zval *object, zval *member ZEND_HASH_KE
 		return;
 	}
 
-	v8::Isolate *isolate = obj->ctx->isolate;
-	v8::Locker locker(isolate);
-	v8::Isolate::Scope isolate_scope(isolate);
-	v8::HandleScope local_scope(isolate);
-	v8::Local<v8::Context> temp_context = v8::Context::New(isolate);
-	v8::Context::Scope temp_scope(temp_context);
-
+	V8JS_CTX_PROLOGUE(obj->ctx);
 	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
 	if (v8obj->IsObject() && !v8obj->IsFunction()) {
@@ -245,12 +221,7 @@ static HashTable *v8js_v8object_get_properties(zval *object TSRMLS_DC) /* {{{ */
 		return NULL;
 	}
 
-	v8::Isolate *isolate = obj->ctx->isolate;
-	v8::Locker locker(isolate);
-	v8::Isolate::Scope isolate_scope(isolate);
-	v8::HandleScope local_scope(isolate);
-	v8::Local<v8::Context> temp_context = v8::Context::New(isolate);
-	v8::Context::Scope temp_scope(temp_context);
+	V8JS_CTX_PROLOGUE_EX(obj->ctx, NULL);
 	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
 	if (v8js_get_properties_hash(v8obj, obj->properties, obj->flags, isolate TSRMLS_CC) == SUCCESS) {
@@ -279,12 +250,7 @@ static zend_function *v8js_v8object_get_method(zval **object_ptr, char *method, 
 		return NULL;
 	}
 
-	v8::Isolate *isolate = obj->ctx->isolate;
-	v8::Locker locker(isolate);
-	v8::Isolate::Scope isolate_scope(isolate);
-	v8::HandleScope local_scope(isolate);
-	v8::Local<v8::Context> temp_context = v8::Context::New(isolate);
-	v8::Context::Scope temp_scope(temp_context);
+	V8JS_CTX_PROLOGUE_EX(obj->ctx, NULL);
 	v8::Local<v8::String> jsKey = V8JS_STRL(method, method_len);
 	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
@@ -378,12 +344,7 @@ static int v8js_v8object_get_closure(zval *object, zend_class_entry **ce_ptr, ze
 		return FAILURE;
 	}
 
-	v8::Isolate *isolate = obj->ctx->isolate;
-	v8::Locker locker(isolate);
-	v8::Isolate::Scope isolate_scope(isolate);
-	v8::HandleScope local_scope(isolate);
-	v8::Local<v8::Context> temp_context = v8::Context::New(isolate);
-	v8::Context::Scope temp_scope(temp_context);
+	V8JS_CTX_PROLOGUE_EX(obj->ctx, FAILURE);
 	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
 	if (!v8obj->IsFunction()) {
