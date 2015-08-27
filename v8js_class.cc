@@ -109,6 +109,20 @@ static void v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 	c->global_template.Reset();
 	c->global_template.~Persistent();
 
+	/* Clear persistent call_impl & method_tmpls templates */
+	for (std::map<v8js_tmpl_t *, v8js_tmpl_t>::iterator it = c->call_impls.begin();
+		 it != c->call_impls.end(); ++it) {
+		// No need to free it->first, as it is stored in c->template_cache and freed below
+		it->second.Reset();
+	}
+	c->call_impls.~map();
+
+	for (std::map<zend_function *, v8js_tmpl_t>::iterator it = c->method_tmpls.begin();
+		 it != c->method_tmpls.end(); ++it) {
+		it->second.Reset();
+	}
+	c->method_tmpls.~map();
+
 	/* Clear persistent handles in template cache */
 	for (std::map<const char *,v8js_tmpl_t>::iterator it = c->template_cache.begin();
 		 it != c->template_cache.end(); ++it) {
@@ -217,6 +231,8 @@ static zend_object_value v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 
 	new(&c->weak_closures) std::map<v8js_tmpl_t *, v8js_persistent_obj_t>();
 	new(&c->weak_objects) std::map<zval *, v8js_persistent_obj_t>();
+	new(&c->call_impls) std::map<v8js_tmpl_t *, v8js_tmpl_t>();
+	new(&c->method_tmpls) std::map<zend_function *, v8js_tmpl_t>();
 
 	new(&c->v8js_v8objects) std::list<v8js_v8object *>();
 	new(&c->script_objects) std::vector<v8js_script *>();

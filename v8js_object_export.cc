@@ -518,6 +518,7 @@ template<typename T>
 inline v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<T> &info, property_op_t callback_type, v8::Local<v8::Value> set_value) /* {{{ */
 {
 	v8::Isolate *isolate = info.GetIsolate();
+	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
 	v8::String::Utf8Value cstr(property);
 	const char *name = ToCString(cstr);
 	uint name_len = strlen(name);
@@ -535,9 +536,8 @@ inline v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> p
 	zval *php_value;
 
 	zval *object = reinterpret_cast<zval *>(v8::External::Cast(*self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY)))->Value());
-	v8::Local<v8::FunctionTemplate> tmpl =
-		v8::Local<v8::FunctionTemplate>::New
-		(isolate, *reinterpret_cast<v8js_tmpl_t *>(self->GetAlignedPointerFromInternalField(0)));
+	v8js_tmpl_t *tmpl_ptr = reinterpret_cast<v8js_tmpl_t *>(self->GetAlignedPointerFromInternalField(0));
+	v8::Local<v8::FunctionTemplate> tmpl = v8::Local<v8::FunctionTemplate>::New(isolate, *tmpl_ptr);
 	ce = scope = Z_OBJCE_P(object);
 
 	/* First, check the (case-insensitive) method table */
@@ -568,14 +568,35 @@ inline v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> p
 					// Fake __call implementation
 					// (only use this if method_ptr==NULL, which means
 					//  there is no actual PHP __call() implementation)
-					v8::Local<v8::Function> cb =
-						v8::FunctionTemplate::New(isolate,
-							v8js_fake_call_impl, V8JS_NULL,
-							v8::Signature::New(isolate, tmpl))->GetFunction();
+					v8::Local<v8::FunctionTemplate> ft;
+					try {
+						ft = v8::Local<v8::FunctionTemplate>::New
+							(isolate, ctx->call_impls.at(tmpl_ptr));
+					}
+					catch (const std::out_of_range &) {
+						ft = v8::FunctionTemplate::New(isolate,
+								v8js_fake_call_impl, V8JS_NULL,
+								v8::Signature::New(isolate, tmpl));
+						v8js_tmpl_t *persistent_ft = &ctx->call_impls[tmpl_ptr];
+						persistent_ft->Reset(isolate, ft);
+					}
+					v8::Local<v8::Function> cb = ft->GetFunction();
 					cb->SetName(property);
 					ret_value = cb;
 				} else {
-					ret_value = PHP_V8JS_CALLBACK(isolate, method_ptr, tmpl);
+					v8::Local<v8::FunctionTemplate> ft;
+					try {
+						ft = v8::Local<v8::FunctionTemplate>::New
+							(isolate, ctx->method_tmpls.at(method_ptr));
+					}
+					catch (const std::out_of_range &) {
+						ft = v8::FunctionTemplate::New(isolate, v8js_php_callback,
+								v8::External::New((isolate), method_ptr),
+								v8::Signature::New((isolate), tmpl));
+						v8js_tmpl_t *persistent_ft = &ctx->method_tmpls[method_ptr];
+						persistent_ft->Reset(isolate, ft);
+					}
+					ret_value = ft->GetFunction();
 				}
 			}
 		} else if (callback_type == V8JS_PROP_QUERY) {
