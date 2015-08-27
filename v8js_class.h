@@ -55,6 +55,8 @@ struct v8js_ctx {
 
   std::map<zval *, v8js_persistent_obj_t> weak_objects;
   std::map<v8js_tmpl_t *, v8js_persistent_obj_t> weak_closures;
+  std::map<v8js_tmpl_t *, v8js_tmpl_t> call_impls;
+  std::map<zend_function *, v8js_tmpl_t> method_tmpls;
 
   std::list<v8js_v8object *> v8js_v8objects;
 
