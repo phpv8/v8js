@@ -16,11 +16,11 @@
   <email>stesie@php.net</email>
   <active>yes</active>
  </lead>
- <date>2015-08-26</date>
- <time>11:17:36</time>
+ <date>2015-08-27</date>
+ <time>16:19:54</time>
  <version>
-  <release>0.2.2</release>
-  <api>0.2.2</api>
+  <release>0.2.3</release>
+  <api>0.2.3</api>
  </version>
  <stability>
   <release>beta</release>
@@ -28,11 +28,8 @@
  </stability>
  <license uri="http://www.php.net/license">The MIT License (MIT)</license>
  <notes>
-- Fix CommonJS module caching
-- Fix use-after-free issue on CommonJS module reuse
-- Fix memory leaks in CommonJS module loader
-- Fix memory leak regarding lost script resources (compileScript call et al)
-- Improve V8Function call performance
+- Fix FLAG_FORCE_ARRAY affecting V8Function objects
+- Fix memory leak with repeated calls of methods on exported PHP objects
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -120,6 +117,7 @@
    <file baseinstalldir="/" md5sum="1443aef2fda8793abd79c06a29639797" name="tests/inheritance_basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="afdb74aca312497cce114a8d9dba6ee9" name="tests/issue_116-v8function-injection.phpt" role="test" />
    <file baseinstalldir="/" md5sum="6d4e573daaf2ca5c177230541c31fc96" name="tests/issue_127_001.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="858c759b267b903dcdd65b5f208dc07f" name="tests/issue_160_basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="9f1e697d63231a03da06de97c14a5076" name="tests/js-construct-basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="0e951523a9abae08b531ecd3193a2581" name="tests/js-construct-direct-call.phpt" role="test" />
    <file baseinstalldir="/" md5sum="7733d7eb9693e1c799a3d071a7804b13" name="tests/js-construct-protected-ctor.phpt" role="test" />
@@ -173,7 +171,7 @@
    <file baseinstalldir="/" md5sum="25260e0bc3111b01f700fad13544d6a9" name="Makefile.frag" role="src" />
    <file baseinstalldir="/" md5sum="31e331386def7ce98943694151c0d5cb" name="Makefile.travis" role="src" />
    <file baseinstalldir="/" md5sum="0e23fa6446e52a3b1cff8b18a6e0bd79" name="php_v8js.h" role="src" />
-   <file baseinstalldir="/" md5sum="0845957452ab2c5f0a5da1c011f39d72" name="php_v8js_macros.h" role="src" />
+   <file baseinstalldir="/" md5sum="8bd17b94c164bedac6dd80168afc321d" name="php_v8js_macros.h" role="src" />
    <file baseinstalldir="/" md5sum="ec19e63ca9310bfc4dc4dbd357c779ae" name="README.Linux.md" role="doc" />
    <file baseinstalldir="/" md5sum="4a65a3f9995d325a2c2ccb23224ea503" name="README.MacOS.md" role="doc" />
    <file baseinstalldir="/" md5sum="149b85fb776fac29175585e8d7d60899" name="README.md" role="doc" />
@@ -183,17 +181,17 @@
    <file baseinstalldir="/" md5sum="5031f7d7a1485eaf1053d9bdb029cdb7" name="v8js.cc" role="src" />
    <file baseinstalldir="/" md5sum="358c628b2627319e40fd7e5092f19872" name="v8js_array_access.cc" role="src" />
    <file baseinstalldir="/" md5sum="7baf3fe5b77d1374b39a1d8332e05df4" name="v8js_array_access.h" role="src" />
-   <file baseinstalldir="/" md5sum="dae5a2dc8e1dbb6d280c4817d1bfe860" name="v8js_class.cc" role="src" />
-   <file baseinstalldir="/" md5sum="c24d5f0295241beed2d776c941cba50f" name="v8js_class.h" role="src" />
+   <file baseinstalldir="/" md5sum="592d0a1f1d4faa9ada956b1e176f7829" name="v8js_class.cc" role="src" />
+   <file baseinstalldir="/" md5sum="3f245d5a57d16137969a9771712e0bfe" name="v8js_class.h" role="src" />
    <file baseinstalldir="/" md5sum="88b49988a5ef55edbd7ba085e7857f64" name="v8js_commonjs.cc" role="src" />
    <file baseinstalldir="/" md5sum="32a5d1a65f64ec37ec294f496fc11ff1" name="v8js_commonjs.h" role="src" />
-   <file baseinstalldir="/" md5sum="6b3d174805b6c97bdec88b9479e8ce6c" name="v8js_convert.cc" role="src" />
+   <file baseinstalldir="/" md5sum="c061344705c42fb705bffb2959fc1001" name="v8js_convert.cc" role="src" />
    <file baseinstalldir="/" md5sum="ede2cf80141b1831c7e7ab50dc57236f" name="v8js_debug.cc" role="src" />
    <file baseinstalldir="/" md5sum="cbdb6ed29c9ece278aa2aeab75dbe61f" name="v8js_debug.h" role="src" />
    <file baseinstalldir="/" md5sum="1867ebcefbc577aed051f40d9ccc58ad" name="v8js_exceptions.cc" role="src" />
    <file baseinstalldir="/" md5sum="587370513a019c34f2ddaac3b1f4cbf8" name="v8js_exceptions.h" role="src" />
    <file baseinstalldir="/" md5sum="d282750bc744c4ecfbf243da2c0e5967" name="v8js_methods.cc" role="src" />
-   <file baseinstalldir="/" md5sum="55bfab106f9a92e8909aa6fba344037c" name="v8js_object_export.cc" role="src" />
+   <file baseinstalldir="/" md5sum="771fee619eaf76dd486aaa0415f3399d" name="v8js_object_export.cc" role="src" />
    <file baseinstalldir="/" md5sum="281fb591fbebc3d23e04196cdb3ec64a" name="v8js_object_export.h" role="src" />
    <file baseinstalldir="/" md5sum="767d38eec0b407fba5e30398444e180e" name="v8js_timer.cc" role="src" />
    <file baseinstalldir="/" md5sum="49f609c8cea6033f2ad1e6c9c829a571" name="v8js_timer.h" role="src" />
@@ -357,6 +355,22 @@
 - Fix memory leaks in CommonJS module loader
 - Fix memory leak regarding lost script resources (compileScript call et al)
 - Improve V8Function call performance
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>0.2.3</release>
+    <api>0.2.3</api>
+   </version>
+   <stability>
+    <release>beta</release>
+    <api>beta</api>
+   </stability>
+   <date>2015-08-27</date>
+   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <notes>
+- Fix FLAG_FORCE_ARRAY affecting V8Function objects
+- Fix memory leak with repeated calls of methods on exported PHP objects
    </notes>
   </release>
  </changelog>
