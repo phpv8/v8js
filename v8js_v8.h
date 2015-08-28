@@ -23,6 +23,8 @@
 #define V8JS_UINT(v)		v8::Integer::NewFromUnsigned(isolate, v)
 #define V8JS_FLOAT(v)		v8::Number::New(isolate, v)
 #define V8JS_BOOL(v)		((v)?v8::True(isolate):v8::False(isolate))
+#define V8JS_TRUE()			v8::True(isolate)
+#define V8JS_FALSE()		v8::False(isolate)
 #define V8JS_DATE(v)		v8::Date::New(isolate, v)
 #define V8JS_NULL			v8::Null(isolate)
 #define V8JS_UNDEFINED		v8::Undefined(isolate)

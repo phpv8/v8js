@@ -33,22 +33,24 @@ extern "C" {
 
 static int v8js_is_assoc_array(HashTable *myht TSRMLS_DC) /* {{{ */
 {
-	int i;
-	char *key;
+	zend_string *key;
 	ulong index, idx = 0;
 	uint key_len;
 	HashPosition pos;
 
-	zend_hash_internal_pointer_reset_ex(myht, &pos);
-	for (;; zend_hash_move_forward_ex(myht, &pos)) {
-		i = zend_hash_get_current_key_ex(myht, &key, &key_len, &index, 0, &pos);
-		if (i == HASH_KEY_NON_EXISTANT)
-			break;
-		if (i == HASH_KEY_IS_STRING || index != idx) {
+	ZEND_HASH_FOREACH_KEY(myht, index, key) {
+		if(key) {
+			// HASH_KEY_IS_STRING
 			return 1;
 		}
-		idx++;
-	}
+
+		if(index != idx) {
+			return 1;
+		}
+
+		idx ++;
+	} ZEND_HASH_FOREACH_END();
+
 	return 0;
 }
 /* }}} */
@@ -67,7 +69,7 @@ static v8::Handle<v8::Value> v8js_hash_to_jsarr(zval *value, v8::Isolate *isolat
 	v8::Local<v8::Array> newarr;
 
 	/* Prevent recursion */
-	if (myht && myht->nApplyCount > 1) {
+	if (myht && ZEND_HASH_GET_APPLY_COUNT(myht) > 1) {
 		return V8JS_NULL;
 	}
 
@@ -75,27 +77,23 @@ static v8::Handle<v8::Value> v8js_hash_to_jsarr(zval *value, v8::Isolate *isolat
 
 	if (i > 0)
 	{
-		zval **data;
+		zval *data;
 		ulong index = 0;
 		HashTable *tmp_ht;
-		HashPosition pos;
 
-		for (zend_hash_internal_pointer_reset_ex(myht, &pos);
-			SUCCESS == zend_hash_get_current_data_ex(myht, (void **) &data, &pos);
-			zend_hash_move_forward_ex(myht, &pos)
-		) {
-			tmp_ht = HASH_OF(*data);
+		ZEND_HASH_FOREACH_VAL(myht, data) {
+			tmp_ht = HASH_OF(data);
 
 			if (tmp_ht) {
-				tmp_ht->nApplyCount++;
+				ZEND_HASH_INC_APPLY_COUNT(myht);
 			}
 
-			newarr->Set(index++, zval_to_v8js(*data, isolate TSRMLS_CC));
+			newarr->Set(index++, zval_to_v8js(data, isolate TSRMLS_CC));
 
 			if (tmp_ht) {
-				tmp_ht->nApplyCount--;
+				ZEND_HASH_DEC_APPLY_COUNT(myht);
 			}
-		}
+		} ZEND_HASH_FOREACH_END();
 	}
 	return newarr;
 }
@@ -117,14 +115,10 @@ v8::Handle<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate TSRMLS_DC) 
              if (V8JSG(use_date)) {
 				 ce = php_date_get_date_ce();
 				 if (instanceof_function(Z_OBJCE_P(value), ce TSRMLS_CC)) {
-					 zval *dtval;
-					 zend_call_method_with_0_params(&value, NULL, NULL, "getTimestamp", &dtval);
-					 if (dtval) {
-						 jsValue = V8JS_DATE(((double)Z_LVAL_P(dtval) * 1000.0));
-						 zval_ptr_dtor(&dtval);
-					 }
-					 else
-						 jsValue = V8JS_NULL;
+					 zval dtval;
+					 zend_call_method_with_0_params(value, NULL, NULL, "getTimestamp", &dtval);
+					 jsValue = V8JS_DATE(((double)Z_LVAL(dtval) * 1000.0));
+					 zval_dtor(&dtval);
 				 } else
 					 jsValue = v8js_hash_to_jsobj(value, isolate TSRMLS_CC);
 			 } else
@@ -152,8 +146,12 @@ v8::Handle<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate TSRMLS_DC) 
 			jsValue = V8JS_FLOAT(Z_DVAL_P(value));
 			break;
 
-		case IS_BOOL:
-			jsValue = V8JS_BOOL(Z_BVAL_P(value));
+		case IS_TRUE:
+			jsValue = V8JS_TRUE();
+			break;
+
+		case IS_FALSE:
+			jsValue = V8JS_FALSE();
 			break;
 
 		default:
@@ -211,7 +209,7 @@ int v8js_to_zval(v8::Handle<v8::Value> jsValue, zval *return_value, int flags, v
 
 		zend_class_entry *ce = php_date_get_date_ce();
 		php_date_instantiate(ce, return_value TSRMLS_CC);
-		if (!php_date_initialize((php_date_obj *) zend_object_store_get_object(return_value TSRMLS_CC), date_str, strlen(date_str), NULL, NULL, 0 TSRMLS_CC)) {
+		if (!php_date_initialize(Z_PHPDATE_P(return_value), date_str, strlen(date_str), NULL, NULL, 0 TSRMLS_CC)) {
 			efree(date_str);
 			return FAILURE;
 		}
@@ -226,8 +224,8 @@ int v8js_to_zval(v8::Handle<v8::Value> jsValue, zval *return_value, int flags, v
 		if (!php_object.IsEmpty()) {
 			zend_object *object = reinterpret_cast<zend_object *>(v8::External::Cast(*php_object)->Value());
 			zval zval_object;
-			ZVAL_OBJ(&zval_object, object)
-			RETVAL_ZVAL(zval_object, 1, 0);
+			ZVAL_OBJ(&zval_object, object);
+			RETVAL_ZVAL(&zval_object, 1, 0);
 			return SUCCESS;
 		}
 		if ((flags & V8JS_FLAG_FORCE_ARRAY) || jsValue->IsArray()) {

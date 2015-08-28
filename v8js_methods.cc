@@ -214,7 +214,7 @@ V8JS_METHOD(require)
 	v8js_ctx *c = static_cast<v8js_ctx*>(data->Value());
 
 	// Check that we have a module loader
-	if (c->module_loader == NULL) {
+	if(Z_TYPE(c->module_loader) == IS_NULL) {
 		info.GetReturnValue().Set(isolate->ThrowException(V8JS_SYM("No module loader")));
 		return;
 	}
@@ -264,22 +264,20 @@ V8JS_METHOD(require)
 
 	// Callback to PHP to load the module code
 
-	zval *module_code;
-	zval *normalised_path_zend;
+	zval module_code;
 
-	MAKE_STD_ZVAL(normalised_path_zend);
-	ZVAL_STRING(normalised_path_zend, normalised_module_id);
+	zval params[1];
+	ZVAL_STRING(&params[0], normalised_module_id);
 
-	zval **params[1] = {&normalised_path_zend};
-	if (FAILURE == call_user_function_ex(EG(function_table), NULL, c->module_loader, &module_code, 1, params, 0, NULL TSRMLS_CC)) {
-		zval_ptr_dtor(&normalised_path_zend);
+	if (FAILURE == call_user_function_ex(EG(function_table), NULL, &c->module_loader, &module_code, 1, params, 0, NULL TSRMLS_CC)) {
+		zval_dtor(&params[0]);
 		efree(normalised_module_id);
 		efree(normalised_path);
 
 		info.GetReturnValue().Set(isolate->ThrowException(V8JS_SYM("Module loader callback failed")));
 		return;
 	}
-	zval_ptr_dtor(&normalised_path_zend);
+	zval_dtor(&params[0]);
 
 	// Check if an exception was thrown
 	if (EG(exception)) {
@@ -293,13 +291,13 @@ V8JS_METHOD(require)
 	}
 
 	// Convert the return value to string
-	if (Z_TYPE_P(module_code) != IS_STRING) {
-		convert_to_string(module_code);
+	if (Z_TYPE(module_code) != IS_STRING) {
+		convert_to_string(&module_code);
 	}
 
 	// Check that some code has been returned
-	if (Z_STRLEN_P(module_code)==0) {
-		zval_ptr_dtor(&module_code);
+	if (Z_STRLEN(module_code) == 0) {
+		zval_dtor(&module_code);
 		efree(normalised_module_id);
 		efree(normalised_path);
 
@@ -340,7 +338,7 @@ V8JS_METHOD(require)
 	// Set script identifier
 	v8::Local<v8::String> sname = V8JS_SYM("require");
 
-	v8::Local<v8::String> source = V8JS_STRL(Z_STRVAL_P(module_code), Z_STRLEN_P(module_code));
+	v8::Local<v8::String> source = V8JS_STRL(Z_STRVAL(module_code), Z_STRLEN(module_code));
 	zval_ptr_dtor(&module_code);
 
 	// Create and compile script
