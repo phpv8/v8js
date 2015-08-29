@@ -17,6 +17,7 @@
 /* Helper macros */
 #define V8JS_SYM(v)			v8::String::NewFromUtf8(isolate, v, v8::String::kInternalizedString, sizeof(v) - 1)
 #define V8JS_SYML(v, l)		v8::String::NewFromUtf8(isolate, v, v8::String::kInternalizedString, l)
+#define V8JS_ZSYM(v)		v8::String::NewFromUtf8(isolate, ZSTR_VAL(v), v8::String::kInternalizedString, ZSTR_LEN(v))
 #define V8JS_STR(v)			v8::String::NewFromUtf8(isolate, v)
 #define V8JS_STRL(v, l)		v8::String::NewFromUtf8(isolate, v, v8::String::kNormalString, l)
 #define V8JS_ZSTR(v)		v8::String::NewFromUtf8(isolate, ZSTR_VAL(v), v8::String::kNormalString, ZSTR_LEN(v))

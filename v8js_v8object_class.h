@@ -16,11 +16,11 @@
 
 /* {{{ Object container */
 struct v8js_v8object {
-	zend_object std;
 	v8::Persistent<v8::Value> v8obj;
 	int flags;
 	struct v8js_ctx *ctx;
 	HashTable *properties;
+	zend_object std;
 };
 /* }}} */
 
@@ -29,6 +29,12 @@ extern zend_class_entry *php_ce_v8function;
 
 /* Create PHP V8 object */
 void v8js_v8object_create(zval *, v8::Handle<v8::Value>, int, v8::Isolate * TSRMLS_DC);
+
+static inline v8js_v8object *v8js_v8object_fetch_object(zend_object *obj) {
+	return (v8js_v8object *)((char *)obj - XtOffsetOf(struct v8js_v8object, std));
+}
+ 
+#define Z_V8JS_V8OBJECT_OBJ_P(zv) v8js_v8object_fetch_object(Z_OBJ_P(zv));
 
 PHP_MINIT_FUNCTION(v8js_v8object_class);
 
