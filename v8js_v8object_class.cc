@@ -500,7 +500,6 @@ void v8js_v8object_create(zval *res, v8::Handle<v8::Value> value, int flags, v8:
 	c->v8obj.Reset(isolate, value);
 	c->flags = flags;
 	c->ctx = ctx;
-	c->properties = NULL;
 
 	ctx->v8js_v8objects.push_front(c);
 }
