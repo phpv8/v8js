@@ -19,6 +19,7 @@
 #define V8JS_SYML(v, l)		v8::String::NewFromUtf8(isolate, v, v8::String::kInternalizedString, l)
 #define V8JS_STR(v)			v8::String::NewFromUtf8(isolate, v)
 #define V8JS_STRL(v, l)		v8::String::NewFromUtf8(isolate, v, v8::String::kNormalString, l)
+#define V8JS_ZSTR(v)		v8::String::NewFromUtf8(isolate, ZSTR_VAL(v), v8::String::kNormalString, ZSTR_LEN(v))
 #define V8JS_INT(v)			v8::Integer::New(isolate, v)
 #define V8JS_UINT(v)		v8::Integer::NewFromUnsigned(isolate, v)
 #define V8JS_FLOAT(v)		v8::Number::New(isolate, v)

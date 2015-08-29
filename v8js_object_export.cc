@@ -28,7 +28,7 @@ extern "C" {
 #include "v8js_object_export.h"
 #include "v8js_v8object_class.h"
 
-static void v8js_weak_object_callback(const v8::WeakCallbackData<v8::Object, zval> &data);
+static void v8js_weak_object_callback(const v8::WeakCallbackData<v8::Object, zend_object> &data);
 
 /* Callback for PHP methods and functions */
 static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, v8::Isolate *isolate, const v8::FunctionCallbackInfo<v8::Value>& info TSRMLS_DC) /* {{{ */
@@ -36,8 +36,8 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, v
 	v8::Handle<v8::Value> return_value;
 	zend_fcall_info fci;
 	zend_fcall_info_cache fcc;
-	zval fname, *retval_ptr = NULL, **argv = NULL;
-	zend_uint argc = info.Length(), min_num_args = 0, max_num_args = 0;
+	zval fname, retval, **argv = NULL;
+	unsigned int argc = info.Length(), min_num_args = 0, max_num_args = 0;
 	char *error;
 	int error_len, i, flags = V8JS_FLAG_NONE;
 
@@ -48,7 +48,7 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, v
 	max_num_args = method_ptr->common.num_args;
 
 	/* Function name to call */
-	ZVAL_STRING(&fname, method_ptr->common.function_name);
+	ZVAL_STRING(&fname, ZSTR_VAL(method_ptr->common.function_name));
 
 	/* zend_fcall_info */
 	fci.size = sizeof(fci);
@@ -56,7 +56,7 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, v
 	fci.function_name = fname;
 	fci.symbol_table = NULL;
 	fci.object = object;
-	fci.retval_ptr_ptr = &retval_ptr;
+	fci.retval = &retval;
 	fci.param_count = 0;
 
 	/* Check for passed vs required number of arguments */
@@ -73,7 +73,7 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, v
 
 		return_value = V8JS_THROW(isolate, TypeError, error, error_len);
 		if (object->ce == zend_ce_closure) {
-			efree(const_cast<char*>(method_ptr->internal_function.function_name));
+			zend_string_release(method_ptr->internal_function.function_name);
 			efree(method_ptr);
 		}
 		efree(error);
@@ -84,8 +84,7 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, v
 	/* Convert parameters passed from V8 */
 	if (argc) {
 		flags = V8JS_GLOBAL_GET_FLAGS(isolate);
-		fci.params = (zval ***) safe_emalloc(argc, sizeof(zval **), 0);
-		argv = (zval **) safe_emalloc(argc, sizeof(zval *), 0);
+		fci.params = (zval *) safe_emalloc(argc, sizeof(zval), 0);
 		for (i = 0; i < argc; i++) {
 			v8::Local<v8::Value> php_object;
 			if (info[i]->IsObject()) {
@@ -94,12 +93,10 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, v
 			if (!php_object.IsEmpty()) {
 				/* This is a PHP object, passed to JS and back. */
 				zend_object *object = reinterpret_cast<zend_object *>(v8::External::Cast(*php_object)->Value());
-				argv[i] = NULL; // @fixme wrap object in zval and assign
-				Z_ADDREF_P(argv[i]);
+				ZVAL_OBJ(&fci.params[i], object);
+				Z_ADDREF_P(&fci.params[i]);
 			} else {
-				MAKE_STD_ZVAL(argv[i]);
-				if (v8js_to_zval(info[i], argv[i], flags, isolate TSRMLS_CC) == FAILURE) {
-					fci.param_count++;
+				if (v8js_to_zval(info[i], &fci.params[i], flags, isolate TSRMLS_CC) == FAILURE) {
 					error_len = spprintf(&error, 0, "converting parameter #%d passed to %s() failed", i + 1, method_ptr->common.function_name);
 					return_value = V8JS_THROW(isolate, Error, error, error_len);
 					efree(error);
@@ -107,7 +104,7 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, v
 				}
 			}
 
-			fci.params[fci.param_count++] = &argv[i];
+			fci.param_count++;
  		}
 	} else {
 		fci.params = NULL;
@@ -124,8 +121,8 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, v
 			/* zend_fcall_info_cache */
 			fcc.initialized = 1;
 			fcc.function_handler = method_ptr;
-			fcc.calling_scope = ce;
-			fcc.called_scope = ce;
+			fcc.calling_scope = object->ce;
+			fcc.called_scope = object->ce;
 			fcc.object = object;
 
 			zend_call_function(&fci, &fcc TSRMLS_CC);
@@ -143,18 +140,13 @@ failure:
 	/* Cleanup */
 	if (argc) {
 		for (i = 0; i < fci.param_count; i++) {
-			zval_ptr_dtor(&argv[i]);
+			zval_dtor(&fci.params[i]);
 		}
-		efree(argv);
 		efree(fci.params);
 	}
 
-	if (retval_ptr != NULL) {
-		return_value = zval_to_v8js(retval_ptr, isolate TSRMLS_CC);
-		zval_ptr_dtor(&retval_ptr);
-	} else {
-		return_value = V8JS_NULL;
-	}
+	return_value = zval_to_v8js(&retval, isolate TSRMLS_CC);
+	zval_dtor(&retval);
 
 	info.GetReturnValue().Set(return_value);
 }
@@ -174,7 +166,7 @@ static void v8js_php_callback(const v8::FunctionCallbackInfo<v8::Value>& info) /
 	if (!info.Data().IsEmpty() && info.Data()->IsExternal()) {
 		method_ptr = static_cast<zend_function *>(v8::External::Cast(*info.Data())->Value());
 	} else {
-		method_ptr = zend_get_closure_invoke_method(value TSRMLS_CC);
+		method_ptr = zend_get_closure_invoke_method(object TSRMLS_CC);
 	}
 
 	return v8js_call_php_func(object, method_ptr, isolate, info TSRMLS_CC);
@@ -204,7 +196,7 @@ static void v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value>& i
 	if (info[0]->IsExternal()) {
 		// Object created by v8js in v8js_hash_to_jsobj, PHP object passed as v8::External.
 		php_object = v8::Local<v8::External>::Cast(info[0]);
-		zend_object *object = reinterpret_cast<zval *>(php_object->Value());
+		zend_object *object = reinterpret_cast<zend_object *>(php_object->Value());
 		ZVAL_OBJ(&value, object);
 
 		if(ctx->weak_objects.count(object)) {
@@ -217,7 +209,7 @@ static void v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value>& i
 
 		// Increase the reference count of this value because we're storing it internally for use later
 		// See https://github.com/preillyme/v8js/issues/6
-		Z_ADDREF_P(value);
+		Z_ADDREF_P(&value);
 	} else {
 		// Object created from JavaScript context.  Need to create PHP object first.
 		V8JS_TSRMLS_FETCH();
@@ -230,12 +222,11 @@ static void v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value>& i
 			return;
 		}
 
-		MAKE_STD_ZVAL(value);
-		object_init_ex(value, ce);
+		object_init_ex(&value, ce);
 
 		// Call __construct function
 		if (ctor_ptr != NULL) {
-			v8js_call_php_func(value, ctor_ptr, isolate, info TSRMLS_CC);
+			v8js_call_php_func(Z_OBJ(value), ctor_ptr, isolate, info TSRMLS_CC);
 		}
 		php_object = v8::External::New(isolate, Z_OBJ(value));
 	}
@@ -247,7 +238,7 @@ static void v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value>& i
 	// decides to dispose the JS object, we add a weak persistent handle and register
 	// a callback function that removes the reference.
 	ctx->weak_objects[Z_OBJ(value)].Reset(isolate, newobj);
-	ctx->weak_objects[Z_OBJ(value)].SetWeak(value, v8js_weak_object_callback);
+	ctx->weak_objects[Z_OBJ(value)].SetWeak(Z_OBJ(value), v8js_weak_object_callback);
 
 	// Just tell v8 that we're allocating some external memory
 	// (for the moment we just always tell 1k instead of trying to find out actual values)
@@ -291,8 +282,8 @@ static void v8js_weak_closure_callback(const v8::WeakCallbackData<v8::Object, v8
 #define ZEND_SET_STATE_FUNC_NAME "__set_state"
 
 #define IS_MAGIC_FUNC(mname) \
-	((key_len == sizeof(mname)) && \
-	!strncasecmp(key, mname, key_len - 1))
+	((ZSTR_LEN(key) == sizeof(mname) - 1) &&		\
+	 !strncasecmp(ZSTR_VAL(key), mname, ZSTR_LEN(key)))
 
 #define PHP_V8JS_CALLBACK(isolate, mptr, tmpl)										\
 	v8::FunctionTemplate::New((isolate), v8js_php_callback, v8::External::New((isolate), mptr), v8::Signature::New((isolate), tmpl))->GetFunction()
@@ -308,25 +299,18 @@ static void v8js_named_property_enumerator(const v8::PropertyCallbackInfo<v8::Ar
 
 	V8JS_TSRMLS_FETCH();
 	zend_class_entry *ce;
-	zend_function *method_ptr;
+	void *ptr;
 	HashTable *proptable;
 	HashPosition pos;
-	char *key = NULL;
-	uint key_len;
+	zend_string *key;
 	ulong index;
 
 	zend_object *object = reinterpret_cast<zend_object *>(v8::External::Cast(*self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY)))->Value());
 	ce = object->ce;
 
 	/* enumerate all methods */
-	zend_hash_internal_pointer_reset_ex(&ce->function_table, &pos);
-	for (;; zend_hash_move_forward_ex(&ce->function_table, &pos)) {
-		if (zend_hash_get_current_key_ex(&ce->function_table, &key, &key_len, &index, 0, &pos) != HASH_KEY_IS_STRING  ||
-			zend_hash_get_current_data_ex(&ce->function_table, (void **) &method_ptr, &pos) == FAILURE
-			) {
-			break;
-		}
-
+	ZEND_HASH_FOREACH_STR_KEY_PTR(&ce->function_table, key, ptr) {
+		zend_function *method_ptr = reinterpret_cast<zend_function *>(ptr);
 		if ((method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) == 0) {
 			/* Allow only public methods */
 			continue;
@@ -348,47 +332,41 @@ static void v8js_named_property_enumerator(const v8::PropertyCallbackInfo<v8::Ar
 			IS_MAGIC_FUNC(ZEND_ISSET_FUNC_NAME)) {
 			continue;
 		}
-		v8::Local<v8::String> method_name = V8JS_STR(method_ptr->common.function_name);
+		v8::Local<v8::String> method_name = V8JS_ZSTR(method_ptr->common.function_name);
 		// rename PHP special method names to JS equivalents.
 		if (IS_MAGIC_FUNC(ZEND_TOSTRING_FUNC_NAME)) {
 			method_name = V8JS_SYM("toString");
 		}
 		result->Set(result_len++, method_name);
-	}
+	} ZEND_HASH_FOREACH_END();
+
 	/* enumerate all properties */
 	/* Z_OBJPROP uses the get_properties handler */
-	proptable = Z_OBJPROP_P(object); // @fixme adapt from zval* to zend_object*
-	zend_hash_internal_pointer_reset_ex(proptable, &pos);
-	for (;; zend_hash_move_forward_ex(proptable, &pos)) {
-		int i = zend_hash_get_current_key_ex(proptable, &key, &key_len, &index, 0, &pos);
-		if (i == HASH_KEY_NON_EXISTANT)
-			break;
+	zval tmp_zv;
+	ZVAL_OBJ(&tmp_zv, object);
+	proptable = Z_OBJPROP(tmp_zv);
 
-		// for consistency with the 'in' operator, skip properties whose
-		// value IS_NULL (like isset does)
-		zval **data;
-		if (zend_hash_get_current_data_ex(proptable, (void **) &data, &pos) == SUCCESS &&
-			ZVAL_IS_NULL(*data))
-			continue;
+	zval *data;
 
-		if (i == HASH_KEY_IS_STRING) {
+	ZEND_HASH_FOREACH_KEY_VAL(proptable, index, key, data) {
+		if(key) {
 			/* skip protected and private members */
-			if (key[0] == '\0') {
+			if(ZSTR_VAL(key)[0] == '\0') {
 				continue;
 			}
 			// prefix enumerated property names with '$' so they can be
 			// dereferenced unambiguously (ie, don't conflict with method
 			// names)
-			char *prefixed = static_cast<char *>(emalloc(key_len + 1));
+			char *prefixed = static_cast<char *>(emalloc(ZSTR_LEN(key) + 2));
 			prefixed[0] = '$';
-			strncpy(prefixed + 1, key, key_len);
-			result->Set(result_len++, V8JS_STRL(prefixed, key_len));
+			strncpy(prefixed + 1, ZSTR_VAL(key), ZSTR_LEN(key) + 1);
+			result->Set(result_len++, V8JS_STRL(prefixed, ZSTR_LEN(key) + 1));
 			efree(prefixed);
 		} else {
 			// even numeric indices are enumerated as strings in JavaScript
 			result->Set(result_len++, V8JS_FLOAT((double) index)->ToString());
 		}
-	}
+	} ZEND_HASH_FOREACH_END();
 
 	/* done */
 	info.GetReturnValue().Set(result);
@@ -414,14 +392,15 @@ static void v8js_invoke_callback(const v8::FunctionCallbackInfo<v8::Value>& info
 	if (info.IsConstructCall()) {
 		v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
 
-		v8::String::Utf8Value str(self->GetConstructorName()->ToString());
-		const char *constructor_name = ToCString(str);
+		v8::Local<v8::String> str = self->GetConstructorName()->ToString();
+		v8::String::Utf8Value str_value(str);
+		zend_string *constructor_name = zend_string_init(ToCString(str_value), str->Utf8Length(), 0);
+		zend_class_entry *ce = zend_lookup_class(constructor_name TSRMLS_CC);
+		zend_string_release(constructor_name);
 
-		zend_class_entry **pce;
-		zend_lookup_class(constructor_name, str.length(), &pce TSRMLS_CC);
 		v8::Local<v8::FunctionTemplate> new_tpl;
 		new_tpl = v8::Local<v8::FunctionTemplate>::New
-			(isolate, ctx->template_cache.at((*pce)->name));
+			(isolate, ctx->template_cache.at(ce->name));
 
 		result = new_tpl->GetFunction()->NewInstance(argc, argv);
 	} else {
@@ -467,9 +446,7 @@ static void v8js_fake_call_impl(const v8::FunctionCallbackInfo<v8::Value>& info)
 		info.GetReturnValue().Set(return_value);
 		return;
 	}
-	v8::String::Utf8Value str(info[0]->ToString());
-	const char *method_name = ToCString(str);
-	uint method_name_len = strlen(method_name);
+
 	v8::Local<v8::Array> args = v8::Local<v8::Array>::Cast(info[1]);
 	if (args->Length() > 1000000) {
 		// prevent overflow, since args->Length() is a uint32_t and args
@@ -482,11 +459,17 @@ static void v8js_fake_call_impl(const v8::FunctionCallbackInfo<v8::Value>& info)
 		info.GetReturnValue().Set(return_value);
 		return;
 	}
+
+	v8::Local<v8::String> str = info[0]->ToString();
+	v8::String::Utf8Value str_value(str);
+	const char *method_c_name = ToCString(str_value);
+	zend_string *method_name = zend_string_init(method_c_name, str->Utf8Length(), 0);
+
 	// okay, look up the method name and manually invoke it.
-	const zend_object_handlers *h = Z_OBJ_HT_P(object);
-	zend_function *method_ptr =
-		h->get_method(&object, (char*)method_name, method_name_len
-			ZEND_HASH_KEY_NULL TSRMLS_CC);
+	const zend_object_handlers *h = object->handlers;
+	zend_function *method_ptr = h->get_method(&object, method_name, NULL TSRMLS_CC);
+	zend_string_release(method_name);
+
 	if (method_ptr == NULL ||
 		(method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) == 0 ||
 		(method_ptr->common.fn_flags & (ZEND_ACC_CTOR|ZEND_ACC_DTOR|ZEND_ACC_CLONE)) != 0) {
@@ -522,10 +505,9 @@ inline v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> p
 	v8::Isolate *isolate = info.GetIsolate();
 	v8::String::Utf8Value cstr(property);
 	const char *name = ToCString(cstr);
-	uint name_len = strlen(name);
+	uint name_len = property->Utf8Length();
 	char *lower = estrndup(name, name_len);
-	const char *method_name;
-	uint method_name_len;
+	zend_string *method_name;
 
 	v8::Local<v8::Object> self = info.Holder();
 	v8::Local<v8::Value> ret_value;
@@ -534,9 +516,12 @@ inline v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> p
 	V8JS_TSRMLS_FETCH();
 	zend_class_entry *scope, *ce;
 	zend_function *method_ptr = NULL;
-	zval *php_value;
+	zval php_value;
 
 	zend_object *object = reinterpret_cast<zend_object *>(v8::External::Cast(*self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY)))->Value());
+	zval zobject;
+	ZVAL_OBJ(&zobject, object);
+
 	v8::Local<v8::FunctionTemplate> tmpl =
 		v8::Local<v8::FunctionTemplate>::New
 		(isolate, *reinterpret_cast<v8js_tmpl_t *>(self->GetAlignedPointerFromInternalField(0)));
@@ -544,18 +529,21 @@ inline v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> p
 
 	/* First, check the (case-insensitive) method table */
 	php_strtolower(lower, name_len);
-	method_name = lower;
-	method_name_len = name_len;
+	method_name = zend_string_init(lower, name_len, 0);
+
 	// toString() -> __tostring()
 	if (name_len == 8 && strcmp(name, "toString") == 0) {
-		method_name = ZEND_TOSTRING_FUNC_NAME;
-		method_name_len = sizeof(ZEND_TOSTRING_FUNC_NAME) - 1;
+		zend_string_release(method_name);
+		method_name = zend_string_init(ZEND_TOSTRING_FUNC_NAME, sizeof(ZEND_TOSTRING_FUNC_NAME) - 1, 0);
 	}
+
 	bool is_constructor = (name_len == 11 && strcmp(name, "constructor") == 0);
-	bool is_magic_call = (method_name_len == 6 && strcmp(method_name, "__call") == 0);
+	bool is_magic_call = (ZSTR_LEN(method_name) == 6 && strcmp(ZSTR_VAL(method_name), "__call") == 0);
+
 	if (is_constructor ||
 		(name[0] != '$' /* leading '$' means property, not method */ &&
-		 zend_hash_find(&ce->function_table, method_name, method_name_len + 1, (void**)&method_ptr) == SUCCESS &&
+		 (method_ptr = reinterpret_cast<zend_function *>
+		  (zend_hash_find_ptr(&ce->function_table, method_name))) &&
 		 ((method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) != 0) && /* Allow only public methods */
 		 ((method_ptr->common.fn_flags & (ZEND_ACC_CTOR|ZEND_ACC_DTOR|ZEND_ACC_CLONE)) == 0) /* no __construct, __destruct(), or __clone() functions */
 		 ) || (method_ptr=NULL, is_magic_call)
@@ -596,103 +584,61 @@ inline v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> p
 			// this is a property (not a method)
 			name++; name_len--;
 		}
+
+		zval zname;
+		ZVAL_STRINGL(&zname, name, name_len);
+
 		if (callback_type == V8JS_PROP_GETTER) {
 			/* Nope, not a method -- must be a (case-sensitive) property */
-			zval zname;
-			INIT_ZVAL(zname);
-			ZVAL_STRINGL(&zname, name, name_len);
-			zend_property_info *property_info = zend_get_property_info(ce, &zname, 1 TSRMLS_CC);
+			zend_property_info *property_info = zend_get_property_info(ce, Z_STR(zname), 1 TSRMLS_CC);
 
 			if(property_info && property_info->flags & ZEND_ACC_PUBLIC) {
-				php_value = zend_read_property(NULL, object, V8JS_CONST name, name_len, true TSRMLS_CC);
+				zval *property_val = zend_read_property(NULL, &zobject, V8JS_CONST name, name_len, true, &php_value TSRMLS_CC);
 				// special case uninitialized_zval_ptr and return an empty value
 				// (indicating that we don't intercept this property) if the
 				// property doesn't exist.
-				if (php_value == EG(uninitialized_zval_ptr)) {
+				if (property_val == &EG(uninitialized_zval)) {
 					ret_value = v8::Handle<v8::Value>();
 				} else {
 					// wrap it
-					ret_value = zval_to_v8js(php_value, isolate TSRMLS_CC);
+					ret_value = zval_to_v8js(property_val, isolate TSRMLS_CC);
 					/* We don't own the reference to php_value... unless the
 					 * returned refcount was 0, in which case the below code
 					 * will free it. */
-					zval_add_ref(&php_value);
-					zval_ptr_dtor(&php_value);
+					zval_add_ref(property_val);
+					zval_ptr_dtor(property_val);
 				}
 			}
-			else if (zend_hash_find(&ce->function_table, "__get", 6, (void**)&method_ptr) == SUCCESS
+			else if (ce->__get
 					 /* Allow only public methods */
-					 && ((method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) != 0)) {
+					 && ((ce->__get->common.fn_flags & ZEND_ACC_PUBLIC) != 0)) {
 				/* Okay, let's call __get. */
-				zend_fcall_info fci;
-
-				zval fmember;
-				ZVAL_STRING(&fmember, "__get");
-
-				fci.size = sizeof(fci);
-				fci.function_table = &ce->function_table;
-				fci.function_name = &fmember;
-				fci.symbol_table = NULL;
-				fci.retval_ptr_ptr = &php_value;
-
-				zval *zname_ptr = &zname;
-				zval **zname_ptr_ptr = &zname_ptr;
-				fci.param_count = 1;
-				fci.params = &zname_ptr_ptr;
-
-				fci.object = object;
-				fci.no_separation = 0;
-
-				zend_call_function(&fci, NULL TSRMLS_CC);
-
-				ret_value = zval_to_v8js(php_value, isolate TSRMLS_CC);
-				zval_ptr_dtor(&php_value);
+				zend_call_method_with_1_params(&zobject, ce, &ce->__get, ZEND_GET_FUNC_NAME, &php_value, &zname);
+				ret_value = zval_to_v8js(&php_value, isolate TSRMLS_CC);
+				zval_dtor(&php_value);
 			}
+
 		} else if (callback_type == V8JS_PROP_SETTER) {
 			int flags = V8JS_GLOBAL_GET_FLAGS(isolate);
-			MAKE_STD_ZVAL(php_value);
-			if (v8js_to_zval(set_value, php_value, flags, isolate TSRMLS_CC) != SUCCESS) {
+
+			if (v8js_to_zval(set_value, &php_value, flags, isolate TSRMLS_CC) != SUCCESS) {
 				ret_value = v8::Handle<v8::Value>();
 			}
 			else {
-				zval zname;
-				ZVAL_STRINGL(&zname, name, name_len);
-				zend_property_info *property_info = zend_get_property_info(ce, &zname, 1 TSRMLS_CC);
+				zend_property_info *property_info = zend_get_property_info(ce, Z_STR(zname), 1 TSRMLS_CC);
 
 				if(property_info && property_info->flags & ZEND_ACC_PUBLIC) {
-					zend_update_property(scope, object, V8JS_CONST name, name_len, php_value TSRMLS_CC);
+					zend_update_property(scope, &zobject, V8JS_CONST name, name_len, &php_value TSRMLS_CC);
 					ret_value = set_value;
 				}
-				else if (zend_hash_find(&ce->function_table, "__set", 6, (void**)&method_ptr) == SUCCESS
+				else if (ce->__set
 						 /* Allow only public methods */
-						 && ((method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) != 0)) {
+						 && ((ce->__set->common.fn_flags & ZEND_ACC_PUBLIC) != 0)) {
 					/* Okay, let's call __set. */
-					zend_fcall_info fci;
-
-					zval fmember;
-					ZVAL_STRING(&fmember, "__set");
-
-					zval *php_ret_value;
-
-					fci.size = sizeof(fci);
-					fci.function_table = &ce->function_table;
-					fci.function_name = &fmember;
-					fci.symbol_table = NULL;
-					fci.retval_ptr_ptr = &php_ret_value;
-
-					zval *zname_ptr = &zname;
-					zval **params[2];
-					fci.param_count = 2;
-					fci.params = params;
-					fci.params[0] = &zname_ptr;
-					fci.params[1] = &php_value;
-
-					fci.object = object;
-					fci.no_separation = 1;
-
-					zend_call_function(&fci, NULL TSRMLS_CC);
-					ret_value = zval_to_v8js(php_ret_value, isolate TSRMLS_CC);
-					zval_ptr_dtor(&php_ret_value);
+					zval php_ret_value;
+					zend_call_method_with_2_params(&zobject, ce, &ce->__set, ZEND_SET_FUNC_NAME, &php_ret_value, &zname, &php_value);
+					ret_value = zval_to_v8js(&php_ret_value, isolate TSRMLS_CC);
+					zval_ptr_dtor(&php_value);
 				}
 			}
 
@@ -702,34 +648,33 @@ inline v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> p
 		} else if (callback_type == V8JS_PROP_QUERY ||
 				   callback_type == V8JS_PROP_DELETER) {
 			const zend_object_handlers *h = object->handlers;
-			zval *prop;
-			MAKE_STD_ZVAL(prop);
-			ZVAL_STRINGL(prop, name, name_len);
 
 			if (callback_type == V8JS_PROP_QUERY) {
-				if (h->has_property(object, prop, 0, NULL TSRMLS_CC)) {
+				if (h->has_property(&zobject, &zname, 0, NULL TSRMLS_CC)) {
 					ret_value = V8JS_UINT(v8::None);
 				} else {
 					ret_value = v8::Handle<v8::Value>(); // empty handle
 				}
 			} else {
-				zend_property_info *property_info = zend_get_property_info(ce, prop, 1 TSRMLS_CC);
+				zend_property_info *property_info = zend_get_property_info(ce, Z_STR(zname), 1 TSRMLS_CC);
 
 				if(property_info && property_info->flags & ZEND_ACC_PUBLIC) {
-					h->unset_property(object, prop, NULL TSRMLS_CC);
-					ret_value = V8JS_BOOL(true);
+					h->unset_property(&zobject, &zname, NULL TSRMLS_CC);
+					ret_value = V8JS_TRUE();
 				}
 				else {
 					ret_value = v8::Handle<v8::Value>(); // empty handle
 				}
 			}
-			zval_ptr_dtor(&prop);
 		} else {
 			/* shouldn't reach here! but bail safely */
 			ret_value = v8::Handle<v8::Value>();
 		}
+
+		zval_dtor(&zname);
 	}
 
+	zend_string_release(method_name);
 	efree(lower);
 	return ret_value;
 }
@@ -781,7 +726,7 @@ static v8::Handle<v8::Object> v8js_wrap_object(v8::Isolate *isolate, zend_class_
 		/* No cached v8::FunctionTemplate available as of yet, create one. */
 		new_tpl = v8::FunctionTemplate::New(isolate, 0);
 
-		new_tpl->SetClassName(V8JS_STRL(ce->name, ce->name_length));
+		new_tpl->SetClassName(V8JS_ZSTR(ce->name));
 		new_tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
 		if (ce == zend_ce_closure) {
@@ -805,10 +750,10 @@ static v8::Handle<v8::Object> v8js_wrap_object(v8::Isolate *isolate, zend_class_
 				bool has_countable = false;
 
 				for (int i = 0; i < ce->num_interfaces; i ++) {
-					if (strcmp (ce->interfaces[i]->name, "ArrayAccess") == 0) {
+					if (strcmp (ZSTR_VAL(ce->interfaces[i]->name), "ArrayAccess") == 0) {
 						has_array_access = true;
 					}
-					else if (strcmp (ce->interfaces[i]->name, "Countable") == 0) {
+					else if (strcmp (ZSTR_VAL(ce->interfaces[i]->name), "Countable") == 0) {
 						has_countable = true;
 					}
 				}
@@ -842,13 +787,15 @@ static v8::Handle<v8::Object> v8js_wrap_object(v8::Isolate *isolate, zend_class_
 				 V8JS_NULL /* data */
 				 );
 			// add __invoke() handler
-			zend_function *invoke_method_ptr;
-			if (zend_hash_find(&ce->function_table, ZEND_INVOKE_FUNC_NAME,
-							   sizeof(ZEND_INVOKE_FUNC_NAME),
-							   (void**)&invoke_method_ptr) == SUCCESS &&
+			zend_string *invoke_str = zend_string_init
+				(ZEND_INVOKE_FUNC_NAME, sizeof(ZEND_INVOKE_FUNC_NAME) - 1, 0);
+			zend_function *invoke_method_ptr = reinterpret_cast<zend_function *>
+				(zend_hash_find(&ce->function_table, invoke_str));
+			if (invoke_method_ptr &&
 				invoke_method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) {
 				new_tpl->InstanceTemplate()->SetCallAsFunctionHandler(v8js_invoke_callback, PHP_V8JS_CALLBACK(isolate, invoke_method_ptr, new_tpl));
 			}
+			zend_string_release(invoke_str);
 		}
 		v8::Local<v8::Array> call_handler_data = v8::Array::New(isolate, 2);
 		call_handler_data->Set(0, v8::External::New(isolate, persist_tpl_));
@@ -857,7 +804,7 @@ static v8::Handle<v8::Object> v8js_wrap_object(v8::Isolate *isolate, zend_class_
 	}
 
 	// Create v8 wrapper object
-	v8::Handle<v8::Value> external = v8::External::New(isolate, Z_OBJ(value));
+	v8::Handle<v8::Value> external = v8::External::New(isolate, Z_OBJ_P(value));
 	v8::Handle<v8::Object> newobj = new_tpl->GetFunction()->NewInstance(1, &external);
 
 	if (ce == zend_ce_closure) {
@@ -875,8 +822,7 @@ static v8::Handle<v8::Object> v8js_wrap_array_to_object(v8::Isolate *isolate, zv
 {
 	int i;
 	HashPosition pos;
-	char *key = NULL;
-	uint key_len;
+	zend_string *key;
 	ulong index;
 
 	// @todo re-use template likewise
@@ -893,42 +839,33 @@ static v8::Handle<v8::Object> v8js_wrap_array_to_object(v8::Isolate *isolate, zv
 
 	if (i > 0)
 	{
-		zval **data;
+		zval *data;
 		HashTable *tmp_ht;
 
-		zend_hash_internal_pointer_reset_ex(myht, &pos);
-		for (;; zend_hash_move_forward_ex(myht, &pos)) {
-			i = zend_hash_get_current_key_ex(myht, &key, &key_len, &index, 0, &pos);
-			if (i == HASH_KEY_NON_EXISTANT)
-				break;
+		ZEND_HASH_FOREACH_KEY_VAL(myht, index, key, data) {
+			tmp_ht = HASH_OF(data);
 
-			if (zend_hash_get_current_data_ex(myht, (void **) &data, &pos) == SUCCESS)
-			{
-				tmp_ht = HASH_OF(*data);
-
-				if (tmp_ht) {
-					tmp_ht->nApplyCount++;
-				}
-
-				if (i == HASH_KEY_IS_STRING)
-				{
-					if (key[0] == '\0' && Z_TYPE_P(value) == IS_OBJECT) {
-						/* Skip protected and private members. */
-						if (tmp_ht) {
-							tmp_ht->nApplyCount--;
-						}
-						continue;
-					}
-					newobj->Set(V8JS_STRL(key, key_len - 1), zval_to_v8js(*data, isolate TSRMLS_CC));
-				} else {
-					newobj->Set(index, zval_to_v8js(*data, isolate TSRMLS_CC));
-				}
-
-				if (tmp_ht) {
-					tmp_ht->nApplyCount--;
-				}
+			if (tmp_ht) {
+				ZEND_HASH_INC_APPLY_COUNT(tmp_ht);
 			}
-		}
+
+			if (key) {
+				if (ZSTR_VAL(key)[0] == '\0' && Z_TYPE_P(value) == IS_OBJECT) {
+					/* Skip protected and private members. */
+					if (tmp_ht) {
+						ZEND_HASH_DEC_APPLY_COUNT(tmp_ht);
+					}
+					continue;
+				}
+				newobj->Set(V8JS_ZSTR(key), zval_to_v8js(data, isolate TSRMLS_CC));
+			} else {
+				newobj->Set(index, zval_to_v8js(data, isolate TSRMLS_CC));
+			}
+
+			if (tmp_ht) {
+				ZEND_HASH_DEC_APPLY_COUNT(tmp_ht);
+			}
+		} ZEND_HASH_FOREACH_END();
 	}
 
 	return newobj;
@@ -949,7 +886,7 @@ v8::Handle<v8::Value> v8js_hash_to_jsobj(zval *value, v8::Isolate *isolate TSRML
 	}
 
 	/* Prevent recursion */
-	if (myht && myht->nApplyCount > 1) {
+	if (myht && ZEND_HASH_GET_APPLY_COUNT(myht) > 1) {
 		return V8JS_NULL;
 	}
 

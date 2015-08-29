@@ -50,7 +50,7 @@ struct v8js_ctx {
   std::vector<char *> modules_stack;
   std::vector<char *> modules_base;
   std::map<char *, v8js_persistent_obj_t, cmp_str> modules_loaded;
-  std::map<const char *,v8js_tmpl_t> template_cache;
+  std::map<const zend_string *,v8js_tmpl_t> template_cache;
 
   std::map<zend_object *, v8js_persistent_obj_t> weak_objects;
   std::map<v8js_tmpl_t *, v8js_persistent_obj_t> weak_closures;
