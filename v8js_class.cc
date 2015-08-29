@@ -565,7 +565,7 @@ static PHP_METHOD(V8Js, compileString)
 
 	v8js_compile_script(getThis(), str, identifier, &res TSRMLS_CC);
 	if (res) {
-		RETURN_RES(zend_register_resource(res, le_v8js_script));
+		RETVAL_RES(zend_register_resource(res, le_v8js_script));
 
 		v8js_ctx *ctx;
 		ctx = Z_V8JS_CTX_OBJ_P(getThis());
