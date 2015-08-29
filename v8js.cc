@@ -92,6 +92,10 @@ ZEND_INI_END()
 
 
 #ifdef COMPILE_DL_V8JS
+#ifdef ZTS
+ZEND_TSRMLS_CACHE_DEFINE();
+#endif
+
 ZEND_GET_MODULE(v8js)
 #endif
 
@@ -155,6 +159,10 @@ static PHP_MINFO_FUNCTION(v8js)
  */
 static PHP_GINIT_FUNCTION(v8js)
 {
+#if defined(COMPILE_DL_MYSQLI) && defined(ZTS)
+    ZEND_TSRMLS_CACHE_UPDATE();
+#endif
+
 	/*
 	  If ZTS is disabled, the v8js_globals instance is declared right
 	  in the BSS and hence automatically initialized by C++ compiler.

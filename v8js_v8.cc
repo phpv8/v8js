@@ -162,9 +162,10 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 	}
 
 	/* There was pending exception left from earlier executions -> throw to PHP */
-	if (c->pending_exception) {
-		zend_throw_exception_object(c->pending_exception TSRMLS_CC);
-		c->pending_exception = NULL;
+	if (Z_TYPE(c->pending_exception) == IS_OBJECT) {
+		zend_throw_exception_object(&c->pending_exception TSRMLS_CC);
+		zval_dtor(&c->pending_exception);
+		ZVAL_NULL(&c->pending_exception);
 	}
 
 	/* Handle runtime JS exceptions */
@@ -181,8 +182,7 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 
 			/* Exception thrown from JS, preserve it for future execution */
 			if (result.IsEmpty()) {
-				MAKE_STD_ZVAL(c->pending_exception);
-				v8js_create_script_exception(c->pending_exception, &try_catch TSRMLS_CC);
+				v8js_create_script_exception(&c->pending_exception, &try_catch TSRMLS_CC);
 				return;
 			}
 		}
@@ -225,7 +225,8 @@ int v8js_get_properties_hash(v8::Handle<v8::Value> jsValue, HashTable *retval, i
 
 			v8::Local<v8::Value> jsVal = jsObj->Get(jsKey);
 			v8::String::Utf8Value cstr(jsKey);
-			const char *key = ToCString(cstr);
+			const char *c_key = ToCString(cstr);
+			zend_string *key = zend_string_init(c_key, jsKey->ToString()->Utf8Length(), 0);
 			zval value;
 			ZVAL_UNDEF(&value);
 
@@ -235,21 +236,21 @@ int v8js_get_properties_hash(v8::Handle<v8::Value> jsValue, HashTable *retval, i
 			}
 			if (!php_object.IsEmpty()) {
 				/* This is a PHP object, passed to JS and back. */
-				zend_object object = reinterpret_cast<zend_object *>(v8::External::Cast(*php_object)->Value());
+				zend_object *object = reinterpret_cast<zend_object *>(v8::External::Cast(*php_object)->Value());
 				ZVAL_OBJ(&value, object);
-				Z_ADDREF_P(value);
+				Z_ADDREF_P(&value);
 			}
 			else {
-				if (v8js_to_zval(jsVal, value, flags, isolate TSRMLS_CC) == FAILURE) {
+				if (v8js_to_zval(jsVal, &value, flags, isolate TSRMLS_CC) == FAILURE) {
 					zval_dtor(&value);
 					return FAILURE;
 				}
 			}
 
 			if ((flags & V8JS_FLAG_FORCE_ARRAY) || jsValue->IsArray()) {
-				zend_symtable_update(retval, key, strlen(key) + 1, (void *)&value, sizeof(zval *), NULL);
+				zend_symtable_update(retval, key, &value);
 			} else {
-				zend_hash_update(retval, key, strlen(key) + 1, (void *) &value, sizeof(zval *), NULL);
+				zend_hash_update(retval, key, &value);
 			}
 		}
 		return SUCCESS;

@@ -31,7 +31,8 @@ extern "C" {
 
 static void v8js_timer_interrupt_handler(v8::Isolate *isolate, void *data) { /* {{{ */
 #ifdef ZTS
-	TSRMLS_D = (void ***) data;
+	// @fixme
+	//TSRMLS_D = (void ***) data;
 #endif
 
 	if (!V8JSG(timer_stack).size()) {
@@ -91,7 +92,8 @@ void v8js_timer_thread(TSRMLS_D) /* {{{ */
 				 * and cannot aquire it as v8 is executing the script ... */
 				void *data = NULL;
 #ifdef ZTS
-				data = (void *) TSRMLS_C;
+				// @fixme
+				//data = (void *) TSRMLS_C;
 #endif
 				c->isolate->RequestInterrupt(v8js_timer_interrupt_handler, data);
 			}

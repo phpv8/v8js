@@ -90,8 +90,7 @@ int v8js_to_zval(v8::Handle<v8::Value>, zval *, int, v8::Isolate * TSRMLS_DC);
 
 struct v8js_accessor_ctx
 {
-    char *variable_name_string;
-    uint variable_name_string_len;
+	zend_string *variable_name;
     v8::Isolate *isolate;
 };
 
@@ -128,11 +127,7 @@ extern zend_v8js_globals v8js_globals;
 
 ZEND_EXTERN_MODULE_GLOBALS(v8js)
 
-#ifdef ZTS
-# define V8JSG(v) TSRMG(v8js_globals_id, zend_v8js_globals *, v)
-#else
-# define V8JSG(v) (v8js_globals.v)
-#endif
+#define V8JSG(v) ZEND_MODULE_GLOBALS_ACCESSOR(v8js, v)
 
 /* Register builtin methods into passed object */
 void v8js_register_methods(v8::Handle<v8::ObjectTemplate>, v8js_ctx *c);
