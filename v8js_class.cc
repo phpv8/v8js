@@ -462,7 +462,7 @@ PHP_METHOD(V8Js, __wakeup)
 }
 /* }}} */
 
-static void v8js_compile_script(zval *this_ptr, const char *str, int str_len, const char *identifier, int identifier_len, v8js_script **ret TSRMLS_DC)
+static void v8js_compile_script(zval *this_ptr, zend_string *str, zend_string *identifier, v8js_script **ret TSRMLS_DC)
 {
 	v8js_script *res = NULL;
 
@@ -472,10 +472,10 @@ static void v8js_compile_script(zval *this_ptr, const char *str, int str_len, co
 	v8::TryCatch try_catch;
 
 	/* Set script identifier */
-	v8::Local<v8::String> sname = identifier_len ? V8JS_SYML(identifier, identifier_len) : V8JS_SYM("V8Js::compileString()");
+	v8::Local<v8::String> sname = identifier ? V8JS_ZSTR(identifier) : V8JS_SYM("V8Js::compileString()");
 
 	/* Compiles a string context independently. TODO: Add a php function which calls this and returns the result as resource which can be executed later. */
-	v8::Local<v8::String> source = V8JS_STRL(str, str_len);
+	v8::Local<v8::String> source = V8JS_ZSTR(str);
 	v8::Local<v8::Script> script = v8::Script::Compile(source, sname);
 
 	/* Compile errors? */
@@ -523,16 +523,16 @@ static void v8js_execute_script(zval *this_ptr, v8js_script *res, long flags, lo
  */
 static PHP_METHOD(V8Js, executeString)
 {
-	char *str = NULL, *identifier = NULL, *tz = NULL;
+	zend_string *str = NULL, *identifier = NULL;
 	int str_len = 0, identifier_len = 0;
 	long flags = V8JS_FLAG_NONE, time_limit = 0, memory_limit = 0;
 	v8js_script *res = NULL;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|slll", &str, &str_len, &identifier, &identifier_len, &flags, &time_limit, &memory_limit) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S|Slll", &str, &identifier, &flags, &time_limit, &memory_limit) == FAILURE) {
 		return;
 	}
 
-	v8js_compile_script(getThis(), str, str_len, identifier, identifier_len, &res TSRMLS_CC);
+	v8js_compile_script(getThis(), str, identifier, &res TSRMLS_CC);
 	if (!res) {
 		RETURN_FALSE;
 	}
@@ -547,15 +547,15 @@ static PHP_METHOD(V8Js, executeString)
  */
 static PHP_METHOD(V8Js, compileString)
 {
-	char *str = NULL, *identifier = NULL;
+	zend_string *str = NULL, *identifier = NULL;
 	int str_len = 0, identifier_len = 0;
 	v8js_script *res = NULL;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|s", &str, &str_len, &identifier, &identifier_len) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S|S", &str, &identifier) == FAILURE) {
 		return;
 	}
 
-	v8js_compile_script(getThis(), str, str_len, identifier, identifier_len, &res TSRMLS_CC);
+	v8js_compile_script(getThis(), str, identifier, &res TSRMLS_CC);
 	if (res) {
 		RETURN_RES(zend_register_resource(res, le_v8js_script));
 
@@ -592,18 +592,19 @@ static PHP_METHOD(V8Js, executeScript)
  */
 static PHP_METHOD(V8Js, checkString)
 {
-	char *str = NULL;
+	zend_string *str = NULL;
 	int str_len = 0;
-	const char *identifier = "V8Js::checkString()";
-	int identifier_len = 19;
+	zend_string *identifier = zend_string_init("V8Js::checkString()", 19, 0);
 
 	v8js_script *res = NULL;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &str, &str_len) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S", &str) == FAILURE) {
 		return;
 	}
 
-	v8js_compile_script(getThis(), str, str_len, identifier, identifier_len, &res TSRMLS_CC);
+	v8js_compile_script(getThis(), str, identifier, &res TSRMLS_CC);
+	zend_string_release(identifier);
+
 	if (!res) {
 		RETURN_FALSE;
 	}
