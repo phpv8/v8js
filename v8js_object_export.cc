@@ -792,7 +792,7 @@ static v8::Handle<v8::Object> v8js_wrap_object(v8::Isolate *isolate, zend_class_
 			zend_string *invoke_str = zend_string_init
 				(ZEND_INVOKE_FUNC_NAME, sizeof(ZEND_INVOKE_FUNC_NAME) - 1, 0);
 			zend_function *invoke_method_ptr = reinterpret_cast<zend_function *>
-				(zend_hash_find(&ce->function_table, invoke_str));
+				(zend_hash_find_ptr(&ce->function_table, invoke_str));
 			if (invoke_method_ptr &&
 				invoke_method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) {
 				new_tpl->InstanceTemplate()->SetCallAsFunctionHandler(v8js_invoke_callback, PHP_V8JS_CALLBACK(isolate, invoke_method_ptr, new_tpl));
