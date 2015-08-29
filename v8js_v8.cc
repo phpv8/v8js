@@ -252,6 +252,8 @@ int v8js_get_properties_hash(v8::Handle<v8::Value> jsValue, HashTable *retval, i
 			} else {
 				zend_hash_update(retval, key, &value);
 			}
+
+			zend_string_release(key);
 		}
 		return SUCCESS;
 	}

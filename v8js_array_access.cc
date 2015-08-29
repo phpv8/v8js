@@ -32,7 +32,6 @@ static zval v8js_array_access_dispatch(zend_object *object, const char *method_n
 {
 	zend_fcall_info fci;
 	zval php_value;
-	ZVAL_UNDEF(&php_value);
 
 	fci.size = sizeof(fci);
 	fci.function_table = &object->ce->function_table;
@@ -51,6 +50,7 @@ static zval v8js_array_access_dispatch(zend_object *object, const char *method_n
 	fci.no_separation = 0;
 
 	zend_call_function(&fci, NULL TSRMLS_CC);
+	zval_dtor(&fci.function_name);
 	return php_value;
 }
 /* }}} */

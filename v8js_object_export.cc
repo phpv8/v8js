@@ -48,7 +48,7 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, v
 	max_num_args = method_ptr->common.num_args;
 
 	/* Function name to call */
-	ZVAL_STRING(&fname, ZSTR_VAL(method_ptr->common.function_name));
+	ZVAL_STR_COPY(&fname, method_ptr->common.function_name);
 
 	/* zend_fcall_info */
 	fci.size = sizeof(fci);
@@ -78,6 +78,7 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, v
 		}
 		efree(error);
 		info.GetReturnValue().Set(return_value);
+		zval_dtor(&fname);
 		return;
 	}
 
@@ -147,6 +148,7 @@ failure:
 
 	return_value = zval_to_v8js(&retval, isolate TSRMLS_CC);
 	zval_dtor(&retval);
+	zval_dtor(&fname);
 
 	info.GetReturnValue().Set(return_value);
 }
