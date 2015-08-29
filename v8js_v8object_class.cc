@@ -415,6 +415,7 @@ static zend_object *v8js_v8object_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 	c = (v8js_v8object *) ecalloc(1, sizeof(v8js_v8object) + zend_object_properties_size(ce));
 
 	zend_object_std_init(&c->std, ce TSRMLS_CC);
+	c->std.handlers = &v8js_v8object_handlers;
 	new(&c->v8obj) v8::Persistent<v8::Value>();
 
 	v8js_v8object_handlers.offset = XtOffsetOf(struct v8js_v8object, std);

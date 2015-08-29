@@ -190,6 +190,7 @@ static zend_object* v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 
 	c = (v8js_ctx *) ecalloc(1, sizeof(*c) + zend_object_properties_size(ce));
 	zend_object_std_init(&c->std, ce TSRMLS_CC);
+	c->std.handlers = &v8js_object_handlers;
 	TSRMLS_SET_CTX(c->zts_ctx);
 
 	new(&c->object_name) v8::Persistent<v8::String>();
