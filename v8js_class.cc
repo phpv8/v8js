@@ -233,7 +233,7 @@ static void v8js_free_ext_strarr(const char **arr, int count) /* {{{ */
 }
 /* }}} */
 
-static void v8js_jsext_dtor(v8js_jsext *jsext) /* {{{ */
+static void v8js_jsext_free_storage(v8js_jsext *jsext) /* {{{ */
 {
 	if (jsext->deps_ht) {
 		zend_hash_destroy(jsext->deps_ht);
@@ -245,6 +245,14 @@ static void v8js_jsext_dtor(v8js_jsext *jsext) /* {{{ */
 	delete jsext->extension;
 	zend_string_release(jsext->name);
 	zend_string_release(jsext->source);
+
+	free(jsext);
+}
+/* }}} */
+
+static void v8js_jsext_dtor(zval *zv) /* {{{ */
+{
+	v8js_jsext_free_storage(reinterpret_cast<v8js_jsext *>(Z_PTR_P(zv)));
 }
 /* }}} */
 
@@ -776,7 +784,7 @@ static int v8js_register_extension(zend_string *name, zend_string *source, zval 
 
 	if (!V8JSG(extensions)) {
 		V8JSG(extensions) = (HashTable *) malloc(sizeof(HashTable));
-		zend_hash_init(V8JSG(extensions), 1, NULL, (dtor_func_t) v8js_jsext_dtor, 1);
+		zend_hash_init(V8JSG(extensions), 1, NULL, v8js_jsext_dtor, 1);
 	} else if (zend_hash_exists(V8JSG(extensions), name)) {
 		return FAILURE;
 	}
@@ -788,15 +796,14 @@ static int v8js_register_extension(zend_string *name, zend_string *source, zval 
 
 		if (v8js_create_ext_strarr(&jsext->deps, jsext->deps_count, Z_ARRVAL_P(deps_arr)) == FAILURE) {
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Invalid dependency array passed");
-			v8js_jsext_dtor(jsext);
-			free(jsext);
+			v8js_jsext_free_storage(jsext);
 			return FAILURE;
 		}
 	}
 
 	jsext->auto_enable = auto_enable;
-	jsext->name = zend_string_copy(name);
-	jsext->source = zend_string_copy(source);
+	jsext->name = zend_string_dup(name, 1);
+	jsext->source = zend_string_dup(source, 1);
 
 	if (jsext->deps) {
 		jsext->deps_ht = (HashTable *) malloc(sizeof(HashTable));
@@ -806,16 +813,13 @@ static int v8js_register_extension(zend_string *name, zend_string *source, zval 
 
 	jsext->extension = new v8::Extension(ZSTR_VAL(jsext->name), ZSTR_VAL(jsext->source), jsext->deps_count, jsext->deps);
 
-	if (!zend_hash_add_ptr(V8JSG(extensions), name, jsext)) {
-		v8js_jsext_dtor(jsext);
-		free(jsext);
+	if (!zend_hash_add_ptr(V8JSG(extensions), jsext->name, jsext)) {
+		v8js_jsext_free_storage(jsext);
 		return FAILURE;
 	}
 
 	jsext->extension->set_auto_enable(auto_enable ? true : false);
 	v8::RegisterExtension(jsext->extension);
-
-	free(jsext);
 
 	return SUCCESS;
 }
@@ -827,16 +831,15 @@ static PHP_METHOD(V8Js, registerExtension)
 {
 	zend_string *ext_name, *script;
 	zval *deps_arr = NULL;
-	int ext_name_len, script_len;
 	zend_bool auto_enable = 0;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "SS|ab", &ext_name, &script, &deps_arr, &auto_enable) == FAILURE) {
 		return;
 	}
 
-	if (!ext_name_len) {
+	if (!ZSTR_LEN(ext_name)) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Extension name cannot be empty");
-	} else if (!script_len) {
+	} else if (!ZSTR_LEN(script)) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Script cannot be empty");
 	} else if (v8js_register_extension(ext_name, script, deps_arr, auto_enable TSRMLS_CC) == SUCCESS) {
 		RETURN_TRUE;
