@@ -657,14 +657,14 @@ static PHP_METHOD(V8Js, clearPendingException)
 static PHP_METHOD(V8Js, setModuleLoader)
 {
 	v8js_ctx *c;
-	zval callable;
+	zval *callable;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &callable) == FAILURE) {
 		return;
 	}
 
 	c = Z_V8JS_CTX_OBJ_P(getThis());
-	ZVAL_COPY(&c->module_loader, &callable);
+	ZVAL_COPY(&c->module_loader, callable);
 }
 /* }}} */
 
