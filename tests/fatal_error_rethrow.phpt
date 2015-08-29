@@ -23,4 +23,10 @@ $js->executeString($script);
 ?>
 ===EOF===
 --EXPECTF--
-Fatal error: Call to a member function bar() on %s in %s%efatal_error_rethrow.php on line 7
+Fatal error: Uncaught Error: Call to a member function bar() on %s in %s%efatal_error_rethrow.php:7
+Stack trace:
+#0 [internal function]: {closure}()
+#1 [internal function]: Closure->__invoke()
+#2 /home/stesie/Projekte/v8js-php7/tests/fatal_error_rethrow.php(16): V8Js->executeString('\nPHP.foo();\n')
+#3 {main}
+  thrown in /home/stesie/Projekte/v8js-php7/tests/fatal_error_rethrow.php on line 7

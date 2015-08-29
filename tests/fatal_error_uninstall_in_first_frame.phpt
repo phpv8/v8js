@@ -29,4 +29,7 @@ $bar->foo();
 --EXPECTF--
 nothing.
 
-Fatal error: Call to a member function foo() on %s in %s%efatal_error_uninstall_in_first_frame.php on line 20
+Fatal error: Uncaught Error: Call to a member function foo() on null in %s%efatal_error_uninstall_in_first_frame.php:20
+Stack trace:
+#0 {main}
+  thrown in %s%efatal_error_uninstall_in_first_frame.php on line 20

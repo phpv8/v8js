@@ -23,4 +23,9 @@ $cb();
 --EXPECTF--
 goodbye cruel world!
 
-Fatal error: Call to undefined method Foo::bar() in %s
+Fatal error: Uncaught Error: Call to undefined method Foo::bar() in %s%efatal_error_v8function.php:6
+Stack trace:
+#0 [internal function]: Foo->callback()
+#1 %s%efatal_error_v8function.php(14): V8Function->V8Js::V8::Invoke()
+#2 {main}
+  thrown in %s%efatal_error_v8function.php on line 6

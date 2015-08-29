@@ -35,4 +35,16 @@ $js->executeString("PHP.nofail(); PHP.foo();");
 foo
 foo
 
-Fatal error: Call to a member function bar() on %s in %s%efatal_error_recursive.php on line 7
+Fatal error: Uncaught Error: Call to a member function bar() on null in %s%efatal_error_recursive.php:7
+Stack trace:
+#0 [internal function]: {closure}()
+#1 [internal function]: Closure->__invoke()
+#2 %s%efatal_error_recursive.php(12): V8Js->executeString('PHP.baz();')
+#3 [internal function]: {closure}()
+#4 [internal function]: Closure->__invoke()
+#5 %s%efatal_error_recursive.php(17): V8Js->executeString('PHP.bar();')
+#6 [internal function]: {closure}()
+#7 [internal function]: Closure->__invoke()
+#8 %s%efatal_error_recursive.php(25): V8Js->executeString('PHP.nofail(); P...')
+#9 {main}
+  thrown in %s%efatal_error_recursive.php on line 7

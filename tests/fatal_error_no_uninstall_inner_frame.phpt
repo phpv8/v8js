@@ -27,4 +27,10 @@ $js->executeString("PHP.foo();");
 --EXPECTF--
 nothing.
 
-Fatal error: Call to a member function foo() on %s in %s%efatal_error_no_uninstall_inner_frame.php on line 15
+Fatal error: Uncaught Error: Call to a member function foo() on null in %s%efatal_error_no_uninstall_inner_frame.php:15
+Stack trace:
+#0 [internal function]: {closure}()
+#1 [internal function]: Closure->__invoke()
+#2 %s%efatal_error_no_uninstall_inner_frame.php(18): V8Js->executeString('PHP.foo();')
+#3 {main}
+  thrown in %s%efatal_error_no_uninstall_inner_frame.php on line 15
