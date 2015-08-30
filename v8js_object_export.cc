@@ -594,7 +594,9 @@ inline v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> p
 			/* Nope, not a method -- must be a (case-sensitive) property */
 			zend_property_info *property_info = zend_get_property_info(ce, Z_STR(zname), 1 TSRMLS_CC);
 
-			if(property_info && property_info->flags & ZEND_ACC_PUBLIC) {
+			if(property_info &&
+			   property_info != ZEND_WRONG_PROPERTY_INFO &&
+			   property_info->flags & ZEND_ACC_PUBLIC) {
 				zval *property_val = zend_read_property(NULL, &zobject, V8JS_CONST name, name_len, true, &php_value TSRMLS_CC);
 				// special case uninitialized_zval_ptr and return an empty value
 				// (indicating that we don't intercept this property) if the
@@ -629,7 +631,9 @@ inline v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> p
 			else {
 				zend_property_info *property_info = zend_get_property_info(ce, Z_STR(zname), 1 TSRMLS_CC);
 
-				if(property_info && property_info->flags & ZEND_ACC_PUBLIC) {
+				if(property_info &&
+				   property_info != ZEND_WRONG_PROPERTY_INFO &&
+				   property_info->flags & ZEND_ACC_PUBLIC) {
 					zend_update_property(scope, &zobject, V8JS_CONST name, name_len, &php_value TSRMLS_CC);
 					ret_value = set_value;
 				}
@@ -660,7 +664,9 @@ inline v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> p
 			} else {
 				zend_property_info *property_info = zend_get_property_info(ce, Z_STR(zname), 1 TSRMLS_CC);
 
-				if(property_info && property_info->flags & ZEND_ACC_PUBLIC) {
+				if(property_info &&
+				   property_info != ZEND_WRONG_PROPERTY_INFO &&
+				   property_info->flags & ZEND_ACC_PUBLIC) {
 					h->unset_property(&zobject, &zname, NULL TSRMLS_CC);
 					ret_value = V8JS_TRUE();
 				}
