@@ -179,8 +179,6 @@ static void v8js_free_storage(zend_object *object TSRMLS_DC) /* {{{ */
 
 	c->modules_stack.~vector();
 	c->modules_base.~vector();
-
-	efree(c);
 }
 /* }}} */
 

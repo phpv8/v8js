@@ -404,8 +404,6 @@ static void v8js_v8object_free_storage(zend_object *object TSRMLS_DC) /* {{{ */
 		c->v8obj.Reset();
 		c->ctx->v8js_v8objects.remove(c);
 	}
-
-	efree(c);
 }
 /* }}} */
 
