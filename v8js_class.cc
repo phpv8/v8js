@@ -870,12 +870,12 @@ static PHP_METHOD(V8Js, getExtensions)
 			if (key) {
 				jsext = (v8js_jsext *) Z_PTR_P(val);
 				array_init(&ext);
-				add_assoc_bool_ex(&ext, ZEND_STRS("auto_enable"), jsext->auto_enable);
+				add_assoc_bool_ex(&ext, ZEND_STRL("auto_enable"), jsext->auto_enable);
 				if (jsext->deps_ht) {
 					zval deps_arr;
 					array_init(&deps_arr);
 					zend_hash_copy(Z_ARRVAL_P(&deps_arr), jsext->deps_ht, (copy_ctor_func_t) zval_add_ref);
-					add_assoc_zval_ex(&ext, ZEND_STRS("deps"), &deps_arr);
+					add_assoc_zval_ex(&ext, ZEND_STRL("deps"), &deps_arr);
 				}
 				add_assoc_zval_ex(return_value, ZSTR_VAL(key), ZSTR_LEN(key), &ext);
 			}
