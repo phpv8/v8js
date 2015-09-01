@@ -16,11 +16,11 @@
   <email>stesie@php.net</email>
   <active>yes</active>
  </lead>
- <date>2015-08-27</date>
- <time>16:19:54</time>
+ <date>2015-09-01</date>
+ <time>17:17:42</time>
  <version>
-  <release>0.2.3</release>
-  <api>0.2.3</api>
+  <release>0.2.4</release>
+  <api>0.2.4</api>
  </version>
  <stability>
   <release>beta</release>
@@ -28,8 +28,7 @@
  </stability>
  <license uri="http://www.php.net/license">The MIT License (MIT)</license>
  <notes>
-- Fix FLAG_FORCE_ARRAY affecting V8Function objects
-- Fix memory leak with repeated calls of methods on exported PHP objects
+- Fix memory leak with repeated Array exports from PHP to JS
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -171,7 +170,7 @@
    <file baseinstalldir="/" md5sum="25260e0bc3111b01f700fad13544d6a9" name="Makefile.frag" role="src" />
    <file baseinstalldir="/" md5sum="31e331386def7ce98943694151c0d5cb" name="Makefile.travis" role="src" />
    <file baseinstalldir="/" md5sum="0e23fa6446e52a3b1cff8b18a6e0bd79" name="php_v8js.h" role="src" />
-   <file baseinstalldir="/" md5sum="8bd17b94c164bedac6dd80168afc321d" name="php_v8js_macros.h" role="src" />
+   <file baseinstalldir="/" md5sum="d031e7889934cd373bd74a50eb3a31fd" name="php_v8js_macros.h" role="src" />
    <file baseinstalldir="/" md5sum="ec19e63ca9310bfc4dc4dbd357c779ae" name="README.Linux.md" role="doc" />
    <file baseinstalldir="/" md5sum="4a65a3f9995d325a2c2ccb23224ea503" name="README.MacOS.md" role="doc" />
    <file baseinstalldir="/" md5sum="149b85fb776fac29175585e8d7d60899" name="README.md" role="doc" />
@@ -181,8 +180,8 @@
    <file baseinstalldir="/" md5sum="5031f7d7a1485eaf1053d9bdb029cdb7" name="v8js.cc" role="src" />
    <file baseinstalldir="/" md5sum="358c628b2627319e40fd7e5092f19872" name="v8js_array_access.cc" role="src" />
    <file baseinstalldir="/" md5sum="7baf3fe5b77d1374b39a1d8332e05df4" name="v8js_array_access.h" role="src" />
-   <file baseinstalldir="/" md5sum="592d0a1f1d4faa9ada956b1e176f7829" name="v8js_class.cc" role="src" />
-   <file baseinstalldir="/" md5sum="3f245d5a57d16137969a9771712e0bfe" name="v8js_class.h" role="src" />
+   <file baseinstalldir="/" md5sum="a72c6692feba3e8964d773b7d6f2531e" name="v8js_class.cc" role="src" />
+   <file baseinstalldir="/" md5sum="1dc1ad64ddd200b573015b0d09872673" name="v8js_class.h" role="src" />
    <file baseinstalldir="/" md5sum="88b49988a5ef55edbd7ba085e7857f64" name="v8js_commonjs.cc" role="src" />
    <file baseinstalldir="/" md5sum="32a5d1a65f64ec37ec294f496fc11ff1" name="v8js_commonjs.h" role="src" />
    <file baseinstalldir="/" md5sum="c061344705c42fb705bffb2959fc1001" name="v8js_convert.cc" role="src" />
@@ -191,7 +190,7 @@
    <file baseinstalldir="/" md5sum="1867ebcefbc577aed051f40d9ccc58ad" name="v8js_exceptions.cc" role="src" />
    <file baseinstalldir="/" md5sum="587370513a019c34f2ddaac3b1f4cbf8" name="v8js_exceptions.h" role="src" />
    <file baseinstalldir="/" md5sum="d282750bc744c4ecfbf243da2c0e5967" name="v8js_methods.cc" role="src" />
-   <file baseinstalldir="/" md5sum="771fee619eaf76dd486aaa0415f3399d" name="v8js_object_export.cc" role="src" />
+   <file baseinstalldir="/" md5sum="c9e1abe0c2f08766ee2921bdb88618fc" name="v8js_object_export.cc" role="src" />
    <file baseinstalldir="/" md5sum="281fb591fbebc3d23e04196cdb3ec64a" name="v8js_object_export.h" role="src" />
    <file baseinstalldir="/" md5sum="767d38eec0b407fba5e30398444e180e" name="v8js_timer.cc" role="src" />
    <file baseinstalldir="/" md5sum="49f609c8cea6033f2ad1e6c9c829a571" name="v8js_timer.h" role="src" />
@@ -371,6 +370,21 @@
    <notes>
 - Fix FLAG_FORCE_ARRAY affecting V8Function objects
 - Fix memory leak with repeated calls of methods on exported PHP objects
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>0.2.4</release>
+    <api>0.2.4</api>
+   </version>
+   <stability>
+    <release>beta</release>
+    <api>beta</api>
+   </stability>
+   <date>2015-09-01</date>
+   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <notes>
+- Fix memory leak with repeated Array exports from PHP to JS
    </notes>
   </release>
  </changelog>
