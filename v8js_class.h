@@ -45,7 +45,8 @@ struct v8js_ctx {
   long memory_limit;
   bool memory_limit_hit;
 
-  v8::Persistent<v8::FunctionTemplate> global_template;
+  v8js_tmpl_t global_template;
+  v8js_tmpl_t array_tmpl;
 
   zval *module_loader;
   std::vector<char *> modules_stack;

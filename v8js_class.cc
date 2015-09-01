@@ -108,6 +108,8 @@ static void v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 	c->object_name.~Persistent();
 	c->global_template.Reset();
 	c->global_template.~Persistent();
+	c->array_tmpl.Reset();
+	c->array_tmpl.~Persistent();
 
 	/* Clear persistent call_impl & method_tmpls templates */
 	for (std::map<v8js_tmpl_t *, v8js_tmpl_t>::iterator it = c->call_impls.begin();
@@ -221,6 +223,7 @@ static zend_object_value v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 	new(&c->object_name) v8::Persistent<v8::String>();
 	new(&c->context) v8::Persistent<v8::Context>();
 	new(&c->global_template) v8::Persistent<v8::FunctionTemplate>();
+	new(&c->array_tmpl) v8::Persistent<v8::FunctionTemplate>();
 
 	new(&c->modules_stack) std::vector<char*>();
 	new(&c->modules_base) std::vector<char*>();
