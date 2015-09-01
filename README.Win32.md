@@ -52,7 +52,7 @@ svn co http://src.chromium.org/svn/trunk/deps/third_party/cygwin@66844 third_par
 svn co http://googletest.googlecode.com/svn/trunk testing/gtest --revision 643
 svn co http://googlemock.googlecode.com/svn/trunk testing/gmock --revision 410
 
-python build\gyp_v8 -Dcomponent=shared_library
+python build\gyp_v8 -Dcomponent=shared_library -Dv8_use_snapshot=0
 "\Program Files (x86)\Microsoft Visual Studio 12.0\Common7\IDE\devenv.com" /build Release build/All.sln
 ```
 
@@ -97,9 +97,9 @@ mkdir vc12\x86\deps\lib
   and unpack to below `\php-sdk\phpdev\vc12\x86`
 * from `\v8\build\Release\lib` copy `icui18n.lib`, `icuuc.lib` and `v8.lib`
   to deps\lib folder
-* from `\v8\include copy` all v8*.h files to deps\include folder
-* within the PHP source code folder create a sub-directory named `pecl`
-* download V8Js and unpack it into a seperate directory below the `pecl` folder
+* from `\v8\include` copy all v8*.h files to deps\include folder
+* download V8Js and unpack it into a separate directory below `ext` folder
+* make sure `config.w32` file inside that folder defines version of the compiled v8
 
 (still in "VS2013 x86 Native Tools Command Prompt")
 
