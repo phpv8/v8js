@@ -1,6 +1,8 @@
 V8Js
 ====
 
+[![Join the chat at https://gitter.im/preillyme/v8js](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/preillyme/v8js?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 V8Js is a PHP extension for Google's V8 Javascript engine.
 
 The extension allows you to execute Javascript code in a secure sandbox from PHP. The executed code can be restricted using a time limit and/or memory limit. This provides the possibility to execute untrusted code with confidence.
