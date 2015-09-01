@@ -901,12 +901,22 @@ static v8::Handle<v8::Object> v8js_wrap_array_to_object(v8::Isolate *isolate, zv
 	uint key_len;
 	ulong index;
 
-	// @todo re-use template likewise
-	v8::Local<v8::FunctionTemplate> new_tpl = v8::FunctionTemplate::New(isolate, 0);
+	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
+	v8::Local<v8::FunctionTemplate> new_tpl;
 
-	/* Call it Array, but it is not a native array, especially it doesn't have
-	 * have the typical Array.prototype functions. */
-	new_tpl->SetClassName(V8JS_SYM("Array"));
+	if(ctx->array_tmpl.IsEmpty()) {
+		new_tpl = v8::FunctionTemplate::New(isolate, 0);
+
+		/* Call it Array, but it is not a native array, especially it doesn't have
+		 * have the typical Array.prototype functions. */
+		new_tpl->SetClassName(V8JS_SYM("Array"));
+
+		/* Store for later re-use */
+		ctx->array_tmpl.Reset(isolate, new_tpl);
+	}
+	else {
+		new_tpl = v8::Local<v8::FunctionTemplate>::New(isolate, ctx->array_tmpl);
+	}
 
 	v8::Handle<v8::Object> newobj = new_tpl->InstanceTemplate()->NewInstance();
 
