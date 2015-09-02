@@ -1,7 +1,9 @@
 V8Js
 ====
 
-[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/preillyme/v8js/master/LICENSE) [![Join the chat at https://gitter.im/preillyme/v8js](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/preillyme/v8js?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Build Status](https://jenkins.brokenpipe.de/job/docker-v8js-matrix/badge/icon)](https://jenkins.brokenpipe.de/job/docker-v8js-matrix)
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/preillyme/v8js/master/LICENSE)
+[![Join the chat at https://gitter.im/preillyme/v8js](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/preillyme/v8js?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 V8Js is a PHP extension for Google's V8 Javascript engine.
 
