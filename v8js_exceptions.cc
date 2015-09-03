@@ -107,15 +107,13 @@ void v8js_throw_script_exception(v8::TryCatch *try_catch TSRMLS_DC) /* {{{ */
 #define V8JS_EXCEPTION_METHOD(property) \
 	static PHP_METHOD(V8JsScriptException, get##property) \
 	{ \
-		zval *value; \
+		zval *value, rv;							\
 		\
 		if (zend_parse_parameters_none() == FAILURE) { \
 			return; \
 		} \
-		zend_read_property(php_ce_v8js_script_exception, getThis(), #property, sizeof(#property) - 1, 0, value TSRMLS_CC); \
-		*return_value = *value; \
-		zval_copy_ctor(return_value); \
-		/* ?? INIT_PZVAL(return_value); */		\
+		value = zend_read_property(php_ce_v8js_script_exception, getThis(), #property, sizeof(#property) - 1, 0, &rv TSRMLS_CC); \
+		RETURN_ZVAL(value, 1, 0); \
 	}
 
 /* {{{ proto string V8JsEScriptxception::getJsFileName()
