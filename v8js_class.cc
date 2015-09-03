@@ -188,6 +188,8 @@ static zend_object* v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 
 	c = (v8js_ctx *) ecalloc(1, sizeof(*c) + zend_object_properties_size(ce));
 	zend_object_std_init(&c->std, ce TSRMLS_CC);
+	object_properties_init(&c->std, ce);
+
 	c->std.handlers = &v8js_object_handlers;
 	TSRMLS_SET_CTX(c->zts_ctx);
 
@@ -424,27 +426,19 @@ static PHP_METHOD(V8Js, __construct)
 
 	/* Export public property values */
 	HashTable *properties = zend_std_get_properties(getThis() TSRMLS_CC);
-	HashPosition pos;
 	zval *value;
-	ulong index;
 	zend_string *member;
-	uint member_len;
 
-	for(zend_hash_internal_pointer_reset_ex(properties, &pos);
-		value = zend_hash_get_current_data_ex(properties, &pos);
-		zend_hash_move_forward_ex(properties, &pos)) {
-		if(zend_hash_get_current_key_ex(properties, &member, &index, &pos) != HASH_KEY_IS_STRING) {
-			continue;
-		}
-
+	ZEND_HASH_FOREACH_STR_KEY(properties, member) {
 		zend_property_info *property_info = zend_get_property_info(c->std.ce, member, 1 TSRMLS_CC);
 		if(property_info &&
 		   property_info != ZEND_WRONG_PROPERTY_INFO &&
 		   property_info->flags & ZEND_ACC_PUBLIC) {
 			/* Write value to PHP JS object */
-			php_obj->ForceSet(V8JS_SYML(ZSTR_VAL(member), ZSTR_LEN(member) - 1), zval_to_v8js(value, isolate TSRMLS_CC), v8::ReadOnly);
+			value = OBJ_PROP(Z_OBJ_P(getThis()), property_info->offset);
+			php_obj->ForceSet(V8JS_ZSYM(member), zval_to_v8js(value, isolate TSRMLS_CC), v8::ReadOnly);
 		}
-	}
+	} ZEND_HASH_FOREACH_END();
 
 
 }
