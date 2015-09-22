@@ -202,6 +202,13 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 
 void v8js_terminate_execution(v8::Isolate *isolate) /* {{{ */
 {
+	if(v8::V8::IsExecutionTerminating(isolate)) {
+		/* Execution already terminating, needn't trigger it again and
+		 * especially must not execute the spinning loop (which would cause
+		 * crashes in V8 itself, at least with 4.2 and 4.3 version lines). */
+		return;
+	}
+
 	/* Unfortunately just calling TerminateExecution on the isolate is not
 	 * enough, since v8 just marks the thread as "to be aborted" and doesn't
 	 * immediately do so.  Hence we enter an endless loop after signalling
