@@ -149,7 +149,7 @@ failure:
 		efree(fci.params);
 	}
 
-	if(EG(exception)) {
+	if(EG(exception) && !V8JSG(compat_php_exceptions)) {
 		if(ctx->flags & V8JS_FLAG_PROPAGATE_PHP_EXCEPTIONS) {
 			return_value = isolate->ThrowException(zval_to_v8js(EG(exception), isolate TSRMLS_CC));
 			zend_clear_exception(TSRMLS_C);
