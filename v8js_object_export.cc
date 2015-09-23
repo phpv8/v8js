@@ -534,8 +534,6 @@ inline v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> p
 	const char *method_name;
 	uint method_name_len;
 
-	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
-
 	v8::Local<v8::Object> self = info.Holder();
 	v8::Local<v8::Value> ret_value;
 	v8::Local<v8::Function> cb;
