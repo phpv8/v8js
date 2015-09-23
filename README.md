@@ -300,7 +300,7 @@ The above rule that PHP objects are generally converted to JavaScript objects al
 This behaviour can be changed by enabling the php.ini flag `v8js.use_array_access`.  If set, objects of PHP classes that implement the aforementioned interfaces are converted to JavaScript Array-like objects.  This is by-index access of this object results in immediate calls to the `offsetGet` or `offsetSet` PHP methods (effectively this is live-binding of JavaScript against the PHP object).  Such an Array-esque object also supports calling every attached public method of the PHP object + methods of JavaScript's native Array.prototype methods (as long as they are not overloaded by PHP methods).
 
 Exceptions
-----------
+==========
 
 If the JavaScript code throws (without catching), causes errors or doesn't
 compile, `V8JsScriptException` exceptions are thrown unless the `V8Js` object
@@ -308,7 +308,7 @@ is constructed with `report_uncaught_exceptions` set `FALSE`.
 
 PHP exceptions that occur due to calls from JavaScript code by default are
 *not* re-thrown into JavaScript context but cause the JavaScript execution to
-be stopped immediately.
+be stopped immediately and then are reported at the location calling the JS code.
 
 This behaviour can be changed by setting the `FLAG_PROPAGATE_PHP_EXCEPTIONS`
 flag.  If it is set, PHP exception (objects) are converted to JavaScript
@@ -316,3 +316,10 @@ objects obeying the above rules and re-thrown in JavaScript context.  If they
 are not caught by JavaScript code the execution stops and a
 `V8JsScriptException` is thrown, which has the original PHP exception accessible
 via `getPrevious` method.
+
+V8Js versions 0.2.4 and before did not stop JS code execution on PHP exceptions,
+but silently ignored them (even so succeeding PHP calls from within the same piece
+of JS code were not executed by the PHP engine).  This behaviour is considered as
+a bug and hence was fixed with 0.2.5 release.  Nevertheless there is a 
+compatibility php.ini switch (`v8js.compat_php_exceptions`) which turns previous
+behaviour back on.
