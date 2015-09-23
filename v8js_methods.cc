@@ -26,20 +26,7 @@ extern "C" {
 V8JS_METHOD(exit) /* {{{ */
 {
 	v8::Isolate *isolate = info.GetIsolate();
-
-	/* Unfortunately just calling TerminateExecution on the isolate is not
-	 * enough, since v8 just marks the thread as "to be aborted" and doesn't
-	 * immediately do so.  Hence we enter an endless loop after signalling
-	 * termination, so we definitely don't execute JS code after the exit()
-	 * statement. */
-	v8::Locker locker(isolate);
-	v8::Isolate::Scope isolate_scope(isolate);
-	v8::HandleScope handle_scope(isolate);
-
-	v8::Local<v8::String> source = V8JS_STR("for(;;);");
-	v8::Local<v8::Script> script = v8::Script::Compile(source);
-	v8::V8::TerminateExecution(isolate);
-	script->Run();
+	v8js_terminate_execution(isolate);
 }
 /* }}} */
 

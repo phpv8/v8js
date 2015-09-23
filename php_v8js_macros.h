@@ -80,13 +80,10 @@ extern "C" {
 # define V8JS_CONST (char *)
 #endif
 
-/* Global flags */
-#define V8JS_GLOBAL_SET_FLAGS(isolate,flags)	V8JS_GLOBAL(isolate)->SetHiddenValue(V8JS_SYM("__php_flags__"), V8JS_INT(flags))
-#define V8JS_GLOBAL_GET_FLAGS(isolate)			V8JS_GLOBAL(isolate)->GetHiddenValue(V8JS_SYM("__php_flags__"))->IntegerValue();
-
 /* Options */
 #define V8JS_FLAG_NONE			(1<<0)
 #define V8JS_FLAG_FORCE_ARRAY	(1<<1)
+#define V8JS_FLAG_PROPAGATE_PHP_EXCEPTIONS	(1<<2)
 
 #define V8JS_DEBUG_AUTO_BREAK_NEVER		0
 #define V8JS_DEBUG_AUTO_BREAK_ONCE		1
@@ -124,6 +121,7 @@ ZEND_BEGIN_MODULE_GLOBALS(v8js)
   char *v8_flags; /* V8 command line flags */
   bool use_date; /* Generate JS Date objects instead of PHP DateTime */
   bool use_array_access; /* Convert ArrayAccess, Countable objects to array-like objects */
+  bool compat_php_exceptions; /* Don't stop JS execution on PHP exception */
 
   // Timer thread globals
   std::deque<v8js_timer_ctx *> timer_stack;

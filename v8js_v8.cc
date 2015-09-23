@@ -2,12 +2,13 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2013 The PHP Group                                |
+  | Copyright (c) 1997-2015 The PHP Group                                |
   +----------------------------------------------------------------------+
   | http://www.opensource.org/licenses/mit-license.php  MIT License      |
   +----------------------------------------------------------------------+
   | Author: Jani Taskinen <jani.taskinen@iki.fi>                         |
   | Author: Patrick Reilly <preilly@php.net>                             |
+  | Author: Stefan Siegl <stesie@php.net>                                |
   +----------------------------------------------------------------------+
 */
 
@@ -77,7 +78,7 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 	v8::TryCatch try_catch;
 
 	/* Set flags for runtime use */
-	V8JS_GLOBAL_SET_FLAGS(isolate, flags);
+	c->flags = flags;
 
 	/* Check if timezone has been changed and notify V8 */
 	tz = getenv("TZ");
@@ -175,14 +176,14 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 
 			/* Report immediately if report_uncaught is true */
 			if (c->report_uncaught) {
-				v8js_throw_script_exception(&try_catch TSRMLS_CC);
+				v8js_throw_script_exception(c->isolate, &try_catch TSRMLS_CC);
 				return;
 			}
 
 			/* Exception thrown from JS, preserve it for future execution */
 			if (result.IsEmpty()) {
 				MAKE_STD_ZVAL(c->pending_exception);
-				v8js_create_script_exception(c->pending_exception, &try_catch TSRMLS_CC);
+				v8js_create_script_exception(c->pending_exception, c->isolate, &try_catch TSRMLS_CC);
 				return;
 			}
 		}
@@ -199,10 +200,28 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 }
 /* }}} */
 
-void v8js_terminate_execution(v8js_ctx *c TSRMLS_DC) /* {{{ */
+void v8js_terminate_execution(v8::Isolate *isolate) /* {{{ */
 {
-	// Forcefully terminate the current thread of V8 execution in the isolate
-	v8::V8::TerminateExecution(c->isolate);
+	if(v8::V8::IsExecutionTerminating(isolate)) {
+		/* Execution already terminating, needn't trigger it again and
+		 * especially must not execute the spinning loop (which would cause
+		 * crashes in V8 itself, at least with 4.2 and 4.3 version lines). */
+		return;
+	}
+
+	/* Unfortunately just calling TerminateExecution on the isolate is not
+	 * enough, since v8 just marks the thread as "to be aborted" and doesn't
+	 * immediately do so.  Hence we enter an endless loop after signalling
+	 * termination, so we definitely don't execute JS code after the exit()
+	 * statement. */
+	v8::Locker locker(isolate);
+	v8::Isolate::Scope isolate_scope(isolate);
+	v8::HandleScope handle_scope(isolate);
+
+	v8::Local<v8::String> source = V8JS_STR("for(;;);");
+	v8::Local<v8::Script> script = v8::Script::Compile(source);
+	v8::V8::TerminateExecution(isolate);
+	script->Run();
 }
 /* }}} */
 

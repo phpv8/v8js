@@ -21,6 +21,7 @@ extern "C" {
 #include "ext/standard/php_string.h"
 #include "zend_interfaces.h"
 #include "zend_closures.h"
+#include "zend_exceptions.h"
 }
 
 #include "php_v8js_macros.h"
@@ -33,13 +34,13 @@ static void v8js_weak_object_callback(const v8::WeakCallbackData<v8::Object, zva
 /* Callback for PHP methods and functions */
 static void v8js_call_php_func(zval *value, zend_class_entry *ce, zend_function *method_ptr, v8::Isolate *isolate, const v8::FunctionCallbackInfo<v8::Value>& info TSRMLS_DC) /* {{{ */
 {
-	v8::Handle<v8::Value> return_value;
+	v8::Handle<v8::Value> return_value = V8JS_NULL;
 	zend_fcall_info fci;
 	zend_fcall_info_cache fcc;
 	zval fname, *retval_ptr = NULL, **argv = NULL;
 	zend_uint argc = info.Length(), min_num_args = 0, max_num_args = 0;
 	char *error;
-	int error_len, i, flags = V8JS_FLAG_NONE;
+	int error_len, i;
 
 	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
 
@@ -84,7 +85,6 @@ static void v8js_call_php_func(zval *value, zend_class_entry *ce, zend_function 
 
 	/* Convert parameters passed from V8 */
 	if (argc) {
-		flags = V8JS_GLOBAL_GET_FLAGS(isolate);
 		fci.params = (zval ***) safe_emalloc(argc, sizeof(zval **), 0);
 		argv = (zval **) safe_emalloc(argc, sizeof(zval *), 0);
 		for (i = 0; i < argc; i++) {
@@ -98,7 +98,7 @@ static void v8js_call_php_func(zval *value, zend_class_entry *ce, zend_function 
 				Z_ADDREF_P(argv[i]);
 			} else {
 				MAKE_STD_ZVAL(argv[i]);
-				if (v8js_to_zval(info[i], argv[i], flags, isolate TSRMLS_CC) == FAILURE) {
+				if (v8js_to_zval(info[i], argv[i], ctx->flags, isolate TSRMLS_CC) == FAILURE) {
 					fci.param_count++;
 					error_len = spprintf(&error, 0, "converting parameter #%d passed to %s() failed", i + 1, method_ptr->common.function_name);
 					return_value = V8JS_THROW(isolate, Error, error, error_len);
@@ -134,7 +134,7 @@ static void v8js_call_php_func(zval *value, zend_class_entry *ce, zend_function 
 		isolate->Enter();
 	}
 	zend_catch {
-		v8::V8::TerminateExecution(isolate);
+		v8js_terminate_execution(isolate);
 		V8JSG(fatal_error_abort) = 1;
 	}
 	zend_end_try();
@@ -149,11 +149,19 @@ failure:
 		efree(fci.params);
 	}
 
-	if (retval_ptr != NULL) {
+	if(EG(exception) && !V8JSG(compat_php_exceptions)) {
+		if(ctx->flags & V8JS_FLAG_PROPAGATE_PHP_EXCEPTIONS) {
+			return_value = isolate->ThrowException(zval_to_v8js(EG(exception), isolate TSRMLS_CC));
+			zend_clear_exception(TSRMLS_C);
+		} else {
+			v8js_terminate_execution(isolate);
+		}
+	} else if (retval_ptr != NULL) {
 		return_value = zval_to_v8js(retval_ptr, isolate TSRMLS_CC);
+	}
+
+	if (retval_ptr != NULL) {
 		zval_ptr_dtor(&retval_ptr);
-	} else {
-		return_value = V8JS_NULL;
 	}
 
 	info.GetReturnValue().Set(return_value);
@@ -526,6 +534,8 @@ inline v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> p
 	const char *method_name;
 	uint method_name_len;
 
+	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
+
 	v8::Local<v8::Object> self = info.Holder();
 	v8::Local<v8::Value> ret_value;
 	v8::Local<v8::Function> cb;
@@ -669,9 +679,8 @@ inline v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> p
 				zval_ptr_dtor(&php_value);
 			}
 		} else if (callback_type == V8JS_PROP_SETTER) {
-			int flags = V8JS_GLOBAL_GET_FLAGS(isolate);
 			MAKE_STD_ZVAL(php_value);
-			if (v8js_to_zval(set_value, php_value, flags, isolate TSRMLS_CC) != SUCCESS) {
+			if (v8js_to_zval(set_value, php_value, ctx->flags, isolate TSRMLS_CC) != SUCCESS) {
 				ret_value = v8::Handle<v8::Value>();
 			}
 			else {
