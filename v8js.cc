@@ -48,53 +48,37 @@ static ZEND_INI_MH(v8js_OnUpdateV8Flags) /* {{{ */
 	return SUCCESS;
 }
 
+static bool v8js_ini_to_bool(const char *new_value, uint new_value_length) /* {{{ */
+{
+	if (new_value_length == 2 && strcasecmp("on", new_value) == 0) {
+		return true;
+    } else if (new_value_length == 3 && strcasecmp("yes", new_value) == 0) {
+		return true;
+	} else if (new_value_length == 4 && strcasecmp("true", new_value) == 0) {
+		return true;
+	} else {
+		return (bool) atoi(new_value);
+	}
+}
+/* }}} */
+
 static ZEND_INI_MH(v8js_OnUpdateUseDate) /* {{{ */
 {
-	bool value;
-	if (new_value_length==2 && strcasecmp("on", new_value)==0) {
-		value = (bool) 1;
-    } else if (new_value_length==3 && strcasecmp("yes", new_value)==0) {
-		value = (bool) 1;
-	} else if (new_value_length==4 && strcasecmp("true", new_value)==0) {
-		value = (bool) 1;
-	} else {
-		value = (bool) atoi(new_value);
-	}
-	V8JSG(use_date) = value;
+	V8JSG(use_date) = v8js_ini_to_bool(new_value, new_value_length);
 	return SUCCESS;
 }
 /* }}} */
 
 static ZEND_INI_MH(v8js_OnUpdateUseArrayAccess) /* {{{ */
 {
-	bool value;
-	if (new_value_length==2 && strcasecmp("on", new_value)==0) {
-		value = (bool) 1;
-    } else if (new_value_length==3 && strcasecmp("yes", new_value)==0) {
-		value = (bool) 1;
-	} else if (new_value_length==4 && strcasecmp("true", new_value)==0) {
-		value = (bool) 1;
-	} else {
-		value = (bool) atoi(new_value);
-	}
-	V8JSG(use_array_access) = value;
+	V8JSG(use_array_access) = v8js_ini_to_bool(new_value, new_value_length);
 	return SUCCESS;
 }
 /* }}} */
 
 static ZEND_INI_MH(v8js_OnUpdateCompatExceptions) /* {{{ */
 {
-	bool value;
-	if (new_value_length==2 && strcasecmp("on", new_value)==0) {
-		value = (bool) 1;
-    } else if (new_value_length==3 && strcasecmp("yes", new_value)==0) {
-		value = (bool) 1;
-	} else if (new_value_length==4 && strcasecmp("true", new_value)==0) {
-		value = (bool) 1;
-	} else {
-		value = (bool) atoi(new_value);
-	}
-	V8JSG(compat_php_exceptions) = value;
+	V8JSG(compat_php_exceptions) = v8js_ini_to_bool(new_value, new_value_length);
 	return SUCCESS;
 }
 /* }}} */
