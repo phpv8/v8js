@@ -92,6 +92,7 @@ void v8js_create_script_exception(zval *return_value, v8::Isolate *isolate, v8::
 
 				zend_class_entry *exception_ce = zend_exception_get_default(TSRMLS_C);
 				if (Z_TYPE_P(php_exception) == IS_OBJECT && instanceof_function(Z_OBJCE_P(php_exception), exception_ce TSRMLS_CC)) {
+					Z_ADDREF_P(php_exception);
 					zend_exception_set_previous(return_value, php_exception TSRMLS_CC);
 				}
 			}
