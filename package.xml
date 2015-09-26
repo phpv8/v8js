@@ -16,11 +16,11 @@
   <email>stesie@php.net</email>
   <active>yes</active>
  </lead>
- <date>2015-09-23</date>
- <time>20:10:37</time>
+ <date>2015-09-26</date>
+ <time>12:31:47</time>
  <version>
-  <release>0.2.5</release>
-  <api>0.2.5</api>
+  <release>0.2.6</release>
+  <api>0.2.6</api>
  </version>
  <stability>
   <release>beta</release>
@@ -28,9 +28,7 @@
  </stability>
  <license uri="http://www.php.net/license">The MIT License (MIT)</license>
  <notes>
-- Stop JS execution on PHP exceptions (instead of continuing silently)
-- Allow propagation of PHP exceptions to JS context (disabled by default)
-- Add v8js.compat_php_exceptions php.ini switch to switch previous behaviour back on
+- Fix reference counting issue on PHP-&gt;JS-&gt;PHP exception propagation
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -180,7 +178,7 @@
    <file baseinstalldir="/" md5sum="25260e0bc3111b01f700fad13544d6a9" name="Makefile.frag" role="src" />
    <file baseinstalldir="/" md5sum="31e331386def7ce98943694151c0d5cb" name="Makefile.travis" role="src" />
    <file baseinstalldir="/" md5sum="0e23fa6446e52a3b1cff8b18a6e0bd79" name="php_v8js.h" role="src" />
-   <file baseinstalldir="/" md5sum="9bc8c88f1ef9b37af5c57f7d3bf52695" name="php_v8js_macros.h" role="src" />
+   <file baseinstalldir="/" md5sum="0d986531818b0e31633f2db3a242afb7" name="php_v8js_macros.h" role="src" />
    <file baseinstalldir="/" md5sum="ec19e63ca9310bfc4dc4dbd357c779ae" name="README.Linux.md" role="doc" />
    <file baseinstalldir="/" md5sum="4a65a3f9995d325a2c2ccb23224ea503" name="README.MacOS.md" role="doc" />
    <file baseinstalldir="/" md5sum="177459a9628e3c8c31b305f20c970f8d" name="README.md" role="doc" />
@@ -197,7 +195,7 @@
    <file baseinstalldir="/" md5sum="c061344705c42fb705bffb2959fc1001" name="v8js_convert.cc" role="src" />
    <file baseinstalldir="/" md5sum="ede2cf80141b1831c7e7ab50dc57236f" name="v8js_debug.cc" role="src" />
    <file baseinstalldir="/" md5sum="cbdb6ed29c9ece278aa2aeab75dbe61f" name="v8js_debug.h" role="src" />
-   <file baseinstalldir="/" md5sum="60303b08103f35ed8b9df1a2ab8b4f2b" name="v8js_exceptions.cc" role="src" />
+   <file baseinstalldir="/" md5sum="40b66c44650a8127618c7fc48bf4b0b2" name="v8js_exceptions.cc" role="src" />
    <file baseinstalldir="/" md5sum="9d13bf5f413c2d76664670e847e1a801" name="v8js_exceptions.h" role="src" />
    <file baseinstalldir="/" md5sum="9f3ad8c136cdc3ebc2bdf993491f9ad8" name="v8js_methods.cc" role="src" />
    <file baseinstalldir="/" md5sum="d688b8eb822736d49f7282d22546d6bc" name="v8js_object_export.cc" role="src" />
@@ -412,6 +410,21 @@
 - Stop JS execution on PHP exceptions (instead of continuing silently)
 - Allow propagation of PHP exceptions to JS context (disabled by default)
 - Add v8js.compat_php_exceptions php.ini switch to switch previous behaviour back on
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>0.2.6</release>
+    <api>0.2.6</api>
+   </version>
+   <stability>
+    <release>beta</release>
+    <api>beta</api>
+   </stability>
+   <date>2015-09-26</date>
+   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <notes>
+- Fix reference counting issue on PHP-&gt;JS-&gt;PHP exception propagation
    </notes>
   </release>
  </changelog>
