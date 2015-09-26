@@ -113,10 +113,8 @@ void v8js_register_accessors(std::vector<v8js_accessor_ctx*> *accessor_list, v8:
 ZEND_BEGIN_MODULE_GLOBALS(v8js)
   // Thread-local cache whether V8 has been initialized so far
   int v8_initialized;
-  HashTable *extensions;
 
   /* Ini globals */
-  char *v8_flags; /* V8 command line flags */
   bool use_date; /* Generate JS Date objects instead of PHP DateTime */
   bool use_array_access; /* Convert ArrayAccess, Countable objects to array-like objects */
   bool compat_php_exceptions; /* Don't stop JS execution on PHP exception */
@@ -149,6 +147,8 @@ ZEND_EXTERN_MODULE_GLOBALS(v8js)
  *
  *  - whether V8 has been initialized at all
  *  - the V8 backend platform
+ *  - loaded extensions
+ *  - V8 "command line" flags
  *
  * In a ZTS-enabled environment access to all of these variables must happen
  * while holding a mutex lock.
@@ -158,6 +158,11 @@ struct _v8js_process_globals {
 	int v8_initialized;
 	std::mutex lock;
 #endif
+
+	HashTable *extensions;
+
+	/* V8 command line flags */
+	char *v8_flags;
 
 #if !defined(_WIN32) && PHP_V8_API_VERSION >= 3029036
 	v8::Platform *v8_platform;

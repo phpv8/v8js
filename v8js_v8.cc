@@ -61,8 +61,9 @@ void v8js_v8_init(TSRMLS_D) /* {{{ */
 #endif
 
 	/* Set V8 command line flags (must be done before V8::Initialize()!) */
-	if (V8JSG(v8_flags)) {
-		v8::V8::SetFlagsFromString(V8JSG(v8_flags), strlen(V8JSG(v8_flags)));
+	if (v8js_process_globals.v8_flags) {
+		v8::V8::SetFlagsFromString(v8js_process_globals.v8_flags,
+								   strlen(v8js_process_globals.v8_flags));
 	}
 
 	/* Initialize V8 */
