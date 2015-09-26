@@ -37,14 +37,27 @@ extern "C" {
 
 void v8js_v8_init(TSRMLS_D) /* {{{ */
 {
-	/* Run only once */
+	/* Run only once; thread-local test first */
 	if (V8JSG(v8_initialized)) {
 		return;
 	}
 
+	/* Set thread-local flag, that V8 was initialized. */
+	V8JSG(v8_initialized) = 1;
+
+#ifdef ZTS
+	v8js_process_globals.lock.lock();
+
+	if(v8js_process_globals.v8_initialized) {
+		/* V8 already has been initialized by another thread */
+		v8js_process_globals.lock.unlock();
+		return;
+	}
+#endif
+
 #if !defined(_WIN32) && PHP_V8_API_VERSION >= 3029036
-	V8JSG(v8_platform) = v8::platform::CreateDefaultPlatform();
-	v8::V8::InitializePlatform(V8JSG(v8_platform));
+	v8js_process_globals.v8_platform = v8::platform::CreateDefaultPlatform();
+	v8::V8::InitializePlatform(v8js_process_globals.v8_platform);
 #endif
 
 	/* Set V8 command line flags (must be done before V8::Initialize()!) */
@@ -55,8 +68,10 @@ void v8js_v8_init(TSRMLS_D) /* {{{ */
 	/* Initialize V8 */
 	v8::V8::Initialize();
 
-	/* Run only once */
-	V8JSG(v8_initialized) = 1;
+#ifdef ZTS
+	v8js_process_globals.v8_initialized = 1;
+	v8js_process_globals.lock.unlock();
+#endif
 }
 /* }}} */
 

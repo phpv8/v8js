@@ -111,10 +111,8 @@ void v8js_register_accessors(std::vector<v8js_accessor_ctx*> *accessor_list, v8:
 
 /* Module globals */
 ZEND_BEGIN_MODULE_GLOBALS(v8js)
+  // Thread-local cache whether V8 has been initialized so far
   int v8_initialized;
-#if !defined(_WIN32) && PHP_V8_API_VERSION >= 3029036
-  v8::Platform *v8_platform;
-#endif
   HashTable *extensions;
 
   /* Ini globals */
@@ -141,6 +139,32 @@ ZEND_EXTERN_MODULE_GLOBALS(v8js)
 #else
 # define V8JSG(v) (v8js_globals.v)
 #endif
+
+/*
+ *  Process-wide globals
+ *
+ * The zend_v8js_globals structure declared above is created once per thread
+ * (in a ZTS environment).  If a multi-threaded PHP process uses V8 there is
+ * some stuff shared among all of these threads
+ *
+ *  - whether V8 has been initialized at all
+ *  - the V8 backend platform
+ *
+ * In a ZTS-enabled environment access to all of these variables must happen
+ * while holding a mutex lock.
+ */
+struct _v8js_process_globals {
+#ifdef ZTS
+	int v8_initialized;
+	std::mutex lock;
+#endif
+
+#if !defined(_WIN32) && PHP_V8_API_VERSION >= 3029036
+	v8::Platform *v8_platform;
+#endif
+};
+
+extern struct _v8js_process_globals v8js_process_globals;
 
 /* Register builtin methods into passed object */
 void v8js_register_methods(v8::Handle<v8::ObjectTemplate>, v8js_ctx *c);
