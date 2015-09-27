@@ -140,7 +140,15 @@ static PHP_MSHUTDOWN_FUNCTION(v8js)
 {
 	UNREGISTER_INI_ENTRIES();
 
-	if(v8js_process_globals.v8_initialized) {
+	bool v8_initialized;
+
+#ifdef ZTS
+	v8_initialized = v8js_process_globals.v8_initialized;
+#else
+	v8_initialized = V8JSG(v8_initialized);
+#endif
+
+	if(v8_initialized) {
 		v8::V8::Dispose();
 #if !defined(_WIN32) && PHP_V8_API_VERSION >= 3029036
 		v8::V8::ShutdownPlatform();
