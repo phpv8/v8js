@@ -64,8 +64,8 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, v
 	{
 		error_len = spprintf(&error, 0,
 			"%s::%s() expects %s %d parameter%s, %d given",
-				object->ce->name,
-				method_ptr->common.function_name,
+				ZSTR_VAL(object->ce->name),
+				ZSTR_VAL(method_ptr->common.function_name),
 				min_num_args == max_num_args ? "exactly" : argc < min_num_args ? "at least" : "at most",
 				argc < min_num_args ? min_num_args : max_num_args,
 				(argc < min_num_args ? min_num_args : max_num_args) == 1 ? "" : "s",
