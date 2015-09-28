@@ -98,7 +98,7 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 		// If timer thread is not running then start it
 		if (!V8JSG(timer_thread)) {
 			// If not, start timer thread
-			V8JSG(timer_thread) = new std::thread(v8js_timer_thread TSRMLS_CC);
+			V8JSG(timer_thread) = new std::thread(v8js_timer_thread, ZEND_MODULE_GLOBALS_BULK(v8js));
 		}
 	}
 

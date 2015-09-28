@@ -701,7 +701,7 @@ static PHP_METHOD(V8Js, setTimeLimit)
 	if (c->in_execution && time_limit && !V8JSG(timer_thread)) {
 		/* If timer thread is not started already and we now impose a time limit
 		 * finally install the timer. */
-		V8JSG(timer_thread) = new std::thread(v8js_timer_thread TSRMLS_CC);
+		V8JSG(timer_thread) = new std::thread(v8js_timer_thread, ZEND_MODULE_GLOBALS_BULK(v8js));
 	}
 }
 /* }}} */
@@ -732,7 +732,7 @@ static PHP_METHOD(V8Js, setMemoryLimit)
 	if (c->in_execution && memory_limit && !V8JSG(timer_thread)) {
 		/* If timer thread is not started already and we now impose a memory limit
 		 * finally install the timer. */
-		V8JSG(timer_thread) = new std::thread(v8js_timer_thread TSRMLS_CC);
+		V8JSG(timer_thread) = new std::thread(v8js_timer_thread, ZEND_MODULE_GLOBALS_BULK(v8js));
 	}
 }
 /* }}} */

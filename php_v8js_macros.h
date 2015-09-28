@@ -42,7 +42,6 @@ extern "C" {
 
 #include "v8js_class.h"
 #include "v8js_v8.h"
-#include "v8js_timer.h"
 
 #ifndef PATH_MAX
 /* Some platforms (Windows among others) don't have a PATH_MAX, for the moment
@@ -99,7 +98,9 @@ void v8js_accessor_ctx_dtor(v8js_accessor_ctx * TSRMLS_DC);
 /* Register accessors into passed object */
 void v8js_register_accessors(std::vector<v8js_accessor_ctx*> *accessor_list, v8::Local<v8::FunctionTemplate>, zval *, v8::Isolate * TSRMLS_DC);
 
-/* Resource declaration */
+
+/* Forward declarations */
+struct v8js_timer_ctx;
 
 /* Module globals */
 ZEND_BEGIN_MODULE_GLOBALS(v8js)

@@ -28,14 +28,12 @@ extern "C" {
 #include "php_v8js_macros.h"
 #include "v8js_v8.h"
 #include "v8js_exceptions.h"
+#include "v8js_timer.h"
 
 static void v8js_timer_interrupt_handler(v8::Isolate *isolate, void *data) { /* {{{ */
-#ifdef ZTS
-	// @fixme
-	//TSRMLS_D = (void ***) data;
-#endif
+	zend_v8js_globals *globals = static_cast<zend_v8js_globals *>(data);
 
-	if (!V8JSG(timer_stack).size()) {
+	if (!globals->timer_stack.size()) {
 		return;
 	}
 
@@ -43,10 +41,10 @@ static void v8js_timer_interrupt_handler(v8::Isolate *isolate, void *data) { /* 
 	v8::HeapStatistics hs;
 	isolate->GetHeapStatistics(&hs);
 
-	V8JSG(timer_mutex).lock();
+	globals->timer_mutex.lock();
 
-	for (std::deque< v8js_timer_ctx* >::iterator it = V8JSG(timer_stack).begin();
-		 it != V8JSG(timer_stack).end(); it ++) {
+	for (std::deque< v8js_timer_ctx* >::iterator it = globals->timer_stack.begin();
+		 it != globals->timer_stack.end(); it ++) {
 		v8js_timer_ctx *timer_ctx = *it;
 		v8js_ctx *c = timer_ctx->ctx;
 
@@ -61,17 +59,17 @@ static void v8js_timer_interrupt_handler(v8::Isolate *isolate, void *data) { /* 
 		}
 	}
 
-	V8JSG(timer_mutex).unlock();
+	globals->timer_mutex.unlock();
 }
 /* }}} */
 
-void v8js_timer_thread(TSRMLS_D) /* {{{ */
+void v8js_timer_thread(zend_v8js_globals *globals) /* {{{ */
 {
-	while (!V8JSG(timer_stop)) {
+	while (!globals->timer_stop) {
 
-		V8JSG(timer_mutex).lock();
-		if (V8JSG(timer_stack).size()) {
-			v8js_timer_ctx *timer_ctx = V8JSG(timer_stack).front();
+		globals->timer_mutex.lock();
+		if (globals->timer_stack.size()) {
+			v8js_timer_ctx *timer_ctx = globals->timer_stack.front();
 			v8js_ctx *c = timer_ctx->ctx;
 			std::chrono::time_point<std::chrono::high_resolution_clock> now = std::chrono::high_resolution_clock::now();
 
@@ -90,15 +88,10 @@ void v8js_timer_thread(TSRMLS_D) /* {{{ */
 				 * directly call GetHeapStatistics here, since we don't have
 				 * a v8::Locker on the isolate, but are expected to hold one,
 				 * and cannot aquire it as v8 is executing the script ... */
-				void *data = NULL;
-#ifdef ZTS
-				// @fixme
-				//data = (void *) TSRMLS_C;
-#endif
-				c->isolate->RequestInterrupt(v8js_timer_interrupt_handler, data);
+				c->isolate->RequestInterrupt(v8js_timer_interrupt_handler, static_cast<void *>(globals));
 			}
 		}
-		V8JSG(timer_mutex).unlock();
+		globals->timer_mutex.unlock();
 
 		// Sleep for 10ms
 #ifdef _WIN32
