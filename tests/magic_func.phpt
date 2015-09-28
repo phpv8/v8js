@@ -9,7 +9,7 @@ class Foo {
 	var $bar = 'foobar';
 	var $nullprop = null;
 
-	function Foo() {
+	function __construct() {
 		echo "called constructor: ";
 		var_dump(func_get_args());
 	}

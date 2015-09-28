@@ -6,7 +6,7 @@ Test V8::executeString() : Get constructor method
 <?php
 
 class Foo {
-	function Foo() {
+	function __construct() {
 		echo "called constructor: ";
 		var_dump(func_get_args());
 	}
