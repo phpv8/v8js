@@ -298,9 +298,7 @@ static void v8js_fatal_error_handler(const char *location, const char *message) 
    __construct for V8Js */
 static PHP_METHOD(V8Js, __construct)
 {
-	char *object_name = NULL, *class_name = NULL;
-	int object_name_len = 0, free = 0;
-	unsigned int class_name_len = 0;
+	zend_string *object_name = NULL;
 	zend_bool report_uncaught = 1;
 	zval *vars_arr = NULL, *exts_arr = NULL;
 	const char **exts = NULL;
@@ -313,7 +311,7 @@ static PHP_METHOD(V8Js, __construct)
 		return;
 	}
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|saab", &object_name, &object_name_len, &vars_arr, &exts_arr, &report_uncaught) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|Saab", &object_name, &vars_arr, &exts_arr, &report_uncaught) == FAILURE) {
 		return;
 	}
 
@@ -407,17 +405,15 @@ static PHP_METHOD(V8Js, __construct)
 	zend_class_entry *ce = Z_OBJCE_P(getThis());
 	php_obj_t->SetClassName(V8JS_SYML(ZSTR_VAL(ce->name), ZSTR_LEN(ce->name)));
 
-	if (free) {
-		efree(class_name);
-	}
-
 	/* Register Get accessor for passed variables */
 	if (vars_arr && zend_hash_num_elements(Z_ARRVAL_P(vars_arr)) > 0) {
 		v8js_register_accessors(&c->accessor_list, php_obj_t, vars_arr, isolate TSRMLS_CC);
 	}
 
 	/* Set name for the PHP JS object */
-	v8::Local<v8::String> object_name_js = (object_name_len) ? V8JS_SYML(object_name, object_name_len) : V8JS_SYM("PHP");
+	v8::Local<v8::String> object_name_js = (object_name && ZSTR_LEN(object_name))
+		? V8JS_ZSYM(object_name)
+		: V8JS_SYM("PHP");
 	c->object_name.Reset(isolate, object_name_js);
 
 	/* Add the PHP object into global object */
