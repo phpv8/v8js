@@ -105,6 +105,9 @@ v8::Handle<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate TSRMLS_DC) 
 	long v;
 	zend_class_entry *ce;
 
+	if(Z_TYPE_P(value) == IS_INDIRECT)
+		value = Z_INDIRECT_P(value);
+
 	switch (Z_TYPE_P(value))
 	{
 		case IS_ARRAY:
@@ -154,9 +157,13 @@ v8::Handle<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate TSRMLS_DC) 
 			jsValue = V8JS_FALSE();
 			break;
 
-		default:
 		case IS_NULL:
 			jsValue = V8JS_NULL;
+			break;
+
+		case IS_UNDEF:
+		default:
+			/* undefined -> return v8::Value left empty */
 			break;
 	}
 	return jsValue;
