@@ -37,6 +37,8 @@ Exception thrown during bootstrapping
 Extension or internal compilation error%sin handlebars at line 1.
 Error installing extension 'handlebars'.
 
-Warning: V8Js::__construct(): Failed to create V8 context. Check that registered extensions do not have errors. in %s on line %d
-NULL
-===EOF===
+Fatal error: Uncaught V8JsException: Failed to create V8 context. Check that registered extensions do not have errors. in %s%eextensions_error.php:7
+Stack trace:
+#0 %s%eextensions_error.php(7): V8Js->__construct()
+#1 {main}
+  thrown in %s%eextensions_error.php on line 7

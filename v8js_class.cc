@@ -347,7 +347,8 @@ static PHP_METHOD(V8Js, __construct)
 	{
 		exts_count = zend_hash_num_elements(Z_ARRVAL_P(exts_arr));
 		if (v8js_create_ext_strarr(&exts, exts_count, Z_ARRVAL_P(exts_arr)) == FAILURE) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Invalid extensions array passed");
+			zend_throw_exception(php_ce_v8js_exception,
+				"Invalid extensions array passed", 0);
 			return;
 		}
 	}
@@ -387,8 +388,9 @@ static PHP_METHOD(V8Js, __construct)
 
 	/* If extensions have errors, context will be empty. (NOTE: This is V8 stuff, they expect the passed sources to compile :) */
 	if (context.IsEmpty()) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Failed to create V8 context. Check that registered extensions do not have errors.");
-		ZVAL_NULL(getThis());
+		zend_throw_exception(php_ce_v8js_exception,
+			"Failed to create V8 context. "
+			"Check that registered extensions do not have errors.", 0);
 		return;
 	}
 
