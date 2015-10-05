@@ -5,6 +5,10 @@ V8Js is a PHP extension for Google's V8 Javascript engine.
 
 The extension allows you to execute Javascript code in a secure sandbox from PHP. The executed code can be restricted using a time limit and/or memory limit. This provides the possibility to execute untrusted code with confidence.
 
+**This is the PHP 7 branch of V8Js**, it requires PHP 7 and does *not* compile against PHP 5.x versions.
+If you're running PHP 5.x, see the [master branch](https://github.com/preillyme/v8js/tree/master)
+of this repository.
+
 
 Minimum requirements
 --------------------
@@ -16,10 +20,9 @@ Minimum requirements
 	V8 implements ECMAScript as specified in ECMA-262, 5th edition.
     This extension makes use of V8 isolates to ensure separation between multiple V8Js instances and uses the new isolate-based mechanism to throw exceptions, hence the need for 3.24.6 or above.
 
-- PHP 5.3.3+
+- PHP 7.0.0+
 
   This embedded implementation of the V8 engine uses thread locking so it should work with ZTS enabled.
-  However, this has not been tested yet.
 
 
 Compiling latest version
