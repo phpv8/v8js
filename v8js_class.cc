@@ -999,7 +999,7 @@ static void v8js_write_property(zval *object, zval *member, zval *value, void **
 	}
 
 	/* Write value to PHP object */
-	std_object_handlers.write_property(object, member, value, cache_slot TSRMLS_CC);
+	std_object_handlers.write_property(object, member, value, NULL);
 }
 /* }}} */
 
@@ -1015,7 +1015,7 @@ static void v8js_unset_property(zval *object, zval *member, void **cache_slot TS
 	jsobj->Delete(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)));
 
 	/* Unset from PHP object */
-	std_object_handlers.unset_property(object, member, cache_slot TSRMLS_CC);
+	std_object_handlers.unset_property(object, member, NULL);
 }
 /* }}} */
 
