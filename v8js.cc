@@ -29,20 +29,41 @@ extern "C" {
 #include "v8js_v8object_class.h"
 
 ZEND_DECLARE_MODULE_GLOBALS(v8js)
+struct _v8js_process_globals v8js_process_globals;
 
 /* {{{ INI Settings */
 
 static ZEND_INI_MH(v8js_OnUpdateV8Flags) /* {{{ */
 {
+	bool immutable = false;
+
+#ifdef ZTS
+	v8js_process_globals.lock.lock();
+
+	if(v8js_process_globals.v8_initialized) {
+		v8js_process_globals.lock.unlock();
+		immutable = true;
+	}
+
+	v8js_process_globals.lock.unlock();
+#else
+	immutable = V8JSG(v8_initialized);
+#endif
+
+	if(immutable) {
+		/* V8 already has been initialized -> cannot be changed anymore */
+		return FAILURE;
+	}
+
 	if (new_value) {
-		if (V8JSG(v8_flags)) {
-			free(V8JSG(v8_flags));
-			V8JSG(v8_flags) = NULL;
+		if (v8js_process_globals.v8_flags) {
+			free(v8js_process_globals.v8_flags);
+			v8js_process_globals.v8_flags = NULL;
 		}
 		if (!new_value[0]) {
 			return FAILURE;
 		}
-		V8JSG(v8_flags) = zend_strndup(new_value, new_value_length);
+		v8js_process_globals.v8_flags = zend_strndup(new_value, new_value_length);
 	}
 
 	return SUCCESS;
@@ -118,6 +139,35 @@ PHP_MINIT_FUNCTION(v8js)
 static PHP_MSHUTDOWN_FUNCTION(v8js)
 {
 	UNREGISTER_INI_ENTRIES();
+
+	bool v8_initialized;
+
+#ifdef ZTS
+	v8_initialized = v8js_process_globals.v8_initialized;
+#else
+	v8_initialized = V8JSG(v8_initialized);
+#endif
+
+	if(v8_initialized) {
+		v8::V8::Dispose();
+#if !defined(_WIN32) && PHP_V8_API_VERSION >= 3029036
+		v8::V8::ShutdownPlatform();
+		// @fixme call virtual destructor somehow
+		//delete v8js_process_globals.v8_platform;
+#endif
+	}
+
+	if (v8js_process_globals.v8_flags) {
+		free(v8js_process_globals.v8_flags);
+		v8js_process_globals.v8_flags = NULL;
+	}
+
+	if (v8js_process_globals.extensions) {
+		zend_hash_destroy(v8js_process_globals.extensions);
+		free(v8js_process_globals.extensions);
+		v8js_process_globals.extensions = NULL;
+	}
+
 	return SUCCESS;
 }
 /* }}} */
@@ -169,9 +219,7 @@ static PHP_GINIT_FUNCTION(v8js)
 	  run the destructors manually.
 	*/
 #ifdef ZTS
-	v8js_globals->extensions = NULL;
 	v8js_globals->v8_initialized = 0;
-	v8js_globals->v8_flags = NULL;
 
 	v8js_globals->timer_thread = NULL;
 	v8js_globals->timer_stop = false;
@@ -187,29 +235,10 @@ static PHP_GINIT_FUNCTION(v8js)
  */
 static PHP_GSHUTDOWN_FUNCTION(v8js)
 {
-	if (v8js_globals->extensions) {
-		zend_hash_destroy(v8js_globals->extensions);
-		free(v8js_globals->extensions);
-		v8js_globals->extensions = NULL;
-	}
-
-	if (v8js_globals->v8_flags) {
-		free(v8js_globals->v8_flags);
-		v8js_globals->v8_flags = NULL;
-	}
-
 #ifdef ZTS
 	v8js_globals->timer_stack.~deque();
 	v8js_globals->timer_mutex.~mutex();
 #endif
-
-	if (v8js_globals->v8_initialized) {
-		v8::V8::Dispose();
-#if !defined(_WIN32) && PHP_V8_API_VERSION >= 3029036
-		v8::V8::ShutdownPlatform();
-		delete v8js_globals->v8_platform;
-#endif
-	}
 }
 /* }}} */
 

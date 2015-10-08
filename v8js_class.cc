@@ -827,10 +827,17 @@ static int v8js_register_extension(char *name, uint name_len, char *source, uint
 {
 	v8js_jsext *jsext = NULL;
 
-	if (!V8JSG(extensions)) {
-		V8JSG(extensions) = (HashTable *) malloc(sizeof(HashTable));
-		zend_hash_init(V8JSG(extensions), 1, NULL, (dtor_func_t) v8js_jsext_dtor, 1);
-	} else if (zend_hash_exists(V8JSG(extensions), name, name_len + 1)) {
+#ifdef ZTS
+	v8js_process_globals.lock.lock();
+#endif
+
+	if (!v8js_process_globals.extensions) {
+		v8js_process_globals.extensions = (HashTable *) malloc(sizeof(HashTable));
+		zend_hash_init(v8js_process_globals.extensions, 1, NULL, (dtor_func_t) v8js_jsext_dtor, 1);
+	} else if (zend_hash_exists(v8js_process_globals.extensions, name, name_len + 1)) {
+#ifdef ZTS
+		v8js_process_globals.lock.unlock();
+#endif
 		return FAILURE;
 	}
 
@@ -843,6 +850,9 @@ static int v8js_register_extension(char *name, uint name_len, char *source, uint
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Invalid dependency array passed");
 			v8js_jsext_dtor(jsext);
 			free(jsext);
+#ifdef ZTS
+			v8js_process_globals.lock.unlock();
+#endif
 			return FAILURE;
 		}
 	}
@@ -859,17 +869,23 @@ static int v8js_register_extension(char *name, uint name_len, char *source, uint
 
 	jsext->extension = new v8::Extension(jsext->name, jsext->source, jsext->deps_count, jsext->deps);
 
-	if (zend_hash_add(V8JSG(extensions), name, name_len + 1, jsext, sizeof(v8js_jsext), NULL) == FAILURE) {
+	if (zend_hash_add(v8js_process_globals.extensions, name, name_len + 1, jsext, sizeof(v8js_jsext), NULL) == FAILURE) {
 		v8js_jsext_dtor(jsext);
 		free(jsext);
+#ifdef ZTS
+		v8js_process_globals.lock.unlock();
+#endif
 		return FAILURE;
 	}
+
+#ifdef ZTS
+	v8js_process_globals.lock.unlock();
+#endif
 
 	jsext->extension->set_auto_enable(auto_enable ? true : false);
 	v8::RegisterExtension(jsext->extension);
 
 	free(jsext);
-
 	return SUCCESS;
 }
 /* }}} */
@@ -916,10 +932,15 @@ static PHP_METHOD(V8Js, getExtensions)
 	}
 
 	array_init(return_value);
-	if (V8JSG(extensions)) {
-		zend_hash_internal_pointer_reset_ex(V8JSG(extensions), &pos);
-		while (zend_hash_get_current_data_ex(V8JSG(extensions), (void **) &jsext, &pos) == SUCCESS) {
-			if (zend_hash_get_current_key_ex(V8JSG(extensions), &key, &key_len, &index, 0, &pos) == HASH_KEY_IS_STRING) {
+
+#ifdef ZTS
+	v8js_process_globals.lock.lock();
+#endif
+
+	if (v8js_process_globals.extensions) {
+		zend_hash_internal_pointer_reset_ex(v8js_process_globals.extensions, &pos);
+		while (zend_hash_get_current_data_ex(v8js_process_globals.extensions, (void **) &jsext, &pos) == SUCCESS) {
+			if (zend_hash_get_current_key_ex(v8js_process_globals.extensions, &key, &key_len, &index, 0, &pos) == HASH_KEY_IS_STRING) {
 				MAKE_STD_ZVAL(ext)
 				array_init(ext);
 				add_assoc_bool_ex(ext, ZEND_STRS("auto_enable"), jsext->auto_enable);
@@ -931,9 +952,13 @@ static PHP_METHOD(V8Js, getExtensions)
 				}
 				add_assoc_zval_ex(return_value, key, key_len, ext);
 			}
-			zend_hash_move_forward_ex(V8JSG(extensions), &pos);
+			zend_hash_move_forward_ex(v8js_process_globals.extensions, &pos);
 		}
 	}
+
+#ifdef ZTS
+	v8js_process_globals.lock.unlock();
+#endif
 }
 /* }}} */
 

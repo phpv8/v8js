@@ -24,8 +24,7 @@ Minimum requirements
 
 - PHP 5.3.3+
 
-  This embedded implementation of the V8 engine uses thread locking so it should work with ZTS enabled.
-  However, this has not been tested yet.
+  This embedded implementation of the V8 engine uses thread locking so it works with ZTS enabled.
 
 
 Compiling latest version
