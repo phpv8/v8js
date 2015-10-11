@@ -31,7 +31,6 @@ extern "C" {
 
 #include "php_v8js_macros.h"
 #include "v8js_v8.h"
-#include "v8js_debug.h"
 #include "v8js_timer.h"
 #include "v8js_exceptions.h"
 
@@ -122,17 +121,6 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 	/* Always pass the timer to the stack so there can be follow-up changes to
 	 * the time & memory limit. */
 	v8js_timer_push(time_limit, memory_limit, c TSRMLS_CC);
-
-#ifdef ENABLE_DEBUGGER_SUPPORT
-	if(c == v8js_debug_context && v8js_debug_auto_break_mode != V8JS_DEBUG_AUTO_BREAK_NEVER) {
-		v8::Debug::DebugBreak(c->isolate);
-
-		if(v8js_debug_auto_break_mode == V8JS_DEBUG_AUTO_BREAK_ONCE) {
-			/* If break-once-mode was enabled, reset flag. */
-			v8js_debug_auto_break_mode = V8JS_DEBUG_AUTO_BREAK_NEVER;
-		}
-	}
-#endif  /* ENABLE_DEBUGGER_SUPPORT */
 
 	/* Execute script */
 	c->in_execution++;

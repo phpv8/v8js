@@ -28,7 +28,6 @@ extern "C" {
 
 #include "php_v8js_macros.h"
 #include "v8js_v8.h"
-#include "v8js_debug.h"
 #include "v8js_exceptions.h"
 #include "v8js_v8object_class.h"
 #include "v8js_timer.h"
@@ -1000,17 +999,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_checkstring, 0, 0, 1)
 	ZEND_ARG_INFO(0, script)
 ZEND_END_ARG_INFO()
 
-#ifdef ENABLE_DEBUGGER_SUPPORT
-ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_destruct, 0, 0, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_startdebugagent, 0, 0, 0)
-	ZEND_ARG_INFO(0, agentName)
-	ZEND_ARG_INFO(0, port)
-	ZEND_ARG_INFO(0, auto_break)
-ZEND_END_ARG_INFO()
-#endif  /* ENABLE_DEBUGGER_SUPPORT */
-
 ZEND_BEGIN_ARG_INFO(arginfo_v8js_getpendingexception, 0)
 ZEND_END_ARG_INFO()
 
@@ -1055,10 +1043,6 @@ static const zend_function_entry v8js_methods[] = { /* {{{ */
 	PHP_ME(V8Js,	getExtensions,			arginfo_v8js_getextensions,			ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
 	PHP_ME(V8Js,	setTimeLimit,			arginfo_v8js_settimelimit,			ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	setMemoryLimit,			arginfo_v8js_setmemorylimit,		ZEND_ACC_PUBLIC)
-#ifdef ENABLE_DEBUGGER_SUPPORT
-	PHP_ME(V8Js,	__destruct,				arginfo_v8js_destruct,				ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
-	PHP_ME(V8Js,	startDebugAgent,		arginfo_v8js_startdebugagent,		ZEND_ACC_PUBLIC)
-#endif
 	{NULL, NULL, NULL}
 };
 /* }}} */
@@ -1124,12 +1108,6 @@ PHP_MINIT_FUNCTION(v8js_class) /* {{{ */
 	zend_declare_class_constant_long(php_ce_v8js, ZEND_STRL("FLAG_NONE"),			V8JS_FLAG_NONE			TSRMLS_CC);
 	zend_declare_class_constant_long(php_ce_v8js, ZEND_STRL("FLAG_FORCE_ARRAY"),	V8JS_FLAG_FORCE_ARRAY	TSRMLS_CC);
 	zend_declare_class_constant_long(php_ce_v8js, ZEND_STRL("FLAG_PROPAGATE_PHP_EXCEPTIONS"), V8JS_FLAG_PROPAGATE_PHP_EXCEPTIONS TSRMLS_CC);
-
-#ifdef ENABLE_DEBUGGER_SUPPORT
-	zend_declare_class_constant_long(php_ce_v8js, ZEND_STRL("DEBUG_AUTO_BREAK_NEVER"),	V8JS_DEBUG_AUTO_BREAK_NEVER			TSRMLS_CC);
-	zend_declare_class_constant_long(php_ce_v8js, ZEND_STRL("DEBUG_AUTO_BREAK_ONCE"),	V8JS_DEBUG_AUTO_BREAK_ONCE			TSRMLS_CC);
-	zend_declare_class_constant_long(php_ce_v8js, ZEND_STRL("DEBUG_AUTO_BREAK_ALWAYS"),	V8JS_DEBUG_AUTO_BREAK_ALWAYS		TSRMLS_CC);
-#endif
 
 	le_v8js_script = zend_register_list_destructors_ex(v8js_script_dtor, NULL, PHP_V8JS_SCRIPT_RES_NAME, module_number);
 
