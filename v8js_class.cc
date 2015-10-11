@@ -2,12 +2,13 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2013 The PHP Group                                |
+  | Copyright (c) 1997-2015 The PHP Group                                |
   +----------------------------------------------------------------------+
   | http://www.opensource.org/licenses/mit-license.php  MIT License      |
   +----------------------------------------------------------------------+
   | Author: Jani Taskinen <jani.taskinen@iki.fi>                         |
   | Author: Patrick Reilly <preilly@php.net>                             |
+  | Author: Stefan Siegl <stesie@php.net>                                |
   +----------------------------------------------------------------------+
 */
 
@@ -103,6 +104,22 @@ static void v8js_free_storage(zend_object *object TSRMLS_DC) /* {{{ */
 	c->object_name.~Persistent();
 	c->global_template.Reset();
 	c->global_template.~Persistent();
+	c->array_tmpl.Reset();
+	c->array_tmpl.~Persistent();
+
+	/* Clear persistent call_impl & method_tmpls templates */
+	for (std::map<v8js_tmpl_t *, v8js_tmpl_t>::iterator it = c->call_impls.begin();
+		 it != c->call_impls.end(); ++it) {
+		// No need to free it->first, as it is stored in c->template_cache and freed below
+		it->second.Reset();
+	}
+	c->call_impls.~map();
+
+	for (std::map<zend_function *, v8js_tmpl_t>::iterator it = c->method_tmpls.begin();
+		 it != c->method_tmpls.end(); ++it) {
+		it->second.Reset();
+	}
+	c->method_tmpls.~map();
 
 	/* Clear persistent handles in template cache */
 	for (std::map<const zend_string *,v8js_tmpl_t>::iterator it = c->template_cache.begin();
@@ -196,6 +213,7 @@ static zend_object* v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 	new(&c->object_name) v8::Persistent<v8::String>();
 	new(&c->context) v8::Persistent<v8::Context>();
 	new(&c->global_template) v8::Persistent<v8::FunctionTemplate>();
+	new(&c->array_tmpl) v8::Persistent<v8::FunctionTemplate>();
 
 	new(&c->modules_stack) std::vector<char*>();
 	new(&c->modules_base) std::vector<char*>();
@@ -206,6 +224,8 @@ static zend_object* v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 
 	new(&c->weak_closures) std::map<v8js_tmpl_t *, v8js_persistent_obj_t>();
 	new(&c->weak_objects) std::map<zend_object *, v8js_persistent_obj_t>();
+	new(&c->call_impls) std::map<v8js_tmpl_t *, v8js_tmpl_t>();
+	new(&c->method_tmpls) std::map<zend_function *, v8js_tmpl_t>();
 
 	new(&c->v8js_v8objects) std::list<v8js_v8object *>();
 	new(&c->script_objects) std::vector<v8js_script *>();
@@ -480,7 +500,7 @@ static void v8js_compile_script(zval *this_ptr, zend_string *str, zend_string *i
 
 	/* Compile errors? */
 	if (script.IsEmpty()) {
-		v8js_throw_script_exception(&try_catch TSRMLS_CC);
+		v8js_throw_script_exception(c->isolate, &try_catch TSRMLS_CC);
 		return;
 	}
 	res = (v8js_script *)emalloc(sizeof(v8js_script));
@@ -774,10 +794,17 @@ static int v8js_register_extension(zend_string *name, zend_string *source, zval 
 {
 	v8js_jsext *jsext = NULL;
 
-	if (!V8JSG(extensions)) {
-		V8JSG(extensions) = (HashTable *) malloc(sizeof(HashTable));
-		zend_hash_init(V8JSG(extensions), 1, NULL, v8js_jsext_dtor, 1);
-	} else if (zend_hash_exists(V8JSG(extensions), name)) {
+#ifdef ZTS
+	v8js_process_globals.lock.lock();
+#endif
+
+	if (!v8js_process_globals.extensions) {
+		v8js_process_globals.extensions = (HashTable *) malloc(sizeof(HashTable));
+		zend_hash_init(v8js_process_globals.extensions, 1, NULL, v8js_jsext_dtor, 1);
+	} else if (zend_hash_exists(v8js_process_globals.extensions, name)) {
+#ifdef ZTS
+		v8js_process_globals.lock.unlock();
+#endif
 		return FAILURE;
 	}
 
@@ -789,6 +816,9 @@ static int v8js_register_extension(zend_string *name, zend_string *source, zval 
 		if (v8js_create_ext_strarr(&jsext->deps, jsext->deps_count, Z_ARRVAL_P(deps_arr)) == FAILURE) {
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Invalid dependency array passed");
 			v8js_jsext_free_storage(jsext);
+#ifdef ZTS
+			v8js_process_globals.lock.unlock();
+#endif
 			return FAILURE;
 		}
 	}
@@ -805,10 +835,17 @@ static int v8js_register_extension(zend_string *name, zend_string *source, zval 
 
 	jsext->extension = new v8::Extension(ZSTR_VAL(jsext->name), ZSTR_VAL(jsext->source), jsext->deps_count, jsext->deps);
 
-	if (!zend_hash_add_ptr(V8JSG(extensions), jsext->name, jsext)) {
+	if (!zend_hash_add_ptr(v8js_process_globals.extensions, jsext->name, jsext)) {
 		v8js_jsext_free_storage(jsext);
+#ifdef ZTS
+		v8js_process_globals.lock.unlock();
+#endif
 		return FAILURE;
 	}
+
+#ifdef ZTS
+	v8js_process_globals.lock.unlock();
+#endif
 
 	jsext->extension->set_auto_enable(auto_enable ? true : false);
 	v8::RegisterExtension(jsext->extension);
@@ -857,8 +894,12 @@ static PHP_METHOD(V8Js, getExtensions)
 
 	array_init(return_value);
 
-	if (V8JSG(extensions)) {
-		ZEND_HASH_FOREACH_KEY_VAL(V8JSG(extensions), index, key, val) {
+#ifdef ZTS
+	v8js_process_globals.lock.lock();
+#endif
+
+	if (v8js_process_globals.extensions) {
+		ZEND_HASH_FOREACH_KEY_VAL(v8js_process_globals.extensions, index, key, val) {
 			if (key) {
 				jsext = (v8js_jsext *) Z_PTR_P(val);
 				array_init(&ext);
@@ -873,6 +914,10 @@ static PHP_METHOD(V8Js, getExtensions)
 			}
 		} ZEND_HASH_FOREACH_END();
 	}
+
+#ifdef ZTS
+	v8js_process_globals.lock.unlock();
+#endif
 }
 /* }}} */
 
@@ -1039,6 +1084,7 @@ PHP_MINIT_FUNCTION(v8js_class) /* {{{ */
 
 	zend_declare_class_constant_long(php_ce_v8js, ZEND_STRL("FLAG_NONE"),			V8JS_FLAG_NONE			TSRMLS_CC);
 	zend_declare_class_constant_long(php_ce_v8js, ZEND_STRL("FLAG_FORCE_ARRAY"),	V8JS_FLAG_FORCE_ARRAY	TSRMLS_CC);
+	zend_declare_class_constant_long(php_ce_v8js, ZEND_STRL("FLAG_PROPAGATE_PHP_EXCEPTIONS"), V8JS_FLAG_PROPAGATE_PHP_EXCEPTIONS TSRMLS_CC);
 
 #ifdef ENABLE_DEBUGGER_SUPPORT
 	zend_declare_class_constant_long(php_ce_v8js, ZEND_STRL("DEBUG_AUTO_BREAK_NEVER"),	V8JS_DEBUG_AUTO_BREAK_NEVER			TSRMLS_CC);

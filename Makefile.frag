@@ -3,6 +3,11 @@ ifneq (,$(realpath $(EXTENSION_DIR)/json.so))
 PHP_TEST_SHARED_EXTENSIONS+=-d extension=$(EXTENSION_DIR)/json.so
 endif
 
+# add pthreads extension, if available
+ifneq (,$(realpath $(EXTENSION_DIR)/pthreads.so))
+PHP_TEST_SHARED_EXTENSIONS+=-d extension=$(EXTENSION_DIR)/pthreads.so
+endif
+
 testv8: all
 	$(PHP_EXECUTABLE) -n -d extension_dir=./modules -d extension=v8js.so test.php
 

@@ -21,6 +21,7 @@ extern "C" {
 #include "ext/standard/php_string.h"
 #include "zend_interfaces.h"
 #include "zend_closures.h"
+#include "zend_exceptions.h"
 }
 
 #include "php_v8js_macros.h"
@@ -33,13 +34,13 @@ static void v8js_weak_object_callback(const v8::WeakCallbackData<v8::Object, zen
 /* Callback for PHP methods and functions */
 static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, v8::Isolate *isolate, const v8::FunctionCallbackInfo<v8::Value>& info TSRMLS_DC) /* {{{ */
 {
-	v8::Handle<v8::Value> return_value;
+	v8::Handle<v8::Value> return_value = V8JS_NULL;
 	zend_fcall_info fci;
 	zend_fcall_info_cache fcc;
 	zval fname, retval, **argv = NULL;
 	unsigned int argc = info.Length(), min_num_args = 0, max_num_args = 0;
 	char *error;
-	int error_len, i, flags = V8JS_FLAG_NONE;
+	int error_len, i;
 
 	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
 
@@ -84,7 +85,6 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, v
 
 	/* Convert parameters passed from V8 */
 	if (argc) {
-		flags = V8JS_GLOBAL_GET_FLAGS(isolate);
 		fci.params = (zval *) safe_emalloc(argc, sizeof(zval), 0);
 		for (i = 0; i < argc; i++) {
 			v8::Local<v8::Value> php_object;
@@ -97,7 +97,7 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, v
 				ZVAL_OBJ(&fci.params[i], object);
 				Z_ADDREF_P(&fci.params[i]);
 			} else {
-				if (v8js_to_zval(info[i], &fci.params[i], flags, isolate TSRMLS_CC) == FAILURE) {
+				if (v8js_to_zval(info[i], &fci.params[i], ctx->flags, isolate TSRMLS_CC) == FAILURE) {
 					error_len = spprintf(&error, 0, "converting parameter #%d passed to %s() failed", i + 1, method_ptr->common.function_name);
 					return_value = V8JS_THROW(isolate, Error, error, error_len);
 					efree(error);
@@ -132,7 +132,7 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, v
 		isolate->Enter();
 	}
 	zend_catch {
-		v8::V8::TerminateExecution(isolate);
+		v8js_terminate_execution(isolate);
 		V8JSG(fatal_error_abort) = 1;
 	}
 	zend_end_try();
@@ -146,7 +146,19 @@ failure:
 		efree(fci.params);
 	}
 
-	return_value = zval_to_v8js(&retval, isolate TSRMLS_CC);
+	if(EG(exception) && !V8JSG(compat_php_exceptions)) {
+		if(ctx->flags & V8JS_FLAG_PROPAGATE_PHP_EXCEPTIONS) {
+			zval tmp_zv;
+			ZVAL_OBJ(&tmp_zv, EG(exception));
+			return_value = isolate->ThrowException(zval_to_v8js(&tmp_zv, isolate TSRMLS_CC));
+			zend_clear_exception(TSRMLS_C);
+		} else {
+			v8js_terminate_execution(isolate);
+		}
+	} else {
+		return_value = zval_to_v8js(&retval, isolate TSRMLS_CC);
+	}
+
 	zval_dtor(&retval);
 	zval_dtor(&fname);
 
@@ -505,6 +517,7 @@ template<typename T>
 v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<T> &info, property_op_t callback_type, v8::Local<v8::Value> set_value) /* {{{ */
 {
 	v8::Isolate *isolate = info.GetIsolate();
+	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
 	v8::String::Utf8Value cstr(property);
 	const char *name = ToCString(cstr);
 	uint name_len = property->Utf8Length();
@@ -524,9 +537,8 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> property
 	zval zobject;
 	ZVAL_OBJ(&zobject, object);
 
-	v8::Local<v8::FunctionTemplate> tmpl =
-		v8::Local<v8::FunctionTemplate>::New
-		(isolate, *reinterpret_cast<v8js_tmpl_t *>(self->GetAlignedPointerFromInternalField(0)));
+	v8js_tmpl_t *tmpl_ptr = reinterpret_cast<v8js_tmpl_t *>(self->GetAlignedPointerFromInternalField(0));
+	v8::Local<v8::FunctionTemplate> tmpl = v8::Local<v8::FunctionTemplate>::New(isolate, *tmpl_ptr);
 	ce = scope = object->ce;
 
 	/* First, check the (case-insensitive) method table */
@@ -560,14 +572,35 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> property
 					// Fake __call implementation
 					// (only use this if method_ptr==NULL, which means
 					//  there is no actual PHP __call() implementation)
-					v8::Local<v8::Function> cb =
-						v8::FunctionTemplate::New(isolate,
-							v8js_fake_call_impl, V8JS_NULL,
-							v8::Signature::New(isolate, tmpl))->GetFunction();
+					v8::Local<v8::FunctionTemplate> ft;
+					try {
+						ft = v8::Local<v8::FunctionTemplate>::New
+							(isolate, ctx->call_impls.at(tmpl_ptr));
+					}
+					catch (const std::out_of_range &) {
+						ft = v8::FunctionTemplate::New(isolate,
+								v8js_fake_call_impl, V8JS_NULL,
+								v8::Signature::New(isolate, tmpl));
+						v8js_tmpl_t *persistent_ft = &ctx->call_impls[tmpl_ptr];
+						persistent_ft->Reset(isolate, ft);
+					}
+					v8::Local<v8::Function> cb = ft->GetFunction();
 					cb->SetName(property);
 					ret_value = cb;
 				} else {
-					ret_value = PHP_V8JS_CALLBACK(isolate, method_ptr, tmpl);
+					v8::Local<v8::FunctionTemplate> ft;
+					try {
+						ft = v8::Local<v8::FunctionTemplate>::New
+							(isolate, ctx->method_tmpls.at(method_ptr));
+					}
+					catch (const std::out_of_range &) {
+						ft = v8::FunctionTemplate::New(isolate, v8js_php_callback,
+								v8::External::New((isolate), method_ptr),
+								v8::Signature::New((isolate), tmpl));
+						v8js_tmpl_t *persistent_ft = &ctx->method_tmpls[method_ptr];
+						persistent_ft->Reset(isolate, ft);
+					}
+					ret_value = ft->GetFunction();
 				}
 			}
 		} else if (callback_type == V8JS_PROP_QUERY) {
@@ -623,9 +656,7 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> property
 			}
 
 		} else if (callback_type == V8JS_PROP_SETTER) {
-			int flags = V8JS_GLOBAL_GET_FLAGS(isolate);
-
-			if (v8js_to_zval(set_value, &php_value, flags, isolate TSRMLS_CC) != SUCCESS) {
+			if (v8js_to_zval(set_value, &php_value, ctx->flags, isolate TSRMLS_CC) != SUCCESS) {
 				ret_value = v8::Handle<v8::Value>();
 			}
 			else {
@@ -833,12 +864,22 @@ static v8::Handle<v8::Object> v8js_wrap_array_to_object(v8::Isolate *isolate, zv
 	zend_string *key;
 	ulong index;
 
-	// @todo re-use template likewise
-	v8::Local<v8::FunctionTemplate> new_tpl = v8::FunctionTemplate::New(isolate, 0);
+	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
+	v8::Local<v8::FunctionTemplate> new_tpl;
 
-	/* Call it Array, but it is not a native array, especially it doesn't have
-	 * have the typical Array.prototype functions. */
-	new_tpl->SetClassName(V8JS_SYM("Array"));
+	if(ctx->array_tmpl.IsEmpty()) {
+		new_tpl = v8::FunctionTemplate::New(isolate, 0);
+
+		/* Call it Array, but it is not a native array, especially it doesn't have
+		 * have the typical Array.prototype functions. */
+		new_tpl->SetClassName(V8JS_SYM("Array"));
+
+		/* Store for later re-use */
+		ctx->array_tmpl.Reset(isolate, new_tpl);
+	}
+	else {
+		new_tpl = v8::Local<v8::FunctionTemplate>::New(isolate, ctx->array_tmpl);
+	}
 
 	v8::Handle<v8::Object> newobj = new_tpl->InstanceTemplate()->NewInstance();
 

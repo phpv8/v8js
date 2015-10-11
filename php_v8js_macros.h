@@ -52,7 +52,7 @@ extern "C" {
 #endif
 
 /* V8Js Version */
-#define PHP_V8JS_VERSION "0.2.1"
+#define PHP_V8JS_VERSION "0.2.6"
 
 /* Hidden field name used to link JS wrappers with underlying PHP object */
 #define PHPJS_OBJECT_KEY "phpjs::object"
@@ -69,13 +69,10 @@ extern "C" {
 # define V8JS_CONST (char *)
 #endif
 
-/* Global flags */
-#define V8JS_GLOBAL_SET_FLAGS(isolate,flags)	V8JS_GLOBAL(isolate)->SetHiddenValue(V8JS_SYM("__php_flags__"), V8JS_INT(flags))
-#define V8JS_GLOBAL_GET_FLAGS(isolate)			V8JS_GLOBAL(isolate)->GetHiddenValue(V8JS_SYM("__php_flags__"))->IntegerValue();
-
 /* Options */
 #define V8JS_FLAG_NONE			(1<<0)
 #define V8JS_FLAG_FORCE_ARRAY	(1<<1)
+#define V8JS_FLAG_PROPAGATE_PHP_EXCEPTIONS	(1<<2)
 
 #define V8JS_DEBUG_AUTO_BREAK_NEVER		0
 #define V8JS_DEBUG_AUTO_BREAK_ONCE		1
@@ -104,16 +101,13 @@ struct v8js_timer_ctx;
 
 /* Module globals */
 ZEND_BEGIN_MODULE_GLOBALS(v8js)
+  // Thread-local cache whether V8 has been initialized so far
   int v8_initialized;
-#if !defined(_WIN32) && PHP_V8_API_VERSION >= 3029036
-  v8::Platform *v8_platform;
-#endif
-  HashTable *extensions;
 
   /* Ini globals */
-  char *v8_flags; /* V8 command line flags */
   bool use_date; /* Generate JS Date objects instead of PHP DateTime */
   bool use_array_access; /* Convert ArrayAccess, Countable objects to array-like objects */
+  bool compat_php_exceptions; /* Don't stop JS execution on PHP exception */
 
   // Timer thread globals
   std::deque<v8js_timer_ctx *> timer_stack;
@@ -129,6 +123,39 @@ extern zend_v8js_globals v8js_globals;
 ZEND_EXTERN_MODULE_GLOBALS(v8js)
 
 #define V8JSG(v) ZEND_MODULE_GLOBALS_ACCESSOR(v8js, v)
+
+/*
+ *  Process-wide globals
+ *
+ * The zend_v8js_globals structure declared above is created once per thread
+ * (in a ZTS environment).  If a multi-threaded PHP process uses V8 there is
+ * some stuff shared among all of these threads
+ *
+ *  - whether V8 has been initialized at all
+ *  - the V8 backend platform
+ *  - loaded extensions
+ *  - V8 "command line" flags
+ *
+ * In a ZTS-enabled environment access to all of these variables must happen
+ * while holding a mutex lock.
+ */
+struct _v8js_process_globals {
+#ifdef ZTS
+	int v8_initialized;
+	std::mutex lock;
+#endif
+
+	HashTable *extensions;
+
+	/* V8 command line flags */
+	char *v8_flags;
+
+#if !defined(_WIN32) && PHP_V8_API_VERSION >= 3029036
+	v8::Platform *v8_platform;
+#endif
+};
+
+extern struct _v8js_process_globals v8js_process_globals;
 
 /* Register builtin methods into passed object */
 void v8js_register_methods(v8::Handle<v8::ObjectTemplate>, v8js_ctx *c);

@@ -235,7 +235,7 @@ int v8js_to_zval(v8::Handle<v8::Value> jsValue, zval *return_value, int flags, v
 			RETVAL_ZVAL(&zval_object, 1, 0);
 			return SUCCESS;
 		}
-		if ((flags & V8JS_FLAG_FORCE_ARRAY) || jsValue->IsArray()) {
+		if ((flags & V8JS_FLAG_FORCE_ARRAY && !jsValue->IsFunction()) || jsValue->IsArray()) {
 			array_init(return_value);
 			return v8js_get_properties_hash(jsValue, Z_ARRVAL_P(return_value), flags, isolate TSRMLS_CC);
 		} else {

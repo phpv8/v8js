@@ -54,7 +54,7 @@ static void v8js_timer_interrupt_handler(v8::Isolate *isolate, void *data) { /* 
 
 		if (timer_ctx->memory_limit > 0 && hs.used_heap_size() > timer_ctx->memory_limit) {
 			timer_ctx->killed = true;
-			v8js_terminate_execution(c TSRMLS_CC);
+			v8::V8::TerminateExecution(c->isolate);
 			c->memory_limit_hit = true;
 		}
 	}
@@ -79,7 +79,7 @@ void v8js_timer_thread(zend_v8js_globals *globals) /* {{{ */
 			}
 			else if(timer_ctx->time_limit > 0 && now > timer_ctx->time_point) {
 				timer_ctx->killed = true;
-				v8js_terminate_execution(c TSRMLS_CC);
+				v8::V8::TerminateExecution(c->isolate);
 				c->time_limit_hit = true;
 			}
 			else if (timer_ctx->memory_limit > 0) {

@@ -49,15 +49,15 @@ void v8js_v8_init(TSRMLS_D);
 void v8js_v8_call(v8js_ctx *c, zval **return_value,
 				  long flags, long time_limit, long memory_limit,
 				  std::function< v8::Local<v8::Value>(v8::Isolate *) >& v8_call TSRMLS_DC);
-void v8js_terminate_execution(v8js_ctx *c TSRMLS_DC);
+void v8js_terminate_execution(v8::Isolate *isolate);
 
 /* Fetch V8 object properties */
 int v8js_get_properties_hash(v8::Handle<v8::Value> jsValue, HashTable *retval, int flags, v8::Isolate *isolate TSRMLS_DC);
 
-#define V8JS_CTX_PROLOGUE(ctx) \
+#define V8JS_CTX_PROLOGUE_EX(ctx, ret) \
 	if (!V8JSG(v8_initialized)) { \
 		zend_error(E_ERROR, "V8 not initialized"); \
-		return; \
+		return ret; \
 	} \
 	\
 	v8::Isolate *isolate = (ctx)->isolate; \
@@ -66,6 +66,9 @@ int v8js_get_properties_hash(v8::Handle<v8::Value> jsValue, HashTable *retval, i
 	v8::HandleScope handle_scope(isolate); \
 	v8::Local<v8::Context> v8_context = v8::Local<v8::Context>::New(isolate, (ctx)->context); \
 	v8::Context::Scope context_scope(v8_context);
+
+#define V8JS_CTX_PROLOGUE(ctx) \
+	V8JS_CTX_PROLOGUE_EX(ctx,)
 
 #define V8JS_BEGIN_CTX(ctx, object) \
 	v8js_ctx *(ctx); \

@@ -39,12 +39,15 @@ struct v8js_ctx {
   int in_execution;
   v8::Isolate *isolate;
 
+  long flags;
+
   long time_limit;
   bool time_limit_hit;
   long memory_limit;
   bool memory_limit_hit;
 
-  v8::Persistent<v8::FunctionTemplate> global_template;
+  v8js_tmpl_t global_template;
+  v8js_tmpl_t array_tmpl;
 
   zval module_loader;
   std::vector<char *> modules_stack;
@@ -54,6 +57,8 @@ struct v8js_ctx {
 
   std::map<zend_object *, v8js_persistent_obj_t> weak_objects;
   std::map<v8js_tmpl_t *, v8js_persistent_obj_t> weak_closures;
+  std::map<v8js_tmpl_t *, v8js_tmpl_t> call_impls;
+  std::map<zend_function *, v8js_tmpl_t> method_tmpls;
 
   std::list<v8js_v8object *> v8js_v8objects;
 

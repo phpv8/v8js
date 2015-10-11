@@ -28,55 +28,77 @@ extern "C" {
 #include "v8js_v8object_class.h"
 
 ZEND_DECLARE_MODULE_GLOBALS(v8js)
+struct _v8js_process_globals v8js_process_globals;
 
 /* {{{ INI Settings */
 
 static ZEND_INI_MH(v8js_OnUpdateV8Flags) /* {{{ */
 {
+	bool immutable = false;
+
+#ifdef ZTS
+	v8js_process_globals.lock.lock();
+
+	if(v8js_process_globals.v8_initialized) {
+		v8js_process_globals.lock.unlock();
+		immutable = true;
+	}
+
+	v8js_process_globals.lock.unlock();
+#else
+	immutable = V8JSG(v8_initialized);
+#endif
+
+	if(immutable) {
+		/* V8 already has been initialized -> cannot be changed anymore */
+		return FAILURE;
+	}
+
 	if (new_value) {
-		if (V8JSG(v8_flags)) {
-			free(V8JSG(v8_flags));
-			V8JSG(v8_flags) = NULL;
+		if (v8js_process_globals.v8_flags) {
+			free(v8js_process_globals.v8_flags);
+			v8js_process_globals.v8_flags = NULL;
 		}
 		if (!new_value->val[0]) {
 			return FAILURE;
 		}
-		V8JSG(v8_flags) = zend_strndup(new_value->val, new_value->len);
+		v8js_process_globals.v8_flags = zend_strndup(new_value->val, new_value->len);
 	}
 
 	return SUCCESS;
 }
 
+static bool v8js_ini_to_bool(const zend_string *new_value) /* {{{ */
+{
+	if (new_value->len == 2 && strcasecmp("on", new_value->val) == 0) {
+		return true;
+    } else if (new_value->len == 3 && strcasecmp("yes", new_value->val) == 0) {
+		return true;
+	} else if (new_value->len == 4 && strcasecmp("true", new_value->val) == 0) {
+		return true;
+	} else {
+		return (bool) atoi(new_value->val);
+	}
+}
+/* }}} */
+
 static ZEND_INI_MH(v8js_OnUpdateUseDate) /* {{{ */
 {
-	bool value;
-	if (new_value->len == 2 && strcasecmp("on", new_value->val) == 0) {
-		value = (bool) 1;
-    } else if (new_value->len == 3 && strcasecmp("yes", new_value->val) == 0) {
-		value = (bool) 1;
-	} else if (new_value->len == 4 && strcasecmp("true", new_value->val) == 0) {
-		value = (bool) 1;
-	} else {
-		value = (bool) atoi(new_value->val);
-	}
-	V8JSG(use_date) = value;
+	V8JSG(use_date) = v8js_ini_to_bool(new_value);
 	return SUCCESS;
 }
 /* }}} */
 
 static ZEND_INI_MH(v8js_OnUpdateUseArrayAccess) /* {{{ */
 {
-	bool value;
-	if (new_value->len == 2 && strcasecmp("on", new_value->val) == 0) {
-		value = (bool) 1;
-    } else if (new_value->len == 3 && strcasecmp("yes", new_value->val) == 0) {
-		value = (bool) 1;
-	} else if (new_value->len == 4 && strcasecmp("true", new_value->val) == 0) {
-		value = (bool) 1;
-	} else {
-		value = (bool) atoi(new_value->val);
-	}
-	V8JSG(use_array_access) = value;
+	V8JSG(use_array_access) = v8js_ini_to_bool(new_value);
+	return SUCCESS;
+}
+/* }}} */
+
+static ZEND_INI_MH(v8js_OnUpdateCompatExceptions) /* {{{ */
+{
+	V8JSG(compat_php_exceptions) = v8js_ini_to_bool(new_value);
 	return SUCCESS;
 }
 /* }}} */
@@ -85,6 +107,7 @@ ZEND_INI_BEGIN() /* {{{ */
 	ZEND_INI_ENTRY("v8js.flags", NULL, ZEND_INI_ALL, v8js_OnUpdateV8Flags)
 	ZEND_INI_ENTRY("v8js.use_date", "0", ZEND_INI_ALL, v8js_OnUpdateUseDate)
 	ZEND_INI_ENTRY("v8js.use_array_access", "0", ZEND_INI_ALL, v8js_OnUpdateUseArrayAccess)
+	ZEND_INI_ENTRY("v8js.compat_php_exceptions", "0", ZEND_INI_ALL, v8js_OnUpdateCompatExceptions)
 ZEND_INI_END()
 /* }}} */
 
@@ -119,6 +142,35 @@ PHP_MINIT_FUNCTION(v8js)
 static PHP_MSHUTDOWN_FUNCTION(v8js)
 {
 	UNREGISTER_INI_ENTRIES();
+
+	bool v8_initialized;
+
+#ifdef ZTS
+	v8_initialized = v8js_process_globals.v8_initialized;
+#else
+	v8_initialized = V8JSG(v8_initialized);
+#endif
+
+	if(v8_initialized) {
+		v8::V8::Dispose();
+#if !defined(_WIN32) && PHP_V8_API_VERSION >= 3029036
+		v8::V8::ShutdownPlatform();
+		// @fixme call virtual destructor somehow
+		//delete v8js_process_globals.v8_platform;
+#endif
+	}
+
+	if (v8js_process_globals.v8_flags) {
+		free(v8js_process_globals.v8_flags);
+		v8js_process_globals.v8_flags = NULL;
+	}
+
+	if (v8js_process_globals.extensions) {
+		zend_hash_destroy(v8js_process_globals.extensions);
+		free(v8js_process_globals.extensions);
+		v8js_process_globals.extensions = NULL;
+	}
+
 	return SUCCESS;
 }
 /* }}} */
@@ -174,9 +226,7 @@ static PHP_GINIT_FUNCTION(v8js)
 	  run the destructors manually.
 	*/
 #ifdef ZTS
-	v8js_globals->extensions = NULL;
 	v8js_globals->v8_initialized = 0;
-	v8js_globals->v8_flags = NULL;
 
 	v8js_globals->timer_thread = NULL;
 	v8js_globals->timer_stop = false;
@@ -192,29 +242,10 @@ static PHP_GINIT_FUNCTION(v8js)
  */
 static PHP_GSHUTDOWN_FUNCTION(v8js)
 {
-	if (v8js_globals->extensions) {
-		zend_hash_destroy(v8js_globals->extensions);
-		free(v8js_globals->extensions);
-		v8js_globals->extensions = NULL;
-	}
-
-	if (v8js_globals->v8_flags) {
-		free(v8js_globals->v8_flags);
-		v8js_globals->v8_flags = NULL;
-	}
-
 #ifdef ZTS
 	v8js_globals->timer_stack.~deque();
 	v8js_globals->timer_mutex.~mutex();
 #endif
-
-	if (v8js_globals->v8_initialized) {
-		v8::V8::Dispose();
-#if !defined(_WIN32) && PHP_V8_API_VERSION >= 3029036
-		v8::V8::ShutdownPlatform();
-		delete v8js_globals->v8_platform;
-#endif
-	}
 }
 /* }}} */
 
