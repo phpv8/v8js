@@ -110,17 +110,6 @@ int main ()
     AC_MSG_ERROR([could not determine libv8 version])
   fi
 
-  AC_CACHE_CHECK(for debuggersupport in v8, ac_cv_v8_debuggersupport, [
-AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <v8-debug.h>]],
-                               [[v8::Debug::DisableAgent()]])],
-    [ac_cv_v8_debuggersupport=yes],
-    [ac_cv_v8_debuggersupport=no])
-])
-
-  if test "$ac_cv_v8_debuggersupport" = "yes"; then
-    AC_DEFINE([ENABLE_DEBUGGER_SUPPORT], [1], [Enable debugger support in V8Js])
-  fi
-
   AC_LANG_RESTORE
   LIBS=$old_LIBS
   LDFLAGS=$old_LDFLAGS
@@ -170,7 +159,6 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <v8-debug.h>]],
     v8js_class.cc			\
     v8js_commonjs.cc		\
     v8js_convert.cc			\
-    v8js_debug.cc			\
     v8js_exceptions.cc		\
     v8js_methods.cc			\
     v8js_object_export.cc	\

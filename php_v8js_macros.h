@@ -74,10 +74,6 @@ extern "C" {
 #define V8JS_FLAG_FORCE_ARRAY	(1<<1)
 #define V8JS_FLAG_PROPAGATE_PHP_EXCEPTIONS	(1<<2)
 
-#define V8JS_DEBUG_AUTO_BREAK_NEVER		0
-#define V8JS_DEBUG_AUTO_BREAK_ONCE		1
-#define V8JS_DEBUG_AUTO_BREAK_ALWAYS	2
-
 /* Convert zval into V8 value */
 v8::Handle<v8::Value> zval_to_v8js(zval *, v8::Isolate * TSRMLS_DC);
 
