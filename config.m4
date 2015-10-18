@@ -46,12 +46,32 @@ if test "$PHP_V8JS" != "no"; then
     CPPFLAGS=$old_CPPFLAGS
   ]);
 
-  AC_CACHE_CHECK(how to disable c++11 narrowing warning, ac_cv_v8_narrowing, [
+  AC_CACHE_CHECK(how to allow c++11 narrowing, ac_cv_v8_narrowing, [
     ac_cv_v8_narrowing=""
     old_CXXFLAGS=$CXXFLAGS
     AC_LANG_PUSH([C++])
-    CXXFLAGS="-Wno-c++11-narrowing"
-    AC_TRY_RUN([int main() { unsigned int a[1] = { -1 }; (void) a; return 0; }],[ac_cv_v8_narrowing="-Wno-c++11-narrowing"],[],[])
+    CXXFLAGS="-std="$ac_cv_v8_cstd
+    AC_TRY_RUN([int main() {
+        struct { unsigned int x; } foo = {-1};
+        (void) foo;
+        return 0;
+    }], [ ac_cv_v8_narrowing="" ], [
+        CXXFLAGS="-Wno-c++11-narrowing -std="$ac_cv_v8_cstd
+        AC_TRY_RUN([int main() {
+            struct { unsigned int x; } foo = {-1};
+            (void) foo;
+            return 0;
+        }], [ ac_cv_v8_narrowing="-Wno-c++11-narrowing" ], [
+            CXXFLAGS="-Wno-narrowing -std="$ac_cv_v8_cstd
+            AC_TRY_RUN([int main() {
+                struct { unsigned int x; } foo = {-1};
+                (void) foo;
+                return 0;
+            }], [ ac_cv_v8_narrowing="-Wno-narrowing" ], [
+                AC_MSG_ERROR([cannot compile with narrowing])
+            ], [])
+        ], [])
+    ], [])
     AC_LANG_POP([C++])
     CXXFLAGS=$old_CXXFLAGS
   ]);
