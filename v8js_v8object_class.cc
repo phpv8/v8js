@@ -63,7 +63,7 @@ static int v8js_v8object_has_property(zval *object, zval *member, int has_set_ex
 	V8JS_CTX_PROLOGUE_EX(obj->ctx, retval);
 	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
-	if (Z_TYPE_P(member) == IS_STRING && v8obj->IsObject() && !v8obj->IsFunction())
+	if (Z_TYPE_P(member) == IS_STRING && v8obj->IsObject())
 	{
 
 		v8::Local<v8::Object> jsObj = v8obj->ToObject();
@@ -123,7 +123,7 @@ static zval *v8js_v8object_read_property(zval *object, zval *member, int type ZE
 	V8JS_CTX_PROLOGUE_EX(obj->ctx, retval);
 	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
-	if (Z_TYPE_P(member) == IS_STRING && v8obj->IsObject() && !v8obj->IsFunction())
+	if (Z_TYPE_P(member) == IS_STRING && v8obj->IsObject())
 	{
 
 		v8::Local<v8::Object> jsObj = v8obj->ToObject();
@@ -166,7 +166,7 @@ static void v8js_v8object_write_property(zval *object, zval *member, zval *value
 	V8JS_CTX_PROLOGUE(obj->ctx);
 	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
-	if (v8obj->IsObject() && !v8obj->IsFunction()) {
+	if (v8obj->IsObject()) {
 		v8obj->ToObject()->ForceSet(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)), zval_to_v8js(value, isolate TSRMLS_CC));
 	}
 }
@@ -185,7 +185,7 @@ static void v8js_v8object_unset_property(zval *object, zval *member ZEND_HASH_KE
 	V8JS_CTX_PROLOGUE(obj->ctx);
 	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
-	if (v8obj->IsObject() && !v8obj->IsFunction()) {
+	if (v8obj->IsObject()) {
 		v8obj->ToObject()->Delete(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)));
 	}
 }
