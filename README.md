@@ -22,6 +22,10 @@ Minimum requirements
 	V8 implements ECMAScript as specified in ECMA-262, 5th edition.
     This extension makes use of V8 isolates to ensure separation between multiple V8Js instances and uses the new isolate-based mechanism to throw exceptions, hence the need for 3.24.6 or above.
 
+    V8 releases are published rather quickly and the V8 team usually provides security support
+    for the version line shipped with the Chrome browser (stable channel) and newer (only).
+    For a version overview see https://omahaproxy.appspot.com/.
+
 - PHP 5.3.3+
 
   This embedded implementation of the V8 engine uses thread locking so it works with ZTS enabled.
