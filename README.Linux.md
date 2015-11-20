@@ -38,6 +38,8 @@ sudo cp -R include/* /usr/include
 echo -e "create /usr/lib/libv8_libplatform.a\naddlib out/native/obj.target/tools/gyp/libv8_libplatform.a\nsave\nend" | sudo ar -M
 ```
 
+Then add `extension=v8js.so` to your php.ini file. If you have a separate configuration for CLI, add it there also.
+
 * If the V8 library is newer than 4.4.9.1 you need to pass `snapshot=off` to
   `make`, otherwise the V8 library will not be usable
   (see V8 [Issue 4192](https://code.google.com/p/v8/issues/detail?id=4192))
