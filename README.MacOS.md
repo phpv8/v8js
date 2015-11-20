@@ -3,8 +3,11 @@ V8Js on MacOS
 
 Installation of V8Js on MacOS is pretty much straight forward.
 
-First of all you need a pretty fresh installation of v8 library.
-If you have brew around, just `brew install v8` and you should be done.
+If you have [brew](https://brew.sh) around, just `brew install
+php56-v8js` (or `php54-v8js` / `php55-v8js` depending on your PHP
+version) and you should be done. This will install a recent version
+of V8 along with this extension.
+
 Otherwise you need to compile latest v8 manually.
 
 Compile latest v8
