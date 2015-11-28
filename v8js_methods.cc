@@ -138,7 +138,7 @@ static void v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int leve
 		V8JS_GET_CLASS_NAME(cname, object);
 		int hash = object->GetIdentityHash();
 
-		if (var->IsFunction())
+		if (var->IsFunction() && strcmp(ToCString(cname), "Closure") != 0)
 		{
 			v8::String::Utf8Value csource(object->ToString());
 			php_printf("object(Closure)#%d {\n%*c%s\n", hash, level * 2 + 2, ' ', ToCString(csource));
