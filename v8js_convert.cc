@@ -129,7 +129,7 @@ v8::Handle<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate TSRMLS_DC) 
 			break;
 
 		case IS_STRING:
-			jsValue = V8JS_STRL(Z_STRVAL_P(value), Z_STRLEN_P(value));
+			jsValue = V8JS_ZSTR(Z_STR_P(value));
 			break;
 
 		case IS_LONG:

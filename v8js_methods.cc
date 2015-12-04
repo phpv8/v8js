@@ -325,7 +325,7 @@ V8JS_METHOD(require)
 	// Set script identifier
 	v8::Local<v8::String> sname = V8JS_SYM("require");
 
-	v8::Local<v8::String> source = V8JS_STRL(Z_STRVAL(module_code), Z_STRLEN(module_code));
+	v8::Local<v8::String> source = V8JS_ZSTR(Z_STR(module_code));
 	zval_ptr_dtor(&module_code);
 
 	// Create and compile script

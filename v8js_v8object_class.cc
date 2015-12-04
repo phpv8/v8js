@@ -67,7 +67,7 @@ static int v8js_v8object_has_property(zval *object, zval *member, int has_set_ex
 	{
 
 		v8::Local<v8::Object> jsObj = v8obj->ToObject();
-		v8::Local<v8::String> jsKey = V8JS_STRL(Z_STRVAL_P(member), Z_STRLEN_P(member));
+		v8::Local<v8::String> jsKey = V8JS_ZSTR(Z_STR_P(member));
 		v8::Local<v8::Value> jsVal;
 
 		/* Skip any prototype properties */
@@ -126,7 +126,7 @@ static zval *v8js_v8object_read_property(zval *object, zval *member, int type, v
 	{
 
 		v8::Local<v8::Object> jsObj = v8obj->ToObject();
-		v8::Local<v8::String> jsKey = V8JS_STRL(Z_STRVAL_P(member), Z_STRLEN_P(member));
+		v8::Local<v8::String> jsKey = V8JS_ZSTR(Z_STR_P(member));
 		v8::Local<v8::Value> jsVal;
 
 		/* Skip any prototype properties */
