@@ -59,10 +59,10 @@ static ZEND_INI_MH(v8js_OnUpdateV8Flags) /* {{{ */
 			free(v8js_process_globals.v8_flags);
 			v8js_process_globals.v8_flags = NULL;
 		}
-		if (!new_value->val[0]) {
+		if (!ZSTR_VAL(new_value)[0]) {
 			return FAILURE;
 		}
-		v8js_process_globals.v8_flags = zend_strndup(new_value->val, new_value->len);
+		v8js_process_globals.v8_flags = zend_strndup(ZSTR_VAL(new_value), ZSTR_LEN(new_value));
 	}
 
 	return SUCCESS;
@@ -70,14 +70,14 @@ static ZEND_INI_MH(v8js_OnUpdateV8Flags) /* {{{ */
 
 static bool v8js_ini_to_bool(const zend_string *new_value) /* {{{ */
 {
-	if (new_value->len == 2 && strcasecmp("on", new_value->val) == 0) {
+	if (ZSTR_LEN(new_value) == 2 && strcasecmp("on", ZSTR_VAL(new_value)) == 0) {
 		return true;
-    } else if (new_value->len == 3 && strcasecmp("yes", new_value->val) == 0) {
+    } else if (ZSTR_LEN(new_value) == 3 && strcasecmp("yes", ZSTR_VAL(new_value)) == 0) {
 		return true;
-	} else if (new_value->len == 4 && strcasecmp("true", new_value->val) == 0) {
+	} else if (ZSTR_LEN(new_value) == 4 && strcasecmp("true", ZSTR_VAL(new_value)) == 0) {
 		return true;
 	} else {
-		return (bool) atoi(new_value->val);
+		return (bool) atoi(ZSTR_VAL(new_value));
 	}
 }
 /* }}} */
