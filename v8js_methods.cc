@@ -326,7 +326,7 @@ V8JS_METHOD(require)
 	// Enter the module context
 	v8::Context::Scope scope(context);
 	// Set script identifier
-	v8::Local<v8::String> sname = V8JS_SYM("require");
+	v8::Local<v8::String> sname = V8JS_SYM(normalised_module_id);
 
 	v8::Local<v8::String> source = V8JS_STRL(Z_STRVAL_P(module_code), Z_STRLEN_P(module_code));
 	zval_ptr_dtor(&module_code);
