@@ -297,6 +297,7 @@ V8JS_METHOD(require)
 	// Create a template for the global object and set the built-in global functions
 	v8::Handle<v8::ObjectTemplate> global = v8::ObjectTemplate::New();
 	global->Set(V8JS_SYM("print"), v8::FunctionTemplate::New(isolate, V8JS_MN(print)), v8::ReadOnly);
+	global->Set(V8JS_SYM("var_dump"), v8::FunctionTemplate::New(isolate, V8JS_MN(var_dump)), v8::ReadOnly);
 	global->Set(V8JS_SYM("sleep"), v8::FunctionTemplate::New(isolate, V8JS_MN(sleep)), v8::ReadOnly);
 	global->Set(V8JS_SYM("require"), v8::FunctionTemplate::New(isolate, V8JS_MN(require), v8::External::New(isolate, c)), v8::ReadOnly);
 
