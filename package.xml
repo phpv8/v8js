@@ -16,11 +16,11 @@
   <email>stesie@php.net</email>
   <active>yes</active>
  </lead>
- <date>2015-10-11</date>
- <time>21:59:47</time>
+ <date>2015-12-04</date>
+ <time>21:06:22</time>
  <version>
-  <release>0.3.0</release>
-  <api>0.3.0</api>
+  <release>1.0.0</release>
+  <api>1.0.0</api>
  </version>
  <stability>
   <release>stable</release>
@@ -28,8 +28,7 @@
  </stability>
  <license uri="http://www.php.net/license">The MIT License (MIT)</license>
  <notes>
-- Fix multi-threading with pthreads extension
-- Remove v8 debug agent support (which is unsupported by V8 since 3.28.4)
+First PHP 7 release
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -80,7 +79,7 @@
    <file baseinstalldir="/" md5sum="5edcd58deda3d3532e425c6a1c56e97a" name="tests/context_preserving.phpt" role="test" />
    <file baseinstalldir="/" md5sum="887e3e03d1e589ab328479f7b1fc45fd" name="tests/context_separation.phpt" role="test" />
    <file baseinstalldir="/" md5sum="86d83d8b84a3ff18f176b7dcaf5b0656" name="tests/context_temp_creation.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="8e74510469c209e5f7ecc227bb2cc848" name="tests/ctx_lifetime.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="aeb400eda3141f45562d4e20bc296f5c" name="tests/ctx_lifetime.phpt" role="test" />
    <file baseinstalldir="/" md5sum="970bc5edd6c1578c8b6a8d966475f514" name="tests/datetime_pass.phpt" role="test" />
    <file baseinstalldir="/" md5sum="8dc08c1a14b4771ec6c2d66663a508d3" name="tests/derived_class_properties.phpt" role="test" />
    <file baseinstalldir="/" md5sum="a4ed3b1eeca821d2464fbc841313adb9" name="tests/derived_class_properties_extra.phpt" role="test" />
@@ -99,18 +98,19 @@
    <file baseinstalldir="/" md5sum="b2853876eaf71577361e443f1be1fc7d" name="tests/execute_flags_property_writing.phpt" role="test" />
    <file baseinstalldir="/" md5sum="c6bb03e78b889428564d43a918c6579d" name="tests/extensions_basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="f139b05a86a9f3495493f1232d8296d7" name="tests/extensions_circular_dependency.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="16b5e55a9df752469db6da67e4652074" name="tests/extensions_error.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="3768e039e80c57683b46d59e009734cd" name="tests/extensions_error.phpt" role="test" />
    <file baseinstalldir="/" md5sum="11390b75f900defae70e86fbcb41d4fe" name="tests/fatal_error_ignore_non_fatals.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="d2e64a253ef63fa1503bd5ccd87f2dc6" name="tests/fatal_error_no_uninstall_inner_frame.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="694f603b037e2337bf82999c6be8e215" name="tests/fatal_error_recursive.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="e6e1e832922bb0fdf3ca32a89d5d17ae" name="tests/fatal_error_rethrow.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="fb5b3942901fbd6b9bbfed459321ea7f" name="tests/fatal_error_uninstall_in_first_frame.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="d9448b36c02ae486f241df420465681f" name="tests/fatal_error_v8function.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="87417bc1097bba05db7b79bb9a605c06" name="tests/fatal_error_no_uninstall_inner_frame.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="9228a7cd3419eb12e84d633fbd89b660" name="tests/fatal_error_recursive.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="443a8c0a869058d221df1ba75928686e" name="tests/fatal_error_rethrow.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="469d73bc574fe769779bfce04bbb8d22" name="tests/fatal_error_uninstall_in_first_frame.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="60992f6351331f7277a3ddc0dea3a075" name="tests/fatal_error_v8function.phpt" role="test" />
    <file baseinstalldir="/" md5sum="d78527c45893c7715300aceca740c13f" name="tests/function_call.phpt" role="test" />
    <file baseinstalldir="/" md5sum="aab757c4eccb0f11fe0e9ef7b5e3e7da" name="tests/function_passback.phpt" role="test" />
    <file baseinstalldir="/" md5sum="1c821173d7690186753414f4ca4a58e6" name="tests/function_passback2.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="293a1c371fbe4b3ed31e3977db3bc43b" name="tests/function_properties.phpt" role="test" />
    <file baseinstalldir="/" md5sum="a5b1cef40ecaa8bd86ec587c779bdeb4" name="tests/get_accessor.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="4a1af9be59499d70d73c9bf211b8ebf0" name="tests/get_constructor.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="b3de35c5e6b1e2e676cf50d596cd2c57" name="tests/get_constructor.phpt" role="test" />
    <file baseinstalldir="/" md5sum="7d240e23d061f59599109cc679084da4" name="tests/has_property_after_dispose.phpt" role="test" />
    <file baseinstalldir="/" md5sum="1443aef2fda8793abd79c06a29639797" name="tests/inheritance_basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="afdb74aca312497cce114a8d9dba6ee9" name="tests/issue_116-v8function-injection.phpt" role="test" />
@@ -123,7 +123,7 @@
    <file baseinstalldir="/" md5sum="8b907af100ba9d4eea51b9059c8c7fdb" name="tests/js-construct-with-ctor.phpt" role="test" />
    <file baseinstalldir="/" md5sum="46d8c3c3efb87cb310af0d9dbcd84431" name="tests/leak-php-object.phpt" role="test" />
    <file baseinstalldir="/" md5sum="23fd9824ef435408ca93c01a79247237" name="tests/long.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="1669b54b8e17c12ba4ba93a76c50f864" name="tests/magic_func.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="8fb9e33bf07c2e4fdc7dee4f499fded7" name="tests/magic_func.phpt" role="test" />
    <file baseinstalldir="/" md5sum="4b4649efff8a97cb6ac60e78d70af3df" name="tests/memory_limit.phpt" role="test" />
    <file baseinstalldir="/" md5sum="4ce74d22310618686e37829a24c7ce8d" name="tests/multi-object.phpt" role="test" />
    <file baseinstalldir="/" md5sum="34e4df80d655576e146732118d29880e" name="tests/multi.phpt" role="test" />
@@ -138,7 +138,7 @@
    <file baseinstalldir="/" md5sum="bc07bbc424d078d3d0590540a67648ba" name="tests/php_exceptions_002.phpt" role="test" />
    <file baseinstalldir="/" md5sum="3913092b6336924271fd9315a87d0973" name="tests/php_exceptions_003.phpt" role="test" />
    <file baseinstalldir="/" md5sum="66c0769781344af35f63d5d1b7a50852" name="tests/php_exceptions_004.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="610889e09e1579075ef973ef41883e8f" name="tests/php_exceptions_005.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="2ba12220df03a7f00f2b372de2669d8b" name="tests/php_exceptions_005.phpt" role="test" />
    <file baseinstalldir="/" md5sum="59e80f305f84f2effbac279261f8c5a6" name="tests/php_exceptions_006.phpt" role="test" />
    <file baseinstalldir="/" md5sum="c513770deccefc87636a30aa4329f779" name="tests/php_exceptions_basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="3cc6c105f2413e4270eba038e6a2dffd" name="tests/property_exists.phpt" role="test" />
@@ -149,7 +149,7 @@
    <file baseinstalldir="/" md5sum="4dd56ff553d5a79c2157848d51a7bd52" name="tests/property_visibility.phpt" role="test" />
    <file baseinstalldir="/" md5sum="b1b46869cf9db29d38c50964a9fea8f7" name="tests/property_visibility__get.phpt" role="test" />
    <file baseinstalldir="/" md5sum="76bdcf96941321e372516413f65c8576" name="tests/property_visibility__set.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="794b8e67cad67f72a5c0786b9ba72547" name="tests/pthreads_001.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="6fffe3110dcad47ed41cb7d026b97e49" name="tests/pthreads_001.phpt" role="test" />
    <file baseinstalldir="/" md5sum="5a97aad8f07d8a9a67882b614e956c72" name="tests/regression_121.phpt" role="test" />
    <file baseinstalldir="/" md5sum="3b256c85a054b728a37b3429d4157f02" name="tests/return_value.phpt" role="test" />
    <file baseinstalldir="/" md5sum="1a9c261661b08cfc6879f7f427b9f0de" name="tests/serialize_001.phpt" role="test" />
@@ -171,46 +171,46 @@
    <file baseinstalldir="/" md5sum="35ce3816ae00e697fca26142c46e0c79" name="tests/v8_write_property.phpt" role="test" />
    <file baseinstalldir="/" md5sum="ae504a63e5ff800e3aa7d529835d0e8e" name="tests/variable_passing.phpt" role="test" />
    <file baseinstalldir="/" md5sum="1bd7738aeeb5cf80d80561554f59f2ed" name="tests/var_dump.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="8d1bdd18cc65d7328876dffca99cf0a9" name="config.m4" role="src" />
+   <file baseinstalldir="/" md5sum="df4e506e7db2d49adea5e3c99e87e278" name="config.m4" role="src" />
    <file baseinstalldir="/" md5sum="dd848985051c6e0db6e8037d5b9529da" name="config.w32" role="src" />
    <file baseinstalldir="/" md5sum="cea72666538d5b0b80a64ccdbda24919" name="CREDITS" role="doc" />
    <file baseinstalldir="/" md5sum="9f5b5f41204bcde55d9df87d5a970b30" name="LICENSE" role="doc" />
    <file baseinstalldir="/" md5sum="679b9046688ed6f60969415b182b1cac" name="Makefile.frag" role="src" />
    <file baseinstalldir="/" md5sum="31e331386def7ce98943694151c0d5cb" name="Makefile.travis" role="src" />
    <file baseinstalldir="/" md5sum="0e23fa6446e52a3b1cff8b18a6e0bd79" name="php_v8js.h" role="src" />
-   <file baseinstalldir="/" md5sum="2d42ed24043ef4a6ab4bccdbda45eb89" name="php_v8js_macros.h" role="src" />
-   <file baseinstalldir="/" md5sum="ec19e63ca9310bfc4dc4dbd357c779ae" name="README.Linux.md" role="doc" />
-   <file baseinstalldir="/" md5sum="4a65a3f9995d325a2c2ccb23224ea503" name="README.MacOS.md" role="doc" />
-   <file baseinstalldir="/" md5sum="b390530f1587c71e605806601a7f13eb" name="README.md" role="doc" />
+   <file baseinstalldir="/" md5sum="6b8c3333f9072da0d1b634e239cdfee1" name="php_v8js_macros.h" role="src" />
+   <file baseinstalldir="/" md5sum="c7a1add2842cafc92077a7861507d280" name="README.Linux.md" role="doc" />
+   <file baseinstalldir="/" md5sum="d686d8e52af92521d4b8b0e86d00c463" name="README.MacOS.md" role="doc" />
+   <file baseinstalldir="/" md5sum="3e3e340afbd3bfdddfe5cdf291156adb" name="README.md" role="doc" />
    <file baseinstalldir="/" md5sum="9839870e001306943797003e8828d855" name="README.Win32.md" role="doc" />
    <file baseinstalldir="/" md5sum="542f52c54898f33ac53b173970cba305" name="test.php" role="php" />
    <file baseinstalldir="/" md5sum="65294fadb5ed766094b1f587fc20ad37" name="TODO" role="doc" />
-   <file baseinstalldir="/" md5sum="16c060e49d1b2c477531758e1de4850e" name="v8js.cc" role="src" />
-   <file baseinstalldir="/" md5sum="358c628b2627319e40fd7e5092f19872" name="v8js_array_access.cc" role="src" />
+   <file baseinstalldir="/" md5sum="92ebbd6f929924b418bb5ef2d2e580da" name="v8js.cc" role="src" />
+   <file baseinstalldir="/" md5sum="f8537aa9cd858248cd66ae66227c7f6f" name="v8js_array_access.cc" role="src" />
    <file baseinstalldir="/" md5sum="7baf3fe5b77d1374b39a1d8332e05df4" name="v8js_array_access.h" role="src" />
-   <file baseinstalldir="/" md5sum="aa4bae42383773d1f769f44e0a28e484" name="v8js_class.cc" role="src" />
-   <file baseinstalldir="/" md5sum="444a6fda6259076cd2a419cf59ab2c42" name="v8js_class.h" role="src" />
+   <file baseinstalldir="/" md5sum="6c940f9e326b6d4b389b9cf252bbf3d5" name="v8js_class.cc" role="src" />
+   <file baseinstalldir="/" md5sum="2c4387b09786d13677d75e73a84159fd" name="v8js_class.h" role="src" />
    <file baseinstalldir="/" md5sum="88b49988a5ef55edbd7ba085e7857f64" name="v8js_commonjs.cc" role="src" />
    <file baseinstalldir="/" md5sum="32a5d1a65f64ec37ec294f496fc11ff1" name="v8js_commonjs.h" role="src" />
-   <file baseinstalldir="/" md5sum="c061344705c42fb705bffb2959fc1001" name="v8js_convert.cc" role="src" />
-   <file baseinstalldir="/" md5sum="40b66c44650a8127618c7fc48bf4b0b2" name="v8js_exceptions.cc" role="src" />
+   <file baseinstalldir="/" md5sum="129545eceaecb4f306dfb95d4719d138" name="v8js_convert.cc" role="src" />
+   <file baseinstalldir="/" md5sum="699aa404637bf8bbb6f558bc10b330ad" name="v8js_exceptions.cc" role="src" />
    <file baseinstalldir="/" md5sum="9d13bf5f413c2d76664670e847e1a801" name="v8js_exceptions.h" role="src" />
-   <file baseinstalldir="/" md5sum="9f3ad8c136cdc3ebc2bdf993491f9ad8" name="v8js_methods.cc" role="src" />
-   <file baseinstalldir="/" md5sum="d688b8eb822736d49f7282d22546d6bc" name="v8js_object_export.cc" role="src" />
+   <file baseinstalldir="/" md5sum="6dbc5eb83484d30b64de4d1b59439ae4" name="v8js_methods.cc" role="src" />
+   <file baseinstalldir="/" md5sum="402ea30fd661ba8e4dde1ec557c4bd84" name="v8js_object_export.cc" role="src" />
    <file baseinstalldir="/" md5sum="281fb591fbebc3d23e04196cdb3ec64a" name="v8js_object_export.h" role="src" />
-   <file baseinstalldir="/" md5sum="d96c0e1eeaf1693813236f7e5da61e09" name="v8js_timer.cc" role="src" />
-   <file baseinstalldir="/" md5sum="49f609c8cea6033f2ad1e6c9c829a571" name="v8js_timer.h" role="src" />
-   <file baseinstalldir="/" md5sum="6cde5b068dfce9026a3b43c5232d6b1c" name="v8js_v8.cc" role="src" />
-   <file baseinstalldir="/" md5sum="0c4829d52ff46116c381b1b66ec27541" name="v8js_v8.h" role="src" />
-   <file baseinstalldir="/" md5sum="82908f4e741755efa2aedfb486945a40" name="v8js_v8object_class.cc" role="src" />
-   <file baseinstalldir="/" md5sum="8a80d71ff40dfa833d3b58ac94475a9f" name="v8js_v8object_class.h" role="src" />
-   <file baseinstalldir="/" md5sum="29be67d9bf8bfb1642d1219356109063" name="v8js_variables.cc" role="src" />
+   <file baseinstalldir="/" md5sum="43a66123d59223a1e434a7e034f83b83" name="v8js_timer.cc" role="src" />
+   <file baseinstalldir="/" md5sum="5935c66a0bd8e819d35cf05d7a9e3c89" name="v8js_timer.h" role="src" />
+   <file baseinstalldir="/" md5sum="accff3ebd9fff8b97d5131c38e9e211c" name="v8js_v8.cc" role="src" />
+   <file baseinstalldir="/" md5sum="e551ee5b243164a3806a5b4ec4b2bf30" name="v8js_v8.h" role="src" />
+   <file baseinstalldir="/" md5sum="1d8d39dc6b70a1c6ba5b23ab35277f3a" name="v8js_v8object_class.cc" role="src" />
+   <file baseinstalldir="/" md5sum="f656fc7fb4544064750e4b1e6dffc930" name="v8js_v8object_class.h" role="src" />
+   <file baseinstalldir="/" md5sum="30c9197e2e2bd774edc92d5310f250b1" name="v8js_variables.cc" role="src" />
   </dir>
  </contents>
  <dependencies>
   <required>
    <php>
-    <min>5.4</min>
+    <min>7.0</min>
    </php>
    <pearinstaller>
     <min>1.4.0</min>
@@ -439,6 +439,21 @@
    <notes>
 - Fix multi-threading with pthreads extension
 - Remove v8 debug agent support (which is unsupported by V8 since 3.28.4)
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>1.0.0</release>
+    <api>1.0.0</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <date>2015-12-04</date>
+   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <notes>
+First PHP 7 release
    </notes>
   </release>
  </changelog>
