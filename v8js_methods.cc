@@ -8,6 +8,7 @@
   +----------------------------------------------------------------------+
   | Author: Jani Taskinen <jani.taskinen@iki.fi>                         |
   | Author: Patrick Reilly <preilly@php.net>                             |
+  | Author: Stefan Siegl <stesie@brokenpipe.de>                          |
   +----------------------------------------------------------------------+
 */
 
@@ -207,12 +208,106 @@ V8JS_METHOD(require)
 	}
 
 	v8::String::Utf8Value module_id_v8(info[0]);
-
 	const char *module_id = ToCString(module_id_v8);
-	char *normalised_path = (char *)emalloc(PATH_MAX);
-	char *module_name = (char *)emalloc(PATH_MAX);
+	char *normalised_path, *module_name;
 
-	v8js_commonjs_normalise_identifier(c->modules_base.back(), module_id, normalised_path, module_name);
+	if (c->module_normaliser == NULL) {
+		// No custom normalisation routine registered, use internal one
+		normalised_path = (char *)emalloc(PATH_MAX);
+		module_name = (char *)emalloc(PATH_MAX);
+
+		v8js_commonjs_normalise_identifier(c->modules_base.back(), module_id, normalised_path, module_name);
+	}
+	else {
+		// Call custom normaliser
+		int call_result;
+		zval *z_base, *z_module_id, *normaliser_result;
+
+		MAKE_STD_ZVAL(z_base);
+		MAKE_STD_ZVAL(z_module_id);
+
+		zend_try {
+			{
+				isolate->Exit();
+				v8::Unlocker unlocker(isolate);
+
+				ZVAL_STRING(z_base, c->modules_base.back(), 1);
+				ZVAL_STRING(z_module_id, module_id, 1);
+
+				zval **params[2] = {&z_base, &z_module_id};
+				call_result = call_user_function_ex(EG(function_table), NULL, c->module_normaliser,
+													&normaliser_result, 2, params, 0, NULL TSRMLS_CC);
+			}
+
+			isolate->Enter();
+
+			if (call_result == FAILURE) {
+				info.GetReturnValue().Set(isolate->ThrowException(V8JS_SYM("Module normaliser callback failed")));
+			}
+		}
+		zend_catch {
+			v8js_terminate_execution(isolate);
+			V8JSG(fatal_error_abort) = 1;
+			call_result = FAILURE;
+		}
+		zend_end_try();
+
+		zval_ptr_dtor(&z_base);
+		zval_ptr_dtor(&z_module_id);
+
+		if(call_result == FAILURE) {
+			return;
+		}
+
+		// Check if an exception was thrown
+		if (EG(exception)) {
+			// Clear the PHP exception and throw it in V8 instead
+			zend_clear_exception(TSRMLS_C);
+			info.GetReturnValue().Set(isolate->ThrowException(V8JS_SYM("Module normaliser callback exception")));
+			return;
+		}
+
+		if (Z_TYPE_P(normaliser_result) != IS_ARRAY) {
+			zval_ptr_dtor(&normaliser_result);
+			info.GetReturnValue().Set(isolate->ThrowException(V8JS_SYM("Module normaliser didn't return an array")));
+			return;
+		}
+
+		HashTable *ht = HASH_OF(normaliser_result);
+		int num_elements = zend_hash_num_elements(ht);
+
+		if(num_elements != 2) {
+			zval_ptr_dtor(&normaliser_result);
+			info.GetReturnValue().Set(isolate->ThrowException(V8JS_SYM("Module normaliser expected to return array of 2 strings")));
+			return;
+		}
+
+		zval **data;
+		ulong index = 0;
+		HashPosition pos;
+
+		for (zend_hash_internal_pointer_reset_ex(ht, &pos);
+			 SUCCESS == zend_hash_get_current_data_ex(ht, (void **) &data, &pos);
+			 zend_hash_move_forward_ex(ht, &pos)
+			 ) {
+
+			if (Z_TYPE_P(*data) != IS_STRING) {
+				convert_to_string(*data);
+			}
+
+			switch(index++) {
+			case 0: // normalised path
+				normalised_path = estrndup(Z_STRVAL_PP(data), Z_STRLEN_PP(data));
+				break;
+
+			case 1: // normalised module id
+				module_name = estrndup(Z_STRVAL_PP(data), Z_STRLEN_PP(data));
+				break;
+			}
+		}
+
+		zval_ptr_dtor(&normaliser_result);
+	}
 
 	char *normalised_module_id = (char *)emalloc(strlen(normalised_path)+1+strlen(module_name)+1);
 	*normalised_module_id = 0;
@@ -305,16 +400,6 @@ V8JS_METHOD(require)
 		convert_to_string(module_code);
 	}
 
-	// Check that some code has been returned
-	if (Z_STRLEN_P(module_code)==0) {
-		zval_ptr_dtor(&module_code);
-		efree(normalised_module_id);
-		efree(normalised_path);
-
-		info.GetReturnValue().Set(isolate->ThrowException(V8JS_SYM("Module loader callback did not return code")));
-		return;
-	}
-
 	// Create a template for the global object and set the built-in global functions
 	v8::Handle<v8::ObjectTemplate> global = v8::ObjectTemplate::New();
 	global->Set(V8JS_SYM("print"), v8::FunctionTemplate::New(isolate, V8JS_MN(print)), v8::ReadOnly);
@@ -347,7 +432,7 @@ V8JS_METHOD(require)
 	// Enter the module context
 	v8::Context::Scope scope(context);
 	// Set script identifier
-	v8::Local<v8::String> sname = V8JS_SYM(normalised_module_id);
+	v8::Local<v8::String> sname = V8JS_STR(normalised_module_id);
 
 	v8::Local<v8::String> source = V8JS_STRL(Z_STRVAL_P(module_code), Z_STRLEN_P(module_code));
 	zval_ptr_dtor(&module_code);
