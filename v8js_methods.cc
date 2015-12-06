@@ -305,16 +305,6 @@ V8JS_METHOD(require)
 		convert_to_string(module_code);
 	}
 
-	// Check that some code has been returned
-	if (Z_STRLEN_P(module_code)==0) {
-		zval_ptr_dtor(&module_code);
-		efree(normalised_module_id);
-		efree(normalised_path);
-
-		info.GetReturnValue().Set(isolate->ThrowException(V8JS_SYM("Module loader callback did not return code")));
-		return;
-	}
-
 	// Create a template for the global object and set the built-in global functions
 	v8::Handle<v8::ObjectTemplate> global = v8::ObjectTemplate::New();
 	global->Set(V8JS_SYM("print"), v8::FunctionTemplate::New(isolate, V8JS_MN(print)), v8::ReadOnly);
