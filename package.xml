@@ -16,11 +16,11 @@
   <email>stesie@php.net</email>
   <active>yes</active>
  </lead>
- <date>2015-10-11</date>
- <time>21:59:47</time>
+ <date>2015-12-07</date>
+ <time>13:25:37</time>
  <version>
-  <release>0.3.0</release>
-  <api>0.3.0</api>
+  <release>0.4.0</release>
+  <api>0.4.0</api>
  </version>
  <stability>
   <release>stable</release>
@@ -28,8 +28,13 @@
  </stability>
  <license uri="http://www.php.net/license">The MIT License (MIT)</license>
  <notes>
-- Fix multi-threading with pthreads extension
-- Remove v8 debug agent support (which is unsupported by V8 since 3.28.4)
+- Improve -Wno-c++11-narrowing/-Wno-narrowing flag detection (clang/gcc5 support)
+- Added ability to set properties on V8Function
+- CommonJS modules now have access to V8Js&apos; var_dump function
+- V8JsScriptExtensions now reference the normalised module id (instead of just &quot;require&quot;)
+- fatal PHP errors triggered in setModuleLoader callback are now handled gracefully
+- setModuleLoader callback is now allowed to return an empty string as source of module
+- V8Js&apos; internal module path normalisation may now be overrode using setModuleNormaliser
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -67,6 +72,11 @@
    <file baseinstalldir="/" md5sum="1f5c7e8895220923d0203653fbebfc6f" name="tests/closures_dynamic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="50f7ba3626131cf015e26b7dc296d20d" name="tests/commonjs_caching_001.phpt" role="test" />
    <file baseinstalldir="/" md5sum="9bcac28a73d4d274c0e62802fd7af96b" name="tests/commonjs_caching_002.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="77c254bf322cdc48f6ee84e49f72b0e2" name="tests/commonjs_cust_normalise_001.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="820ec5e2e6bef545fc60b96f1591d2a3" name="tests/commonjs_cust_normalise_002.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="aa4e50f6fd03eb209e9958b3ebbaca6e" name="tests/commonjs_cust_normalise_003.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="26e38626ad80e0d979d5353c6a703748" name="tests/commonjs_cust_normalise_004.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="c32417be448a71cd074e4f2ebdddb463" name="tests/commonjs_fatal_error.phpt" role="test" />
    <file baseinstalldir="/" md5sum="90c628544fa6f401221237511a9a4fb7" name="tests/commonjs_modules.phpt" role="test" />
    <file baseinstalldir="/" md5sum="24e2a74c0d15b94cbcdc926d1e19af0c" name="tests/commonjs_multiassign.phpt" role="test" />
    <file baseinstalldir="/" md5sum="1d7a8f251186c47ce92fe7b1fbb0abc0" name="tests/commonjs_normalise_001.phpt" role="test" />
@@ -74,6 +84,7 @@
    <file baseinstalldir="/" md5sum="8e0e5d784e6f7f896dcc94acbf909bbc" name="tests/commonjs_normalise_003.phpt" role="test" />
    <file baseinstalldir="/" md5sum="b573c7fa2e53c8d20eb88dfb747811fc" name="tests/commonjs_normalise_004.phpt" role="test" />
    <file baseinstalldir="/" md5sum="e9eb81a3065e2858d79fb772e837982c" name="tests/commonjs_normalise_005.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="f6f88200df5e00acd9e0642fe45ff935" name="tests/commonjs_source_naming.phpt" role="test" />
    <file baseinstalldir="/" md5sum="6980e6a4c02cf3de87c0eab762fe2a69" name="tests/compile_string.phpt" role="test" />
    <file baseinstalldir="/" md5sum="177659c1f2be8fb1b018341f896b7cd6" name="tests/compile_string_isolate.phpt" role="test" />
    <file baseinstalldir="/" md5sum="bf4fed6b841034477cb61e3303fb1362" name="tests/construct.phpt" role="test" />
@@ -109,6 +120,7 @@
    <file baseinstalldir="/" md5sum="d78527c45893c7715300aceca740c13f" name="tests/function_call.phpt" role="test" />
    <file baseinstalldir="/" md5sum="aab757c4eccb0f11fe0e9ef7b5e3e7da" name="tests/function_passback.phpt" role="test" />
    <file baseinstalldir="/" md5sum="1c821173d7690186753414f4ca4a58e6" name="tests/function_passback2.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="293a1c371fbe4b3ed31e3977db3bc43b" name="tests/function_properties.phpt" role="test" />
    <file baseinstalldir="/" md5sum="a5b1cef40ecaa8bd86ec587c779bdeb4" name="tests/get_accessor.phpt" role="test" />
    <file baseinstalldir="/" md5sum="4a1af9be59499d70d73c9bf211b8ebf0" name="tests/get_constructor.phpt" role="test" />
    <file baseinstalldir="/" md5sum="7d240e23d061f59599109cc679084da4" name="tests/has_property_after_dispose.phpt" role="test" />
@@ -171,38 +183,38 @@
    <file baseinstalldir="/" md5sum="35ce3816ae00e697fca26142c46e0c79" name="tests/v8_write_property.phpt" role="test" />
    <file baseinstalldir="/" md5sum="ae504a63e5ff800e3aa7d529835d0e8e" name="tests/variable_passing.phpt" role="test" />
    <file baseinstalldir="/" md5sum="1bd7738aeeb5cf80d80561554f59f2ed" name="tests/var_dump.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="8d1bdd18cc65d7328876dffca99cf0a9" name="config.m4" role="src" />
+   <file baseinstalldir="/" md5sum="df4e506e7db2d49adea5e3c99e87e278" name="config.m4" role="src" />
    <file baseinstalldir="/" md5sum="dd848985051c6e0db6e8037d5b9529da" name="config.w32" role="src" />
    <file baseinstalldir="/" md5sum="cea72666538d5b0b80a64ccdbda24919" name="CREDITS" role="doc" />
    <file baseinstalldir="/" md5sum="9f5b5f41204bcde55d9df87d5a970b30" name="LICENSE" role="doc" />
    <file baseinstalldir="/" md5sum="679b9046688ed6f60969415b182b1cac" name="Makefile.frag" role="src" />
    <file baseinstalldir="/" md5sum="31e331386def7ce98943694151c0d5cb" name="Makefile.travis" role="src" />
    <file baseinstalldir="/" md5sum="0e23fa6446e52a3b1cff8b18a6e0bd79" name="php_v8js.h" role="src" />
-   <file baseinstalldir="/" md5sum="2d42ed24043ef4a6ab4bccdbda45eb89" name="php_v8js_macros.h" role="src" />
-   <file baseinstalldir="/" md5sum="ec19e63ca9310bfc4dc4dbd357c779ae" name="README.Linux.md" role="doc" />
-   <file baseinstalldir="/" md5sum="4a65a3f9995d325a2c2ccb23224ea503" name="README.MacOS.md" role="doc" />
-   <file baseinstalldir="/" md5sum="b390530f1587c71e605806601a7f13eb" name="README.md" role="doc" />
+   <file baseinstalldir="/" md5sum="28f22e9d578b221b08827e2ac06b837e" name="php_v8js_macros.h" role="src" />
+   <file baseinstalldir="/" md5sum="c7a1add2842cafc92077a7861507d280" name="README.Linux.md" role="doc" />
+   <file baseinstalldir="/" md5sum="d686d8e52af92521d4b8b0e86d00c463" name="README.MacOS.md" role="doc" />
+   <file baseinstalldir="/" md5sum="559cef9c81676a7ac51b49c447154189" name="README.md" role="doc" />
    <file baseinstalldir="/" md5sum="9839870e001306943797003e8828d855" name="README.Win32.md" role="doc" />
    <file baseinstalldir="/" md5sum="542f52c54898f33ac53b173970cba305" name="test.php" role="php" />
    <file baseinstalldir="/" md5sum="65294fadb5ed766094b1f587fc20ad37" name="TODO" role="doc" />
    <file baseinstalldir="/" md5sum="16c060e49d1b2c477531758e1de4850e" name="v8js.cc" role="src" />
    <file baseinstalldir="/" md5sum="358c628b2627319e40fd7e5092f19872" name="v8js_array_access.cc" role="src" />
    <file baseinstalldir="/" md5sum="7baf3fe5b77d1374b39a1d8332e05df4" name="v8js_array_access.h" role="src" />
-   <file baseinstalldir="/" md5sum="aa4bae42383773d1f769f44e0a28e484" name="v8js_class.cc" role="src" />
-   <file baseinstalldir="/" md5sum="444a6fda6259076cd2a419cf59ab2c42" name="v8js_class.h" role="src" />
+   <file baseinstalldir="/" md5sum="3004e30d5dfaabd54fab285f59104ce5" name="v8js_class.cc" role="src" />
+   <file baseinstalldir="/" md5sum="b62ecc0e368b034abba637cb9e5a7ecd" name="v8js_class.h" role="src" />
    <file baseinstalldir="/" md5sum="88b49988a5ef55edbd7ba085e7857f64" name="v8js_commonjs.cc" role="src" />
    <file baseinstalldir="/" md5sum="32a5d1a65f64ec37ec294f496fc11ff1" name="v8js_commonjs.h" role="src" />
    <file baseinstalldir="/" md5sum="c061344705c42fb705bffb2959fc1001" name="v8js_convert.cc" role="src" />
    <file baseinstalldir="/" md5sum="40b66c44650a8127618c7fc48bf4b0b2" name="v8js_exceptions.cc" role="src" />
    <file baseinstalldir="/" md5sum="9d13bf5f413c2d76664670e847e1a801" name="v8js_exceptions.h" role="src" />
-   <file baseinstalldir="/" md5sum="9f3ad8c136cdc3ebc2bdf993491f9ad8" name="v8js_methods.cc" role="src" />
+   <file baseinstalldir="/" md5sum="87037219052ec5e5b4046fb35523f857" name="v8js_methods.cc" role="src" />
    <file baseinstalldir="/" md5sum="d688b8eb822736d49f7282d22546d6bc" name="v8js_object_export.cc" role="src" />
    <file baseinstalldir="/" md5sum="281fb591fbebc3d23e04196cdb3ec64a" name="v8js_object_export.h" role="src" />
    <file baseinstalldir="/" md5sum="d96c0e1eeaf1693813236f7e5da61e09" name="v8js_timer.cc" role="src" />
    <file baseinstalldir="/" md5sum="49f609c8cea6033f2ad1e6c9c829a571" name="v8js_timer.h" role="src" />
    <file baseinstalldir="/" md5sum="6cde5b068dfce9026a3b43c5232d6b1c" name="v8js_v8.cc" role="src" />
    <file baseinstalldir="/" md5sum="0c4829d52ff46116c381b1b66ec27541" name="v8js_v8.h" role="src" />
-   <file baseinstalldir="/" md5sum="82908f4e741755efa2aedfb486945a40" name="v8js_v8object_class.cc" role="src" />
+   <file baseinstalldir="/" md5sum="91e26333af0a407d46e7bab0701e8732" name="v8js_v8object_class.cc" role="src" />
    <file baseinstalldir="/" md5sum="8a80d71ff40dfa833d3b58ac94475a9f" name="v8js_v8object_class.h" role="src" />
    <file baseinstalldir="/" md5sum="29be67d9bf8bfb1642d1219356109063" name="v8js_variables.cc" role="src" />
   </dir>
@@ -439,6 +451,27 @@
    <notes>
 - Fix multi-threading with pthreads extension
 - Remove v8 debug agent support (which is unsupported by V8 since 3.28.4)
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>0.4.0</release>
+    <api>0.4.0</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <date>2015-12-07</date>
+   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <notes>
+- Improve -Wno-c++11-narrowing/-Wno-narrowing flag detection (clang/gcc5 support)
+- Added ability to set properties on V8Function
+- CommonJS modules now have access to V8Js&apos; var_dump function
+- V8JsScriptExtensions now reference the normalised module id (instead of just &quot;require&quot;)
+- fatal PHP errors triggered in setModuleLoader callback are now handled gracefully
+- setModuleLoader callback is now allowed to return an empty string as source of module
+- V8Js&apos; internal module path normalisation may now be overrode using setModuleNormaliser
    </notes>
   </release>
  </changelog>
