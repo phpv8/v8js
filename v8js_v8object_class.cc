@@ -302,12 +302,22 @@ static int v8js_v8object_call_method(char *method, INTERNAL_FUNCTION_PARAMETERS)
 
 		v8::Local<v8::String> method_name = V8JS_SYML(method, strlen(method));
 		v8::Local<v8::Object> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj)->ToObject();
+		v8::Local<v8::Object> thisObj;
 		v8::Local<v8::Function> cb;
 
 		if (method_name->Equals(V8JS_SYM(V8JS_V8_INVOKE_FUNC_NAME))) {
 			cb = v8::Local<v8::Function>::Cast(v8obj);
 		} else {
 			cb = v8::Local<v8::Function>::Cast(v8obj->Get(method_name));
+		}
+
+		// If a method is invoked on V8Object, then set the object itself as
+		// "this" on JS side.  Otherwise fall back to global object.
+		if (obj->std.ce == php_ce_v8object) {
+			thisObj = v8obj;
+		}
+		else {
+			thisObj = V8JS_GLOBAL(isolate);
 		}
 
 		v8::Local<v8::Value> *jsArgv = static_cast<v8::Local<v8::Value> *>(alloca(sizeof(v8::Local<v8::Value>) * argc));
@@ -318,7 +328,7 @@ static int v8js_v8object_call_method(char *method, INTERNAL_FUNCTION_PARAMETERS)
 			jsArgv[i] = v8::Local<v8::Value>::New(isolate, zval_to_v8js(*argv[i], isolate TSRMLS_CC));
 		}
 
-		return cb->Call(V8JS_GLOBAL(isolate), argc, jsArgv);
+		return cb->Call(thisObj, argc, jsArgv);
 	};
 
 	v8js_v8_call(obj->ctx, &return_value, obj->flags, obj->ctx->time_limit, obj->ctx->memory_limit, v8_call TSRMLS_CC);
