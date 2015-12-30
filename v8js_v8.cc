@@ -169,7 +169,6 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 	/* There was pending exception left from earlier executions -> throw to PHP */
 	if (Z_TYPE(c->pending_exception) == IS_OBJECT) {
 		zend_throw_exception_object(&c->pending_exception TSRMLS_CC);
-		zval_dtor(&c->pending_exception);
 		ZVAL_NULL(&c->pending_exception);
 	}
 
