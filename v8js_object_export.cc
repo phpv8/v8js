@@ -675,7 +675,7 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> property
 					zval php_ret_value;
 					zend_call_method_with_2_params(&zobject, ce, &ce->__set, ZEND_SET_FUNC_NAME, &php_ret_value, &zname, &php_value);
 					ret_value = zval_to_v8js(&php_ret_value, isolate TSRMLS_CC);
-					zval_ptr_dtor(&php_value);
+					zval_ptr_dtor(&php_ret_value);
 				}
 			}
 
