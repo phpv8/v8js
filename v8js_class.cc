@@ -301,14 +301,10 @@ static int v8js_create_ext_strarr(const char ***retval, int count, HashTable *ht
 
 static void v8js_fatal_error_handler(const char *location, const char *message) /* {{{ */
 {
-	v8::Isolate *isolate = v8::Isolate::GetCurrent();
-	if (isolate) {
-		isolate->Exit();
-	}
 	if (location) {
-		zend_error(E_ERROR, "%s %s", location, message);
+		zend_error(E_WARNING, "Fatal V8 error in %s: %s", location, message);
 	} else {
-		zend_error(E_ERROR, "%s", message);
+		zend_error(E_WARNING, "Fatal V8 error: %s", message);
 	}
 }
 /* }}} */
