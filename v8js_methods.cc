@@ -92,10 +92,20 @@ static void v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int leve
 	}
 
 	v8::TryCatch try_catch; /* object.toString() can throw an exception */
-	v8::Local<v8::String> details = var->ToDetailString();
-	if (try_catch.HasCaught()) {
-		details = V8JS_SYM("<toString threw exception>");
+	v8::Local<v8::String> details;
+
+	if(var->IsRegExp()) {
+		v8::RegExp *re = v8::RegExp::Cast(*var);
+		details = re->GetSource();
 	}
+	else {
+		details = var->ToDetailString();
+
+		if (try_catch.HasCaught()) {
+			details = V8JS_SYM("<toString threw exception>");
+		}
+	}
+
 	v8::String::Utf8Value str(details);
 	const char *valstr = ToCString(str);
 	size_t valstr_len = details->ToString()->Utf8Length();
@@ -113,7 +123,7 @@ static void v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int leve
 	}
 	else if (var->IsRegExp())
 	{
-		php_printf("regexp(%s)\n", valstr);
+		php_printf("regexp(/%s/)\n", valstr);
 	}
 	else if (var->IsArray())
 	{
