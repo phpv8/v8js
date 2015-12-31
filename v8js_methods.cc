@@ -354,27 +354,29 @@ V8JS_METHOD(require)
 	int call_result;
 	zval params[1];
 
-	zend_try {
-		{
-			isolate->Exit();
-			v8::Unlocker unlocker(isolate);
+	{
+		isolate->Exit();
+		v8::Unlocker unlocker(isolate);
 
+		zend_try {
 			ZVAL_STRING(&params[0], normalised_module_id);
 			call_result = call_user_function_ex(EG(function_table), NULL, &c->module_loader, &module_code, 1, params, 0, NULL TSRMLS_CC);
 		}
-
-		isolate->Enter();
-
-		if (call_result == FAILURE) {
-			info.GetReturnValue().Set(isolate->ThrowException(V8JS_SYM("Module loader callback failed")));
+		zend_catch {
+			v8js_terminate_execution(isolate);
+			V8JSG(fatal_error_abort) = 1;
 		}
+		zend_end_try();
 	}
-	zend_catch {
-		v8js_terminate_execution(isolate);
-		V8JSG(fatal_error_abort) = 1;
+
+	isolate->Enter();
+
+	if (V8JSG(fatal_error_abort)) {
 		call_result = FAILURE;
 	}
-	zend_end_try();
+	else if (call_result == FAILURE) {
+		info.GetReturnValue().Set(isolate->ThrowException(V8JS_SYM("Module loader callback failed")));
+	}
 
 	zval_dtor(&params[0]);
 

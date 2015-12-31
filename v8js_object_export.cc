@@ -114,11 +114,11 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, v
 	fci.no_separation = 1;
 	info.GetReturnValue().Set(V8JS_NULL);
 
-	zend_try {
-		{
-			isolate->Exit();
-			v8::Unlocker unlocker(isolate);
+	{
+		isolate->Exit();
+		v8::Unlocker unlocker(isolate);
 
+		zend_try {
 			/* zend_fcall_info_cache */
 			fcc.initialized = 1;
 			fcc.function_handler = method_ptr;
@@ -128,14 +128,13 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, v
 
 			zend_call_function(&fci, &fcc TSRMLS_CC);
 		}
-
-		isolate->Enter();
+		zend_catch {
+			v8js_terminate_execution(isolate);
+			V8JSG(fatal_error_abort) = 1;
+		}
+		zend_end_try();
 	}
-	zend_catch {
-		v8js_terminate_execution(isolate);
-		V8JSG(fatal_error_abort) = 1;
-	}
-	zend_end_try();
+	isolate->Enter();
 
 failure:
 	/* Cleanup */
