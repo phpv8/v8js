@@ -49,7 +49,9 @@ struct v8js_ctx {
   v8js_tmpl_t global_template;
   v8js_tmpl_t array_tmpl;
 
+  zval module_normaliser;
   zval module_loader;
+
   std::vector<char *> modules_stack;
   std::vector<char *> modules_base;
   std::map<char *, v8js_persistent_obj_t, cmp_str> modules_loaded;
