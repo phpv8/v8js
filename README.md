@@ -82,6 +82,19 @@ class V8Js
     {}
 
     /**
+     * Provide a function or method to be used to normalise module paths. This can be any valid PHP callable.
+     * This can be used in combination with setModuleLoader to influence normalisation of the module path (which
+     * is normally done by V8Js itself but can be overriden this way).
+     * The normaliser function will receive the base path of the current module (if any; otherwise an empty string)
+     * and the literate string provided to the require method and should return an array of two strings (the new
+     * module base path as well as the normalised name).  Both are joined by a '/' and then passed on to the
+     * module loader (unless the module was cached before).
+     * @param callable $normaliser
+     */
+    public function setModuleNormaliser(callable $normaliser)
+    {}
+
+    /**
      * Compiles and executes script in object's context with optional identifier string.
      * A time limit (milliseconds) and/or memory limit (bytes) can be provided to restrict execution. These options will throw a V8JsTimeLimitException or V8JsMemoryLimitException.
      * @param string $script

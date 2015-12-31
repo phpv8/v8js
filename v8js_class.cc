@@ -85,7 +85,9 @@ static void v8js_free_storage(zend_object *object TSRMLS_DC) /* {{{ */
 	v8js_ctx *c = v8js_ctx_fetch_object(object);
 
 	zend_object_std_dtor(&c->std TSRMLS_CC);
+
 	zval_dtor(&c->pending_exception);
+	zval_dtor(&c->module_normaliser);
 	zval_dtor(&c->module_loader);
 
 	/* Delete PHP global object from JavaScript */
@@ -358,6 +360,7 @@ static PHP_METHOD(V8Js, __construct)
 	c->memory_limit = 0;
 	c->memory_limit_hit = false;
 
+	ZVAL_NULL(&c->module_normaliser);
 	ZVAL_NULL(&c->module_loader);
 
 	/* Include extensions used by this context */
@@ -671,6 +674,22 @@ static PHP_METHOD(V8Js, clearPendingException)
 }
 /* }}} */
 
+/* {{{ proto void V8Js::setModuleNormaliser(string base, string module_id)
+ */
+static PHP_METHOD(V8Js, setModuleNormaliser)
+{
+	v8js_ctx *c;
+	zval *callable;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &callable) == FAILURE) {
+		return;
+	}
+
+	c = Z_V8JS_CTX_OBJ_P(getThis());
+	ZVAL_COPY(&c->module_normaliser, callable);
+}
+/* }}} */
+
 /* {{{ proto void V8Js::setModuleLoader(string module)
  */
 static PHP_METHOD(V8Js, setModuleLoader)
@@ -964,6 +983,11 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO(arginfo_v8js_clearpendingexception, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_setmodulenormaliser, 0, 0, 2)
+	ZEND_ARG_INFO(0, base)
+	ZEND_ARG_INFO(0, module_id)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_setmoduleloader, 0, 0, 1)
 	ZEND_ARG_INFO(0, callable)
 ZEND_END_ARG_INFO()
@@ -997,6 +1021,7 @@ static const zend_function_entry v8js_methods[] = { /* {{{ */
 	PHP_ME(V8Js,    checkString,			arginfo_v8js_checkstring,			ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED)
 	PHP_ME(V8Js,	getPendingException,	arginfo_v8js_getpendingexception,	ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	clearPendingException,	arginfo_v8js_clearpendingexception,	ZEND_ACC_PUBLIC)
+	PHP_ME(V8Js,	setModuleNormaliser,	arginfo_v8js_setmodulenormaliser,	ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	setModuleLoader,		arginfo_v8js_setmoduleloader,		ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	registerExtension,		arginfo_v8js_registerextension,		ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
 	PHP_ME(V8Js,	getExtensions,			arginfo_v8js_getextensions,			ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
@@ -1039,7 +1064,7 @@ static void v8js_unset_property(zval *object, zval *member, void **cache_slot TS
 	/* Global PHP JS object */
 	v8::Local<v8::String> object_name_js = v8::Local<v8::String>::New(isolate, c->object_name);
 	v8::Local<v8::Object> jsobj = V8JS_GLOBAL(isolate)->Get(object_name_js)->ToObject();
-	
+
 	/* Delete value from PHP JS object */
 	jsobj->Delete(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)));
 
