@@ -36,4 +36,10 @@ array(2) {
   }
 }
 
-Fatal error: v8::Context::New() Circular extension dependency in %s on line 8
+Warning: Fatal V8 error in v8::Context::New(): Circular extension dependency in %s on line 8
+
+Fatal error: Uncaught V8JsException: Failed to create V8 context. Check that registered extensions do not have errors. in %s:8
+Stack trace:
+#0 %s(8): V8Js->__construct('myobj', Array, Array)
+#1 {main}
+  thrown in %s on line 8
