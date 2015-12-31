@@ -554,8 +554,17 @@ static PHP_METHOD(V8Js, executeString)
 	if (!res) {
 		RETURN_FALSE;
 	}
-	v8js_execute_script(getThis(), res, flags, time_limit, memory_limit, &return_value TSRMLS_CC);
-	v8js_script_free(res);
+
+	zend_try {
+		v8js_execute_script(getThis(), res, flags, time_limit, memory_limit, &return_value TSRMLS_CC);
+		v8js_script_free(res);
+	}
+	zend_catch {
+		v8js_script_free(res);
+		zend_bailout();
+	}
+	zend_end_try()
+
 	efree(res);
 }
 /* }}} */
