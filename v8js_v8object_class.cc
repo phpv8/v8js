@@ -281,44 +281,54 @@ static int v8js_v8object_call_method(zend_string *method, zend_object *object, I
 		zend_get_parameters_array_ex(argc, argv);
 	}
 
-	std::function< v8::Local<v8::Value>(v8::Isolate *) > v8_call = [obj, method, argc, argv TSRMLS_CC](v8::Isolate *isolate) {
-		int i = 0;
+	/* std::function relies on its dtor to be executed, otherwise it leaks
+	 * some memory on bailout. */
+	{
+		std::function< v8::Local<v8::Value>(v8::Isolate *) > v8_call = [obj, method, argc, argv TSRMLS_CC](v8::Isolate *isolate) {
+			int i = 0;
 
-		v8::Local<v8::String> method_name = V8JS_ZSYM(method);
-		v8::Local<v8::Object> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj)->ToObject();
-		v8::Local<v8::Object> thisObj;
-		v8::Local<v8::Function> cb;
+			v8::Local<v8::String> method_name = V8JS_ZSYM(method);
+			v8::Local<v8::Object> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj)->ToObject();
+			v8::Local<v8::Object> thisObj;
+			v8::Local<v8::Function> cb;
 
-		if (method_name->Equals(V8JS_SYM(V8JS_V8_INVOKE_FUNC_NAME))) {
-			cb = v8::Local<v8::Function>::Cast(v8obj);
-		} else {
-			cb = v8::Local<v8::Function>::Cast(v8obj->Get(method_name));
-		}
+			if (method_name->Equals(V8JS_SYM(V8JS_V8_INVOKE_FUNC_NAME))) {
+				cb = v8::Local<v8::Function>::Cast(v8obj);
+			} else {
+				cb = v8::Local<v8::Function>::Cast(v8obj->Get(method_name));
+			}
 
-		// If a method is invoked on V8Object, then set the object itself as
-		// "this" on JS side.  Otherwise fall back to global object.
-		if (obj->std.ce == php_ce_v8object) {
-			thisObj = v8obj;
-		}
-		else {
-			thisObj = V8JS_GLOBAL(isolate);
-		}
+			// If a method is invoked on V8Object, then set the object itself as
+			// "this" on JS side.  Otherwise fall back to global object.
+			if (obj->std.ce == php_ce_v8object) {
+				thisObj = v8obj;
+			}
+			else {
+				thisObj = V8JS_GLOBAL(isolate);
+			}
 
-		v8::Local<v8::Value> *jsArgv = static_cast<v8::Local<v8::Value> *>(alloca(sizeof(v8::Local<v8::Value>) * argc));
-		v8::Local<v8::Value> js_retval;
+			v8::Local<v8::Value> *jsArgv = static_cast<v8::Local<v8::Value> *>(alloca(sizeof(v8::Local<v8::Value>) * argc));
+			v8::Local<v8::Value> js_retval;
 
-		for (i = 0; i < argc; i++) {
-			new(&jsArgv[i]) v8::Local<v8::Value>;
-			jsArgv[i] = v8::Local<v8::Value>::New(isolate, zval_to_v8js(&argv[i], isolate TSRMLS_CC));
-		}
+			for (i = 0; i < argc; i++) {
+				new(&jsArgv[i]) v8::Local<v8::Value>;
+				jsArgv[i] = v8::Local<v8::Value>::New(isolate, zval_to_v8js(&argv[i], isolate TSRMLS_CC));
+			}
 
-		return cb->Call(thisObj, argc, jsArgv);
-	};
+			return cb->Call(thisObj, argc, jsArgv);
+		};
 
-	v8js_v8_call(obj->ctx, &return_value, obj->flags, obj->ctx->time_limit, obj->ctx->memory_limit, v8_call TSRMLS_CC);
+		v8js_v8_call(obj->ctx, &return_value, obj->flags, obj->ctx->time_limit, obj->ctx->memory_limit, v8_call TSRMLS_CC);
+	}
 
 	if (argc > 0) {
 		efree(argv);
+	}
+
+	if(V8JSG(fatal_error_abort)) {
+		/* Check for fatal error marker possibly set by v8js_error_handler; just
+		 * rethrow the error since we're now out of V8. */
+		zend_bailout();
 	}
 
 	return SUCCESS;
