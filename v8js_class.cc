@@ -529,12 +529,22 @@ static void v8js_execute_script(zval *this_ptr, v8js_script *res, long flags, lo
 		memory_limit = c->memory_limit;
 	}
 
-	std::function< v8::Local<v8::Value>(v8::Isolate *) > v8_call = [res](v8::Isolate *isolate) {
-		v8::Local<v8::Script> script = v8::Local<v8::Script>::New(isolate, *res->script);
-		return script->Run();
-	};
+	/* std::function relies on its dtor to be executed, otherwise it leaks
+	 * some memory on bailout. */
+	{
+		std::function< v8::Local<v8::Value>(v8::Isolate *) > v8_call = [res](v8::Isolate *isolate) {
+			v8::Local<v8::Script> script = v8::Local<v8::Script>::New(isolate, *res->script);
+			return script->Run();
+		};
 
-	v8js_v8_call(c, return_value, flags, time_limit, memory_limit, v8_call TSRMLS_CC);
+		v8js_v8_call(c, return_value, flags, time_limit, memory_limit, v8_call TSRMLS_CC);
+	}
+
+	if(V8JSG(fatal_error_abort)) {
+		/* Check for fatal error marker possibly set by v8js_error_handler; just
+		 * rethrow the error since we're now out of V8. */
+		zend_bailout();
+	}
 }
 
 /* {{{ proto mixed V8Js::executeString(string script [, string identifier [, int flags]])
