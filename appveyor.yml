@@ -1,0 +1,77 @@
+environment:
+  matrix:
+  - PHP_VERSION: 7.0.1
+  BUILD_PLATFORM: x86
+  PHP_VC: 14
+  PHP_SDK: c:\projects\php-sdk
+  PHP_DEVPACK: c:\projects\php-devpack
+
+os: Windows Server 2012
+clone_folder: c:\projects\php-sdk\v8js-ci\vc14\x86\php-7.0.1\ext\v8js
+
+matrix:
+  fast_finish: true
+
+install:
+  - cd %PHP_SDK%
+  - curl -fSL -o php-sdk-binary-tools-20110915.zip 'http://windows.php.net/downloads/php-sdk/php-sdk-binary-tools-20110915.zip'
+  - 7z.exe x php-sdk-binary-tools-20110915.zip
+  - call bin\phpsdk_setvars.bat
+  - call bin\phpsdk_buildtree.bat v8js-ci
+  - cd v8js-ci\vc14\x86
+  - md deps
+  - ps: (New-Object Net.WebClient).DownloadFile('https://jenkins.brokenpipe.de/job/V8Js-PHP7/job/win-v8/lastSuccessfulBuild/artifact/*zip*/archive.zip', 'archive.zip')
+  - curl -fSL -o archive.zip 'https://jenkins.brokenpipe.de/job/V8Js-PHP7/job/win-v8/lastSuccessfulBuild/artifact/*zip*/archive.zip'
+  - 7z.exe x archive.zip
+  - move archive\v8\include deps\
+  - mkdir deps\include\include
+  - copy deps\include\v8-platform.h deps\include\include\
+  - move archive\v8\build\Release\lib deps\
+  - curl -fSL -o 'php-7.0.1.tar.gz' 'http://us1.php.net/distributions/php-7.0.1.tar.gz'
+  - 7z.exe x php-7.0.1.tar.gz -y
+  - 7z.exe x php-7.0.1.tar -y | find /v "Extracting"
+  - cd php-7.0.1
+  - mkdir Release_TS
+  - move ..\archive\v8\build\Release\*.dll Release_TS\
+
+build_script:
+  - cd
+  - cd %APPVEYOR_BUILD_FOLDER%\..\..
+  - '"%VS140COMNTOOLS%\VsDevCmd" %BUILD_PLATFORM%'
+  - set
+  - echo Building PHP [%PHP_VERSION%]
+  - '%PHP_SDK%\bin\phpsdk_setvars'
+  - buildconf
+  - configure --disable-all --enable-cli --with-v8js
+  - nmake
+
+after_build:
+  - cd %APPVEYOR_BUILD_FOLDER%\..\..\Release_TS
+  - 7z a v8js_vc14_php7_ts.zip icu*.dll v8.dll php_v8js.dll
+  - ps: Push-AppveyorArtifact v8js_vc14_php7_ts.zip
+
+test_script:
+  - cd %APPVEYOR_BUILD_FOLDER%\..\..
+  - set NO_INTERACTION=1
+  - set TEST_PHP_JUNIT=junit.xml
+  - set REPORT_EXIT_STATUS=1
+  - Release_TS\php.exe run-tests.php -p Release_TS\php.exe ext/v8js/tests/ -d extension=php_v8js.dll -d extension_dir=Release_TS\
+
+on_finish:
+  - cd %APPVEYOR_BUILD_FOLDER%\..\..
+  - ps: |
+      # upload results to AppVeyor
+      $wc = New-Object 'System.Net.WebClient'
+      $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\junit.xml))
+
+deploy:
+  provider: S3
+  access_key_id: AKIAJBJLBBZPMYOGVKEA
+  secret_access_key:
+    secure: N+jqdcvCOzqfrwL7ClIvcd9TkmQe9dghJwZMjLYtv7syVW5c4EU9YrqUbUUGmZ04
+  bucket: win-phpv8
+  set_public: true
+  artifact: v8js_vc14_php7_ts.zip
+  on:
+    branch: php7
+
