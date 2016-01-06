@@ -15,7 +15,9 @@
 #include "config.h"
 #endif
 
+#ifdef _WIN32
 #include <concrt.h>
+#endif
 
 #include "php_v8js_macros.h"
 #include "v8js_v8.h"
