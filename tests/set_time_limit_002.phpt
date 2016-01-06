@@ -11,8 +11,8 @@ var jsfunc = function() {
     var start = (new Date()).getTime();
 
     var text = "abcdefghijklmnopqrstuvwyxz0123456789";
-    while ((new Date()).getTime() - start < 500) {
-        /* pass at least 500ms in the loop so the timer loop has plenty of
+    while ((new Date()).getTime() - start < 800) {
+        /* pass at least 800ms in the loop so the timer loop has plenty of
          * time to trigger. */
 	var encoded = encodeURI(text);
     }
@@ -22,10 +22,10 @@ EOT;
 
 $v8 = new V8Js();
 /* Set very short time limit, but enough so v8 can start up safely. */
-$v8->setTimeLimit(100);
+$v8->setTimeLimit(200);
 
 $v8->incrTimeLimit = function() use ($v8) {
-    $v8->setTimeLimit(300);
+    $v8->setTimeLimit(500);
 };
 
 $func = $v8->executeString($JS);
@@ -43,5 +43,5 @@ try {
 object(V8Function)#%d (0) {
 }
 V8JsTimeLimitException
-Script time limit of 300 milliseconds exceeded
+Script time limit of 500 milliseconds exceeded
 ===EOF===
