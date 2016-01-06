@@ -16,8 +16,12 @@
 #include "config.h"
 #endif
 
+#include "php_v8js_macros.h"
+#include "v8js_v8.h"
+#include "v8js_timer.h"
+#include "v8js_exceptions.h"
+
 extern "C" {
-#include "php.h"
 #include "ext/date/php_date.h"
 #include "ext/standard/php_string.h"
 #include "zend_interfaces.h"
@@ -28,11 +32,6 @@ extern "C" {
 #if !defined(_WIN32) && PHP_V8_API_VERSION >= 3029036
 #include <libplatform/libplatform.h>
 #endif
-
-#include "php_v8js_macros.h"
-#include "v8js_v8.h"
-#include "v8js_timer.h"
-#include "v8js_exceptions.h"
 
 void v8js_v8_init(TSRMLS_D) /* {{{ */
 {

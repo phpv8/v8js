@@ -16,6 +16,15 @@
 #include "config.h"
 #endif
 
+#include <functional>
+#include <algorithm>
+
+#include "php_v8js_macros.h"
+#include "v8js_v8.h"
+#include "v8js_exceptions.h"
+#include "v8js_v8object_class.h"
+#include "v8js_timer.h"
+
 extern "C" {
 #include "php.h"
 #include "ext/date/php_date.h"
@@ -25,15 +34,6 @@ extern "C" {
 #include "ext/spl/spl_exceptions.h"
 #include "zend_exceptions.h"
 }
-
-#include "php_v8js_macros.h"
-#include "v8js_v8.h"
-#include "v8js_exceptions.h"
-#include "v8js_v8object_class.h"
-#include "v8js_timer.h"
-
-#include <functional>
-#include <algorithm>
 
 #define PHP_V8JS_SCRIPT_RES_NAME "V8Js script"
 

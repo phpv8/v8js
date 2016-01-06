@@ -15,6 +15,14 @@
 #include "config.h"
 #endif
 
+#include <stdexcept>
+#include <limits>
+
+#include "php_v8js_macros.h"
+#include "v8js_object_export.h"
+#include "v8js_v8object_class.h"
+#include "v8js_v8.h"
+
 extern "C" {
 #include "php.h"
 #include "ext/date/php_date.h"
@@ -22,14 +30,6 @@ extern "C" {
 #include "zend_interfaces.h"
 #include "zend_closures.h"
 }
-
-#include "php_v8js_macros.h"
-#include "v8js_object_export.h"
-#include "v8js_v8object_class.h"
-#include "v8js_v8.h"
-
-#include <stdexcept>
-#include <limits>
 
 static int v8js_is_assoc_array(HashTable *myht TSRMLS_DC) /* {{{ */
 {

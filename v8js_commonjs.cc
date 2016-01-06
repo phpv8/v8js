@@ -15,12 +15,12 @@
 #include "config.h"
 #endif
 
+#include "php_v8js_macros.h"
+
 extern "C" {
 #include "php.h"
 #include "zend_exceptions.h"
 }
-
-#include "php_v8js_macros.h"
 
 static void v8js_commonjs_split_terms(const char *identifier, std::vector<char *> &terms)
 {

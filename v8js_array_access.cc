@@ -14,6 +14,10 @@
 #include "config.h"
 #endif
 
+#include "php_v8js_macros.h"
+#include "v8js_array_access.h"
+#include "v8js_object_export.h"
+
 extern "C" {
 #include "php.h"
 #include "ext/date/php_date.h"
@@ -21,11 +25,6 @@ extern "C" {
 #include "zend_interfaces.h"
 #include "zend_closures.h"
 }
-
-#include "php_v8js_macros.h"
-#include "v8js_array_access.h"
-#include "v8js_object_export.h"
-
 
 static zval v8js_array_access_dispatch(zend_object *object, const char *method_name, int param_count,
 									   uint32_t index, zval zvalue TSRMLS_DC) /* {{{ */

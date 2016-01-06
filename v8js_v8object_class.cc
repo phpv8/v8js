@@ -15,8 +15,12 @@
 #include "config.h"
 #endif
 
+#include "php_v8js_macros.h"
+#include "v8js_exceptions.h"
+#include "v8js_v8.h"
+#include "v8js_v8object_class.h"
+
 extern "C" {
-#include "php.h"
 #include "ext/date/php_date.h"
 #include "ext/standard/php_string.h"
 #include "zend_interfaces.h"
@@ -24,11 +28,6 @@ extern "C" {
 #include "ext/spl/spl_exceptions.h"
 #include "zend_exceptions.h"
 }
-
-#include "php_v8js_macros.h"
-#include "v8js_exceptions.h"
-#include "v8js_v8.h"
-#include "v8js_v8object_class.h"
 
 /* {{{ Class Entries */
 zend_class_entry *php_ce_v8object;
