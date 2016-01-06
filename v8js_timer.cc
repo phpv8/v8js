@@ -15,8 +15,16 @@
 #include "config.h"
 #endif
 
+#ifdef _WIN32
+#include <concrt.h>
+#endif
+
+#include "php_v8js_macros.h"
+#include "v8js_v8.h"
+#include "v8js_exceptions.h"
+#include "v8js_timer.h"
+
 extern "C" {
-#include "php.h"
 #include "ext/date/php_date.h"
 #include "ext/standard/php_string.h"
 #include "zend_interfaces.h"
@@ -24,11 +32,6 @@ extern "C" {
 #include "ext/spl/spl_exceptions.h"
 #include "zend_exceptions.h"
 }
-
-#include "php_v8js_macros.h"
-#include "v8js_v8.h"
-#include "v8js_exceptions.h"
-#include "v8js_timer.h"
 
 static void v8js_timer_interrupt_handler(v8::Isolate *isolate, void *data) { /* {{{ */
 	zend_v8js_globals *globals = static_cast<zend_v8js_globals *>(data);

@@ -15,19 +15,18 @@
 #include "config.h"
 #endif
 
+#include "php_v8js_macros.h"
+#include "v8js_array_access.h"
+#include "v8js_object_export.h"
+#include "v8js_v8object_class.h"
+
 extern "C" {
-#include "php.h"
 #include "ext/date/php_date.h"
 #include "ext/standard/php_string.h"
 #include "zend_interfaces.h"
 #include "zend_closures.h"
 #include "zend_exceptions.h"
 }
-
-#include "php_v8js_macros.h"
-#include "v8js_array_access.h"
-#include "v8js_object_export.h"
-#include "v8js_v8object_class.h"
 
 static void v8js_weak_object_callback(const v8::WeakCallbackData<v8::Object, zend_object> &data);
 

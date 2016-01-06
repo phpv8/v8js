@@ -17,13 +17,9 @@
 #include "config.h"
 #endif
 
-extern "C" {
-#include "php.h"
-}
+#include <string>
 
 #include "php_v8js_macros.h"
-#include <v8.h>
-#include <string>
 
 static void v8js_fetch_php_variable(v8::Local<v8::String> name, const v8::PropertyCallbackInfo<v8::Value>& info) /* {{{ */
 {

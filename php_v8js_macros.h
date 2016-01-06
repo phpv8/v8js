@@ -18,6 +18,15 @@
 #define _GLIBCXX_USE_NANOSLEEP 1
 #endif
 
+#include <chrono>
+#include <deque>
+#include <thread>
+
+#include <map>
+#include <list>
+#include <vector>
+#include <mutex>
+
 extern "C" {
 #include "php.h"
 #include "php_v8js.h"
@@ -30,15 +39,6 @@ extern "C" {
 #endif
 
 #include <v8.h>
-
-#include <chrono>
-#include <deque>
-#include <thread>
-
-#include <map>
-#include <list>
-#include <vector>
-#include <mutex>
 
 #include "v8js_class.h"
 #include "v8js_v8.h"
