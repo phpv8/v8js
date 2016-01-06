@@ -1,13 +1,18 @@
 environment:
   matrix:
-  - PHP_VERSION: 7.0.1
-  BUILD_PLATFORM: x86
-  PHP_VC: 14
+  - BUILD_PLATFORM: x86
+    ARTIFACT_NAME: v8js_vc14_php7_ts.zip
+    OUTDIR: Release_TS
+  - BUILD_PLATFORM: x86
+    ARTIFACT_NAME: v8js_vc14_php7_nts.zip
+    OUTDIR: Release
+    CONFIGURE_EXTRA: --disable-zts
+
+  PHP_VERSION: 7.0.1
   PHP_SDK: c:\projects\php-sdk
-  PHP_DEVPACK: c:\projects\php-devpack
 
 os: Windows Server 2012
-clone_folder: c:\projects\php-sdk\v8js-ci\vc14\x86\php-7.0.1\ext\v8js
+clone_folder: c:\projects\php-sdk\v8js-ci\vc14\x86\php\ext\v8js
 
 matrix:
   fast_finish: true
@@ -20,45 +25,43 @@ install:
   - call bin\phpsdk_buildtree.bat v8js-ci
   - cd v8js-ci\vc14\x86
   - md deps
-  - ps: (New-Object Net.WebClient).DownloadFile('https://jenkins.brokenpipe.de/job/V8Js-PHP7/job/win-v8/lastSuccessfulBuild/artifact/*zip*/archive.zip', 'archive.zip')
   - curl -fSL -o archive.zip 'https://jenkins.brokenpipe.de/job/V8Js-PHP7/job/win-v8/lastSuccessfulBuild/artifact/*zip*/archive.zip'
   - 7z.exe x archive.zip
   - move archive\v8\include deps\
   - mkdir deps\include\include
   - copy deps\include\v8-platform.h deps\include\include\
   - move archive\v8\build\Release\lib deps\
-  - curl -fSL -o 'php-7.0.1.tar.gz' 'http://us1.php.net/distributions/php-7.0.1.tar.gz'
-  - 7z.exe x php-7.0.1.tar.gz -y
-  - 7z.exe x php-7.0.1.tar -y | find /v "Extracting"
-  - cd php-7.0.1
-  - mkdir Release_TS
-  - move ..\archive\v8\build\Release\*.dll Release_TS\
+  - curl -fSL -o 'php-%PHP_VERSION%.tar.gz' 'http://us1.php.net/distributions/php-%PHP_VERSION%.tar.gz'
+  - ren php php-%PHP_VERSION%
+  - 7z.exe x php-%PHP_VERSION%.tar.gz -y
+  - 7z.exe x php-%PHP_VERSION%.tar -y | find /v "Extracting"
+  - cd php-%PHP_VERSION%
+  - mkdir %OUTDIR%
+  - move ..\archive\v8\build\Release\*.dll %OUTDIR%\
 
 build_script:
-  - cd
-  - cd %APPVEYOR_BUILD_FOLDER%\..\..
   - '"%VS140COMNTOOLS%\VsDevCmd" %BUILD_PLATFORM%'
   - set
   - echo Building PHP [%PHP_VERSION%]
   - '%PHP_SDK%\bin\phpsdk_setvars'
   - buildconf
-  - configure --disable-all --enable-cli --with-v8js
+  - configure --disable-all --enable-cli --with-v8js %CONFIGURE_EXTRA%
   - nmake
 
 after_build:
-  - cd %APPVEYOR_BUILD_FOLDER%\..\..\Release_TS
-  - 7z a v8js_vc14_php7_ts.zip icu*.dll v8.dll php_v8js.dll
-  - ps: Push-AppveyorArtifact v8js_vc14_php7_ts.zip
+  - cd %OUTDIR%
+  - 7z a %ARTIFACT_NAME% icu*.dll v8.dll php_v8js.dll
+  - ps: Push-AppveyorArtifact $env:ARTIFACT_NAME
 
 test_script:
-  - cd %APPVEYOR_BUILD_FOLDER%\..\..
+  - cd c:\projects\php-sdk\v8js-ci\vc14\x86\php-%PHP_VERSION%
   - set NO_INTERACTION=1
   - set TEST_PHP_JUNIT=junit.xml
   - set REPORT_EXIT_STATUS=1
-  - Release_TS\php.exe run-tests.php -p Release_TS\php.exe ext/v8js/tests/ -d extension=php_v8js.dll -d extension_dir=Release_TS\
+  - "%OUTDIR%\\php.exe run-tests.php -p %OUTDIR%\\php.exe ext/v8js/tests/ -d extension=php_v8js.dll -d extension_dir=%OUTDIR%\\"
 
 on_finish:
-  - cd %APPVEYOR_BUILD_FOLDER%\..\..
+  - cd c:\projects\php-sdk\v8js-ci\vc14\x86\php-%PHP_VERSION%
   - ps: |
       # upload results to AppVeyor
       $wc = New-Object 'System.Net.WebClient'
@@ -71,7 +74,7 @@ deploy:
     secure: N+jqdcvCOzqfrwL7ClIvcd9TkmQe9dghJwZMjLYtv7syVW5c4EU9YrqUbUUGmZ04
   bucket: win-phpv8
   set_public: true
-  artifact: v8js_vc14_php7_ts.zip
+  artifact: "*.zip"
   on:
     branch: php7
 
