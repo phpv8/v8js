@@ -70,7 +70,7 @@ object(V8JsScriptException)#%d (13) {
       ["args"]=>
       array(2) {
         [0]=>
-        string(109) "
+        string(%d) "
 		PHP.greeter.sayHello();
 
 		var ngGreeter = new PHP.greeter.constructor("Ringo");

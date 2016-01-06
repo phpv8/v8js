@@ -146,7 +146,7 @@ struct _v8js_process_globals {
 	/* V8 command line flags */
 	char *v8_flags;
 
-#if !defined(_WIN32) && PHP_V8_API_VERSION >= 3029036
+#if PHP_V8_API_VERSION >= 3029036
 	v8::Platform *v8_platform;
 #endif
 };

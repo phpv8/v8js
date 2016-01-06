@@ -29,7 +29,7 @@ extern "C" {
 #include "zend_exceptions.h"
 }
 
-#if !defined(_WIN32) && PHP_V8_API_VERSION >= 3029036
+#if PHP_V8_API_VERSION >= 3029036
 #include <libplatform/libplatform.h>
 #endif
 
@@ -53,7 +53,7 @@ void v8js_v8_init(TSRMLS_D) /* {{{ */
 	}
 #endif
 
-#if !defined(_WIN32) && PHP_V8_API_VERSION >= 3029036
+#if PHP_V8_API_VERSION >= 3029036
 	v8js_process_globals.v8_platform = v8::platform::CreateDefaultPlatform();
 	v8::V8::InitializePlatform(v8js_process_globals.v8_platform);
 #endif
