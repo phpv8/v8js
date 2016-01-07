@@ -479,14 +479,14 @@ static void v8js_v8generator_free_storage(zend_object *object) /* {{{ */
 
 static zend_object *v8js_v8generator_new(zend_class_entry *ce) /* {{{ */
 {
-	v8js_v8object *c;
-	c = (v8js_v8object *) ecalloc(1, sizeof(v8js_v8generator) + zend_object_properties_size(ce));
+	v8js_v8generator *c;
+	c = (v8js_v8generator *) ecalloc(1, sizeof(v8js_v8generator) + zend_object_properties_size(ce));
 
-	zend_object_std_init(&c->std, ce);
-	c->std.handlers = &v8js_v8object_handlers;
-	new(&c->v8obj) v8::Persistent<v8::Value>();
+	zend_object_std_init(&c->v8obj.std, ce);
+	c->v8obj.std.handlers = &v8js_v8generator_handlers;
+	new(&c->v8obj.v8obj) v8::Persistent<v8::Value>();
 
-	return &c->std;
+	return &c->v8obj.std;
 }
 /* }}} */
 
@@ -539,6 +539,17 @@ static void v8js_v8generator_next(v8js_v8generator *g) /* {{{ */
 }
 /* }}} */
 
+static zend_function *v8js_v8generator_get_method(zend_object **object_ptr, zend_string *method, const zval *key) /* {{{ */
+{
+	zend_function *result = std_object_handlers.get_method(object_ptr, method, key);
+
+	if(!result) {
+		result = v8js_v8object_get_method(object_ptr, method, key);
+	}
+
+	return result;
+}
+/* }}} */
 
 /* {{{ proto V8Generator::__construct()
  */
@@ -575,6 +586,11 @@ PHP_METHOD(V8Generator, __wakeup)
 PHP_METHOD(V8Generator, current)
 {
 	v8js_v8generator *g = Z_V8JS_V8GENERATOR_OBJ_P(getThis());
+
+	if(!g->primed) {
+		v8js_v8generator_next(g);
+	}
+
 	RETVAL_ZVAL(&g->value, 1, 0);
 }
 /* }}} */
@@ -660,16 +676,31 @@ static const zend_function_entry v8js_v8function_methods[] = { /* {{{ */
 };
 /* }}} */
 
-static const zend_function_entry v8js_v8generator_methods[] = { /* {{{ */
-	PHP_ME(V8Generator,	__construct,			NULL,				ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
-	PHP_ME(V8Generator,	__sleep,				NULL,				ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
-	PHP_ME(V8Generator,	__wakeup,				NULL,				ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
+ZEND_BEGIN_ARG_INFO(arginfo_v8generator_current, 0)
+ZEND_END_ARG_INFO()
 
-	PHP_ME(V8Generator,	current,				NULL,				ZEND_ACC_PUBLIC)
-	PHP_ME(V8Generator,	key,					NULL,				ZEND_ACC_PUBLIC)
-	PHP_ME(V8Generator,	next,					NULL,				ZEND_ACC_PUBLIC)
-	PHP_ME(V8Generator,	rewind,					NULL,				ZEND_ACC_PUBLIC)
-	PHP_ME(V8Generator,	valid,					NULL,				ZEND_ACC_PUBLIC)
+ZEND_BEGIN_ARG_INFO(arginfo_v8generator_key, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO(arginfo_v8generator_next, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO(arginfo_v8generator_rewind, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO(arginfo_v8generator_valid, 0)
+ZEND_END_ARG_INFO()
+
+static const zend_function_entry v8js_v8generator_methods[] = { /* {{{ */
+	PHP_ME(V8Generator,	__construct,			NULL,							ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+	PHP_ME(V8Generator,	__sleep,				NULL,							ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
+	PHP_ME(V8Generator,	__wakeup,				NULL,							ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
+
+	PHP_ME(V8Generator,	current,				arginfo_v8generator_current,	ZEND_ACC_PUBLIC)
+	PHP_ME(V8Generator,	key,					arginfo_v8generator_key,		ZEND_ACC_PUBLIC)
+	PHP_ME(V8Generator,	next,					arginfo_v8generator_next,		ZEND_ACC_PUBLIC)
+	PHP_ME(V8Generator,	rewind,					arginfo_v8generator_rewind,		ZEND_ACC_PUBLIC)
+	PHP_ME(V8Generator,	valid,					arginfo_v8generator_valid,		ZEND_ACC_PUBLIC)
 
 	{NULL, NULL, NULL}
 };
@@ -720,6 +751,7 @@ PHP_MINIT_FUNCTION(v8js_v8object_class) /* {{{ */
 
 	/* V8Generator handlers */
 	memcpy(&v8js_v8generator_handlers, &v8js_v8object_handlers, sizeof(zend_object_handlers));
+	v8js_v8generator_handlers.get_method = v8js_v8generator_get_method;
 	v8js_v8generator_handlers.offset = XtOffsetOf(struct v8js_v8generator, v8obj.std);
 	v8js_v8generator_handlers.free_obj = v8js_v8generator_free_storage;
 
