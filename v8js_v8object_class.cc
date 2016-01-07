@@ -510,6 +510,11 @@ static void v8js_v8generator_next(v8js_v8generator *g) /* {{{ */
 
 			v8::Local<v8::Value> result = cb->Call(v8obj, 0, NULL);
 
+			if(result.IsEmpty()) {
+				/* cb->Call probably threw (and already threw a zend exception), just return */
+				return V8JS_NULL;
+			}
+
 			if(!result->IsObject()) {
 				zend_throw_exception(php_ce_v8js_exception,
 					"V8Generator returned non-object on next()", 0);
