@@ -1,7 +1,13 @@
 --TEST--
 Test V8::executeString() : Generators V8 -> PHP (throw JS)
 --SKIPIF--
-<?php require_once(dirname(__FILE__) . '/skipif.inc'); ?>
+<?php
+require_once(dirname(__FILE__) . '/skipif.inc');
+
+if (!class_exists('V8Generator')) {
+    die("skip Installed V8 version doesn't support generators");
+}
+?>
 --FILE--
 <?php
 

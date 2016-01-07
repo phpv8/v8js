@@ -61,6 +61,10 @@ extern "C" {
 #define V8JS_GET_CLASS_NAME(var, obj) \
 	v8::String::Utf8Value var(obj->GetConstructorName());
 
+#if PHP_V8_API_VERSION >= 3030000
+#define V8JS_V8GENERATOR_SUPPORT 1
+#endif
+
 /* method signatures of zend_update_property and zend_read_property were
  * declared as 'char *' instead of 'const char *' before PHP 5.4 */
 #if ZEND_MODULE_API_NO >= 20100525
