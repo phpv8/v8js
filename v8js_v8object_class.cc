@@ -2,12 +2,13 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2013 The PHP Group                                |
+  | Copyright (c) 1997-2016 The PHP Group                                |
   +----------------------------------------------------------------------+
   | http://www.opensource.org/licenses/mit-license.php  MIT License      |
   +----------------------------------------------------------------------+
   | Author: Jani Taskinen <jani.taskinen@iki.fi>                         |
   | Author: Patrick Reilly <preilly@php.net>                             |
+  | Author: Stefan Siegl <stesie@php.net>                                |
   +----------------------------------------------------------------------+
 */
 
@@ -32,6 +33,7 @@ extern "C" {
 /* {{{ Class Entries */
 zend_class_entry *php_ce_v8object;
 zend_class_entry *php_ce_v8function;
+zend_class_entry *php_ce_v8generator;
 /* }}} */
 
 /* {{{ Object Handlers */
@@ -468,11 +470,92 @@ PHP_METHOD(V8Function, __wakeup)
 }
 /* }}} */
 
+
+/* {{{ proto V8Generator::__construct()
+ */
+PHP_METHOD(V8Generator,__construct)
+{
+	zend_throw_exception(php_ce_v8js_exception,
+		"Can't directly construct V8 objects!", 0 TSRMLS_CC);
+	RETURN_FALSE;
+}
+/* }}} */
+
+/* {{{ proto V8Generator::__sleep()
+ */
+PHP_METHOD(V8Generator, __sleep)
+{
+	zend_throw_exception(php_ce_v8js_exception,
+		"You cannot serialize or unserialize V8Generator instances", 0 TSRMLS_CC);
+	RETURN_FALSE;
+}
+/* }}} */
+
+/* {{{ proto V8Generator::__wakeup()
+ */
+PHP_METHOD(V8Generator, __wakeup)
+{
+	zend_throw_exception(php_ce_v8js_exception,
+		"You cannot serialize or unserialize V8Generator instances", 0 TSRMLS_CC);
+	RETURN_FALSE;
+}
+/* }}} */
+
+/* {{{ mixed V8Generator::current()
+ */
+PHP_METHOD(V8Generator, current)
+{
+	RETURN_FALSE;
+}
+/* }}} */
+
+/* {{{ scalar V8Generator::key()
+ */
+PHP_METHOD(V8Generator, key)
+{
+	RETURN_FALSE;
+}
+/* }}} */
+
+/* {{{ void V8Generator::next()
+ */
+PHP_METHOD(V8Generator, next)
+{
+	RETURN_FALSE;
+}
+/* }}} */
+
+/* {{{ void V8Generator::rewind()
+ */
+PHP_METHOD(V8Generator, rewind)
+{
+	RETURN_FALSE;
+}
+/* }}} */
+
+/* {{{ boolean V8Generator::valid()
+ */
+PHP_METHOD(V8Generator, valid)
+{
+	RETURN_FALSE;
+}
+/* }}} */
+
+
 void v8js_v8object_create(zval *res, v8::Handle<v8::Value> value, int flags, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
 {
 	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
 
-	object_init_ex(res, value->IsFunction() ? php_ce_v8function : php_ce_v8object);
+	if(value->IsGeneratorObject()) {
+		object_init_ex(res, php_ce_v8generator);
+	}
+	else if(value->IsFunction()) {
+		object_init_ex(res, php_ce_v8function);
+	}
+	else {
+		object_init_ex(res, php_ce_v8object);
+	}
+
 	v8js_v8object *c = Z_V8JS_V8OBJECT_OBJ_P(res);
 
 	c->v8obj.Reset(isolate, value);
@@ -500,6 +583,21 @@ static const zend_function_entry v8js_v8function_methods[] = { /* {{{ */
 };
 /* }}} */
 
+static const zend_function_entry v8js_v8generator_methods[] = { /* {{{ */
+	PHP_ME(V8Generator,	__construct,			NULL,				ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+	PHP_ME(V8Generator,	__sleep,				NULL,				ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
+	PHP_ME(V8Generator,	__wakeup,				NULL,				ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
+
+	PHP_ME(V8Generator,	current,				NULL,				ZEND_ACC_PUBLIC)
+	PHP_ME(V8Generator,	key,					NULL,				ZEND_ACC_PUBLIC)
+	PHP_ME(V8Generator,	next,					NULL,				ZEND_ACC_PUBLIC)
+	PHP_ME(V8Generator,	rewind,					NULL,				ZEND_ACC_PUBLIC)
+	PHP_ME(V8Generator,	valid,					NULL,				ZEND_ACC_PUBLIC)
+
+	{NULL, NULL, NULL}
+};
+/* }}} */
+
 
 PHP_MINIT_FUNCTION(v8js_v8object_class) /* {{{ */
 {
@@ -516,6 +614,15 @@ PHP_MINIT_FUNCTION(v8js_v8object_class) /* {{{ */
 	php_ce_v8function = zend_register_internal_class(&ce TSRMLS_CC);
 	php_ce_v8function->ce_flags |= ZEND_ACC_FINAL;
 	php_ce_v8function->create_object = v8js_v8object_new;
+
+	/* V8Generator Class */
+	INIT_CLASS_ENTRY(ce, "V8Generator", v8js_v8generator_methods);
+	php_ce_v8generator = zend_register_internal_class(&ce TSRMLS_CC);
+	php_ce_v8generator->ce_flags |= ZEND_ACC_FINAL;
+	php_ce_v8generator->create_object = v8js_v8object_new;
+
+	zend_class_implements(php_ce_v8generator, 1, zend_ce_iterator);
+
 
 	/* V8<Object|Function> handlers */
 	memcpy(&v8js_v8object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
