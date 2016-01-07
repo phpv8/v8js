@@ -198,7 +198,7 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 		}
 
 		/* Convert V8 value to PHP value */
-		if (!result.IsEmpty()) {
+		if (return_value && !result.IsEmpty()) {
 			v8js_to_zval(result, *return_value, flags, c->isolate TSRMLS_CC);
 		}
 	}

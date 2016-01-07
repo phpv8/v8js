@@ -24,8 +24,18 @@ struct v8js_v8object {
 };
 /* }}} */
 
+/* {{{ Generator container */
+struct v8js_v8generator {
+	zval value;
+	bool primed;
+	bool done;
+	struct v8js_v8object v8obj;
+};
+/* }}} */
+
 extern zend_class_entry *php_ce_v8object;
 extern zend_class_entry *php_ce_v8function;
+extern zend_class_entry *php_ce_v8generator;
 
 /* Create PHP V8 object */
 void v8js_v8object_create(zval *, v8::Handle<v8::Value>, int, v8::Isolate * TSRMLS_DC);
@@ -33,8 +43,15 @@ void v8js_v8object_create(zval *, v8::Handle<v8::Value>, int, v8::Isolate * TSRM
 static inline v8js_v8object *v8js_v8object_fetch_object(zend_object *obj) {
 	return (v8js_v8object *)((char *)obj - XtOffsetOf(struct v8js_v8object, std));
 }
- 
+
 #define Z_V8JS_V8OBJECT_OBJ_P(zv) v8js_v8object_fetch_object(Z_OBJ_P(zv));
+
+static inline v8js_v8generator *v8js_v8generator_fetch_object(zend_object *obj) {
+	return (v8js_v8generator *)((char *)obj - XtOffsetOf(struct v8js_v8generator, v8obj.std));
+}
+
+#define Z_V8JS_V8GENERATOR_OBJ_P(zv) v8js_v8generator_fetch_object(Z_OBJ_P(zv));
+
 
 PHP_MINIT_FUNCTION(v8js_v8object_class);
 
