@@ -616,6 +616,14 @@ PHP_METHOD(V8Generator, next)
  */
 PHP_METHOD(V8Generator, rewind)
 {
+	v8js_v8generator *g = Z_V8JS_V8GENERATOR_OBJ_P(getThis());
+
+	if(g->primed) {
+		zend_throw_exception(php_ce_v8js_exception,
+			"V8Generator::rewind not supported by ES6", 0 TSRMLS_CC);
+
+	}
+
 	RETURN_FALSE;
 }
 /* }}} */
