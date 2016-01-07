@@ -26,7 +26,7 @@ foreach($gen as $a) {
 --EXPECTF--
 int(23)
 
-Fatal error: Uncaught V8JsScriptException: V8Js::compileString():3: Error: blar in %s
+Fatal error: Uncaught V8JsScriptException: %s Error: blar in %s
 Stack trace:
 #0 %s: V8Generator->next()
 #1 {main}
