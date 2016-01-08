@@ -117,6 +117,9 @@ First PHP 7 release
    <file baseinstalldir="/" md5sum="6d4e573daaf2ca5c177230541c31fc96" name="tests/issue_127_001.phpt" role="test" />
    <file baseinstalldir="/" md5sum="3ff639cdb2f80e8b0a256aa12fce9c5d" name="tests/issue_156_001.phpt" role="test" />
    <file baseinstalldir="/" md5sum="858c759b267b903dcdd65b5f208dc07f" name="tests/issue_160_basic.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="991db6ad362001dad35f6038491392d2" name="tests/issue_185_001.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="25c117805a2761b7cb58078d7ce6f5a0" name="tests/issue_185_002.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="60c9e1d0fa9b94049143518657e122f4" name="tests/issue_185_basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="9f1e697d63231a03da06de97c14a5076" name="tests/js-construct-basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="0e951523a9abae08b531ecd3193a2581" name="tests/js-construct-direct-call.phpt" role="test" />
    <file baseinstalldir="/" md5sum="7733d7eb9693e1c799a3d071a7804b13" name="tests/js-construct-protected-ctor.phpt" role="test" />
@@ -454,6 +457,43 @@ First PHP 7 release
    <license uri="http://www.php.net/license">The MIT License (MIT)</license>
    <notes>
 First PHP 7 release
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>0.4.0</release>
+    <api>0.4.0</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <date>2015-12-07</date>
+   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <notes>
+- Improve -Wno-c++11-narrowing/-Wno-narrowing flag detection (clang/gcc5 support)
+- Added ability to set properties on V8Function
+- CommonJS modules now have access to V8Js&apos; var_dump function
+- V8JsScriptExtensions now reference the normalised module id (instead of just &quot;require&quot;)
+- fatal PHP errors triggered in setModuleLoader callback are now handled gracefully
+- setModuleLoader callback is now allowed to return an empty string as source of module
+- V8Js&apos; internal module path normalisation may now be overrode using setModuleNormaliser
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>0.4.1</release>
+    <api>0.4.1</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <date>2016-01-08</date>
+   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <notes>
+- Fix PHP.var_dump output on regexp objects (for consistency over all V8 versions)
+- Fix &quot;this&quot; on V8Object method invocations
    </notes>
   </release>
  </changelog>
