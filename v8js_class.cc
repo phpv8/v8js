@@ -30,6 +30,7 @@ extern "C" {
 #include "v8js_v8.h"
 #include "v8js_exceptions.h"
 #include "v8js_v8object_class.h"
+#include "v8js_object_export.h"
 #include "v8js_timer.h"
 
 #include <functional>
@@ -319,6 +320,10 @@ static void v8js_fatal_error_handler(const char *location, const char *message) 
 }
 /* }}} */
 
+#define IS_MAGIC_FUNC(mname) \
+	((key_len == sizeof(mname)) && \
+	!strncasecmp(key, mname, key_len - 1))
+
 /* {{{ proto void V8Js::__construct([string object_name [, array variables [, array extensions [, bool report_uncaught_exceptions]]])
    __construct for V8Js */
 static PHP_METHOD(V8Js, __construct)
@@ -480,7 +485,65 @@ static PHP_METHOD(V8Js, __construct)
 		}
 	}
 
+	/* Add pointer to zend object */
+	php_obj->SetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY), v8::External::New(isolate, getThis()));
 
+	/* Export public methods */
+	zend_function *method_ptr;
+	char *key = NULL;
+	uint key_len;
+
+	zend_hash_internal_pointer_reset_ex(&c->std.ce->function_table, &pos);
+	for (;; zend_hash_move_forward_ex(&c->std.ce->function_table, &pos)) {
+		if (zend_hash_get_current_key_ex(&c->std.ce->function_table, &key, &key_len, &index, 0, &pos) != HASH_KEY_IS_STRING  ||
+			zend_hash_get_current_data_ex(&c->std.ce->function_table, (void **) &method_ptr, &pos) == FAILURE
+			) {
+			break;
+		}
+
+		if ((method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) == 0) {
+			/* Allow only public methods */
+			continue;
+		}
+
+		if ((method_ptr->common.fn_flags & (ZEND_ACC_CTOR|ZEND_ACC_DTOR|ZEND_ACC_CLONE)) != 0) {
+			/* no __construct, __destruct(), or __clone() functions */
+			continue;
+		}
+
+		/* hide (do not export) other PHP magic functions */
+		if (IS_MAGIC_FUNC(ZEND_CALLSTATIC_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_SLEEP_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_WAKEUP_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_SET_STATE_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_GET_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_SET_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_UNSET_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_CALL_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_INVOKE_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_TOSTRING_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_ISSET_FUNC_NAME)) {
+			continue;
+		}
+
+		v8::Local<v8::String> method_name = V8JS_STR(method_ptr->common.function_name);
+		v8::Local<v8::FunctionTemplate> ft;
+
+		try {
+			ft = v8::Local<v8::FunctionTemplate>::New
+				(isolate, c->method_tmpls.at(method_ptr));
+		}
+		catch (const std::out_of_range &) {
+			ft = v8::FunctionTemplate::New(isolate, v8js_php_callback,
+					v8::External::New((isolate), method_ptr));
+			// @fixme add/check Signature v8::Signature::New((isolate), tmpl));
+			v8js_tmpl_t *persistent_ft = &c->method_tmpls[method_ptr];
+			persistent_ft->Reset(isolate, ft);
+		}
+
+
+		php_obj->ForceSet(method_name, ft->GetFunction());
+	}
 }
 /* }}} */
 
