@@ -17,16 +17,15 @@
 #include <assert.h>
 #include "php_v8js_macros.h"
 
-v8::Local<v8::Value> v8js_wrap_generator(v8js_ctx *ctx, v8::Local<v8::Value> wrapped_object) /* {{{ */
+v8::Local<v8::Value> v8js_wrap_generator(v8::Isolate *isolate, v8::Local<v8::Value> wrapped_object) /* {{{ */
 {
 	v8::Local<v8::Value> result;
-	V8JS_CTX_PROLOGUE_EX(ctx, result);
 
 	assert(!wrapped_object.IsEmpty());
 	assert(wrapped_object->IsObject());
 
 	v8::TryCatch try_catch;
-	v8::Local<v8::String> source = v8::String::NewFromUtf8(ctx->isolate, "(\
+	v8::Local<v8::String> source = v8::String::NewFromUtf8(isolate, "(\
 function(wrapped_object) {					\
 	return (function*() {					\
 		for(;;) {							\

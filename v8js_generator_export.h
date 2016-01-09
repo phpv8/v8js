@@ -13,7 +13,7 @@
 #ifndef V8JS_GENERATOR_EXPORT_H
 #define V8JS_GENERATOR_EXPORT_H
 
-v8::Local<v8::Value> v8js_wrap_generator(v8js_ctx *ctx, v8::Local<v8::Value> wrapped_object);
+v8::Local<v8::Value> v8js_wrap_generator(v8::Isolate *isolate, v8::Local<v8::Value> wrapped_object);
 
 #endif /* V8JS_GENERATOR_EXPORT_H */
 
