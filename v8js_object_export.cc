@@ -959,11 +959,13 @@ v8::Handle<v8::Value> v8js_hash_to_jsobj(zval *value, v8::Isolate *isolate TSRML
 	if (ce) {
 		v8::Local<v8::Value> wrapped_object = v8js_wrap_object(isolate, ce, value TSRMLS_CC);
 
+#ifdef V8JS_GENERATOR_EXPORT_SUPPORT
 		if (ce == zend_ce_generator) {
 			/* Wrap PHP Generator object in a wrapper function that provides
 			 * ES6 style behaviour. */
 			wrapped_object = v8js_wrap_generator(isolate, wrapped_object);
 		}
+#endif
 
 		return wrapped_object;
 	}

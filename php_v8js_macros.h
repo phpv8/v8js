@@ -63,6 +63,7 @@ extern "C" {
 
 #if PHP_V8_API_VERSION >= 3030000
 #define V8JS_V8GENERATOR_SUPPORT 1
+#define V8JS_GENERATOR_EXPORT_SUPPORT 1
 #endif
 
 /* method signatures of zend_update_property and zend_read_property were

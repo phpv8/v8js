@@ -17,6 +17,8 @@
 #include <assert.h>
 #include "php_v8js_macros.h"
 
+#ifdef V8JS_GENERATOR_EXPORT_SUPPORT
+
 v8::Local<v8::Value> v8js_wrap_generator(v8::Isolate *isolate, v8::Local<v8::Value> wrapped_object) /* {{{ */
 {
 	v8::Local<v8::Value> result;
@@ -61,6 +63,8 @@ function(wrapped_object) {					\
 	return result;
 }
 /* }}} */
+
+#endif /* V8JS_GENERATOR_EXPORT_SUPPORT */
 
 /*
  * Local variables:
