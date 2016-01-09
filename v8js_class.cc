@@ -46,6 +46,9 @@ static zend_class_entry *php_ce_v8js;
 static zend_object_handlers v8js_object_handlers;
 /* }}} */
 
+/* Forward declare v8js_methods, actually "static" but not possible in C++ */
+extern const zend_function_entry v8js_methods[];
+
 typedef struct _v8js_script {
 	char *name;
 	v8js_ctx *ctx;
@@ -523,6 +526,19 @@ static PHP_METHOD(V8Js, __construct)
 			IS_MAGIC_FUNC(ZEND_INVOKE_FUNC_NAME) ||
 			IS_MAGIC_FUNC(ZEND_TOSTRING_FUNC_NAME) ||
 			IS_MAGIC_FUNC(ZEND_ISSET_FUNC_NAME)) {
+			continue;
+		}
+
+		const zend_function_entry *fe;
+		for (fe = v8js_methods; fe->fname; fe ++) {
+			if (fe->fname == method_ptr->common.function_name) {
+				break;
+			}
+		}
+
+		if(fe->fname) {
+			/* Method belongs to \V8Js class itself, never export to V8, even if
+			 * it is overriden in a derived class. */
 			continue;
 		}
 
@@ -1119,7 +1135,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_setmemorylimit, 0, 0, 1)
 ZEND_END_ARG_INFO()
 
 
-static const zend_function_entry v8js_methods[] = { /* {{{ */
+const zend_function_entry v8js_methods[] = { /* {{{ */
 	PHP_ME(V8Js,	__construct,			arginfo_v8js_construct,				ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
 	PHP_ME(V8Js,	__sleep,				arginfo_v8js_sleep,					ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
 	PHP_ME(V8Js,	__wakeup,				arginfo_v8js_sleep,					ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
