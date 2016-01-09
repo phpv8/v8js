@@ -1,7 +1,15 @@
 --TEST--
 Test V8::executeString() : Generators PHP -> V8 (instantiate in JS, iterate in PHP)
 --SKIPIF--
-<?php require_once(dirname(__FILE__) . '/skipif.inc'); ?>
+<?php
+require_once(dirname(__FILE__) . '/skipif.inc');
+
+// Actually this check is a bit bad as it tests import, but currently
+// there is no flag we can check for export
+if (!class_exists('V8Generator')) {
+    die("skip Installed V8 version doesn't support generators");
+}
+?>
 --FILE--
 <?php
 
