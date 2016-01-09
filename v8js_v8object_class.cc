@@ -2,12 +2,13 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2013 The PHP Group                                |
+  | Copyright (c) 1997-2016 The PHP Group                                |
   +----------------------------------------------------------------------+
   | http://www.opensource.org/licenses/mit-license.php  MIT License      |
   +----------------------------------------------------------------------+
   | Author: Jani Taskinen <jani.taskinen@iki.fi>                         |
   | Author: Patrick Reilly <preilly@php.net>                             |
+  | Author: Stefan Siegl <stesie@php.net>                                |
   +----------------------------------------------------------------------+
 */
 
@@ -32,10 +33,18 @@ extern "C" {
 /* {{{ Class Entries */
 zend_class_entry *php_ce_v8object;
 zend_class_entry *php_ce_v8function;
+
+#ifdef V8JS_V8GENERATOR_SUPPORT
+zend_class_entry *php_ce_v8generator;
+#endif
 /* }}} */
 
 /* {{{ Object Handlers */
 static zend_object_handlers v8js_v8object_handlers;
+
+#ifdef V8JS_V8GENERATOR_SUPPORT
+static zend_object_handlers v8js_v8generator_handlers;
+#endif
 /* }}} */
 
 #define V8JS_V8_INVOKE_FUNC_NAME "V8Js::V8::Invoke"
@@ -307,7 +316,6 @@ static int v8js_v8object_call_method(zend_string *method, zend_object *object, I
 			}
 
 			v8::Local<v8::Value> *jsArgv = static_cast<v8::Local<v8::Value> *>(alloca(sizeof(v8::Local<v8::Value>) * argc));
-			v8::Local<v8::Value> js_retval;
 
 			for (i = 0; i < argc; i++) {
 				new(&jsArgv[i]) v8::Local<v8::Value>;
@@ -396,9 +404,6 @@ static zend_object *v8js_v8object_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 	c->std.handlers = &v8js_v8object_handlers;
 	new(&c->v8obj) v8::Persistent<v8::Value>();
 
-	v8js_v8object_handlers.offset = XtOffsetOf(struct v8js_v8object, std);
-	v8js_v8object_handlers.free_obj = v8js_v8object_free_storage;
-	
 	return &c->std;
 }
 /* }}} */
@@ -468,11 +473,206 @@ PHP_METHOD(V8Function, __wakeup)
 }
 /* }}} */
 
+
+#ifdef V8JS_V8GENERATOR_SUPPORT
+static void v8js_v8generator_free_storage(zend_object *object) /* {{{ */
+{
+	v8js_v8generator *c = v8js_v8generator_fetch_object(object);
+	zval_dtor(&c->value);
+
+	v8js_v8object_free_storage(object);
+}
+/* }}} */
+
+static zend_object *v8js_v8generator_new(zend_class_entry *ce) /* {{{ */
+{
+	v8js_v8generator *c;
+	c = (v8js_v8generator *) ecalloc(1, sizeof(v8js_v8generator) + zend_object_properties_size(ce));
+
+	zend_object_std_init(&c->v8obj.std, ce);
+	c->v8obj.std.handlers = &v8js_v8generator_handlers;
+	new(&c->v8obj.v8obj) v8::Persistent<v8::Value>();
+
+	return &c->v8obj.std;
+}
+/* }}} */
+
+static void v8js_v8generator_next(v8js_v8generator *g) /* {{{ */
+{
+	if (!g->v8obj.ctx) {
+		zend_throw_exception(php_ce_v8js_exception,
+			"Can't access V8Generator after V8Js instance is destroyed!", 0);
+		return;
+	}
+
+	/* std::function relies on its dtor to be executed, otherwise it leaks
+	 * some memory on bailout. */
+	{
+		std::function< v8::Local<v8::Value>(v8::Isolate *) > v8_call = [g](v8::Isolate *isolate) {
+			int i = 0;
+
+			v8::Local<v8::String> method_name = V8JS_STR("next");
+			v8::Local<v8::Object> v8obj = v8::Local<v8::Value>::New(isolate, g->v8obj.v8obj)->ToObject();
+			v8::Local<v8::Function> cb = v8::Local<v8::Function>::Cast(v8obj->Get(method_name));;
+
+			v8::Local<v8::Value> result = cb->Call(v8obj, 0, NULL);
+
+			if(result.IsEmpty()) {
+				/* cb->Call probably threw (and already threw a zend exception), just return */
+				return V8JS_NULL;
+			}
+
+			if(!result->IsObject()) {
+				zend_throw_exception(php_ce_v8js_exception,
+					"V8Generator returned non-object on next()", 0);
+				return V8JS_NULL;
+			}
+
+			v8::Local<v8::Object> resultObj = result->ToObject();
+			v8::Local<v8::Value> val = resultObj->Get(V8JS_STR("value"));
+			v8::Local<v8::Value> done = resultObj->Get(V8JS_STR("done"));
+
+			zval_dtor(&g->value);
+			v8js_to_zval(val, &g->value, 0, isolate);
+
+			g->done = done->IsTrue();
+			g->primed = true;
+			return V8JS_NULL;
+		};
+
+		v8js_v8_call(g->v8obj.ctx, NULL, g->v8obj.flags, g->v8obj.ctx->time_limit, g->v8obj.ctx->memory_limit, v8_call);
+	}
+
+	if(V8JSG(fatal_error_abort)) {
+		/* Check for fatal error marker possibly set by v8js_error_handler; just
+		 * rethrow the error since we're now out of V8. */
+		zend_bailout();
+	}
+}
+/* }}} */
+
+static zend_function *v8js_v8generator_get_method(zend_object **object_ptr, zend_string *method, const zval *key) /* {{{ */
+{
+	zend_function *result = std_object_handlers.get_method(object_ptr, method, key);
+
+	if(!result) {
+		result = v8js_v8object_get_method(object_ptr, method, key);
+	}
+
+	return result;
+}
+/* }}} */
+
+/* {{{ proto V8Generator::__construct()
+ */
+PHP_METHOD(V8Generator,__construct)
+{
+	zend_throw_exception(php_ce_v8js_exception,
+		"Can't directly construct V8 objects!", 0 TSRMLS_CC);
+	RETURN_FALSE;
+}
+/* }}} */
+
+/* {{{ proto V8Generator::__sleep()
+ */
+PHP_METHOD(V8Generator, __sleep)
+{
+	zend_throw_exception(php_ce_v8js_exception,
+		"You cannot serialize or unserialize V8Generator instances", 0 TSRMLS_CC);
+	RETURN_FALSE;
+}
+/* }}} */
+
+/* {{{ proto V8Generator::__wakeup()
+ */
+PHP_METHOD(V8Generator, __wakeup)
+{
+	zend_throw_exception(php_ce_v8js_exception,
+		"You cannot serialize or unserialize V8Generator instances", 0 TSRMLS_CC);
+	RETURN_FALSE;
+}
+/* }}} */
+
+/* {{{ mixed V8Generator::current()
+ */
+PHP_METHOD(V8Generator, current)
+{
+	v8js_v8generator *g = Z_V8JS_V8GENERATOR_OBJ_P(getThis());
+
+	if(!g->primed) {
+		v8js_v8generator_next(g);
+	}
+
+	RETVAL_ZVAL(&g->value, 1, 0);
+}
+/* }}} */
+
+/* {{{ scalar V8Generator::key()
+ */
+PHP_METHOD(V8Generator, key)
+{
+	RETURN_FALSE;
+}
+/* }}} */
+
+/* {{{ void V8Generator::next()
+ */
+PHP_METHOD(V8Generator, next)
+{
+	v8js_v8generator *g = Z_V8JS_V8GENERATOR_OBJ_P(getThis());
+	v8js_v8generator_next(g);
+}
+/* }}} */
+
+/* {{{ void V8Generator::rewind()
+ */
+PHP_METHOD(V8Generator, rewind)
+{
+	v8js_v8generator *g = Z_V8JS_V8GENERATOR_OBJ_P(getThis());
+
+	if(g->primed) {
+		zend_throw_exception(php_ce_v8js_exception,
+			"V8Generator::rewind not supported by ES6", 0 TSRMLS_CC);
+
+	}
+
+	RETURN_FALSE;
+}
+/* }}} */
+
+/* {{{ boolean V8Generator::valid()
+ */
+PHP_METHOD(V8Generator, valid)
+{
+	v8js_v8generator *g = Z_V8JS_V8GENERATOR_OBJ_P(getThis());
+
+	if(!g->primed) {
+		v8js_v8generator_next(g);
+	}
+
+	RETVAL_BOOL(!g->done);
+}
+/* }}} */
+#endif  /* /V8JS_V8GENERATOR_SUPPORT */
+
+
 void v8js_v8object_create(zval *res, v8::Handle<v8::Value> value, int flags, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
 {
 	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
 
-	object_init_ex(res, value->IsFunction() ? php_ce_v8function : php_ce_v8object);
+#ifdef V8JS_V8GENERATOR_SUPPORT
+	if(value->IsGeneratorObject()) {
+		object_init_ex(res, php_ce_v8generator);
+	}
+	else
+#endif  /* /V8JS_V8GENERATOR_SUPPORT */
+	if(value->IsFunction()) {
+		object_init_ex(res, php_ce_v8function);
+	}
+	else {
+		object_init_ex(res, php_ce_v8object);
+	}
+
 	v8js_v8object *c = Z_V8JS_V8OBJECT_OBJ_P(res);
 
 	c->v8obj.Reset(isolate, value);
@@ -500,6 +700,38 @@ static const zend_function_entry v8js_v8function_methods[] = { /* {{{ */
 };
 /* }}} */
 
+#ifdef V8JS_V8GENERATOR_SUPPORT
+ZEND_BEGIN_ARG_INFO(arginfo_v8generator_current, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO(arginfo_v8generator_key, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO(arginfo_v8generator_next, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO(arginfo_v8generator_rewind, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO(arginfo_v8generator_valid, 0)
+ZEND_END_ARG_INFO()
+
+static const zend_function_entry v8js_v8generator_methods[] = { /* {{{ */
+	PHP_ME(V8Generator,	__construct,			NULL,							ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+	PHP_ME(V8Generator,	__sleep,				NULL,							ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
+	PHP_ME(V8Generator,	__wakeup,				NULL,							ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
+
+	PHP_ME(V8Generator,	current,				arginfo_v8generator_current,	ZEND_ACC_PUBLIC)
+	PHP_ME(V8Generator,	key,					arginfo_v8generator_key,		ZEND_ACC_PUBLIC)
+	PHP_ME(V8Generator,	next,					arginfo_v8generator_next,		ZEND_ACC_PUBLIC)
+	PHP_ME(V8Generator,	rewind,					arginfo_v8generator_rewind,		ZEND_ACC_PUBLIC)
+	PHP_ME(V8Generator,	valid,					arginfo_v8generator_valid,		ZEND_ACC_PUBLIC)
+
+	{NULL, NULL, NULL}
+};
+/* }}} */
+#endif  /* /V8JS_V8GENERATOR_SUPPORT */
+
 
 PHP_MINIT_FUNCTION(v8js_v8object_class) /* {{{ */
 {
@@ -517,6 +749,17 @@ PHP_MINIT_FUNCTION(v8js_v8object_class) /* {{{ */
 	php_ce_v8function->ce_flags |= ZEND_ACC_FINAL;
 	php_ce_v8function->create_object = v8js_v8object_new;
 
+#ifdef V8JS_V8GENERATOR_SUPPORT
+	/* V8Generator Class */
+	INIT_CLASS_ENTRY(ce, "V8Generator", v8js_v8generator_methods);
+	php_ce_v8generator = zend_register_internal_class(&ce TSRMLS_CC);
+	php_ce_v8generator->ce_flags |= ZEND_ACC_FINAL;
+	php_ce_v8generator->create_object = v8js_v8generator_new;
+
+	zend_class_implements(php_ce_v8generator, 1, zend_ce_iterator);
+#endif  /* /V8JS_V8GENERATOR_SUPPORT */
+
+
 	/* V8<Object|Function> handlers */
 	memcpy(&v8js_v8object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
 	v8js_v8object_handlers.clone_obj = NULL;
@@ -531,6 +774,16 @@ PHP_MINIT_FUNCTION(v8js_v8object_class) /* {{{ */
 	v8js_v8object_handlers.call_method = v8js_v8object_call_method;
 	v8js_v8object_handlers.get_debug_info = v8js_v8object_get_debug_info;
 	v8js_v8object_handlers.get_closure = v8js_v8object_get_closure;
+	v8js_v8object_handlers.offset = XtOffsetOf(struct v8js_v8object, std);
+	v8js_v8object_handlers.free_obj = v8js_v8object_free_storage;
+
+#ifdef V8JS_V8GENERATOR_SUPPORT
+	/* V8Generator handlers */
+	memcpy(&v8js_v8generator_handlers, &v8js_v8object_handlers, sizeof(zend_object_handlers));
+	v8js_v8generator_handlers.get_method = v8js_v8generator_get_method;
+	v8js_v8generator_handlers.offset = XtOffsetOf(struct v8js_v8generator, v8obj.std);
+	v8js_v8generator_handlers.free_obj = v8js_v8generator_free_storage;
+#endif  /* /V8JS_V8GENERATOR_SUPPORT */
 
 	return SUCCESS;
 } /* }}} */
