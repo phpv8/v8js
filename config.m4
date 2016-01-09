@@ -180,6 +180,7 @@ int main ()
     v8js_commonjs.cc		\
     v8js_convert.cc			\
     v8js_exceptions.cc		\
+    v8js_generator_export.cc	\
     v8js_methods.cc			\
     v8js_object_export.cc	\
 	v8js_timer.cc			\
@@ -190,3 +191,10 @@ int main ()
 
   PHP_ADD_MAKEFILE_FRAGMENT
 fi
+
+dnl Local variables:
+dnl tab-width: 4
+dnl c-basic-offset: 4
+dnl End:
+dnl vim600: noet sw=4 ts=4 fdm=marker
+dnl vim<600: noet sw=4 ts=4
