@@ -531,7 +531,7 @@ static PHP_METHOD(V8Js, __construct)
 
 		const zend_function_entry *fe;
 		for (fe = v8js_methods; fe->fname; fe ++) {
-			if (fe->fname == method_ptr->common.function_name) {
+			if (strcmp(fe->fname, method_ptr->common.function_name) == 0) {
 				break;
 			}
 		}
@@ -1186,7 +1186,7 @@ static void v8js_unset_property(zval *object, zval *member ZEND_HASH_KEY_DC TSRM
 	/* Global PHP JS object */
 	v8::Local<v8::String> object_name_js = v8::Local<v8::String>::New(isolate, c->object_name);
 	v8::Local<v8::Object> jsobj = V8JS_GLOBAL(isolate)->Get(object_name_js)->ToObject();
-	
+
 	/* Delete value from PHP JS object */
 	jsobj->Delete(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)));
 
