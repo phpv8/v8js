@@ -17,6 +17,7 @@
 
 #include "php_v8js_macros.h"
 #include "v8js_array_access.h"
+#include "v8js_generator_export.h"
 #include "v8js_object_export.h"
 #include "v8js_v8object_class.h"
 
@@ -26,6 +27,7 @@ extern "C" {
 #include "zend_interfaces.h"
 #include "zend_closures.h"
 #include "zend_exceptions.h"
+#include "zend_generators.h"
 }
 
 static void v8js_weak_object_callback(const v8::WeakCallbackData<v8::Object, zend_object> &data);
@@ -955,7 +957,16 @@ v8::Handle<v8::Value> v8js_hash_to_jsobj(zval *value, v8::Isolate *isolate TSRML
 
 	/* If it's a PHP object, wrap it */
 	if (ce) {
-		return v8js_wrap_object(isolate, ce, value TSRMLS_CC);
+		v8::Local<v8::Value> wrapped_object = v8js_wrap_object(isolate, ce, value TSRMLS_CC);
+
+		if (ce == zend_ce_generator) {
+			/* Wrap PHP Generator object in a wrapper function that provides
+			 * ES6 style behaviour. */
+			v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
+			wrapped_object = v8js_wrap_generator(ctx, wrapped_object);
+		}
+
+		return wrapped_object;
 	}
 
 	/* Associative PHP arrays cannot be wrapped to JS arrays, convert them to
