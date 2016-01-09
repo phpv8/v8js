@@ -23,7 +23,7 @@ $v8->executeString($JS);
 ?>
 ===EOF===
 --EXPECTF--
-Fatal error: Uncaught exception 'V8JsScriptException' with message 'V8Js::compileString():1: TypeError: %s is not a function' in %s
+Fatal error: Uncaught exception 'V8JsScriptException' with message 'V8Js::compileString():1: TypeError: %s' in %s
 Stack trace:
 #0 %s: V8Js->executeString('PHP.hello();')
 #1 {main}
