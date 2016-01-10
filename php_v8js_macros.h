@@ -85,6 +85,13 @@ extern "C" {
 #define V8JS_FLAG_FORCE_ARRAY	(1<<1)
 #define V8JS_FLAG_PROPAGATE_PHP_EXCEPTIONS	(1<<2)
 
+
+/* These are not defined by Zend */
+#define ZEND_WAKEUP_FUNC_NAME    "__wakeup"
+#define ZEND_SLEEP_FUNC_NAME     "__sleep"
+#define ZEND_SET_STATE_FUNC_NAME "__set_state"
+
+
 /* Convert zval into V8 value */
 v8::Handle<v8::Value> zval_to_v8js(zval *, v8::Isolate * TSRMLS_DC);
 

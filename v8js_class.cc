@@ -30,6 +30,7 @@ extern "C" {
 #include "v8js_v8.h"
 #include "v8js_exceptions.h"
 #include "v8js_v8object_class.h"
+#include "v8js_object_export.h"
 #include "v8js_timer.h"
 
 #include <functional>
@@ -44,6 +45,9 @@ static zend_class_entry *php_ce_v8js;
 /* {{{ Object Handlers */
 static zend_object_handlers v8js_object_handlers;
 /* }}} */
+
+/* Forward declare v8js_methods, actually "static" but not possible in C++ */
+extern const zend_function_entry v8js_methods[];
 
 typedef struct _v8js_script {
 	char *name;
@@ -319,6 +323,10 @@ static void v8js_fatal_error_handler(const char *location, const char *message) 
 }
 /* }}} */
 
+#define IS_MAGIC_FUNC(mname) \
+	((key_len == sizeof(mname)) && \
+	!strncasecmp(key, mname, key_len - 1))
+
 /* {{{ proto void V8Js::__construct([string object_name [, array variables [, array extensions [, bool report_uncaught_exceptions]]])
    __construct for V8Js */
 static PHP_METHOD(V8Js, __construct)
@@ -480,7 +488,78 @@ static PHP_METHOD(V8Js, __construct)
 		}
 	}
 
+	/* Add pointer to zend object */
+	php_obj->SetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY), v8::External::New(isolate, getThis()));
 
+	/* Export public methods */
+	zend_function *method_ptr;
+	char *key = NULL;
+	uint key_len;
+
+	zend_hash_internal_pointer_reset_ex(&c->std.ce->function_table, &pos);
+	for (;; zend_hash_move_forward_ex(&c->std.ce->function_table, &pos)) {
+		if (zend_hash_get_current_key_ex(&c->std.ce->function_table, &key, &key_len, &index, 0, &pos) != HASH_KEY_IS_STRING  ||
+			zend_hash_get_current_data_ex(&c->std.ce->function_table, (void **) &method_ptr, &pos) == FAILURE
+			) {
+			break;
+		}
+
+		if ((method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) == 0) {
+			/* Allow only public methods */
+			continue;
+		}
+
+		if ((method_ptr->common.fn_flags & (ZEND_ACC_CTOR|ZEND_ACC_DTOR|ZEND_ACC_CLONE)) != 0) {
+			/* no __construct, __destruct(), or __clone() functions */
+			continue;
+		}
+
+		/* hide (do not export) other PHP magic functions */
+		if (IS_MAGIC_FUNC(ZEND_CALLSTATIC_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_SLEEP_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_WAKEUP_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_SET_STATE_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_GET_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_SET_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_UNSET_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_CALL_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_INVOKE_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_TOSTRING_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_ISSET_FUNC_NAME)) {
+			continue;
+		}
+
+		const zend_function_entry *fe;
+		for (fe = v8js_methods; fe->fname; fe ++) {
+			if (strcmp(fe->fname, method_ptr->common.function_name) == 0) {
+				break;
+			}
+		}
+
+		if(fe->fname) {
+			/* Method belongs to \V8Js class itself, never export to V8, even if
+			 * it is overriden in a derived class. */
+			continue;
+		}
+
+		v8::Local<v8::String> method_name = V8JS_STR(method_ptr->common.function_name);
+		v8::Local<v8::FunctionTemplate> ft;
+
+		try {
+			ft = v8::Local<v8::FunctionTemplate>::New
+				(isolate, c->method_tmpls.at(method_ptr));
+		}
+		catch (const std::out_of_range &) {
+			ft = v8::FunctionTemplate::New(isolate, v8js_php_callback,
+					v8::External::New((isolate), method_ptr));
+			// @fixme add/check Signature v8::Signature::New((isolate), tmpl));
+			v8js_tmpl_t *persistent_ft = &c->method_tmpls[method_ptr];
+			persistent_ft->Reset(isolate, ft);
+		}
+
+
+		php_obj->ForceSet(method_name, ft->GetFunction());
+	}
 }
 /* }}} */
 
@@ -1056,7 +1135,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_setmemorylimit, 0, 0, 1)
 ZEND_END_ARG_INFO()
 
 
-static const zend_function_entry v8js_methods[] = { /* {{{ */
+const zend_function_entry v8js_methods[] = { /* {{{ */
 	PHP_ME(V8Js,	__construct,			arginfo_v8js_construct,				ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
 	PHP_ME(V8Js,	__sleep,				arginfo_v8js_sleep,					ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
 	PHP_ME(V8Js,	__wakeup,				arginfo_v8js_sleep,					ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
@@ -1107,7 +1186,7 @@ static void v8js_unset_property(zval *object, zval *member ZEND_HASH_KEY_DC TSRM
 	/* Global PHP JS object */
 	v8::Local<v8::String> object_name_js = v8::Local<v8::String>::New(isolate, c->object_name);
 	v8::Local<v8::Object> jsobj = V8JS_GLOBAL(isolate)->Get(object_name_js)->ToObject();
-	
+
 	/* Delete value from PHP JS object */
 	jsobj->Delete(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)));
 

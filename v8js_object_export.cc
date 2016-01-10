@@ -169,7 +169,7 @@ failure:
 /* }}} */
 
 /* Callback for PHP methods and functions */
-static void v8js_php_callback(const v8::FunctionCallbackInfo<v8::Value>& info) /* {{{ */
+void v8js_php_callback(const v8::FunctionCallbackInfo<v8::Value>& info) /* {{{ */
 {
 	v8::Isolate *isolate = info.GetIsolate();
 	v8::Local<v8::Object> self = info.Holder();
@@ -290,11 +290,6 @@ static void v8js_weak_closure_callback(const v8::WeakCallbackData<v8::Object, v8
 	ctx->weak_closures.at(persist_tpl_).Reset();
 	ctx->weak_closures.erase(persist_tpl_);
 };
-
-/* These are not defined by Zend */
-#define ZEND_WAKEUP_FUNC_NAME    "__wakeup"
-#define ZEND_SLEEP_FUNC_NAME     "__sleep"
-#define ZEND_SET_STATE_FUNC_NAME "__set_state"
 
 #define IS_MAGIC_FUNC(mname) \
 	((key_len == sizeof(mname)) && \
