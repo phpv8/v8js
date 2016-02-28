@@ -67,6 +67,9 @@ struct v8js_ctx {
   std::vector<v8js_accessor_ctx *> accessor_list;
   std::vector<struct _v8js_script *> script_objects;
   char *tz;
+
+  v8::Isolate::CreateParams create_params;
+  v8::StartupData snapshot_blob;
 #ifdef ZTS
   void ***zts_ctx;
 #endif
