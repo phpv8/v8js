@@ -207,7 +207,7 @@ static void v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 	c->modules_stack.~vector();
 	c->modules_base.~vector();
 
-#ifdef PHP_V8_USE_EXTERNAL_STARTUP_DATA
+#if defined(PHP_V8_USE_EXTERNAL_STARTUP_DATA) && PHP_V8_API_VERSION >= 4004044
 	if (c->snapshot_blob.data) {
 		efree((void*)c->snapshot_blob.data);
 	}
@@ -369,8 +369,8 @@ static PHP_METHOD(V8Js, __construct)
 	new (&c->create_params) v8::Isolate::CreateParams();
 	c->create_params.array_buffer_allocator = &array_buffer_allocator;
 
-	new (&c->snapshot_blob) v8::StartupData();
 #ifdef PHP_V8_USE_EXTERNAL_STARTUP_DATA
+	new (&c->snapshot_blob) v8::StartupData();
 	if (snapshot_blob && snapshot_blob_len) {
 		c->snapshot_blob.data = snapshot_blob;
 		c->snapshot_blob.raw_size = snapshot_blob_len;
