@@ -130,59 +130,6 @@ int main ()
     AC_MSG_ERROR([could not determine libv8 version])
   fi
 
-  AC_MSG_CHECKING([for v8::internal::ReadNatives])
-  AC_TRY_LINK([
-    namespace v8 {
-      namespace internal {
-        void ReadNatives();
-      }
-    }], [v8::internal::ReadNatives();], [
-      AC_MSG_RESULT([found (using snapshots)])
-      AC_DEFINE([PHP_V8_USE_EXTERNAL_STARTUP_DATA], [1], [Whether V8 requires (and can be provided with custom versions of) external startup data])
-
-      SEARCH_PATH="$V8_DIR/lib"
-
-      AC_MSG_CHECKING([for natives_blob.bin])
-      SEARCH_FOR="natives_blob.bin"
-
-      for i in $SEARCH_PATH ; do
-        if test -r $i/$SEARCH_FOR; then
-          AC_MSG_RESULT([found ($i/$SEARCH_FOR)])
-          AC_DEFINE_UNQUOTED([PHP_V8_NATIVES_BLOB_PATH], "$i/$SEARCH_FOR", [Full path to natives_blob.bin file])
-          native_blob_found=1
-        fi
-      done
-
-      if test -z "$native_blob_found"; then
-        AC_MSG_RESULT([not found])
-        AC_MSG_ERROR([Please provide V8 native blob as needed])
-      fi
-
-      AC_MSG_CHECKING([for snapshot_blob.bin])
-      SEARCH_FOR="snapshot_blob.bin"
-
-      for i in $SEARCH_PATH ; do
-        if test -r $i/$SEARCH_FOR; then
-          AC_MSG_RESULT([found ($i/$SEARCH_FOR)])
-          AC_DEFINE_UNQUOTED([PHP_V8_SNAPSHOT_BLOB_PATH], "$i/$SEARCH_FOR", [Full path to snapshot_blob.bin file])
-          snapshot_blob_found=1
-        fi
-      done
-
-      if test -z "$snapshot_blob_found"; then
-        AC_MSG_RESULT([not found])
-        AC_MSG_ERROR([Please provide V8 snapshot blob as needed])
-      fi
-
-    ], [
-      AC_MSG_RESULT([not found (snapshots disabled)])
-    ])
-
-  AC_LANG_RESTORE
-  LIBS=$old_LIBS
-  LDFLAGS=$old_LDFLAGS
-  CPPFLAGS=$old_CPPFLAGS
-
   if test "$V8_API_VERSION" -ge 3029036 ; then
     dnl building for v8 3.29.36 or later, which requires us to
     dnl initialize and provide a platform; hence we need to
@@ -217,9 +164,100 @@ int main ()
         AC_MSG_ERROR([Please provide $static_link_extra_file next to the libv8.so, see README.md for details])
       fi
 
-      LDFLAGS="$LDFLAGS $static_link_dir/$static_link_extra_file"
+      LDFLAGS_libplatform="$static_link_dir/$static_link_extra_file"
     done
+
+    # modify flags for (possibly) succeeding V8 startup check
+    CPPFLAGS="$CPPFLAGS -I$V8_DIR"
+    LIBS="$LIBS $LDFLAGS_libplatform"
   fi
+
+  if test "$V8_API_VERSION" -ge 4004010 ; then
+    dnl building for v8 4.4.10 or later, which requires us to
+    dnl provide startup data, if V8 wasn't compiled with snapshot=off.
+    AC_MSG_CHECKING([whether V8 requires startup data])
+    AC_TRY_RUN([
+        #include <v8.h>
+        #include <libplatform/libplatform.h>
+        #include <stdlib.h>
+        #include <string.h>
+
+#if PHP_V8_API_VERSION >= 4004010
+class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
+public:
+	virtual void* Allocate(size_t length) {
+		void* data = AllocateUninitialized(length);
+		return data == NULL ? data : memset(data, 0, length);
+	}
+	virtual void* AllocateUninitialized(size_t length) { return malloc(length); }
+	virtual void Free(void* data, size_t) { free(data); }
+};
+#endif
+
+        int main ()
+        {
+            v8::Platform *v8_platform = v8::platform::CreateDefaultPlatform();
+            v8::V8::InitializePlatform(v8_platform);
+            v8::V8::Initialize();
+
+#if PHP_V8_API_VERSION >= 4004044
+            static ArrayBufferAllocator array_buffer_allocator;
+            v8::Isolate::CreateParams create_params;
+            create_params.array_buffer_allocator = &array_buffer_allocator;
+
+            v8::Isolate::New(create_params);
+#else /* PHP_V8_API_VERSION < 4004044 */
+            v8::Isolate::New();
+#endif
+            return 0;
+        }
+    ], [
+        AC_MSG_RESULT([no])
+    ], [
+        AC_MSG_RESULT([yes])
+        AC_DEFINE([PHP_V8_USE_EXTERNAL_STARTUP_DATA], [1], [Whether V8 requires (and can be provided with custom versions of) external startup data])
+
+        SEARCH_PATH="$V8_DIR/lib"
+
+        AC_MSG_CHECKING([for natives_blob.bin])
+        SEARCH_FOR="natives_blob.bin"
+
+        for i in $SEARCH_PATH ; do
+          if test -r $i/$SEARCH_FOR; then
+            AC_MSG_RESULT([found ($i/$SEARCH_FOR)])
+            AC_DEFINE_UNQUOTED([PHP_V8_NATIVES_BLOB_PATH], "$i/$SEARCH_FOR", [Full path to natives_blob.bin file])
+            native_blob_found=1
+          fi
+        done
+
+        if test -z "$native_blob_found"; then
+          AC_MSG_RESULT([not found])
+          AC_MSG_ERROR([Please provide V8 native blob as needed])
+        fi
+
+        AC_MSG_CHECKING([for snapshot_blob.bin])
+        SEARCH_FOR="snapshot_blob.bin"
+
+        for i in $SEARCH_PATH ; do
+          if test -r $i/$SEARCH_FOR; then
+            AC_MSG_RESULT([found ($i/$SEARCH_FOR)])
+            AC_DEFINE_UNQUOTED([PHP_V8_SNAPSHOT_BLOB_PATH], "$i/$SEARCH_FOR", [Full path to snapshot_blob.bin file])
+            snapshot_blob_found=1
+          fi
+        done
+
+        if test -z "$snapshot_blob_found"; then
+          AC_MSG_RESULT([not found])
+          AC_MSG_ERROR([Please provide V8 snapshot blob as needed])
+        fi
+    ])
+  fi
+
+  AC_LANG_RESTORE
+  LIBS=$old_LIBS
+  LDFLAGS="$old_LDFLAGS $LDFLAGS_libplatform"
+  CPPFLAGS=$old_CPPFLAGS
+
 
   PHP_NEW_EXTENSION(v8js, [	\
     v8js_array_access.cc	\
