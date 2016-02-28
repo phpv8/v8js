@@ -54,6 +54,13 @@ void v8js_v8_init(TSRMLS_D) /* {{{ */
 	}
 #endif
 
+#ifdef PHP_V8_USE_EXTERNAL_STARTUP_DATA
+	v8::V8::InitializeExternalStartupData(
+		PHP_V8_NATIVES_BLOB_PATH,
+		PHP_V8_SNAPSHOT_BLOB_PATH
+	);
+#endif
+
 #if !defined(_WIN32) && PHP_V8_API_VERSION >= 3029036
 	v8js_process_globals.v8_platform = v8::platform::CreateDefaultPlatform();
 	v8::V8::InitializePlatform(v8js_process_globals.v8_platform);

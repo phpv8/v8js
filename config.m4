@@ -130,6 +130,54 @@ int main ()
     AC_MSG_ERROR([could not determine libv8 version])
   fi
 
+  AC_MSG_CHECKING([for v8::internal::ReadNatives])
+  AC_TRY_LINK([
+    namespace v8 {
+      namespace internal {
+        void ReadNatives();
+      }
+    }], [v8::internal::ReadNatives();], [
+      AC_MSG_RESULT([found (using snapshots)])
+      AC_DEFINE([PHP_V8_USE_EXTERNAL_STARTUP_DATA], [1], [Whether V8 requires (and can be provided with custom versions of) external startup data])
+
+      SEARCH_PATH="$V8_DIR/lib"
+
+      AC_MSG_CHECKING([for natives_blob.bin])
+      SEARCH_FOR="natives_blob.bin"
+
+      for i in $SEARCH_PATH ; do
+        if test -r $i/$SEARCH_FOR; then
+          AC_MSG_RESULT([found ($i/$SEARCH_FOR)])
+          AC_DEFINE_UNQUOTED([PHP_V8_NATIVES_BLOB_PATH], "$i/$SEARCH_FOR", [Full path to natives_blob.bin file])
+          native_blob_found=1
+        fi
+      done
+
+      if test -z "$native_blob_found"; then
+        AC_MSG_RESULT([not found])
+        AC_MSG_ERROR([Please provide V8 native blob as needed])
+      fi
+
+      AC_MSG_CHECKING([for snapshot_blob.bin])
+      SEARCH_FOR="snapshot_blob.bin"
+
+      for i in $SEARCH_PATH ; do
+        if test -r $i/$SEARCH_FOR; then
+          AC_MSG_RESULT([found ($i/$SEARCH_FOR)])
+          AC_DEFINE_UNQUOTED([PHP_V8_SNAPSHOT_BLOB_PATH], "$i/$SEARCH_FOR", [Full path to snapshot_blob.bin file])
+          snapshot_blob_found=1
+        fi
+      done
+
+      if test -z "$snapshot_blob_found"; then
+        AC_MSG_RESULT([not found])
+        AC_MSG_ERROR([Please provide V8 snapshot blob as needed])
+      fi
+
+    ], [
+      AC_MSG_RESULT([not found (snapshots disabled)])
+    ])
+
   AC_LANG_RESTORE
   LIBS=$old_LIBS
   LDFLAGS=$old_LDFLAGS
