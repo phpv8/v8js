@@ -1056,14 +1056,13 @@ static PHP_METHOD(V8Js, getExtensions)
  */
 static PHP_METHOD(V8Js, createSnapshot)
 {
-	char *script;
-	int script_len;
+	zend_string *script;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &script, &script_len) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S", &script) == FAILURE) {
 		return;
 	}
 
-	if (!script_len) {
+	if (!ZSTR_LEN(script)) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Script cannot be empty");
 		RETURN_FALSE;
 	}
@@ -1071,7 +1070,7 @@ static PHP_METHOD(V8Js, createSnapshot)
 	/* Initialize V8, if not already done. */
 	v8js_v8_init(TSRMLS_C);
 
-	v8::StartupData snapshot_blob = v8::V8::CreateSnapshotDataBlob(script);
+	v8::StartupData snapshot_blob = v8::V8::CreateSnapshotDataBlob(ZSTR_VAL(script));
 
 	if (!snapshot_blob.data) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Failed to create V8 heap snapshot.  Check $embed_source for errors.");
