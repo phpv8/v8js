@@ -10,7 +10,23 @@ years ago, since Node.js requires such an old version.
 This means that you usually need to compile v8 on your own before
 you can start to compile & install v8js itself.
 
-Compile latest v8
+Snapshots
+---------
+
+V8 has (optional) support for so-called snapshots which speed up startup
+performance drastically.  Hence they are generally recommended for use.
+
+There are two flavours of snapshots: internal & external.
+
+Internal snapshots are built right into the V8 library (libv8.so file),
+so there's no need to handle them specially.
+
+Besides there are external snapshots (which are enabled unless configured
+otherwise).  If V8 is compiled with these, then V8Js needs to provide two
+"binary blobs" to V8, named `natives_blob.bin` and `snapshot_blob.bin`.
+In that case copy those two files to `/usr/share/v8/...`.
+
+Compile latest V8
 -----------------
 
 ```
@@ -25,11 +41,15 @@ fetch v8
 cd v8
 
 # (optional) If you'd like to build a certain version:
-git checkout 3.32.6
+git checkout 4.9.385.28
 gclient sync
 
-# Build (disable snapshots for V8 > 4.4.9.1)
-make native library=shared snapshot=off -j8
+# use libicu of operating system
+export GYP_DEFINES="use_system_icu=1"
+
+# Build (with internal snapshots)
+export GYPFLAGS="-Dv8_use_external_startup_data=0"
+make native library=shared snapshot=on -j8
 
 # Install to /usr
 sudo mkdir -p /usr/lib /usr/include
@@ -40,16 +60,9 @@ echo -e "create /usr/lib/libv8_libplatform.a\naddlib out/native/obj.target/tools
 
 Then add `extension=v8js.so` to your php.ini file. If you have a separate configuration for CLI, add it there also.
 
-* If the V8 library is newer than 4.4.9.1 you need to pass `snapshot=off` to
-  `make`, otherwise the V8 library will not be usable
-  (see V8 [Issue 4192](https://code.google.com/p/v8/issues/detail?id=4192))
 * If you don't want to overwrite the system copy of v8, replace `/usr` in
   the above commands with some other path like `/opt/v8` and then add
   `--with-v8js=/opt/v8` to the php-v8js `./configure` command below.
-* If you do that with a v8 library of 4.2 branch or newer, then you need
-  to fix the RUNPATH header in the v8js.so library so the libicui18n.so
-  is found. By default it is set to `$ORIGIN/lib.target/`, however the files
-  lie side by side. Use `chrpath -r '$ORIGIN' libv8.so` to fix.
 
 `libv8_libplatform.a` should not be copied directly since it's a thin
 archive, i.e. it contains only pointers to the build objects, which
@@ -62,7 +75,7 @@ Compile php-v8js itself
 
 ```
 cd /tmp
-git clone https://github.com/preillyme/v8js.git
+git clone https://github.com/phpv8/v8js.git
 cd v8js
 phpize
 ./configure

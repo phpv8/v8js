@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2015 The PHP Group                                |
+  | Copyright (c) 1997-2016 The PHP Group                                |
   +----------------------------------------------------------------------+
   | http://www.opensource.org/licenses/mit-license.php  MIT License      |
   +----------------------------------------------------------------------+
@@ -34,6 +34,43 @@ extern "C" {
 #include "v8js_timer.h"
 #include "v8js_exceptions.h"
 
+#if defined(PHP_V8_USE_EXTERNAL_STARTUP_DATA) && PHP_V8_API_VERSION < 4006076
+/* Old V8 version, requires startup data but has no
+ * (internal/API) means to let it be loaded. */
+static v8::StartupData natives_;
+static v8::StartupData snapshot_;
+
+static void v8js_v8_load_startup_data(const char* blob_file,
+									  v8::StartupData* startup_data,
+									  void (*setter_fn)(v8::StartupData*)) {
+	startup_data->data = NULL;
+	startup_data->raw_size = 0;
+
+	if (!blob_file) {
+		return;
+	}
+
+	FILE* file = fopen(blob_file, "rb");
+	if (!file) {
+		return;
+	}
+
+	fseek(file, 0, SEEK_END);
+	startup_data->raw_size = static_cast<int>(ftell(file));
+	rewind(file);
+
+	startup_data->data = new char[startup_data->raw_size];
+	int read_size = static_cast<int>(fread(const_cast<char*>(startup_data->data),
+										   1, startup_data->raw_size, file));
+	fclose(file);
+
+	if (startup_data->raw_size == read_size) {
+		(*setter_fn)(startup_data);
+	}
+}
+#endif
+
+
 void v8js_v8_init(TSRMLS_D) /* {{{ */
 {
 	/* Run only once; thread-local test first */
@@ -52,6 +89,19 @@ void v8js_v8_init(TSRMLS_D) /* {{{ */
 		v8js_process_globals.lock.unlock();
 		return;
 	}
+#endif
+
+#ifdef PHP_V8_USE_EXTERNAL_STARTUP_DATA
+	/* V8 doesn't work without startup data, load it. */
+#if PHP_V8_API_VERSION >= 4006076
+	v8::V8::InitializeExternalStartupData(
+		PHP_V8_NATIVES_BLOB_PATH,
+		PHP_V8_SNAPSHOT_BLOB_PATH
+	);
+#else
+	v8js_v8_load_startup_data(PHP_V8_NATIVES_BLOB_PATH, &natives_, v8::V8::SetNativesDataBlob);
+	v8js_v8_load_startup_data(PHP_V8_SNAPSHOT_BLOB_PATH, &snapshot_, v8::V8::SetSnapshotDataBlob);
+#endif
 #endif
 
 #if !defined(_WIN32) && PHP_V8_API_VERSION >= 3029036
