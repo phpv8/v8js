@@ -20,5 +20,5 @@ Deprecated: Function V8Js::checkString() is deprecated in %s on line %d
 bool(true)
 
 Deprecated: Function V8Js::checkString() is deprecated in %s on line %d
-string(60) "V8Js::checkString():1: SyntaxError: Unexpected token ILLEGAL"
+string(%d) "V8Js::checkString():1: SyntaxError: %s"
 ===EOF===
