@@ -17,5 +17,5 @@ try {
 ===EOF===
 --EXPECTF--
 resource(%d) of type (V8Js script)
-string(62) "V8Js::compileString():1: SyntaxError: Unexpected token ILLEGAL"
+string(%d) "V8Js::compileString():1: SyntaxError: %s"
 ===EOF===
