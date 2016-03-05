@@ -71,6 +71,7 @@ struct v8js_ctx {
 
 #if PHP_V8_API_VERSION >= 4003007
   v8::Isolate::CreateParams create_params;
+  zval *zval_snapshot_blob;
   v8::StartupData snapshot_blob;
 #endif
 

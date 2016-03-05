@@ -208,8 +208,8 @@ static void v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 	c->modules_base.~vector();
 
 #if PHP_V8_API_VERSION >= 4003007
-	if (c->snapshot_blob.data) {
-		efree((void*)c->snapshot_blob.data);
+	if (c->zval_snapshot_blob) {
+		zval_ptr_dtor(&c->zval_snapshot_blob);
 	}
 #endif
 
@@ -337,13 +337,14 @@ static void v8js_fatal_error_handler(const char *location, const char *message) 
    __construct for V8Js */
 static PHP_METHOD(V8Js, __construct)
 {
-	char *object_name = NULL, *class_name = NULL, *snapshot_blob = NULL;
-	int object_name_len = 0, free = 0, snapshot_blob_len = 0;
+	char *object_name = NULL, *class_name = NULL;
+	int object_name_len = 0, free = 0;
 	zend_uint class_name_len = 0;
 	zend_bool report_uncaught = 1;
 	zval *vars_arr = NULL, *exts_arr = NULL;
 	const char **exts = NULL;
 	int exts_count = 0;
+	zval *snapshot_blob = NULL;
 
 	v8js_ctx *c = (v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
 
@@ -352,7 +353,7 @@ static PHP_METHOD(V8Js, __construct)
 		return;
 	}
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|saabs", &object_name, &object_name_len, &vars_arr, &exts_arr, &report_uncaught, &snapshot_blob, &snapshot_blob_len) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|saabz", &object_name, &object_name_len, &vars_arr, &exts_arr, &report_uncaught, &snapshot_blob) == FAILURE){
 		return;
 	}
 
@@ -373,10 +374,17 @@ static PHP_METHOD(V8Js, __construct)
 #endif
 
 	new (&c->snapshot_blob) v8::StartupData();
-	if (snapshot_blob && snapshot_blob_len) {
-		c->snapshot_blob.data = snapshot_blob;
-		c->snapshot_blob.raw_size = snapshot_blob_len;
-		c->create_params.snapshot_blob = &c->snapshot_blob;
+	if (snapshot_blob) {
+		if (Z_TYPE_P(snapshot_blob) == IS_STRING) {
+			c->zval_snapshot_blob = snapshot_blob;
+			Z_ADDREF_P(c->zval_snapshot_blob);
+
+			c->snapshot_blob.data = Z_STRVAL_P(snapshot_blob);
+			c->snapshot_blob.raw_size = Z_STRLEN_P(snapshot_blob);
+			c->create_params.snapshot_blob = &c->snapshot_blob;
+		} else {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Argument snapshot_blob expected to be of string type");
+		}
 	}
 
 	c->isolate = v8::Isolate::New(c->create_params);
