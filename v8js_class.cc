@@ -23,6 +23,7 @@
 #include "v8js_v8.h"
 #include "v8js_exceptions.h"
 #include "v8js_v8object_class.h"
+#include "v8js_object_export.h"
 #include "v8js_timer.h"
 
 extern "C" {
@@ -44,6 +45,9 @@ static zend_class_entry *php_ce_v8js;
 /* {{{ Object Handlers */
 static zend_object_handlers v8js_object_handlers;
 /* }}} */
+
+/* Forward declare v8js_methods, actually "static" but not possible in C++ */
+extern const zend_function_entry v8js_methods[];
 
 typedef struct _v8js_script {
 	char *name;
@@ -197,6 +201,10 @@ static void v8js_free_storage(zend_object *object TSRMLS_DC) /* {{{ */
 
 	c->modules_stack.~vector();
 	c->modules_base.~vector();
+
+#if PHP_V8_API_VERSION >= 4003007
+	zval_dtor(&c->zval_snapshot_blob);
+#endif
 }
 /* }}} */
 
@@ -311,7 +319,11 @@ static void v8js_fatal_error_handler(const char *location, const char *message) 
 }
 /* }}} */
 
-/* {{{ proto void V8Js::__construct([string object_name [, array variables [, array extensions [, bool report_uncaught_exceptions]]])
+#define IS_MAGIC_FUNC(mname) \
+	((ZSTR_LEN(key) == sizeof(mname) - 1) &&		\
+	 !strncasecmp(ZSTR_VAL(key), mname, ZSTR_LEN(key)))
+
+/* {{{ proto void V8Js::__construct([string object_name [, array variables [, array extensions [, bool report_uncaught_exceptions [, string snapshot_blob]]]]])
    __construct for V8Js */
 static PHP_METHOD(V8Js, __construct)
 {
@@ -320,6 +332,7 @@ static PHP_METHOD(V8Js, __construct)
 	zval *vars_arr = NULL, *exts_arr = NULL;
 	const char **exts = NULL;
 	int exts_count = 0;
+	zval *snapshot_blob = NULL;
 
 	v8js_ctx *c = Z_V8JS_CTX_OBJ_P(getThis())
 
@@ -328,7 +341,7 @@ static PHP_METHOD(V8Js, __construct)
 		return;
 	}
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|Saab", &object_name, &vars_arr, &exts_arr, &report_uncaught) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|Saabz", &object_name, &vars_arr, &exts_arr, &report_uncaught, &snapshot_blob) == FAILURE) {
 		return;
 	}
 
@@ -340,12 +353,29 @@ static PHP_METHOD(V8Js, __construct)
 	ZVAL_NULL(&c->pending_exception);
 	c->in_execution = 0;
 
+#if PHP_V8_API_VERSION >= 4003007
+	new (&c->create_params) v8::Isolate::CreateParams();
+
 #if PHP_V8_API_VERSION >= 4004044
 	static ArrayBufferAllocator array_buffer_allocator;
-	static v8::Isolate::CreateParams create_params;
-	create_params.array_buffer_allocator = &array_buffer_allocator;
-	c->isolate = v8::Isolate::New(create_params);
-#else
+	c->create_params.array_buffer_allocator = &array_buffer_allocator;
+#endif
+
+	new (&c->snapshot_blob) v8::StartupData();
+	if (snapshot_blob) {
+		if (Z_TYPE_P(snapshot_blob) == IS_STRING) {
+			ZVAL_COPY(&c->zval_snapshot_blob, snapshot_blob);
+
+			c->snapshot_blob.data = Z_STRVAL_P(snapshot_blob);
+			c->snapshot_blob.raw_size = Z_STRLEN_P(snapshot_blob);
+			c->create_params.snapshot_blob = &c->snapshot_blob;
+		} else {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Argument snapshot_blob expected to be of string type");
+		}
+	}
+
+	c->isolate = v8::Isolate::New(c->create_params);
+#else /* PHP_V8_API_VERSION < 4003007 */
 	c->isolate = v8::Isolate::New();
 #endif
 
@@ -456,7 +486,72 @@ static PHP_METHOD(V8Js, __construct)
 		}
 	} ZEND_HASH_FOREACH_END();
 
+	/* Add pointer to zend object */
+	php_obj->SetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY), v8::External::New(isolate, Z_OBJ_P(getThis())));
 
+	/* Export public methods */
+	void *ptr;
+	zend_string *key;
+	uint key_len;
+
+	ZEND_HASH_FOREACH_STR_KEY_PTR(&c->std.ce->function_table, key, ptr) {
+		zend_function *method_ptr = reinterpret_cast<zend_function *>(ptr);
+
+		if ((method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) == 0) {
+			/* Allow only public methods */
+			continue;
+		}
+
+		if ((method_ptr->common.fn_flags & (ZEND_ACC_CTOR|ZEND_ACC_DTOR|ZEND_ACC_CLONE)) != 0) {
+			/* no __construct, __destruct(), or __clone() functions */
+			continue;
+		}
+
+		/* hide (do not export) other PHP magic functions */
+		if (IS_MAGIC_FUNC(ZEND_CALLSTATIC_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_SLEEP_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_WAKEUP_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_SET_STATE_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_GET_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_SET_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_UNSET_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_CALL_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_INVOKE_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_TOSTRING_FUNC_NAME) ||
+			IS_MAGIC_FUNC(ZEND_ISSET_FUNC_NAME)) {
+			continue;
+		}
+
+		const zend_function_entry *fe;
+		for (fe = v8js_methods; fe->fname; fe ++) {
+			if (strcmp(fe->fname, ZSTR_VAL(method_ptr->common.function_name)) == 0) {
+				break;
+			}
+		}
+
+		if(fe->fname) {
+			/* Method belongs to \V8Js class itself, never export to V8, even if
+			 * it is overriden in a derived class. */
+			continue;
+		}
+
+		v8::Local<v8::String> method_name = V8JS_ZSTR(method_ptr->common.function_name);
+		v8::Local<v8::FunctionTemplate> ft;
+
+		/*try {
+			ft = v8::Local<v8::FunctionTemplate>::New
+				(isolate, c->method_tmpls.at(method_ptr));
+		}
+		catch (const std::out_of_range &) */ {
+			ft = v8::FunctionTemplate::New(isolate, v8js_php_callback,
+					v8::External::New((isolate), method_ptr));
+			// @fixme add/check Signature v8::Signature::New((isolate), tmpl));
+			v8js_tmpl_t *persistent_ft = &c->method_tmpls[method_ptr];
+			persistent_ft->Reset(isolate, ft);
+		}
+
+		php_obj->ForceSet(method_name, ft->GetFunction());
+	} ZEND_HASH_FOREACH_END();
 }
 /* }}} */
 
@@ -887,6 +982,10 @@ static int v8js_register_extension(zend_string *name, zend_string *source, zval 
 }
 /* }}} */
 
+
+
+/* ## Static methods ## */
+
 /* {{{ proto bool V8Js::registerExtension(string ext_name, string script [, array deps [, bool auto_enable]])
  */
 static PHP_METHOD(V8Js, registerExtension)
@@ -909,8 +1008,6 @@ static PHP_METHOD(V8Js, registerExtension)
 	RETURN_FALSE;
 }
 /* }}} */
-
-/* ## Static methods ## */
 
 /* {{{ proto array V8Js::getExtensions()
  */
@@ -954,12 +1051,47 @@ static PHP_METHOD(V8Js, getExtensions)
 }
 /* }}} */
 
+#if PHP_V8_API_VERSION >= 4003007
+/* {{{ proto string|bool V8Js::createSnapshot(string embed_source)
+ */
+static PHP_METHOD(V8Js, createSnapshot)
+{
+	char *script;
+	int script_len;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &script, &script_len) == FAILURE) {
+		return;
+	}
+
+	if (!script_len) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Script cannot be empty");
+		RETURN_FALSE;
+	}
+
+	/* Initialize V8, if not already done. */
+	v8js_v8_init(TSRMLS_C);
+
+	v8::StartupData snapshot_blob = v8::V8::CreateSnapshotDataBlob(script);
+
+	if (!snapshot_blob.data) {
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Failed to create V8 heap snapshot.  Check $embed_source for errors.");
+		RETURN_FALSE;
+	}
+
+	RETVAL_STRINGL(snapshot_blob.data, snapshot_blob.raw_size);
+	delete[] snapshot_blob.data;
+}
+/* }}} */
+#endif  /* PHP_V8_API_VERSION >= 4003007 */
+
+
 /* {{{ arginfo */
 ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, object_name)
 	ZEND_ARG_INFO(0, variables)
 	ZEND_ARG_INFO(0, extensions)
 	ZEND_ARG_INFO(0, report_uncaught_exceptions)
+	ZEND_ARG_INFO(0, snapshot_blob)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO(arginfo_v8js_sleep, 0)
@@ -1017,6 +1149,12 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO(arginfo_v8js_getextensions, 0)
 ZEND_END_ARG_INFO()
 
+#if PHP_V8_API_VERSION >= 4003007
+ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_createsnapshot, 0, 0, 1)
+	ZEND_ARG_INFO(0, script)
+ZEND_END_ARG_INFO()
+#endif
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_settimelimit, 0, 0, 1)
 	ZEND_ARG_INFO(0, time_limit)
 ZEND_END_ARG_INFO()
@@ -1026,7 +1164,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_setmemorylimit, 0, 0, 1)
 ZEND_END_ARG_INFO()
 
 
-static const zend_function_entry v8js_methods[] = { /* {{{ */
+const zend_function_entry v8js_methods[] = { /* {{{ */
 	PHP_ME(V8Js,	__construct,			arginfo_v8js_construct,				ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
 	PHP_ME(V8Js,	__sleep,				arginfo_v8js_sleep,					ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
 	PHP_ME(V8Js,	__wakeup,				arginfo_v8js_sleep,					ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
@@ -1038,10 +1176,14 @@ static const zend_function_entry v8js_methods[] = { /* {{{ */
 	PHP_ME(V8Js,	clearPendingException,	arginfo_v8js_clearpendingexception,	ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	setModuleNormaliser,	arginfo_v8js_setmodulenormaliser,	ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	setModuleLoader,		arginfo_v8js_setmoduleloader,		ZEND_ACC_PUBLIC)
-	PHP_ME(V8Js,	registerExtension,		arginfo_v8js_registerextension,		ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
-	PHP_ME(V8Js,	getExtensions,			arginfo_v8js_getextensions,			ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
 	PHP_ME(V8Js,	setTimeLimit,			arginfo_v8js_settimelimit,			ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	setMemoryLimit,			arginfo_v8js_setmemorylimit,		ZEND_ACC_PUBLIC)
+	PHP_ME(V8Js,	registerExtension,		arginfo_v8js_registerextension,		ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
+	PHP_ME(V8Js,	getExtensions,			arginfo_v8js_getextensions,			ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
+
+#if PHP_V8_API_VERSION >= 4003007
+	PHP_ME(V8Js,	createSnapshot,			arginfo_v8js_createsnapshot,		ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
+#endif
 	{NULL, NULL, NULL}
 };
 /* }}} */

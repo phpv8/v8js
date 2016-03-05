@@ -74,8 +74,8 @@ This release also merges in new features from V8Js 0.4.0, namely
    <file baseinstalldir="/" md5sum="66a31cc92309d2d06f0c47f9f7f96e5e" name="tests/array_pass_flags.phpt" role="test" />
    <file baseinstalldir="/" md5sum="27460ebad7a97db3588e144b4ed0c2f4" name="tests/basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="715784882ec8b5340448715c845aa8dd" name="tests/callbacks.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="4e06dd41a9ab65466a60e8f616e4d154" name="tests/checkstring.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="72f2ffb206047d5918d4eb5f32284e3c" name="tests/checkstring_compile.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="b4cb6ab2134d9944f92e7c5e37645d61" name="tests/checkstring.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="48af95c51cd1df2ab56ca4a40f3528ee" name="tests/checkstring_compile.phpt" role="test" />
    <file baseinstalldir="/" md5sum="0e6c4098d0f370b2fa8f433ab6026c6a" name="tests/closures_basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="1f5c7e8895220923d0203653fbebfc6f" name="tests/closures_dynamic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="50f7ba3626131cf015e26b7dc296d20d" name="tests/commonjs_caching_001.phpt" role="test" />
@@ -99,7 +99,8 @@ This release also merges in new features from V8Js 0.4.0, namely
    <file baseinstalldir="/" md5sum="5edcd58deda3d3532e425c6a1c56e97a" name="tests/context_preserving.phpt" role="test" />
    <file baseinstalldir="/" md5sum="887e3e03d1e589ab328479f7b1fc45fd" name="tests/context_separation.phpt" role="test" />
    <file baseinstalldir="/" md5sum="86d83d8b84a3ff18f176b7dcaf5b0656" name="tests/context_temp_creation.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="aeb400eda3141f45562d4e20bc296f5c" name="tests/ctx_lifetime.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="17b1c15734ab5541ec169ce01f4674d8" name="tests/create_snapshot_basic.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="8e74510469c209e5f7ecc227bb2cc848" name="tests/ctx_lifetime.phpt" role="test" />
    <file baseinstalldir="/" md5sum="970bc5edd6c1578c8b6a8d966475f514" name="tests/datetime_pass.phpt" role="test" />
    <file baseinstalldir="/" md5sum="8dc08c1a14b4771ec6c2d66663a508d3" name="tests/derived_class_properties.phpt" role="test" />
    <file baseinstalldir="/" md5sum="a4ed3b1eeca821d2464fbc841313adb9" name="tests/derived_class_properties_extra.phpt" role="test" />
@@ -137,6 +138,13 @@ This release also merges in new features from V8Js 0.4.0, namely
    <file baseinstalldir="/" md5sum="6d4e573daaf2ca5c177230541c31fc96" name="tests/issue_127_001.phpt" role="test" />
    <file baseinstalldir="/" md5sum="3ff639cdb2f80e8b0a256aa12fce9c5d" name="tests/issue_156_001.phpt" role="test" />
    <file baseinstalldir="/" md5sum="858c759b267b903dcdd65b5f208dc07f" name="tests/issue_160_basic.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="d685947418ec62f9e3afa157c7fce229" name="tests/issue_183_001.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="e5cce786b37841180f0d0898c8412a14" name="tests/issue_183_002.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="a693dffff02ae1bf11cbbe0050b8561b" name="tests/issue_183_003.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="c5b67cd1966be47260e6e87241995806" name="tests/issue_183_004.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="b71b11723da6ea3631c7ccb6c168dc61" name="tests/issue_183_005.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="7039f306c3bf6c9d435d974c649713a3" name="tests/issue_183_006.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="5f92876028e3abb7ad5735309239f6f4" name="tests/issue_183_basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="991db6ad362001dad35f6038491392d2" name="tests/issue_185_001.phpt" role="test" />
    <file baseinstalldir="/" md5sum="25c117805a2761b7cb58078d7ce6f5a0" name="tests/issue_185_002.phpt" role="test" />
    <file baseinstalldir="/" md5sum="60c9e1d0fa9b94049143518657e122f4" name="tests/issue_185_basic.phpt" role="test" />
@@ -544,6 +552,25 @@ This release also merges in new features from V8Js 0.4.0, namely
 - fatal PHP errors triggered in setModuleLoader callback are now handled gracefully
 - setModuleLoader callback is now allowed to return an empty string as source of module
 - V8Js&apos; internal module path normalisation may now be overrode using setModuleNormaliser
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>0.5.0</release>
+    <api>0.5.0</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <date>2016-03-05</date>
+   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <notes>
+- Export public methods on classes derived from \V8Js to V8
+- Support V8 compiled with external snapshots
+- Allow to create custom snapshots of V8 heaps
+- Allow to create V8 contexts based on custom snapshots generated earlier
+- Support V8 5.1 well
    </notes>
   </release>
  </changelog>

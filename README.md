@@ -83,13 +83,15 @@ class V8Js
     /* Methods */
 
     /**
-     * Initializes and starts V8 engine and Returns new V8Js object with it's own V8 context.
+     * Initializes and starts V8 engine and returns new V8Js object with it's own V8 context.
+     * Snapshots are supported by V8 4.3.7 and higher.
      * @param string $object_name
      * @param array $variables
      * @param array $extensions
      * @param bool $report_uncaught_exceptions
+     * @param string $snapshot_blob
      */
-    public function __construct($object_name = "PHP", array $variables = NULL, array $extensions = NULL, $report_uncaught_exceptions = TRUE)
+    public function __construct($object_name = "PHP", array $variables = [], array $extensions = [], $report_uncaught_exceptions = TRUE, $snapshot_blob = NULL)
     {}
 
     /**
@@ -194,6 +196,16 @@ class V8Js
      * @return array|string[]
      */
     public static function getExtensions()
+    {}
+
+    /**
+     * Creates a custom V8 heap snapshot with the provided JavaScript source embedded.
+     * Snapshots are supported by V8 4.3.7 and higher.  For older versions of V8 this
+     * extension doesn't provide this method.
+     * @param string $embed_source
+     * @return string|false
+     */
+    public static function createSnapshot($embed_source)
     {}
 }
 

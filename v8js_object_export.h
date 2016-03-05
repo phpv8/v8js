@@ -30,4 +30,6 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> property
 						      property_op_t callback_type,
 						      v8::Local<v8::Value> set_value = v8::Local<v8::Value>());
 
+void v8js_php_callback(const v8::FunctionCallbackInfo<v8::Value>& info);
+
 #endif /* V8JS_OBJECT_EXPORT_H */
