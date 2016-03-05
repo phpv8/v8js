@@ -207,7 +207,7 @@ static void v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 	c->modules_stack.~vector();
 	c->modules_base.~vector();
 
-#if defined(PHP_V8_USE_EXTERNAL_STARTUP_DATA) && PHP_V8_API_VERSION >= 4004044
+#if PHP_V8_API_VERSION >= 4003007
 	if (c->snapshot_blob.data) {
 		efree((void*)c->snapshot_blob.data);
 	}
@@ -364,22 +364,23 @@ static PHP_METHOD(V8Js, __construct)
 	c->pending_exception = NULL;
 	c->in_execution = 0;
 
+#if PHP_V8_API_VERSION >= 4003007
+	new (&c->create_params) v8::Isolate::CreateParams();
+
 #if PHP_V8_API_VERSION >= 4004044
 	static ArrayBufferAllocator array_buffer_allocator;
-	new (&c->create_params) v8::Isolate::CreateParams();
 	c->create_params.array_buffer_allocator = &array_buffer_allocator;
+#endif
 
-#ifdef PHP_V8_USE_EXTERNAL_STARTUP_DATA
 	new (&c->snapshot_blob) v8::StartupData();
 	if (snapshot_blob && snapshot_blob_len) {
 		c->snapshot_blob.data = snapshot_blob;
 		c->snapshot_blob.raw_size = snapshot_blob_len;
 		c->create_params.snapshot_blob = &c->snapshot_blob;
 	}
-#endif /* PHP_V8_USE_EXTERNAL_STARTUP_DATA */
 
 	c->isolate = v8::Isolate::New(c->create_params);
-#else /* PHP_V8_API_VERSION < 4004044 */
+#else /* PHP_V8_API_VERSION < 4003007 */
 	c->isolate = v8::Isolate::New();
 #endif
 
@@ -1081,7 +1082,7 @@ static PHP_METHOD(V8Js, getExtensions)
 }
 /* }}} */
 
-#ifdef PHP_V8_USE_EXTERNAL_STARTUP_DATA
+#if PHP_V8_API_VERSION >= 4003007
 /* {{{ proto string|bool V8Js::createSnapshot(string embed_source)
  */
 static PHP_METHOD(V8Js, createSnapshot)
@@ -1112,7 +1113,7 @@ static PHP_METHOD(V8Js, createSnapshot)
 	delete[] snapshot_blob.data;
 }
 /* }}} */
-#endif  /* PHP_V8_USE_EXTERNAL_STARTUP_DATA */
+#endif  /* PHP_V8_API_VERSION >= 4003007 */
 
 
 /* {{{ arginfo */
@@ -1178,7 +1179,7 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO(arginfo_v8js_getextensions, 0)
 ZEND_END_ARG_INFO()
 
-#ifdef PHP_V8_USE_EXTERNAL_STARTUP_DATA
+#if PHP_V8_API_VERSION >= 4003007
 ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_createsnapshot, 0, 0, 1)
 	ZEND_ARG_INFO(0, script)
 ZEND_END_ARG_INFO()
@@ -1209,7 +1210,8 @@ const zend_function_entry v8js_methods[] = { /* {{{ */
 	PHP_ME(V8Js,	setMemoryLimit,			arginfo_v8js_setmemorylimit,		ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	registerExtension,		arginfo_v8js_registerextension,		ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
 	PHP_ME(V8Js,	getExtensions,			arginfo_v8js_getextensions,			ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
-#ifdef PHP_V8_USE_EXTERNAL_STARTUP_DATA
+
+#if PHP_V8_API_VERSION >= 4003007
 	PHP_ME(V8Js,	createSnapshot,			arginfo_v8js_createsnapshot,		ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
 #endif
 	{NULL, NULL, NULL}
