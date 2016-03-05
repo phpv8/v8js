@@ -217,7 +217,7 @@ public:
         AC_MSG_RESULT([yes])
         AC_DEFINE([PHP_V8_USE_EXTERNAL_STARTUP_DATA], [1], [Whether V8 requires (and can be provided with custom versions of) external startup data])
 
-        SEARCH_PATH="$V8_DIR/lib"
+        SEARCH_PATH="$V8_DIR/lib $V8_DIR/share/v8"
 
         AC_MSG_CHECKING([for natives_blob.bin])
         SEARCH_FOR="natives_blob.bin"
