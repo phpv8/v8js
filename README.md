@@ -63,6 +63,7 @@ class V8Js
 
     /**
      * Initializes and starts V8 engine and returns new V8Js object with it's own V8 context.
+     * Snapshots are supported by V8 4.3.7 and higher.
      * @param string $object_name
      * @param array $variables
      * @param array $extensions
@@ -178,6 +179,8 @@ class V8Js
 
     /**
      * Creates a custom V8 heap snapshot with the provided JavaScript source embedded.
+     * Snapshots are supported by V8 4.3.7 and higher.  For older versions of V8 this
+     * extension doesn't provide this method.
      * @param string $embed_source
      * @return string|false
      */
