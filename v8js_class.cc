@@ -1122,6 +1122,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, variables)
 	ZEND_ARG_INFO(0, extensions)
 	ZEND_ARG_INFO(0, report_uncaught_exceptions)
+	ZEND_ARG_INFO(0, snapshot_blob)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO(arginfo_v8js_sleep, 0)
