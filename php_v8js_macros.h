@@ -52,7 +52,7 @@ extern "C" {
 #endif
 
 /* V8Js Version */
-#define PHP_V8JS_VERSION "1.1.0"
+#define PHP_V8JS_VERSION "1.2.0"
 
 /* Hidden field name used to link JS wrappers with underlying PHP object */
 #define PHPJS_OBJECT_KEY "phpjs::object"
