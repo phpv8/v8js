@@ -16,11 +16,11 @@
   <email>stesie@php.net</email>
   <active>yes</active>
  </lead>
- <date>2016-03-05</date>
- <time>21:00:30</time>
+ <date>2016-03-08</date>
+ <time>18:10:59</time>
  <version>
-  <release>0.5.0</release>
-  <api>0.5.0</api>
+  <release>0.6.0</release>
+  <api>0.6.0</api>
  </version>
  <stability>
   <release>stable</release>
@@ -28,11 +28,7 @@
  </stability>
  <license uri="http://www.php.net/license">The MIT License (MIT)</license>
  <notes>
-- Export public methods on classes derived from \V8Js to V8
-- Support V8 compiled with external snapshots
-- Allow to create custom snapshots of V8 heaps
-- Allow to create V8 contexts based on custom snapshots generated earlier
-- Support V8 5.1 well
+- Allow to adjust the considered &quot;amount of external memory&quot; by objects exported to V8
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -176,6 +172,7 @@
    <file baseinstalldir="/" md5sum="1a9c261661b08cfc6879f7f427b9f0de" name="tests/serialize_001.phpt" role="test" />
    <file baseinstalldir="/" md5sum="53d16ab569633b031059bfd92ad888da" name="tests/serialize_002.phpt" role="test" />
    <file baseinstalldir="/" md5sum="f13ed20a96e5547b3cc0541259fe51e5" name="tests/serialize_basic.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="e610855ff600c2da79009389c3268aa2" name="tests/set_average_object_size_basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="c67118d201153666d586134c8f275434" name="tests/set_memory_limit_001.phpt" role="test" />
    <file baseinstalldir="/" md5sum="b4865b48112b4c224f1704a1c29bfc8e" name="tests/set_memory_limit_003.phpt" role="test" />
    <file baseinstalldir="/" md5sum="b66f99b6b019a3abb69dc77257d984df" name="tests/set_memory_limit_basic.phpt" role="test" />
@@ -199,25 +196,25 @@
    <file baseinstalldir="/" md5sum="679b9046688ed6f60969415b182b1cac" name="Makefile.frag" role="src" />
    <file baseinstalldir="/" md5sum="31e331386def7ce98943694151c0d5cb" name="Makefile.travis" role="src" />
    <file baseinstalldir="/" md5sum="0e23fa6446e52a3b1cff8b18a6e0bd79" name="php_v8js.h" role="src" />
-   <file baseinstalldir="/" md5sum="8b2163fd492bc4e27f688bf8a6f5bc7c" name="php_v8js_macros.h" role="src" />
+   <file baseinstalldir="/" md5sum="cb4222715e83fa7ba72785bc5264145d" name="php_v8js_macros.h" role="src" />
    <file baseinstalldir="/" md5sum="f6f2c7689fd36998b2f2a20a5756ee20" name="README.Linux.md" role="doc" />
    <file baseinstalldir="/" md5sum="d686d8e52af92521d4b8b0e86d00c463" name="README.MacOS.md" role="doc" />
-   <file baseinstalldir="/" md5sum="a43f85b823842a53445e2671e1acdff0" name="README.md" role="doc" />
+   <file baseinstalldir="/" md5sum="6d8116bb5ab12cb5032c04315da06265" name="README.md" role="doc" />
    <file baseinstalldir="/" md5sum="9839870e001306943797003e8828d855" name="README.Win32.md" role="doc" />
    <file baseinstalldir="/" md5sum="542f52c54898f33ac53b173970cba305" name="test.php" role="php" />
    <file baseinstalldir="/" md5sum="65294fadb5ed766094b1f587fc20ad37" name="TODO" role="doc" />
    <file baseinstalldir="/" md5sum="16c060e49d1b2c477531758e1de4850e" name="v8js.cc" role="src" />
    <file baseinstalldir="/" md5sum="358c628b2627319e40fd7e5092f19872" name="v8js_array_access.cc" role="src" />
    <file baseinstalldir="/" md5sum="7baf3fe5b77d1374b39a1d8332e05df4" name="v8js_array_access.h" role="src" />
-   <file baseinstalldir="/" md5sum="940300b80ca96eb32ecd3a49cffaa660" name="v8js_class.cc" role="src" />
-   <file baseinstalldir="/" md5sum="33c884af2aca33b8506081360b3e8502" name="v8js_class.h" role="src" />
+   <file baseinstalldir="/" md5sum="56a942990460b0209e17dd047c064bc4" name="v8js_class.cc" role="src" />
+   <file baseinstalldir="/" md5sum="ef96a67ae895af70b378c8b16807dc2a" name="v8js_class.h" role="src" />
    <file baseinstalldir="/" md5sum="88b49988a5ef55edbd7ba085e7857f64" name="v8js_commonjs.cc" role="src" />
    <file baseinstalldir="/" md5sum="32a5d1a65f64ec37ec294f496fc11ff1" name="v8js_commonjs.h" role="src" />
    <file baseinstalldir="/" md5sum="c061344705c42fb705bffb2959fc1001" name="v8js_convert.cc" role="src" />
    <file baseinstalldir="/" md5sum="40b66c44650a8127618c7fc48bf4b0b2" name="v8js_exceptions.cc" role="src" />
    <file baseinstalldir="/" md5sum="9d13bf5f413c2d76664670e847e1a801" name="v8js_exceptions.h" role="src" />
    <file baseinstalldir="/" md5sum="79f501962629da6d58bfd741eb781d2f" name="v8js_methods.cc" role="src" />
-   <file baseinstalldir="/" md5sum="1cee962561c925511d7b46970ffb92b9" name="v8js_object_export.cc" role="src" />
+   <file baseinstalldir="/" md5sum="0f221f83db4df9ea3bb91f51b6e57c64" name="v8js_object_export.cc" role="src" />
    <file baseinstalldir="/" md5sum="bf0141470862151449311b81c947ecb3" name="v8js_object_export.h" role="src" />
    <file baseinstalldir="/" md5sum="d96c0e1eeaf1693813236f7e5da61e09" name="v8js_timer.cc" role="src" />
    <file baseinstalldir="/" md5sum="49f609c8cea6033f2ad1e6c9c829a571" name="v8js_timer.h" role="src" />
@@ -516,6 +513,21 @@
 - Allow to create custom snapshots of V8 heaps
 - Allow to create V8 contexts based on custom snapshots generated earlier
 - Support V8 5.1 well
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>0.6.0</release>
+    <api>0.6.0</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <date>2016-03-08</date>
+   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <notes>
+- Allow to adjust the considered &quot;amount of external memory&quot; by objects exported to V8
    </notes>
   </release>
  </changelog>
