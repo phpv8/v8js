@@ -1,6 +1,11 @@
 
 ARG_WITH("v8js", "for V8 Javascript Engine", "no");
 
+function v8js_zeroPad(num, places) {
+  var zero = places - num.toString().length + 1;
+  return Array(+(zero > 0 && zero)).join("0") + num;
+}
+
 if (PHP_V8JS != "no") {
 	if (CHECK_LIB("v8_libplatform.lib", "v8js") &&
 			CHECK_LIB("v8_libbase.lib", "v8js") &&
