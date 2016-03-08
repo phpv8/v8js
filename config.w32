@@ -10,8 +10,36 @@ if (PHP_V8JS != "no") {
 		ADD_FLAG("CFLAGS_V8JS", "/D ZEND_WIN32_FORCE_INLINE");
 		ADD_FLAG("CFLAGS_V8JS", "/D __STDC_LIMIT_MACROS");
 
-		AC_DEFINE("PHP_V8_API_VERSION", "3017015", "", false);
-		AC_DEFINE("PHP_V8_VERSION", "3.17.15", "", true);
+		// defaults
+		var v8major = 4;
+		var v8minor = 7;
+		var v8build = 75;
+		var v8patch = 0;
+		var v8pinc = search_paths("v8-version.h", php_usual_include_suspects, null);
+		if (typeof(v8pinc) == "string") {
+			var v8versionh = file_get_contents(v8pinc + '\\v8-version.h');
+			if (v8versionh.match(/#define V8_MAJOR_VERSION ([0-9]*)/i)) {
+				v8major = RegExp.$1;
+			}
+			if (v8versionh.match(/#define V8_MINOR_VERSION ([0-9]*)/i)) {
+				v8minor = RegExp.$1;
+			}
+			if (v8versionh.match(/#define V8_BUILD_NUMBER ([0-9]*)/i)) {
+				v8build = RegExp.$1;
+			}
+			if (v8versionh.match(/#define V8_PATCH_LEVEL ([0-9]*)/i)) {
+				v8patch = RegExp.$1;
+			}
+		} else {
+			WARNING("Could not parse v8-version.h");
+		}
+		var v8api = v8major + v8js_zeroPad(v8minor,2) + v8js_zeroPad(v8build,2) + v8js_zeroPad(v8patch,2);
+		var v8ver = v8major+"."+v8minor+"."+v8build+"."+v8patch;
+		//WARNING("v8api = " + v8api + ", v8ver = " + v8ver);
+		AC_DEFINE("PHP_V8_API_VERSION", v8api, "", false);
+		AC_DEFINE("PHP_V8_VERSION", v8ver, "", true);
+		//AC_DEFINE("PHP_V8_API_VERSION", "4007075", "", false);
+		//AC_DEFINE("PHP_V8_VERSION", "4.7.75", "", true);
 
 		EXTENSION("v8js", "v8js_array_access.cc v8js.cc v8js_class.cc v8js_commonjs.cc v8js_convert.cc v8js_exceptions.cc v8js_methods.cc v8js_object_export.cc v8js_timer.cc v8js_v8.cc v8js_v8object_class.cc v8js_variables.cc", "yes");
 
