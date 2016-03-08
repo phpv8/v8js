@@ -158,7 +158,7 @@ static void v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 		 it != c->weak_objects.end(); ++it) {
 		zval *value = it->first;
 		zval_ptr_dtor(&value);
-		c->isolate->AdjustAmountOfExternalAllocatedMemory(-1024);
+		c->isolate->AdjustAmountOfExternalAllocatedMemory(-c->average_object_size);
 		it->second.Reset();
 	}
 	c->weak_objects.~map();
@@ -253,6 +253,8 @@ static zend_object_value v8js_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 
 	new(&c->v8js_v8objects) std::list<v8js_v8object *>();
 	new(&c->script_objects) std::vector<v8js_script *>();
+
+	c->average_object_size = 1024;
 
 	retval.handle = zend_objects_store_put(c, NULL, (zend_objects_free_object_storage_t) v8js_free_storage, NULL TSRMLS_CC);
 	retval.handlers = &v8js_object_handlers;
@@ -899,6 +901,22 @@ static PHP_METHOD(V8Js, setMemoryLimit)
 }
 /* }}} */
 
+/* {{{ proto void V8Js::setAverageObjectSize(average_object_size)
+ */
+static PHP_METHOD(V8Js, setAverageObjectSize)
+{
+	v8js_ctx *c;
+	long average_object_size = 0;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &average_object_size) == FAILURE) {
+		return;
+	}
+
+	c = (v8js_ctx *) zend_object_store_get_object(getThis() TSRMLS_CC);
+	c->average_object_size = average_object_size;
+}
+/* }}} */
+
 static void v8js_persistent_zval_ctor(zval **p) /* {{{ */
 {
 	zval *orig_ptr = *p;
@@ -1178,6 +1196,10 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_setmoduleloader, 0, 0, 1)
 	ZEND_ARG_INFO(0, callable)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_setaverageobjectsize, 0, 0, 1)
+	ZEND_ARG_INFO(0, average_object_size)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_registerextension, 0, 0, 2)
 	ZEND_ARG_INFO(0, extension_name)
 	ZEND_ARG_INFO(0, script)
@@ -1217,6 +1239,7 @@ const zend_function_entry v8js_methods[] = { /* {{{ */
 	PHP_ME(V8Js,	setModuleLoader,		arginfo_v8js_setmoduleloader,		ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	setTimeLimit,			arginfo_v8js_settimelimit,			ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	setMemoryLimit,			arginfo_v8js_setmemorylimit,		ZEND_ACC_PUBLIC)
+	PHP_ME(V8Js,	setAverageObjectSize,	arginfo_v8js_setaverageobjectsize,	ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	registerExtension,		arginfo_v8js_registerextension,		ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
 	PHP_ME(V8Js,	getExtensions,			arginfo_v8js_getextensions,			ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
 

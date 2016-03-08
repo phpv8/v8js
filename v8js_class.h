@@ -47,6 +47,7 @@ struct v8js_ctx {
   bool time_limit_hit;
   long memory_limit;
   bool memory_limit_hit;
+  long average_object_size;
 
   v8js_tmpl_t global_template;
   v8js_tmpl_t array_tmpl;
