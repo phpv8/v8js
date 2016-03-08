@@ -143,6 +143,14 @@ class V8Js
     {}
 
     /**
+     * Set the average object size (in bytes) for this V8Js object.
+     * V8's "amount of external memory" is adjusted by this value for every exported object.  V8 triggers a garbage collection once this totals to 192 MB.
+     * @param int $average_object_size
+     */
+    public function setAverageObjectSize($average_object_size)
+    {}
+
+    /**
      * Returns uncaught pending exception or null if there is no pending exception.
      * @return V8JsScriptException|null
      */

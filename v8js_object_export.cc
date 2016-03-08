@@ -259,7 +259,7 @@ static void v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value>& i
 
 	// Just tell v8 that we're allocating some external memory
 	// (for the moment we just always tell 1k instead of trying to find out actual values)
-	isolate->AdjustAmountOfExternalAllocatedMemory(1024);
+	isolate->AdjustAmountOfExternalAllocatedMemory(ctx->average_object_size);
 }
 /* }}} */
 
@@ -275,7 +275,7 @@ static void v8js_weak_object_callback(const v8::WeakCallbackData<v8::Object, zva
 	ctx->weak_objects.at(value).Reset();
 	ctx->weak_objects.erase(value);
 
-	isolate->AdjustAmountOfExternalAllocatedMemory(-1024);
+	isolate->AdjustAmountOfExternalAllocatedMemory(-ctx->average_object_size);
 }
 
 static void v8js_weak_closure_callback(const v8::WeakCallbackData<v8::Object, v8js_tmpl_t> &data) {
