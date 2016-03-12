@@ -58,8 +58,6 @@ sudo cp -R include/* /usr/include
 echo -e "create /usr/lib/libv8_libplatform.a\naddlib out/native/obj.target/tools/gyp/libv8_libplatform.a\nsave\nend" | sudo ar -M
 ```
 
-Then add `extension=v8js.so` to your php.ini file. If you have a separate configuration for CLI, add it there also.
-
 * If you don't want to overwrite the system copy of v8, replace `/usr` in
   the above commands with some other path like `/opt/v8` and then add
   `--with-v8js=/opt/v8` to the php-v8js `./configure` command below.
@@ -83,3 +81,5 @@ make
 make test
 sudo make install
 ```
+
+Then add `extension=v8js.so` to your php.ini file. If you have a separate configuration for CLI, add it there also.
