@@ -145,6 +145,7 @@ int main ()
         ;;
     esac
 
+    LDFLAGS_libplatform=""
     for static_link_extra_file in $static_link_extra; do
       AC_MSG_CHECKING([for $static_link_extra_file])
 
@@ -164,7 +165,7 @@ int main ()
         AC_MSG_ERROR([Please provide $static_link_extra_file next to the libv8.so, see README.md for details])
       fi
 
-      LDFLAGS_libplatform="$static_link_dir/$static_link_extra_file"
+      LDFLAGS_libplatform="$LDFLAGS_libplatform $static_link_dir/$static_link_extra_file"
     done
 
     # modify flags for (possibly) succeeding V8 startup check
