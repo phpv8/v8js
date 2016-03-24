@@ -16,11 +16,11 @@
   <email>stesie@php.net</email>
   <active>yes</active>
  </lead>
- <date>2016-03-08</date>
- <time>18:10:59</time>
+ <date>2016-03-24</date>
+ <time>12:27:39</time>
  <version>
-  <release>0.6.0</release>
-  <api>0.6.0</api>
+  <release>0.6.1</release>
+  <api>0.6.1</api>
  </version>
  <stability>
   <release>stable</release>
@@ -28,7 +28,7 @@
  </stability>
  <license uri="http://www.php.net/license">The MIT License (MIT)</license>
  <notes>
-- Allow to adjust the considered &quot;amount of external memory&quot; by objects exported to V8
+- Fix configuration on MacOS platform
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -189,15 +189,15 @@
    <file baseinstalldir="/" md5sum="35ce3816ae00e697fca26142c46e0c79" name="tests/v8_write_property.phpt" role="test" />
    <file baseinstalldir="/" md5sum="ae504a63e5ff800e3aa7d529835d0e8e" name="tests/variable_passing.phpt" role="test" />
    <file baseinstalldir="/" md5sum="1bd7738aeeb5cf80d80561554f59f2ed" name="tests/var_dump.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="dd9dd0178aa7c0e43f8797635605808f" name="config.m4" role="src" />
-   <file baseinstalldir="/" md5sum="dd848985051c6e0db6e8037d5b9529da" name="config.w32" role="src" />
+   <file baseinstalldir="/" md5sum="1b85a1960cdf8e68533ade3e009cf384" name="config.m4" role="src" />
+   <file baseinstalldir="/" md5sum="10d105f28aab4ef57ea88828c0bbfb6e" name="config.w32" role="src" />
    <file baseinstalldir="/" md5sum="cea72666538d5b0b80a64ccdbda24919" name="CREDITS" role="doc" />
    <file baseinstalldir="/" md5sum="9f5b5f41204bcde55d9df87d5a970b30" name="LICENSE" role="doc" />
    <file baseinstalldir="/" md5sum="679b9046688ed6f60969415b182b1cac" name="Makefile.frag" role="src" />
    <file baseinstalldir="/" md5sum="31e331386def7ce98943694151c0d5cb" name="Makefile.travis" role="src" />
    <file baseinstalldir="/" md5sum="0e23fa6446e52a3b1cff8b18a6e0bd79" name="php_v8js.h" role="src" />
-   <file baseinstalldir="/" md5sum="cb4222715e83fa7ba72785bc5264145d" name="php_v8js_macros.h" role="src" />
-   <file baseinstalldir="/" md5sum="f6f2c7689fd36998b2f2a20a5756ee20" name="README.Linux.md" role="doc" />
+   <file baseinstalldir="/" md5sum="0cc98a90d3357f60d5ee06e87382c272" name="php_v8js_macros.h" role="src" />
+   <file baseinstalldir="/" md5sum="9245d2147c9a8fe708e531e2d1563024" name="README.Linux.md" role="doc" />
    <file baseinstalldir="/" md5sum="d686d8e52af92521d4b8b0e86d00c463" name="README.MacOS.md" role="doc" />
    <file baseinstalldir="/" md5sum="6d8116bb5ab12cb5032c04315da06265" name="README.md" role="doc" />
    <file baseinstalldir="/" md5sum="9839870e001306943797003e8828d855" name="README.Win32.md" role="doc" />
@@ -528,6 +528,21 @@
    <license uri="http://www.php.net/license">The MIT License (MIT)</license>
    <notes>
 - Allow to adjust the considered &quot;amount of external memory&quot; by objects exported to V8
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>0.6.1</release>
+    <api>0.6.1</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <date>2016-03-24</date>
+   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <notes>
+- Fix configuration on MacOS platform
    </notes>
   </release>
  </changelog>
