@@ -297,7 +297,7 @@ static int v8js_v8object_call_method(char *method, INTERNAL_FUNCTION_PARAMETERS)
 		zend_get_parameters_array_ex(argc, argv);
 	}
 
-	std::function< v8::Local<v8::Value>(v8::Isolate *) > v8_call = [obj, method, argc, argv TSRMLS_CC](v8::Isolate *isolate) {
+	std::function< v8::Local<v8::Value>(v8::Isolate *) > v8_call = [obj, method, argc, argv, object, &return_value TSRMLS_CC](v8::Isolate *isolate) {
 		int i = 0;
 
 		v8::Local<v8::String> method_name = V8JS_SYML(method, strlen(method));
@@ -328,7 +328,16 @@ static int v8js_v8object_call_method(char *method, INTERNAL_FUNCTION_PARAMETERS)
 			jsArgv[i] = v8::Local<v8::Value>::New(isolate, zval_to_v8js(*argv[i], isolate TSRMLS_CC));
 		}
 
-		return cb->Call(thisObj, argc, jsArgv);
+		v8::Local<v8::Value> result = cb->Call(thisObj, argc, jsArgv);
+
+		if (obj->std.ce == php_ce_v8object && result->StrictEquals(thisObj)) {
+			/* JS code did "return this", retain object identity */
+			ZVAL_COPY_VALUE(return_value, object);
+			zval_copy_ctor(return_value);
+			result.Clear();
+		}
+
+		return result;
 	};
 
 	v8js_v8_call(obj->ctx, &return_value, obj->flags, obj->ctx->time_limit, obj->ctx->memory_limit, v8_call TSRMLS_CC);
