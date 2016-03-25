@@ -210,7 +210,12 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 		isolate->GetHeapStatistics(&hs);
 
 		if (hs.used_heap_size() > memory_limit) {
-			c->memory_limit_hit = true;
+			isolate->LowMemoryNotification();
+			isolate->GetHeapStatistics(&hs);
+
+			if (hs.used_heap_size() > memory_limit) {
+				c->memory_limit_hit = true;
+			}
 		}
 	}
 
