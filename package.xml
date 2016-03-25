@@ -16,11 +16,11 @@
   <email>stesie@php.net</email>
   <active>yes</active>
  </lead>
- <date>2016-03-24</date>
- <time>12:27:39</time>
+ <date>2016-03-25</date>
+ <time>23:24:51</time>
  <version>
-  <release>0.6.1</release>
-  <api>0.6.1</api>
+  <release>0.6.2</release>
+  <api>0.6.2</api>
  </version>
  <stability>
   <release>stable</release>
@@ -28,7 +28,9 @@
  </stability>
  <license uri="http://www.php.net/license">The MIT License (MIT)</license>
  <notes>
-- Fix configuration on MacOS platform
+- Pass back V8Object instances, don&apos;t re-wrap
+- Retain object identity on &apos;return $this&apos;
+- Retain object identity on JS-side &apos;return this&apos;
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -149,6 +151,7 @@
    <file baseinstalldir="/" md5sum="97ac85efe2aa7318c9a4daa49d544165" name="tests/object_dom.phpt" role="test" />
    <file baseinstalldir="/" md5sum="7c34aed266f6cdb2278a5561cd6de45b" name="tests/object_method_call.phpt" role="test" />
    <file baseinstalldir="/" md5sum="ed1d6d0aafe39f41545c375507507564" name="tests/object_passback.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="d16c0d23ff223b006a9c9c83df257708" name="tests/object_passback_002.phpt" role="test" />
    <file baseinstalldir="/" md5sum="95e8658755180e9dc7533c0ed4d61bb2" name="tests/object_prototype.phpt" role="test" />
    <file baseinstalldir="/" md5sum="732770da7b148dcb702894dcb9462674" name="tests/object_reuse.phpt" role="test" />
    <file baseinstalldir="/" md5sum="e49bb15778697eea7d717de4cfc0c385" name="tests/php_exceptions_001.phpt" role="test" />
@@ -168,6 +171,8 @@
    <file baseinstalldir="/" md5sum="76bdcf96941321e372516413f65c8576" name="tests/property_visibility__set.phpt" role="test" />
    <file baseinstalldir="/" md5sum="794b8e67cad67f72a5c0786b9ba72547" name="tests/pthreads_001.phpt" role="test" />
    <file baseinstalldir="/" md5sum="5a97aad8f07d8a9a67882b614e956c72" name="tests/regression_121.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="130c02c6d60a1a9943ec1a9c4d0f7085" name="tests/return_this_001.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="be5746f51f76ad249f6521dedd240462" name="tests/return_this_basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="3b256c85a054b728a37b3429d4157f02" name="tests/return_value.phpt" role="test" />
    <file baseinstalldir="/" md5sum="1a9c261661b08cfc6879f7f427b9f0de" name="tests/serialize_001.phpt" role="test" />
    <file baseinstalldir="/" md5sum="53d16ab569633b031059bfd92ad888da" name="tests/serialize_002.phpt" role="test" />
@@ -196,7 +201,7 @@
    <file baseinstalldir="/" md5sum="679b9046688ed6f60969415b182b1cac" name="Makefile.frag" role="src" />
    <file baseinstalldir="/" md5sum="31e331386def7ce98943694151c0d5cb" name="Makefile.travis" role="src" />
    <file baseinstalldir="/" md5sum="0e23fa6446e52a3b1cff8b18a6e0bd79" name="php_v8js.h" role="src" />
-   <file baseinstalldir="/" md5sum="0cc98a90d3357f60d5ee06e87382c272" name="php_v8js_macros.h" role="src" />
+   <file baseinstalldir="/" md5sum="84ca75a985eeae57249f2a6423553529" name="php_v8js_macros.h" role="src" />
    <file baseinstalldir="/" md5sum="9245d2147c9a8fe708e531e2d1563024" name="README.Linux.md" role="doc" />
    <file baseinstalldir="/" md5sum="d686d8e52af92521d4b8b0e86d00c463" name="README.MacOS.md" role="doc" />
    <file baseinstalldir="/" md5sum="6d8116bb5ab12cb5032c04315da06265" name="README.md" role="doc" />
@@ -214,13 +219,13 @@
    <file baseinstalldir="/" md5sum="40b66c44650a8127618c7fc48bf4b0b2" name="v8js_exceptions.cc" role="src" />
    <file baseinstalldir="/" md5sum="9d13bf5f413c2d76664670e847e1a801" name="v8js_exceptions.h" role="src" />
    <file baseinstalldir="/" md5sum="79f501962629da6d58bfd741eb781d2f" name="v8js_methods.cc" role="src" />
-   <file baseinstalldir="/" md5sum="0f221f83db4df9ea3bb91f51b6e57c64" name="v8js_object_export.cc" role="src" />
+   <file baseinstalldir="/" md5sum="312dd216ff75d8bd987adf04dd99c3c9" name="v8js_object_export.cc" role="src" />
    <file baseinstalldir="/" md5sum="bf0141470862151449311b81c947ecb3" name="v8js_object_export.h" role="src" />
    <file baseinstalldir="/" md5sum="d96c0e1eeaf1693813236f7e5da61e09" name="v8js_timer.cc" role="src" />
    <file baseinstalldir="/" md5sum="49f609c8cea6033f2ad1e6c9c829a571" name="v8js_timer.h" role="src" />
    <file baseinstalldir="/" md5sum="0f04675b0e9603648651d19218257415" name="v8js_v8.cc" role="src" />
    <file baseinstalldir="/" md5sum="0c4829d52ff46116c381b1b66ec27541" name="v8js_v8.h" role="src" />
-   <file baseinstalldir="/" md5sum="b13b73a3316a6ddccec7cd5acb742528" name="v8js_v8object_class.cc" role="src" />
+   <file baseinstalldir="/" md5sum="3e18fe76ee42b97f9b10fbb2781e1679" name="v8js_v8object_class.cc" role="src" />
    <file baseinstalldir="/" md5sum="8a80d71ff40dfa833d3b58ac94475a9f" name="v8js_v8object_class.h" role="src" />
    <file baseinstalldir="/" md5sum="29be67d9bf8bfb1642d1219356109063" name="v8js_variables.cc" role="src" />
   </dir>
@@ -543,6 +548,23 @@
    <license uri="http://www.php.net/license">The MIT License (MIT)</license>
    <notes>
 - Fix configuration on MacOS platform
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>0.6.2</release>
+    <api>0.6.2</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <date>2016-03-25</date>
+   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <notes>
+- Pass back V8Object instances, don&apos;t re-wrap
+- Retain object identity on &apos;return $this&apos;
+- Retain object identity on JS-side &apos;return this&apos;
    </notes>
   </release>
  </changelog>
