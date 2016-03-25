@@ -1,6 +1,0 @@
-- Feature: Extension registering from php.ini
-- Feature: Thread safety
-- Missing: Indexed property handlers
-- Missing: static properties of PHP objects (on instance.constructor?)
-- Bug: exception propagation fails when property getter is set
-- Bug: method_exists() leaks when used with V8 objects

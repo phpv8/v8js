@@ -17,7 +17,7 @@
   <active>yes</active>
  </lead>
  <date>2016-03-25</date>
- <time>23:24:51</time>
+ <time>23:46:59</time>
  <version>
   <release>0.6.2</release>
   <api>0.6.2</api>
@@ -34,20 +34,6 @@
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
-   <file baseinstalldir="/" md5sum="9532b5359069afc8bdccb5e01c288493" name="js/json-template.js" role="data" />
-   <file baseinstalldir="/" md5sum="a490e5a575deeceab9872035fbe74eb1" name="js/jstparser.js" role="data" />
-   <file baseinstalldir="/" md5sum="ddbae43f7979c5fe082e08ff4f2e8765" name="samples/dlopen.supp" role="src" />
-   <file baseinstalldir="/" md5sum="045e094122747e8e71f02ffc1ba88d4a" name="samples/test_call.php" role="php" />
-   <file baseinstalldir="/" md5sum="87cb416c6bc17d657abbbf314a41ff85" name="samples/test_callback.php" role="php" />
-   <file baseinstalldir="/" md5sum="ce6958537730e437aecf4f99044a78ce" name="samples/test_closure.php" role="php" />
-   <file baseinstalldir="/" md5sum="07f6c82a56280bfe86dce8feecf52c45" name="samples/test_crash.php" role="php" />
-   <file baseinstalldir="/" md5sum="0e89021f07fd28bef6d8444b9fda3f9a" name="samples/test_date.php" role="php" />
-   <file baseinstalldir="/" md5sum="8e224fd19d8fda0c532d410153cc5b01" name="samples/test_dumper.php" role="php" />
-   <file baseinstalldir="/" md5sum="220347fdf7c1c14f2c346fd97b55a025" name="samples/test_exception.php" role="php" />
-   <file baseinstalldir="/" md5sum="6432eedc51c3dd34abd0b0986c6268da" name="samples/test_exception2.php" role="php" />
-   <file baseinstalldir="/" md5sum="194dab9bb37e8456afd7eb5dd9f7a81e" name="samples/test_extend.php" role="php" />
-   <file baseinstalldir="/" md5sum="f9af8067e0113ca3048573813eee7272" name="samples/test_extension.php" role="php" />
-   <file baseinstalldir="/" md5sum="b9491aff4c5647784f0c7ae9e0638c18" name="samples/test_method.php" role="php" />
    <file baseinstalldir="/" md5sum="30d379088150c4d4dd0cd97ea21d8156" name="tests/array_access.phpt" role="test" />
    <file baseinstalldir="/" md5sum="c91b16332cdc186ecf8a8dc5581f17c7" name="tests/array_access_001.phpt" role="test" />
    <file baseinstalldir="/" md5sum="2f1e1a8788439173b4629d63e7bbe083" name="tests/array_access_002.phpt" role="test" />
@@ -206,8 +192,6 @@
    <file baseinstalldir="/" md5sum="d686d8e52af92521d4b8b0e86d00c463" name="README.MacOS.md" role="doc" />
    <file baseinstalldir="/" md5sum="6d8116bb5ab12cb5032c04315da06265" name="README.md" role="doc" />
    <file baseinstalldir="/" md5sum="9839870e001306943797003e8828d855" name="README.Win32.md" role="doc" />
-   <file baseinstalldir="/" md5sum="542f52c54898f33ac53b173970cba305" name="test.php" role="php" />
-   <file baseinstalldir="/" md5sum="65294fadb5ed766094b1f587fc20ad37" name="TODO" role="doc" />
    <file baseinstalldir="/" md5sum="16c060e49d1b2c477531758e1de4850e" name="v8js.cc" role="src" />
    <file baseinstalldir="/" md5sum="358c628b2627319e40fd7e5092f19872" name="v8js_array_access.cc" role="src" />
    <file baseinstalldir="/" md5sum="7baf3fe5b77d1374b39a1d8332e05df4" name="v8js_array_access.h" role="src" />
