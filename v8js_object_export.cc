@@ -988,7 +988,7 @@ v8::Handle<v8::Value> v8js_hash_to_jsobj(zval *value, v8::Isolate *isolate TSRML
 	}
 
 	/* Special case, passing back object originating from JS to JS */
-	if (ce == php_ce_v8function) {
+	if (ce == php_ce_v8function || ce == php_ce_v8object) {
 		v8js_v8object *c = (v8js_v8object *) zend_object_store_get_object(value TSRMLS_CC);
 
 		if(isolate != c->ctx->isolate) {
