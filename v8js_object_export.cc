@@ -156,6 +156,9 @@ failure:
 		} else {
 			v8js_terminate_execution(isolate);
 		}
+	} else if (retval_ptr == value) {
+		// special case: "return $this"
+		return_value = info.Holder();
 	} else if (retval_ptr != NULL) {
 		return_value = zval_to_v8js(retval_ptr, isolate TSRMLS_CC);
 	}
