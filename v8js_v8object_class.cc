@@ -332,7 +332,8 @@ static int v8js_v8object_call_method(char *method, INTERNAL_FUNCTION_PARAMETERS)
 
 		if (obj->std.ce == php_ce_v8object && result->StrictEquals(thisObj)) {
 			/* JS code did "return this", retain object identity */
-			RETVAL_ZVAL(object, 1, 0);
+			ZVAL_COPY_VALUE(return_value, object);
+			zval_copy_ctor(return_value);
 			result.Clear();
 		}
 
