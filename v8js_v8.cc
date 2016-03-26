@@ -204,6 +204,25 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 		return;
 	}
 
+	if (memory_limit && !c->memory_limit_hit) {
+		// Re-check memory limit (very short executions might never be hit by timer thread)
+		v8::HeapStatistics hs;
+		isolate->GetHeapStatistics(&hs);
+
+		if (hs.used_heap_size() > memory_limit) {
+#if PHP_V8_API_VERSION >= 3028036
+			isolate->LowMemoryNotification();
+#else
+			v8::V8::LowMemoryNotification();
+#endif
+			isolate->GetHeapStatistics(&hs);
+
+			if (hs.used_heap_size() > memory_limit) {
+				c->memory_limit_hit = true;
+			}
+		}
+	}
+
 	if (c->memory_limit_hit) {
 		// Execution has been terminated due to memory limit
 		sprintf(exception_string, "Script memory limit of %lu bytes exceeded", memory_limit);

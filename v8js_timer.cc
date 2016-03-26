@@ -40,27 +40,47 @@ static void v8js_timer_interrupt_handler(v8::Isolate *isolate, void *data) { /* 
 
 	v8::Locker locker(isolate);
 	v8::HeapStatistics hs;
-	isolate->GetHeapStatistics(&hs);
+	bool send_notification = false;
+	bool has_sent_notification = false;
 
-	V8JSG(timer_mutex).lock();
-
-	for (std::deque< v8js_timer_ctx* >::iterator it = V8JSG(timer_stack).begin();
-		 it != V8JSG(timer_stack).end(); it ++) {
-		v8js_timer_ctx *timer_ctx = *it;
-		v8js_ctx *c = timer_ctx->ctx;
-
-		if(c->isolate != isolate || timer_ctx->killed) {
-			continue;
+	do {
+		if (send_notification) {
+#if PHP_V8_API_VERSION >= 3028036
+			isolate->LowMemoryNotification();
+#else
+			v8::V8::LowMemoryNotification();
+#endif
+			has_sent_notification = true;
 		}
 
-		if (timer_ctx->memory_limit > 0 && hs.used_heap_size() > timer_ctx->memory_limit) {
-			timer_ctx->killed = true;
-			v8::V8::TerminateExecution(c->isolate);
-			c->memory_limit_hit = true;
-		}
-	}
+		isolate->GetHeapStatistics(&hs);
 
-	V8JSG(timer_mutex).unlock();
+		V8JSG(timer_mutex).lock();
+
+		for (std::deque< v8js_timer_ctx* >::iterator it = V8JSG(timer_stack).begin();
+			 it != V8JSG(timer_stack).end(); it ++) {
+			v8js_timer_ctx *timer_ctx = *it;
+			v8js_ctx *c = timer_ctx->ctx;
+
+			if(c->isolate != isolate || timer_ctx->killed) {
+				continue;
+			}
+
+			if (timer_ctx->memory_limit > 0 && hs.used_heap_size() > timer_ctx->memory_limit) {
+				if (has_sent_notification) {
+					timer_ctx->killed = true;
+					v8::V8::TerminateExecution(c->isolate);
+					c->memory_limit_hit = true;
+				} else {
+					// force garbage collection, then check again
+					send_notification = true;
+					break;
+				}
+			}
+		}
+
+		V8JSG(timer_mutex).unlock();
+	} while(send_notification != has_sent_notification);
 }
 /* }}} */
 
