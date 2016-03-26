@@ -194,7 +194,6 @@ static void v8js_v8object_unset_property(zval *object, zval *member ZEND_HASH_KE
 static HashTable *v8js_v8object_get_properties(zval *object TSRMLS_DC) /* {{{ */
 {
 	v8js_v8object *obj = (v8js_v8object *) zend_object_store_get_object(object TSRMLS_CC);
-	HashTable *retval;
 
 	if (obj->properties == NULL) {
 		if (GC_G(gc_active)) {

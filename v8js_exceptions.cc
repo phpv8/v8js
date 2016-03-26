@@ -46,7 +46,7 @@ void v8js_create_script_exception(zval *return_value, v8::Isolate *isolate, v8::
 	v8::Handle<v8::Message> tc_message = try_catch->Message();
 	const char *filename_string, *sourceline_string;
 	char *message_string;
-	int linenum, start_col, end_col, message_len;
+	int linenum, start_col, end_col;
 
 	object_init_ex(return_value, php_ce_v8js_script_exception);
 
@@ -54,7 +54,7 @@ void v8js_create_script_exception(zval *return_value, v8::Isolate *isolate, v8::
 	zend_update_property##type(php_ce_v8js_script_exception, return_value, #name, sizeof(#name) - 1, value TSRMLS_CC);
 
 	if (tc_message.IsEmpty()) {
-		message_len = spprintf(&message_string, 0, "%s", exception_string);
+		spprintf(&message_string, 0, "%s", exception_string);
 	}
 	else
 	{
@@ -75,7 +75,7 @@ void v8js_create_script_exception(zval *return_value, v8::Isolate *isolate, v8::
 		end_col = tc_message->GetEndColumn();
 		PHPV8_EXPROP(_long, JsEndColumn, end_col);
 
-		message_len = spprintf(&message_string, 0, "%s:%d: %s", filename_string, linenum, exception_string);
+		spprintf(&message_string, 0, "%s:%d: %s", filename_string, linenum, exception_string);
 
 		v8::String::Utf8Value stacktrace(try_catch->StackTrace());
 		if (stacktrace.length() > 0) {

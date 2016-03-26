@@ -671,7 +671,7 @@ static void v8js_execute_script(zval *this_ptr, v8js_script *res, long flags, lo
  */
 static PHP_METHOD(V8Js, executeString)
 {
-	char *str = NULL, *identifier = NULL, *tz = NULL;
+	char *str = NULL, *identifier = NULL;
 	int str_len = 0, identifier_len = 0;
 	long flags = V8JS_FLAG_NONE, time_limit = 0, memory_limit = 0;
 	v8js_script *res = NULL;

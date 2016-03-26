@@ -112,7 +112,7 @@ static void v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int leve
 
 	if (var->IsString())
 	{
-		php_printf("string(%zu) \"", valstr_len, valstr);
+		php_printf("string(%zu) \"", valstr_len);
 		PHPWRITE(valstr, valstr_len);
 		php_printf("\"\n");
 	}
@@ -464,7 +464,7 @@ V8JS_METHOD(require)
 	c->modules_base.push_back(normalised_path);
 
 	// Run script
-	v8::Local<v8::Value> result = script->Run();
+	script->Run();
 
 	// Remove this module and path from the stack
 	c->modules_stack.pop_back();
