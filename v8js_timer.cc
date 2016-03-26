@@ -40,7 +40,8 @@ static void v8js_timer_interrupt_handler(v8::Isolate *isolate, void *data) { /* 
 
 	v8::Locker locker(isolate);
 	v8::HeapStatistics hs;
-	bool send_notification, has_sent_notification;
+	bool send_notification = false;
+	bool has_sent_notification = false;
 
 	do {
 		if (send_notification) {
