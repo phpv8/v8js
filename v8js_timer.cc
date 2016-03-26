@@ -45,7 +45,11 @@ static void v8js_timer_interrupt_handler(v8::Isolate *isolate, void *data) { /* 
 
 	do {
 		if (send_notification) {
+#if PHP_V8_API_VERSION >= 3028036
 			isolate->LowMemoryNotification();
+#else
+			v8::V8::LowMemoryNotification();
+#endif
 			has_sent_notification = true;
 		}
 

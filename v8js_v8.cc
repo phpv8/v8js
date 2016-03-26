@@ -210,7 +210,11 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 		isolate->GetHeapStatistics(&hs);
 
 		if (hs.used_heap_size() > memory_limit) {
+#if PHP_V8_API_VERSION >= 3028036
 			isolate->LowMemoryNotification();
+#else
+			v8::V8::LowMemoryNotification();
+#endif
 			isolate->GetHeapStatistics(&hs);
 
 			if (hs.used_heap_size() > memory_limit) {
