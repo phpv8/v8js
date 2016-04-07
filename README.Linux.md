@@ -29,7 +29,11 @@ In that case copy those two files to `/usr/share/v8/...`.
 Compile latest V8
 -----------------
 
+
 ```
+# Install `libicu-dev` if you haven't already:
+sudo apt-get install libicu-dev
+
 cd /tmp
 
 # Install depot_tools first (needed for source checkout)
