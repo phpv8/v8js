@@ -49,6 +49,10 @@ export GYP_DEFINES="use_system_icu=1"
 
 # Build (with internal snapshots)
 export GYPFLAGS="-Dv8_use_external_startup_data=0"
+
+# Force gyp to use system-wide ld.gold
+export GYPFLAGS="${GYPFLAGS} -Dlinux_use_bundled_gold=0"
+
 make native library=shared snapshot=on -j8
 
 # Install to /usr
