@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2015 The PHP Group                                |
+  | Copyright (c) 1997-2016 The PHP Group                                |
   +----------------------------------------------------------------------+
   | http://www.opensource.org/licenses/mit-license.php  MIT License      |
   +----------------------------------------------------------------------+
@@ -71,7 +71,6 @@ struct v8js_jsext {
 };
 /* }}} */
 
-#if PHP_V8_API_VERSION >= 4004010
 class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
 public:
 	virtual void* Allocate(size_t length) {
@@ -81,7 +80,6 @@ public:
 	virtual void* AllocateUninitialized(size_t length) { return malloc(length); }
 	virtual void Free(void* data, size_t) { free(data); }
 };
-#endif
 
 static void v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 {
@@ -207,11 +205,9 @@ static void v8js_free_storage(void *object TSRMLS_DC) /* {{{ */
 	c->modules_stack.~vector();
 	c->modules_base.~vector();
 
-#if PHP_V8_API_VERSION >= 4003007
 	if (c->zval_snapshot_blob) {
 		zval_ptr_dtor(&c->zval_snapshot_blob);
 	}
-#endif
 
 	efree(object);
 }
@@ -367,13 +363,10 @@ static PHP_METHOD(V8Js, __construct)
 	c->pending_exception = NULL;
 	c->in_execution = 0;
 
-#if PHP_V8_API_VERSION >= 4003007
 	new (&c->create_params) v8::Isolate::CreateParams();
 
-#if PHP_V8_API_VERSION >= 4004044
 	static ArrayBufferAllocator array_buffer_allocator;
 	c->create_params.array_buffer_allocator = &array_buffer_allocator;
-#endif
 
 	new (&c->snapshot_blob) v8::StartupData();
 	if (snapshot_blob) {
@@ -390,10 +383,6 @@ static PHP_METHOD(V8Js, __construct)
 	}
 
 	c->isolate = v8::Isolate::New(c->create_params);
-#else /* PHP_V8_API_VERSION < 4003007 */
-	c->isolate = v8::Isolate::New();
-#endif
-
 	c->isolate->SetData(0, c);
 
 	c->time_limit = 0;
@@ -1108,7 +1097,7 @@ static PHP_METHOD(V8Js, getExtensions)
 }
 /* }}} */
 
-#if PHP_V8_API_VERSION >= 4003007
+
 /* {{{ proto string|bool V8Js::createSnapshot(string embed_source)
  */
 static PHP_METHOD(V8Js, createSnapshot)
@@ -1139,7 +1128,6 @@ static PHP_METHOD(V8Js, createSnapshot)
 	delete[] snapshot_blob.data;
 }
 /* }}} */
-#endif  /* PHP_V8_API_VERSION >= 4003007 */
 
 
 /* {{{ arginfo */
@@ -1210,11 +1198,9 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO(arginfo_v8js_getextensions, 0)
 ZEND_END_ARG_INFO()
 
-#if PHP_V8_API_VERSION >= 4003007
 ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_createsnapshot, 0, 0, 1)
 	ZEND_ARG_INFO(0, script)
 ZEND_END_ARG_INFO()
-#endif
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_settimelimit, 0, 0, 1)
 	ZEND_ARG_INFO(0, time_limit)
@@ -1242,10 +1228,7 @@ const zend_function_entry v8js_methods[] = { /* {{{ */
 	PHP_ME(V8Js,	setAverageObjectSize,	arginfo_v8js_setaverageobjectsize,	ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	registerExtension,		arginfo_v8js_registerextension,		ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
 	PHP_ME(V8Js,	getExtensions,			arginfo_v8js_getextensions,			ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
-
-#if PHP_V8_API_VERSION >= 4003007
 	PHP_ME(V8Js,	createSnapshot,			arginfo_v8js_createsnapshot,		ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
-#endif
 	{NULL, NULL, NULL}
 };
 /* }}} */
@@ -1314,10 +1297,8 @@ PHP_MINIT_FUNCTION(v8js_class) /* {{{ */
 
 	le_v8js_script = zend_register_list_destructors_ex(v8js_script_dtor, NULL, PHP_V8JS_SCRIPT_RES_NAME, module_number);
 
-#if PHP_V8_API_VERSION >= 4004010 && PHP_V8_API_VERSION < 4004044
 	static ArrayBufferAllocator array_buffer_allocator;
 	v8::V8::SetArrayBufferAllocator(&array_buffer_allocator);
-#endif
 
 	return SUCCESS;
 } /* }}} */
