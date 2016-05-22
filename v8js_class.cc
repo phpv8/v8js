@@ -1297,9 +1297,6 @@ PHP_MINIT_FUNCTION(v8js_class) /* {{{ */
 
 	le_v8js_script = zend_register_list_destructors_ex(v8js_script_dtor, NULL, PHP_V8JS_SCRIPT_RES_NAME, module_number);
 
-	static ArrayBufferAllocator array_buffer_allocator;
-	v8::V8::SetArrayBufferAllocator(&array_buffer_allocator);
-
 	return SUCCESS;
 } /* }}} */
 
