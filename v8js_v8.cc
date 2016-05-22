@@ -25,7 +25,7 @@ extern "C" {
 #include "zend_exceptions.h"
 }
 
-#if !defined(_WIN32) && PHP_V8_API_VERSION >= 3029036
+#if !defined(_WIN32)
 #include <libplatform/libplatform.h>
 #endif
 
@@ -33,43 +33,6 @@ extern "C" {
 #include "v8js_v8.h"
 #include "v8js_timer.h"
 #include "v8js_exceptions.h"
-
-#if defined(PHP_V8_USE_EXTERNAL_STARTUP_DATA) && PHP_V8_API_VERSION < 4006076
-/* Old V8 version, requires startup data but has no
- * (internal/API) means to let it be loaded. */
-static v8::StartupData natives_;
-static v8::StartupData snapshot_;
-
-static void v8js_v8_load_startup_data(const char* blob_file,
-									  v8::StartupData* startup_data,
-									  void (*setter_fn)(v8::StartupData*)) {
-	startup_data->data = NULL;
-	startup_data->raw_size = 0;
-
-	if (!blob_file) {
-		return;
-	}
-
-	FILE* file = fopen(blob_file, "rb");
-	if (!file) {
-		return;
-	}
-
-	fseek(file, 0, SEEK_END);
-	startup_data->raw_size = static_cast<int>(ftell(file));
-	rewind(file);
-
-	startup_data->data = new char[startup_data->raw_size];
-	int read_size = static_cast<int>(fread(const_cast<char*>(startup_data->data),
-										   1, startup_data->raw_size, file));
-	fclose(file);
-
-	if (startup_data->raw_size == read_size) {
-		(*setter_fn)(startup_data);
-	}
-}
-#endif
-
 
 void v8js_v8_init(TSRMLS_D) /* {{{ */
 {
@@ -93,21 +56,14 @@ void v8js_v8_init(TSRMLS_D) /* {{{ */
 
 #ifdef PHP_V8_USE_EXTERNAL_STARTUP_DATA
 	/* V8 doesn't work without startup data, load it. */
-#if PHP_V8_API_VERSION >= 4006076
 	v8::V8::InitializeExternalStartupData(
 		PHP_V8_NATIVES_BLOB_PATH,
 		PHP_V8_SNAPSHOT_BLOB_PATH
 	);
-#else
-	v8js_v8_load_startup_data(PHP_V8_NATIVES_BLOB_PATH, &natives_, v8::V8::SetNativesDataBlob);
-	v8js_v8_load_startup_data(PHP_V8_SNAPSHOT_BLOB_PATH, &snapshot_, v8::V8::SetSnapshotDataBlob);
-#endif
 #endif
 
-#if !defined(_WIN32) && PHP_V8_API_VERSION >= 3029036
 	v8js_process_globals.v8_platform = v8::platform::CreateDefaultPlatform();
 	v8::V8::InitializePlatform(v8js_process_globals.v8_platform);
-#endif
 
 	/* Set V8 command line flags (must be done before V8::Initialize()!) */
 	if (v8js_process_globals.v8_flags) {
@@ -320,13 +276,8 @@ int v8js_get_properties_hash(v8::Handle<v8::Value> jsValue, HashTable *retval, i
 			const char *key = ToCString(cstr);
 			zval *value = NULL;
 
-			v8::Local<v8::Value> php_object;
-			if (jsVal->IsObject()) {
-				php_object = v8::Local<v8::Object>::Cast(jsVal)->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY));
-			}
-			if (!php_object.IsEmpty()) {
-				/* This is a PHP object, passed to JS and back. */
-				value = reinterpret_cast<zval *>(v8::External::Cast(*php_object)->Value());
+			if (jsVal->IsObject() && jsVal->ToObject()->InternalFieldCount()) {
+				value = reinterpret_cast<zval *>(jsVal->ToObject()->GetAlignedPointerFromInternalField(1));
 				Z_ADDREF_P(value);
 			}
 			else {

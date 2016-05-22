@@ -70,11 +70,9 @@ struct v8js_ctx {
   std::vector<struct _v8js_script *> script_objects;
   char *tz;
 
-#if PHP_V8_API_VERSION >= 4003007
   v8::Isolate::CreateParams create_params;
   zval *zval_snapshot_blob;
   v8::StartupData snapshot_blob;
-#endif
 
 #ifdef ZTS
   void ***zts_ctx;
