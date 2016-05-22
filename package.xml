@@ -17,7 +17,7 @@
   <active>yes</active>
  </lead>
  <date>2016-05-22</date>
- <time>23:37:07</time>
+ <time>23:51:14</time>
  <version>
   <release>1.3.0</release>
   <api>1.3.0</api>
@@ -216,7 +216,7 @@ Code Cleanup
    <file baseinstalldir="/" md5sum="716540317726f97d61cbbdc155102e01" name="Makefile.frag" role="src" />
    <file baseinstalldir="/" md5sum="31e331386def7ce98943694151c0d5cb" name="Makefile.travis" role="src" />
    <file baseinstalldir="/" md5sum="0e23fa6446e52a3b1cff8b18a6e0bd79" name="php_v8js.h" role="src" />
-   <file baseinstalldir="/" md5sum="0d2f326721ac1530b5be5a7a64d67898" name="php_v8js_macros.h" role="src" />
+   <file baseinstalldir="/" md5sum="205e20b918be841d7275d709007da749" name="php_v8js_macros.h" role="src" />
    <file baseinstalldir="/" md5sum="8d51598bd192df6e257ab0374d7f47c9" name="README.Linux.md" role="doc" />
    <file baseinstalldir="/" md5sum="d686d8e52af92521d4b8b0e86d00c463" name="README.MacOS.md" role="doc" />
    <file baseinstalldir="/" md5sum="774a66bf34ff0923e3a2e075c9a8ce8a" name="README.md" role="doc" />
@@ -231,17 +231,17 @@ Code Cleanup
    <file baseinstalldir="/" md5sum="c059a270bc185684a0ee734ed5e769ca" name="v8js_convert.cc" role="src" />
    <file baseinstalldir="/" md5sum="70bb41956b1d05f8f186e7889ae4e89b" name="v8js_exceptions.cc" role="src" />
    <file baseinstalldir="/" md5sum="9d13bf5f413c2d76664670e847e1a801" name="v8js_exceptions.h" role="src" />
-   <file baseinstalldir="/" md5sum="accfcfab37ae520fbf01f70fc4210465" name="v8js_generator_export.cc" role="data" />
-   <file baseinstalldir="/" md5sum="177f62d686bc4e3465d5599651496b93" name="v8js_generator_export.h" role="src" />
+   <file baseinstalldir="/" md5sum="d2b5ef6472cb277c34b13a062f9a9cc8" name="v8js_generator_export.cc" role="data" />
+   <file baseinstalldir="/" md5sum="0bfa1eb796acf31f8bebc10dfd357a8f" name="v8js_generator_export.h" role="src" />
    <file baseinstalldir="/" md5sum="03ef3415c1e0f0d470acd5163b7df4f1" name="v8js_methods.cc" role="src" />
-   <file baseinstalldir="/" md5sum="e022b04a0769f7b83632794875f8ba43" name="v8js_object_export.cc" role="src" />
+   <file baseinstalldir="/" md5sum="aff44b744fadaf9a4f087eb03425a53e" name="v8js_object_export.cc" role="src" />
    <file baseinstalldir="/" md5sum="bf0141470862151449311b81c947ecb3" name="v8js_object_export.h" role="src" />
    <file baseinstalldir="/" md5sum="bfefe845c9260cfe4181daa04ba129cf" name="v8js_timer.cc" role="src" />
    <file baseinstalldir="/" md5sum="5935c66a0bd8e819d35cf05d7a9e3c89" name="v8js_timer.h" role="src" />
    <file baseinstalldir="/" md5sum="38e54f333715e5b588bb42f6cdaa54a8" name="v8js_v8.cc" role="src" />
    <file baseinstalldir="/" md5sum="e551ee5b243164a3806a5b4ec4b2bf30" name="v8js_v8.h" role="src" />
-   <file baseinstalldir="/" md5sum="e6a2c4ddb707b9f536f4568868f76208" name="v8js_v8object_class.cc" role="src" />
-   <file baseinstalldir="/" md5sum="1b329fe614d75d56fd6f9fa4f1425f2a" name="v8js_v8object_class.h" role="src" />
+   <file baseinstalldir="/" md5sum="16ae9fe334a8c8dff3cb53ebd91e9078" name="v8js_v8object_class.cc" role="src" />
+   <file baseinstalldir="/" md5sum="88cfd1d1de945b8b462fadecacd51451" name="v8js_v8object_class.h" role="src" />
    <file baseinstalldir="/" md5sum="86f950271e3c6d37457f20e034a576e5" name="v8js_variables.cc" role="src" />
   </dir>
  </contents>
