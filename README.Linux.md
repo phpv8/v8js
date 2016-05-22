@@ -55,6 +55,11 @@ make native library=shared snapshot=on -j8
 sudo mkdir -p /usr/lib /usr/include
 sudo cp out/native/lib.target/lib*.so /usr/lib/
 sudo cp -R include/* /usr/include
+
+# Install libv8_libplatform.a (V8 >= 5.2.51)
+echo -e "create /usr/lib/libv8_libplatform.a\naddlib out/native/obj.target/src/libv8_libplatform.a\nsave\nend" | sudo ar -M
+
+# ... same for V8 < 5.2.51, libv8_libplatform.a is built in tools/gyp directory
 echo -e "create /usr/lib/libv8_libplatform.a\naddlib out/native/obj.target/tools/gyp/libv8_libplatform.a\nsave\nend" | sudo ar -M
 ```
 
