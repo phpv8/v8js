@@ -28,6 +28,7 @@
 #include <vector>
 #include <mutex>
 
+#include <cmath>
 #ifndef isnan
 /* php.h requires the isnan() macro, which is removed by c++ <cmath> header,
  * work around: re-define the macro to std::isnan function */
