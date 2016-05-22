@@ -37,8 +37,6 @@ static inline v8js_v8object *v8js_v8object_fetch_object(zend_object *obj) {
 #define Z_V8JS_V8OBJECT_OBJ_P(zv) v8js_v8object_fetch_object(Z_OBJ_P(zv));
 
 
-#ifdef V8JS_V8GENERATOR_SUPPORT
-
 /* {{{ Generator container */
 struct v8js_v8generator {
 	zval value;
@@ -57,7 +55,6 @@ static inline v8js_v8generator *v8js_v8generator_fetch_object(zend_object *obj) 
 
 #define Z_V8JS_V8GENERATOR_OBJ_P(zv) v8js_v8generator_fetch_object(Z_OBJ_P(zv));
 
-#endif  /* /V8JS_V8GENERATOR_SUPPORT */
 
 
 PHP_MINIT_FUNCTION(v8js_v8object_class);

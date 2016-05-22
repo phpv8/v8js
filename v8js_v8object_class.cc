@@ -33,18 +33,12 @@ extern "C" {
 /* {{{ Class Entries */
 zend_class_entry *php_ce_v8object;
 zend_class_entry *php_ce_v8function;
-
-#ifdef V8JS_V8GENERATOR_SUPPORT
 zend_class_entry *php_ce_v8generator;
-#endif
 /* }}} */
 
 /* {{{ Object Handlers */
 static zend_object_handlers v8js_v8object_handlers;
-
-#ifdef V8JS_V8GENERATOR_SUPPORT
 static zend_object_handlers v8js_v8generator_handlers;
-#endif
 /* }}} */
 
 #define V8JS_V8_INVOKE_FUNC_NAME "V8Js::V8::Invoke"
@@ -483,7 +477,6 @@ PHP_METHOD(V8Function, __wakeup)
 /* }}} */
 
 
-#ifdef V8JS_V8GENERATOR_SUPPORT
 static void v8js_v8generator_free_storage(zend_object *object) /* {{{ */
 {
 	v8js_v8generator *c = v8js_v8generator_fetch_object(object);
@@ -662,20 +655,16 @@ PHP_METHOD(V8Generator, valid)
 	RETVAL_BOOL(!g->done);
 }
 /* }}} */
-#endif  /* /V8JS_V8GENERATOR_SUPPORT */
 
 
 void v8js_v8object_create(zval *res, v8::Handle<v8::Value> value, int flags, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
 {
 	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
 
-#ifdef V8JS_V8GENERATOR_SUPPORT
 	if(value->IsGeneratorObject()) {
 		object_init_ex(res, php_ce_v8generator);
 	}
-	else
-#endif  /* /V8JS_V8GENERATOR_SUPPORT */
-	if(value->IsFunction()) {
+	else if(value->IsFunction()) {
 		object_init_ex(res, php_ce_v8function);
 	}
 	else {
@@ -709,7 +698,6 @@ static const zend_function_entry v8js_v8function_methods[] = { /* {{{ */
 };
 /* }}} */
 
-#ifdef V8JS_V8GENERATOR_SUPPORT
 ZEND_BEGIN_ARG_INFO(arginfo_v8generator_current, 0)
 ZEND_END_ARG_INFO()
 
@@ -739,7 +727,6 @@ static const zend_function_entry v8js_v8generator_methods[] = { /* {{{ */
 	{NULL, NULL, NULL}
 };
 /* }}} */
-#endif  /* /V8JS_V8GENERATOR_SUPPORT */
 
 
 PHP_MINIT_FUNCTION(v8js_v8object_class) /* {{{ */
@@ -758,7 +745,6 @@ PHP_MINIT_FUNCTION(v8js_v8object_class) /* {{{ */
 	php_ce_v8function->ce_flags |= ZEND_ACC_FINAL;
 	php_ce_v8function->create_object = v8js_v8object_new;
 
-#ifdef V8JS_V8GENERATOR_SUPPORT
 	/* V8Generator Class */
 	INIT_CLASS_ENTRY(ce, "V8Generator", v8js_v8generator_methods);
 	php_ce_v8generator = zend_register_internal_class(&ce TSRMLS_CC);
@@ -766,7 +752,6 @@ PHP_MINIT_FUNCTION(v8js_v8object_class) /* {{{ */
 	php_ce_v8generator->create_object = v8js_v8generator_new;
 
 	zend_class_implements(php_ce_v8generator, 1, zend_ce_iterator);
-#endif  /* /V8JS_V8GENERATOR_SUPPORT */
 
 
 	/* V8<Object|Function> handlers */
@@ -786,13 +771,11 @@ PHP_MINIT_FUNCTION(v8js_v8object_class) /* {{{ */
 	v8js_v8object_handlers.offset = XtOffsetOf(struct v8js_v8object, std);
 	v8js_v8object_handlers.free_obj = v8js_v8object_free_storage;
 
-#ifdef V8JS_V8GENERATOR_SUPPORT
 	/* V8Generator handlers */
 	memcpy(&v8js_v8generator_handlers, &v8js_v8object_handlers, sizeof(zend_object_handlers));
 	v8js_v8generator_handlers.get_method = v8js_v8generator_get_method;
 	v8js_v8generator_handlers.offset = XtOffsetOf(struct v8js_v8generator, v8obj.std);
 	v8js_v8generator_handlers.free_obj = v8js_v8generator_free_storage;
-#endif  /* /V8JS_V8GENERATOR_SUPPORT */
 
 	return SUCCESS;
 } /* }}} */

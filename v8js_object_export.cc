@@ -932,11 +932,7 @@ v8::Handle<v8::Value> v8js_hash_to_jsobj(zval *value, v8::Isolate *isolate TSRML
 	}
 
 	/* Special case, passing back object originating from JS to JS */
-	if (ce == php_ce_v8function || ce == php_ce_v8object
-#ifdef V8JS_V8GENERATOR_SUPPORT
-		|| ce == php_ce_v8generator
-#endif
-		) {
+	if (ce == php_ce_v8function || ce == php_ce_v8object || ce == php_ce_v8generator) {
 		v8js_v8object *c = Z_V8JS_V8OBJECT_OBJ_P(value);
 
 		if(isolate != c->ctx->isolate) {
@@ -951,13 +947,11 @@ v8::Handle<v8::Value> v8js_hash_to_jsobj(zval *value, v8::Isolate *isolate TSRML
 	if (ce) {
 		v8::Local<v8::Value> wrapped_object = v8js_wrap_object(isolate, ce, value TSRMLS_CC);
 
-#ifdef V8JS_GENERATOR_EXPORT_SUPPORT
 		if (ce == zend_ce_generator) {
 			/* Wrap PHP Generator object in a wrapper function that provides
 			 * ES6 style behaviour. */
 			wrapped_object = v8js_wrap_generator(isolate, wrapped_object);
 		}
-#endif
 
 		return wrapped_object;
 	}
