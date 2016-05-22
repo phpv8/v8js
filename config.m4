@@ -145,16 +145,15 @@ int main ()
   for static_link_extra_file in $static_link_extra; do
 	AC_MSG_CHECKING([for $static_link_extra_file])
 
-	for i in $PHP_V8JS $SEARCH_PATH ; do
-	  if test -r $i/lib64/$static_link_extra_file; then
-		static_link_dir=$i/lib64
-		AC_MSG_RESULT(found in $i)
-	  fi
-	  if test -r $i/lib/$static_link_extra_file; then
-		static_link_dir=$i/lib
-		AC_MSG_RESULT(found in $i)
-	  fi
-	done
+	if test -r $V8_DIR/lib64/$static_link_extra_file; then
+	  static_link_dir=$V8_DIR/lib64
+	  AC_MSG_RESULT(found in $V8_DIR/lib64)
+	fi
+
+	if test -r $V8_DIR/lib/$static_link_extra_file; then
+	  static_link_dir=$V8_DIR/lib
+	  AC_MSG_RESULT(found in $V8_DIR/lib)
+	fi
 
 	if test -z "$static_link_dir"; then
 	  AC_MSG_RESULT([not found])
