@@ -17,10 +17,10 @@
   <active>yes</active>
  </lead>
  <date>2016-05-22</date>
- <time>21:16:17</time>
+ <time>23:37:07</time>
  <version>
-  <release>1.2.0</release>
-  <api>1.2.0</api>
+  <release>1.3.0</release>
+  <api>1.3.0</api>
  </version>
  <stability>
   <release>stable</release>
@@ -28,14 +28,22 @@
  </stability>
  <license uri="http://www.php.net/license">The MIT License (MIT)</license>
  <notes>
-- allow to pass generators from PHP to JS and vice versa
+This release merges changes from V8Js for PHP 5.x (version 0.6.3) to PHP 7.0 branch.
 
-Merge improvements from V8Js for PHP 5.x (version 0.5.0) to PHP 7.0 branch:
-- Export public methods on classes derived from \V8Js to V8
-- Support V8 compiled with external snapshots
-- Allow to create custom snapshots of V8 heaps
-- Allow to create V8 contexts based on custom snapshots generated earlier
-- Support V8 5.1 well
+New Features
+- Allow to adjust the considered &quot;amount of external memory&quot; by objects exported to V8
+
+Bug Fixes
+- Pass back V8Object instances, don&apos;t re-wrap
+- Retain object identity on &apos;return $this&apos;
+- Retain object identity on JS-side &apos;return this&apos;
+- Send LowMemoryNotification signals to V8 before imposing memory limit
+- Fix build against V8 version 5.2 (deprecated WeakCallbackInfo &amp; GetHiddenValue et al)
+- Improve/Clarify README
+
+Code Cleanup
+- Removed support for &quot;old-age&quot; V8 versions (i.e. V8 &lt; 4.6.76)
+- Removed old examples and pre-phpt test script
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -149,7 +157,6 @@ Merge improvements from V8Js for PHP 5.x (version 0.5.0) to PHP 7.0 branch:
    <file baseinstalldir="/" md5sum="8b907af100ba9d4eea51b9059c8c7fdb" name="tests/js-construct-with-ctor.phpt" role="test" />
    <file baseinstalldir="/" md5sum="46d8c3c3efb87cb310af0d9dbcd84431" name="tests/leak-php-object.phpt" role="test" />
    <file baseinstalldir="/" md5sum="23fd9824ef435408ca93c01a79247237" name="tests/long.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="8fb9e33bf07c2e4fdc7dee4f499fded7" name="tests/magic_func.phpt" role="test" />
    <file baseinstalldir="/" md5sum="8645a8f43663294192f48ed7639afd0f" name="tests/memory_limit.phpt" role="test" />
    <file baseinstalldir="/" md5sum="4ce74d22310618686e37829a24c7ce8d" name="tests/multi-object.phpt" role="test" />
    <file baseinstalldir="/" md5sum="34e4df80d655576e146732118d29880e" name="tests/multi.phpt" role="test" />
@@ -209,32 +216,31 @@ Merge improvements from V8Js for PHP 5.x (version 0.5.0) to PHP 7.0 branch:
    <file baseinstalldir="/" md5sum="716540317726f97d61cbbdc155102e01" name="Makefile.frag" role="src" />
    <file baseinstalldir="/" md5sum="31e331386def7ce98943694151c0d5cb" name="Makefile.travis" role="src" />
    <file baseinstalldir="/" md5sum="0e23fa6446e52a3b1cff8b18a6e0bd79" name="php_v8js.h" role="src" />
-   <file baseinstalldir="/" md5sum="5725a21a7063305213791962116c5f5c" name="php_v8js_macros.h" role="src" />
+   <file baseinstalldir="/" md5sum="0d2f326721ac1530b5be5a7a64d67898" name="php_v8js_macros.h" role="src" />
    <file baseinstalldir="/" md5sum="8d51598bd192df6e257ab0374d7f47c9" name="README.Linux.md" role="doc" />
    <file baseinstalldir="/" md5sum="d686d8e52af92521d4b8b0e86d00c463" name="README.MacOS.md" role="doc" />
    <file baseinstalldir="/" md5sum="774a66bf34ff0923e3a2e075c9a8ce8a" name="README.md" role="doc" />
    <file baseinstalldir="/" md5sum="e88cfe2d7e76c7be1db283766a10dd51" name="README.Win32.md" role="doc" />
-   <file baseinstalldir="/" md5sum="d4a8e3fd2e228c61db4e76e7da10fc61" name="v8js-0.6.3.tgz" role="data" />
-   <file baseinstalldir="/" md5sum="98c0f00bcb80411b72422232fcd575f3" name="v8js.cc" role="src" />
-   <file baseinstalldir="/" md5sum="33fca37296f54143e6d57ccd819b9c83" name="v8js_array_access.cc" role="src" />
+   <file baseinstalldir="/" md5sum="bcb7746e0516a28d3b44d704645fa803" name="v8js.cc" role="src" />
+   <file baseinstalldir="/" md5sum="0afc45a2a52d7f0c1ecdaea068feedba" name="v8js_array_access.cc" role="src" />
    <file baseinstalldir="/" md5sum="7baf3fe5b77d1374b39a1d8332e05df4" name="v8js_array_access.h" role="src" />
-   <file baseinstalldir="/" md5sum="3e490a7a00f2faa190d3aaa3fd63b13c" name="v8js_class.cc" role="src" />
+   <file baseinstalldir="/" md5sum="e6d89f5d80575d0fa0e8e94ffeeb8ee7" name="v8js_class.cc" role="src" />
    <file baseinstalldir="/" md5sum="a69966968a1e3610150ebbd752f39483" name="v8js_class.h" role="src" />
    <file baseinstalldir="/" md5sum="4fc9e39231e977ac0d415f1682fcb2bd" name="v8js_commonjs.cc" role="src" />
    <file baseinstalldir="/" md5sum="32a5d1a65f64ec37ec294f496fc11ff1" name="v8js_commonjs.h" role="src" />
-   <file baseinstalldir="/" md5sum="52ec041be78a47269a39ee0cc66d8530" name="v8js_convert.cc" role="src" />
-   <file baseinstalldir="/" md5sum="d644e3090f34ea08d62effd2d105588a" name="v8js_exceptions.cc" role="src" />
+   <file baseinstalldir="/" md5sum="c059a270bc185684a0ee734ed5e769ca" name="v8js_convert.cc" role="src" />
+   <file baseinstalldir="/" md5sum="70bb41956b1d05f8f186e7889ae4e89b" name="v8js_exceptions.cc" role="src" />
    <file baseinstalldir="/" md5sum="9d13bf5f413c2d76664670e847e1a801" name="v8js_exceptions.h" role="src" />
    <file baseinstalldir="/" md5sum="accfcfab37ae520fbf01f70fc4210465" name="v8js_generator_export.cc" role="data" />
    <file baseinstalldir="/" md5sum="177f62d686bc4e3465d5599651496b93" name="v8js_generator_export.h" role="src" />
    <file baseinstalldir="/" md5sum="03ef3415c1e0f0d470acd5163b7df4f1" name="v8js_methods.cc" role="src" />
-   <file baseinstalldir="/" md5sum="840e83cc053b2fb348a2d02702d1ab8d" name="v8js_object_export.cc" role="src" />
+   <file baseinstalldir="/" md5sum="e022b04a0769f7b83632794875f8ba43" name="v8js_object_export.cc" role="src" />
    <file baseinstalldir="/" md5sum="bf0141470862151449311b81c947ecb3" name="v8js_object_export.h" role="src" />
-   <file baseinstalldir="/" md5sum="6e7e0dfeb40d8fe2f57d309f121b98f8" name="v8js_timer.cc" role="src" />
+   <file baseinstalldir="/" md5sum="bfefe845c9260cfe4181daa04ba129cf" name="v8js_timer.cc" role="src" />
    <file baseinstalldir="/" md5sum="5935c66a0bd8e819d35cf05d7a9e3c89" name="v8js_timer.h" role="src" />
-   <file baseinstalldir="/" md5sum="ad9c1c6559eb3687127be2fde12e6068" name="v8js_v8.cc" role="src" />
+   <file baseinstalldir="/" md5sum="38e54f333715e5b588bb42f6cdaa54a8" name="v8js_v8.cc" role="src" />
    <file baseinstalldir="/" md5sum="e551ee5b243164a3806a5b4ec4b2bf30" name="v8js_v8.h" role="src" />
-   <file baseinstalldir="/" md5sum="48a90b7fa9e00c0cb59f51dc069dc547" name="v8js_v8object_class.cc" role="src" />
+   <file baseinstalldir="/" md5sum="e6a2c4ddb707b9f536f4568868f76208" name="v8js_v8object_class.cc" role="src" />
    <file baseinstalldir="/" md5sum="1b329fe614d75d56fd6f9fa4f1425f2a" name="v8js_v8object_class.h" role="src" />
    <file baseinstalldir="/" md5sum="86f950271e3c6d37457f20e034a576e5" name="v8js_variables.cc" role="src" />
   </dir>
@@ -575,6 +581,28 @@ This release also merges in new features from V8Js 0.4.0, namely
   </release>
   <release>
    <version>
+    <release>1.2.0</release>
+    <api>1.2.0</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <date>2016-03-05</date>
+   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <notes>
+- allow to pass generators from PHP to JS and vice versa
+
+Merge improvements from V8Js for PHP 5.x (version 0.5.0) to PHP 7.0 branch:
+- Export public methods on classes derived from \V8Js to V8
+- Support V8 compiled with external snapshots
+- Allow to create custom snapshots of V8 heaps
+- Allow to create V8 contexts based on custom snapshots generated earlier
+- Support V8 5.1 well
+   </notes>
+  </release>
+  <release>
+   <version>
     <release>0.6.0</release>
     <api>0.6.0</api>
    </version>
@@ -644,8 +672,8 @@ Code Cleanup
   </release>
   <release>
    <version>
-    <release>1.2.0</release>
-    <api>1.2.0</api>
+    <release>1.3.0</release>
+    <api>1.3.0</api>
    </version>
    <stability>
     <release>stable</release>
@@ -654,14 +682,22 @@ Code Cleanup
    <date>2016-05-22</date>
    <license uri="http://www.php.net/license">The MIT License (MIT)</license>
    <notes>
-- allow to pass generators from PHP to JS and vice versa
+This release merges changes from V8Js for PHP 5.x (version 0.6.3) to PHP 7.0 branch.
 
-Merge improvements from V8Js for PHP 5.x (version 0.5.0) to PHP 7.0 branch:
-- Export public methods on classes derived from \V8Js to V8
-- Support V8 compiled with external snapshots
-- Allow to create custom snapshots of V8 heaps
-- Allow to create V8 contexts based on custom snapshots generated earlier
-- Support V8 5.1 well
+New Features
+- Allow to adjust the considered &quot;amount of external memory&quot; by objects exported to V8
+
+Bug Fixes
+- Pass back V8Object instances, don&apos;t re-wrap
+- Retain object identity on &apos;return $this&apos;
+- Retain object identity on JS-side &apos;return this&apos;
+- Send LowMemoryNotification signals to V8 before imposing memory limit
+- Fix build against V8 version 5.2 (deprecated WeakCallbackInfo &amp; GetHiddenValue et al)
+- Improve/Clarify README
+
+Code Cleanup
+- Removed support for &quot;old-age&quot; V8 versions (i.e. V8 &lt; 4.6.76)
+- Removed old examples and pre-phpt test script
    </notes>
   </release>
  </changelog>
