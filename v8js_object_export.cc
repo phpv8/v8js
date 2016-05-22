@@ -30,7 +30,7 @@ extern "C" {
 #include "v8js_object_export.h"
 #include "v8js_v8object_class.h"
 
-static void v8js_weak_object_callback(const v8::WeakCallbackData<v8::Object, zval> &data);
+static void v8js_weak_object_callback(const v8::WeakCallbackInfo<zval> &data);
 
 /* Callback for PHP methods and functions */
 static void v8js_call_php_func(zval *value, zend_class_entry *ce, zend_function *method_ptr, v8::Isolate *isolate, const v8::FunctionCallbackInfo<v8::Value>& info TSRMLS_DC) /* {{{ */
@@ -252,7 +252,7 @@ static void v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value>& i
 	// decides to dispose the JS object, we add a weak persistent handle and register
 	// a callback function that removes the reference.
 	ctx->weak_objects[value].Reset(isolate, newobj);
-	ctx->weak_objects[value].SetWeak(value, v8js_weak_object_callback);
+	ctx->weak_objects[value].SetWeak(value, v8js_weak_object_callback, v8::WeakCallbackType::kParameter);
 
 	// Just tell v8 that we're allocating some external memory
 	// (for the moment we just always tell 1k instead of trying to find out actual values)
@@ -261,7 +261,7 @@ static void v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value>& i
 /* }}} */
 
 
-static void v8js_weak_object_callback(const v8::WeakCallbackData<v8::Object, zval> &data) {
+static void v8js_weak_object_callback(const v8::WeakCallbackInfo<zval> &data) {
 	v8::Isolate *isolate = data.GetIsolate();
 
 	zval *value = data.GetParameter();
@@ -275,7 +275,7 @@ static void v8js_weak_object_callback(const v8::WeakCallbackData<v8::Object, zva
 	isolate->AdjustAmountOfExternalAllocatedMemory(-ctx->average_object_size);
 }
 
-static void v8js_weak_closure_callback(const v8::WeakCallbackData<v8::Object, v8js_tmpl_t> &data) {
+static void v8js_weak_closure_callback(const v8::WeakCallbackInfo<v8js_tmpl_t> &data) {
 	v8::Isolate *isolate = data.GetIsolate();
 
 	v8js_tmpl_t *persist_tpl_ = data.GetParameter();
@@ -884,7 +884,7 @@ static v8::Handle<v8::Object> v8js_wrap_object(v8::Isolate *isolate, zend_class_
 	if (ce == zend_ce_closure) {
 		// free uncached function template when object is freed
 		ctx->weak_closures[persist_tpl_].Reset(isolate, newobj);
-		ctx->weak_closures[persist_tpl_].SetWeak(persist_tpl_, v8js_weak_closure_callback);
+		ctx->weak_closures[persist_tpl_].SetWeak(persist_tpl_, v8js_weak_closure_callback, v8::WeakCallbackType::kParameter);
 	}
 
 	return newobj;
