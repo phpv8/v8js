@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2015 The PHP Group                                |
+  | Copyright (c) 1997-2016 The PHP Group                                |
   +----------------------------------------------------------------------+
   | http://www.opensource.org/licenses/mit-license.php  MIT License      |
   +----------------------------------------------------------------------+
@@ -83,18 +83,13 @@ void v8js_create_script_exception(zval *return_value, v8::Isolate *isolate, v8::
 			PHPV8_EXPROP(_string, JsTrace, stacktrace_string);
 		}
 
-		if(try_catch->Exception()->IsObject()) {
-			v8::Local<v8::Value> php_ref = try_catch->Exception()->ToObject()->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY));
+		if(try_catch->Exception()->IsObject() && try_catch->Exception()->ToObject()->InternalFieldCount()) {
+			zval *php_exception = reinterpret_cast<zval *>(try_catch->Exception()->ToObject()->GetAlignedPointerFromInternalField(1));
 
-			if(!php_ref.IsEmpty()) {
-				assert(php_ref->IsExternal());
-				zval *php_exception = reinterpret_cast<zval *>(v8::External::Cast(*php_ref)->Value());
-
-				zend_class_entry *exception_ce = zend_exception_get_default(TSRMLS_C);
-				if (Z_TYPE_P(php_exception) == IS_OBJECT && instanceof_function(Z_OBJCE_P(php_exception), exception_ce TSRMLS_CC)) {
-					Z_ADDREF_P(php_exception);
-					zend_exception_set_previous(return_value, php_exception TSRMLS_CC);
-				}
+			zend_class_entry *exception_ce = zend_exception_get_default(TSRMLS_C);
+			if (Z_TYPE_P(php_exception) == IS_OBJECT && instanceof_function(Z_OBJCE_P(php_exception), exception_ce TSRMLS_CC)) {
+				Z_ADDREF_P(php_exception);
+				zend_exception_set_previous(return_value, php_exception TSRMLS_CC);
 			}
 		}
 

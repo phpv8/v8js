@@ -475,6 +475,7 @@ static PHP_METHOD(V8Js, __construct)
 	c->object_name.Reset(isolate, object_name_js);
 
 	/* Add the PHP object into global object */
+	php_obj_t->InstanceTemplate()->SetInternalFieldCount(2);
 	v8::Local<v8::Object> php_obj = php_obj_t->InstanceTemplate()->NewInstance();
 	V8JS_GLOBAL(isolate)->ForceSet(object_name_js, php_obj, v8::ReadOnly);
 
@@ -505,7 +506,7 @@ static PHP_METHOD(V8Js, __construct)
 	}
 
 	/* Add pointer to zend object */
-	php_obj->SetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY), v8::External::New(isolate, getThis()));
+	php_obj->SetAlignedPointerInInternalField(1, getThis());
 
 	/* Export public methods */
 	zend_function *method_ptr;

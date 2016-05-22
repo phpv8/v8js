@@ -55,9 +55,6 @@ extern "C" {
 /* V8Js Version */
 #define PHP_V8JS_VERSION "0.6.2"
 
-/* Hidden field name used to link JS wrappers with underlying PHP object */
-#define PHPJS_OBJECT_KEY "phpjs::object"
-
 /* Helper macros */
 #define V8JS_GET_CLASS_NAME(var, obj) \
 	v8::String::Utf8Value var(obj->GetConstructorName());

@@ -276,13 +276,8 @@ int v8js_get_properties_hash(v8::Handle<v8::Value> jsValue, HashTable *retval, i
 			const char *key = ToCString(cstr);
 			zval *value = NULL;
 
-			v8::Local<v8::Value> php_object;
-			if (jsVal->IsObject()) {
-				php_object = v8::Local<v8::Object>::Cast(jsVal)->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY));
-			}
-			if (!php_object.IsEmpty()) {
-				/* This is a PHP object, passed to JS and back. */
-				value = reinterpret_cast<zval *>(v8::External::Cast(*php_object)->Value());
+			if (jsVal->IsObject() && jsVal->ToObject()->InternalFieldCount()) {
+				value = reinterpret_cast<zval *>(jsVal->ToObject()->GetAlignedPointerFromInternalField(1));
 				Z_ADDREF_P(value);
 			}
 			else {

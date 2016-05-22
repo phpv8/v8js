@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2013 The PHP Group                                |
+  | Copyright (c) 1997-2016 The PHP Group                                |
   +----------------------------------------------------------------------+
   | http://www.opensource.org/licenses/mit-license.php  MIT License      |
   +----------------------------------------------------------------------+
@@ -73,8 +73,7 @@ void v8js_array_access_getter(uint32_t index, const v8::PropertyCallbackInfo<v8:
 
 	V8JS_TSRMLS_FETCH();
 
-	v8::Local<v8::Value> php_object = self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY));
-	zval *object = reinterpret_cast<zval *>(v8::External::Cast(*php_object)->Value());
+	zval *object = reinterpret_cast<zval *>(self->GetAlignedPointerFromInternalField(1));
 
 	zval *php_value = v8js_array_access_dispatch(object, "offsetGet", 1, index, NULL TSRMLS_CC);
 	v8::Local<v8::Value> ret_value = zval_to_v8js(php_value, isolate TSRMLS_CC);
@@ -92,8 +91,7 @@ void v8js_array_access_setter(uint32_t index, v8::Local<v8::Value> value,
 
 	V8JS_TSRMLS_FETCH();
 
-	v8::Local<v8::Value> php_object = self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY));
-	zval *object = reinterpret_cast<zval *>(v8::External::Cast(*php_object)->Value());
+	zval *object = reinterpret_cast<zval *>(self->GetAlignedPointerFromInternalField(1));
 
 	zval *zvalue_ptr;
 	MAKE_STD_ZVAL(zvalue_ptr);
@@ -156,8 +154,7 @@ static void v8js_array_access_length(v8::Local<v8::String> property, const v8::P
 
 	V8JS_TSRMLS_FETCH();
 
-	v8::Local<v8::Value> php_object = self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY));
-	zval *object = reinterpret_cast<zval *>(v8::External::Cast(*php_object)->Value());
+	zval *object = reinterpret_cast<zval *>(self->GetAlignedPointerFromInternalField(1));
 
 	int length = v8js_array_access_get_count_result(object TSRMLS_CC);
 	info.GetReturnValue().Set(V8JS_INT(length));
@@ -171,8 +168,7 @@ void v8js_array_access_deleter(uint32_t index, const v8::PropertyCallbackInfo<v8
 
 	V8JS_TSRMLS_FETCH();
 
-	v8::Local<v8::Value> php_object = self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY));
-	zval *object = reinterpret_cast<zval *>(v8::External::Cast(*php_object)->Value());
+	zval *object = reinterpret_cast<zval *>(self->GetAlignedPointerFromInternalField(1));
 
 	zval *php_value = v8js_array_access_dispatch(object, "offsetUnset", 1, index, NULL TSRMLS_CC);
 	zval_ptr_dtor(&php_value);
@@ -188,8 +184,7 @@ void v8js_array_access_query(uint32_t index, const v8::PropertyCallbackInfo<v8::
 
 	V8JS_TSRMLS_FETCH();
 
-	v8::Local<v8::Value> php_object = self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY));
-	zval *object = reinterpret_cast<zval *>(v8::External::Cast(*php_object)->Value());
+	zval *object = reinterpret_cast<zval *>(self->GetAlignedPointerFromInternalField(1));
 
 	/* If index is set, then return an integer encoding a v8::PropertyAttribute;
 	 * otherwise we're expected to return an empty handle. */
@@ -207,8 +202,7 @@ void v8js_array_access_enumerator(const v8::PropertyCallbackInfo<v8::Array>& inf
 
 	V8JS_TSRMLS_FETCH();
 
-	v8::Local<v8::Value> php_object = self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY));
-	zval *object = reinterpret_cast<zval *>(v8::External::Cast(*php_object)->Value());
+	zval *object = reinterpret_cast<zval *>(self->GetAlignedPointerFromInternalField(1));
 
 	int length = v8js_array_access_get_count_result(object TSRMLS_CC);
 	v8::Local<v8::Array> result = v8::Array::New(isolate, length);
