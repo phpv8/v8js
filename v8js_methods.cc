@@ -112,7 +112,7 @@ static void v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int leve
 
 	if (var->IsString())
 	{
-		php_printf("string(%zu) \"", valstr_len, valstr);
+		php_printf("string(%zu) \"", valstr_len);
 		PHPWRITE(valstr, valstr_len);
 		php_printf("\"\n");
 	}
@@ -208,7 +208,7 @@ V8JS_METHOD(require)
 	V8JS_TSRMLS_FETCH();
 
 	// Get the extension context
-	v8::Handle<v8::External> data = v8::Handle<v8::External>::Cast(info.Data());
+	v8::Local<v8::External> data = v8::Local<v8::External>::Cast(info.Data());
 	v8js_ctx *c = static_cast<v8js_ctx*>(data->Value());
 
 	// Check that we have a module loader
@@ -403,25 +403,23 @@ V8JS_METHOD(require)
 	}
 
 	// Create a template for the global object and set the built-in global functions
-	v8::Handle<v8::ObjectTemplate> global = v8::ObjectTemplate::New();
-	global->Set(V8JS_SYM("print"), v8::FunctionTemplate::New(isolate, V8JS_MN(print)), v8::ReadOnly);
-	global->Set(V8JS_SYM("var_dump"), v8::FunctionTemplate::New(isolate, V8JS_MN(var_dump)), v8::ReadOnly);
-	global->Set(V8JS_SYM("sleep"), v8::FunctionTemplate::New(isolate, V8JS_MN(sleep)), v8::ReadOnly);
-	global->Set(V8JS_SYM("require"), v8::FunctionTemplate::New(isolate, V8JS_MN(require), v8::External::New(isolate, c)), v8::ReadOnly);
+	v8::Local<v8::ObjectTemplate> global_template = v8::ObjectTemplate::New();
+	global_template->Set(V8JS_SYM("print"), v8::FunctionTemplate::New(isolate, V8JS_MN(print)), v8::ReadOnly);
+	global_template->Set(V8JS_SYM("var_dump"), v8::FunctionTemplate::New(isolate, V8JS_MN(var_dump)), v8::ReadOnly);
+	global_template->Set(V8JS_SYM("sleep"), v8::FunctionTemplate::New(isolate, V8JS_MN(sleep)), v8::ReadOnly);
+	global_template->Set(V8JS_SYM("require"), v8::FunctionTemplate::New(isolate, V8JS_MN(require), v8::External::New(isolate, c)), v8::ReadOnly);
 
 	// Add the exports object in which the module can return its API
 	v8::Local<v8::ObjectTemplate> exports_template = v8::ObjectTemplate::New();
-	v8::Local<v8::Object> exports = exports_template->NewInstance();
-	global->Set(V8JS_SYM("exports"), exports);
+	global_template->Set(V8JS_SYM("exports"), exports_template);
 
 	// Add the module object in which the module can have more fine-grained control over what it can return
-	v8::Handle<v8::ObjectTemplate> module_template = v8::ObjectTemplate::New();
-	v8::Handle<v8::Object> module = module_template->NewInstance();
-	module->Set(V8JS_SYM("id"), V8JS_STR(normalised_module_id));
-	global->Set(V8JS_SYM("module"), module);
+	v8::Local<v8::ObjectTemplate> module_template = v8::ObjectTemplate::New();
+	module_template->Set(V8JS_SYM("id"), V8JS_STR(normalised_module_id));
+	global_template->Set(V8JS_SYM("module"), module_template);
 
 	// Each module gets its own context so different modules do not affect each other
-	v8::Local<v8::Context> context = v8::Local<v8::Context>::New(isolate, v8::Context::New(isolate, NULL, global));
+	v8::Local<v8::Context> context = v8::Local<v8::Context>::New(isolate, v8::Context::New(isolate, NULL, global_template));
 
 	// Catch JS exceptions
 	v8::TryCatch try_catch;
@@ -456,7 +454,7 @@ V8JS_METHOD(require)
 	c->modules_base.push_back(normalised_path);
 
 	// Run script
-	v8::Local<v8::Value> result = script->Run();
+	script->Run();
 
 	// Remove this module and path from the stack
 	c->modules_stack.pop_back();
@@ -479,16 +477,19 @@ V8JS_METHOD(require)
 		return;
 	}
 
-	v8::Handle<v8::Object> newobj;
+	v8::Local<v8::Object> newobj;
 
 	// Cache the module so it doesn't need to be compiled and run again
 	// Ensure compatibility with CommonJS implementations such as NodeJS by playing nicely with module.exports and exports
-	if (module->Has(V8JS_SYM("exports")) && !module->Get(V8JS_SYM("exports"))->IsUndefined()) {
+	if (context->Global()->Has(V8JS_SYM("module"))
+		&& context->Global()->Get(V8JS_SYM("module"))->IsObject()
+		&& context->Global()->Get(V8JS_SYM("module"))->ToObject()->Has(V8JS_SYM("exports"))
+		&& context->Global()->Get(V8JS_SYM("module"))->ToObject()->Get(V8JS_SYM("exports"))->IsObject()) {
 		// If module.exports has been set then we cache this arbitrary value...
-		newobj = module->Get(V8JS_SYM("exports"))->ToObject();
+		newobj = context->Global()->Get(V8JS_SYM("module"))->ToObject()->Get(V8JS_SYM("exports"))->ToObject();
 	} else {
 		// ...otherwise we cache the exports object itself
-		newobj = exports;
+		newobj = context->Global()->Get(V8JS_SYM("exports"))->ToObject();
 	}
 
 	c->modules_loaded[normalised_module_id].Reset(isolate, newobj);

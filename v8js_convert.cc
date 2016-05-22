@@ -2,12 +2,13 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2013 The PHP Group                                |
+  | Copyright (c) 1997-2016 The PHP Group                                |
   +----------------------------------------------------------------------+
   | http://www.opensource.org/licenses/mit-license.php  MIT License      |
   +----------------------------------------------------------------------+
   | Author: Jani Taskinen <jani.taskinen@iki.fi>                         |
   | Author: Patrick Reilly <preilly@php.net>                             |
+  | Author: Stefan Siegl <stesie@php.net>                                |
   +----------------------------------------------------------------------+
 */
 
@@ -225,16 +226,17 @@ int v8js_to_zval(v8::Handle<v8::Value> jsValue, zval *return_value, int flags, v
 	}
 	else if (jsValue->IsObject())
 	{
-		v8::Handle<v8::Object> self = v8::Handle<v8::Object>::Cast(jsValue);
+		v8::Local<v8::Object> self = jsValue->ToObject();
+
 		// if this is a wrapped PHP object, then just unwrap it.
-		v8::Local<v8::Value> php_object = self->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY));
-		if (!php_object.IsEmpty()) {
-			zend_object *object = reinterpret_cast<zend_object *>(v8::External::Cast(*php_object)->Value());
+		if (self->InternalFieldCount()) {
+			zend_object *object = reinterpret_cast<zend_object *>(self->GetAlignedPointerFromInternalField(1));
 			zval zval_object;
 			ZVAL_OBJ(&zval_object, object);
 			RETVAL_ZVAL(&zval_object, 1, 0);
 			return SUCCESS;
 		}
+
 		if ((flags & V8JS_FLAG_FORCE_ARRAY && !jsValue->IsFunction()) || jsValue->IsArray()) {
 			array_init(return_value);
 			return v8js_get_properties_hash(jsValue, Z_ARRVAL_P(return_value), flags, isolate TSRMLS_CC);

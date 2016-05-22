@@ -46,6 +46,7 @@ struct v8js_ctx {
   bool time_limit_hit;
   long memory_limit;
   bool memory_limit_hit;
+  long average_object_size;
 
   v8js_tmpl_t global_template;
   v8js_tmpl_t array_tmpl;
@@ -69,11 +70,9 @@ struct v8js_ctx {
   std::vector<struct _v8js_script *> script_objects;
   char *tz;
 
-#if PHP_V8_API_VERSION >= 4003007
   v8::Isolate::CreateParams create_params;
   zval zval_snapshot_blob;
   v8::StartupData snapshot_blob;
-#endif
 
 #ifdef ZTS
   void ***zts_ctx;

@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2015 The PHP Group                                |
+  | Copyright (c) 1997-2016 The PHP Group                                |
   +----------------------------------------------------------------------+
   | http://www.opensource.org/licenses/mit-license.php  MIT License      |
   +----------------------------------------------------------------------+
@@ -44,7 +44,7 @@ void v8js_create_script_exception(zval *return_value, v8::Isolate *isolate, v8::
 	v8::Handle<v8::Message> tc_message = try_catch->Message();
 	const char *filename_string, *sourceline_string;
 	char *message_string;
-	int linenum, start_col, end_col, message_len;
+	int linenum, start_col, end_col;
 
 	object_init_ex(return_value, php_ce_v8js_script_exception);
 
@@ -52,7 +52,7 @@ void v8js_create_script_exception(zval *return_value, v8::Isolate *isolate, v8::
 	zend_update_property##type(php_ce_v8js_script_exception, return_value, #name, sizeof(#name) - 1, value TSRMLS_CC);
 
 	if (tc_message.IsEmpty()) {
-		message_len = spprintf(&message_string, 0, "%s", exception_string);
+		spprintf(&message_string, 0, "%s", exception_string);
 	}
 	else
 	{
@@ -73,7 +73,7 @@ void v8js_create_script_exception(zval *return_value, v8::Isolate *isolate, v8::
 		end_col = tc_message->GetEndColumn();
 		PHPV8_EXPROP(_long, JsEndColumn, end_col);
 
-		message_len = spprintf(&message_string, 0, "%s:%d: %s", filename_string, linenum, exception_string);
+		spprintf(&message_string, 0, "%s:%d: %s", filename_string, linenum, exception_string);
 
 		v8::String::Utf8Value stacktrace(try_catch->StackTrace());
 		if (stacktrace.length() > 0) {
@@ -81,21 +81,15 @@ void v8js_create_script_exception(zval *return_value, v8::Isolate *isolate, v8::
 			PHPV8_EXPROP(_string, JsTrace, stacktrace_string);
 		}
 
-		if(try_catch->Exception()->IsObject()) {
-			v8::Local<v8::Value> php_ref = try_catch->Exception()->ToObject()->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY));
+		if(try_catch->Exception()->IsObject() && try_catch->Exception()->ToObject()->InternalFieldCount()) {
+			zend_object *php_exception = reinterpret_cast<zend_object *>(try_catch->Exception()->ToObject()->GetAlignedPointerFromInternalField(1));
 
-			if(!php_ref.IsEmpty()) {
-				assert(php_ref->IsExternal());
-				zend_object *php_exception = reinterpret_cast<zend_object *>(v8::External::Cast(*php_ref)->Value());
-
-				zend_class_entry *exception_ce = zend_exception_get_default(TSRMLS_C);
-				if (instanceof_function(php_exception->ce, exception_ce TSRMLS_CC)) {
-					++GC_REFCOUNT(php_exception);
-					zend_exception_set_previous(Z_OBJ_P(return_value), php_exception);
-				}
+			zend_class_entry *exception_ce = zend_exception_get_default(TSRMLS_C);
+			if (instanceof_function(php_exception->ce, exception_ce TSRMLS_CC)) {
+				++GC_REFCOUNT(php_exception);
+				zend_exception_set_previous(Z_OBJ_P(return_value), php_exception);
 			}
 		}
-
 	}
 
 	PHPV8_EXPROP(_string, message, message_string);

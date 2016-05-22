@@ -29,46 +29,7 @@ extern "C" {
 #include "zend_exceptions.h"
 }
 
-#if PHP_V8_API_VERSION >= 3029036
 #include <libplatform/libplatform.h>
-#endif
-
-
-#if defined(PHP_V8_USE_EXTERNAL_STARTUP_DATA) && PHP_V8_API_VERSION < 4006076
-/* Old V8 version, requires startup data but has no
- * (internal/API) means to let it be loaded. */
-static v8::StartupData natives_;
-static v8::StartupData snapshot_;
-
-static void v8js_v8_load_startup_data(const char* blob_file,
-									  v8::StartupData* startup_data,
-									  void (*setter_fn)(v8::StartupData*)) {
-	startup_data->data = NULL;
-	startup_data->raw_size = 0;
-
-	if (!blob_file) {
-		return;
-	}
-
-	FILE* file = fopen(blob_file, "rb");
-	if (!file) {
-		return;
-	}
-
-	fseek(file, 0, SEEK_END);
-	startup_data->raw_size = static_cast<int>(ftell(file));
-	rewind(file);
-
-	startup_data->data = new char[startup_data->raw_size];
-	int read_size = static_cast<int>(fread(const_cast<char*>(startup_data->data),
-										   1, startup_data->raw_size, file));
-	fclose(file);
-
-	if (startup_data->raw_size == read_size) {
-		(*setter_fn)(startup_data);
-	}
-}
-#endif
 
 
 void v8js_v8_init(TSRMLS_D) /* {{{ */
@@ -93,21 +54,14 @@ void v8js_v8_init(TSRMLS_D) /* {{{ */
 
 #ifdef PHP_V8_USE_EXTERNAL_STARTUP_DATA
 	/* V8 doesn't work without startup data, load it. */
-#if PHP_V8_API_VERSION >= 4006076
 	v8::V8::InitializeExternalStartupData(
 		PHP_V8_NATIVES_BLOB_PATH,
 		PHP_V8_SNAPSHOT_BLOB_PATH
 	);
-#else
-	v8js_v8_load_startup_data(PHP_V8_NATIVES_BLOB_PATH, &natives_, v8::V8::SetNativesDataBlob);
-	v8js_v8_load_startup_data(PHP_V8_SNAPSHOT_BLOB_PATH, &snapshot_, v8::V8::SetSnapshotDataBlob);
-#endif
 #endif
 
-#if PHP_V8_API_VERSION >= 3029036
 	v8js_process_globals.v8_platform = v8::platform::CreateDefaultPlatform();
 	v8::V8::InitializePlatform(v8js_process_globals.v8_platform);
-#endif
 
 	/* Set V8 command line flags (must be done before V8::Initialize()!) */
 	if (v8js_process_globals.v8_flags) {
@@ -204,6 +158,21 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 			sprintf(exception_string, "Script time limit of %lu milliseconds exceeded", time_limit);
 			zend_throw_exception(php_ce_v8js_time_limit_exception, exception_string, 0 TSRMLS_CC);
 			return;
+		}
+
+		if (memory_limit && !c->memory_limit_hit) {
+			// Re-check memory limit (very short executions might never be hit by timer thread)
+			v8::HeapStatistics hs;
+			isolate->GetHeapStatistics(&hs);
+
+			if (hs.used_heap_size() > memory_limit) {
+				isolate->LowMemoryNotification();
+				isolate->GetHeapStatistics(&hs);
+
+				if (hs.used_heap_size() > memory_limit) {
+					c->memory_limit_hit = true;
+				}
+			}
 		}
 
 		if (c->memory_limit_hit) {
@@ -305,13 +274,9 @@ int v8js_get_properties_hash(v8::Handle<v8::Value> jsValue, HashTable *retval, i
 			zval value;
 			ZVAL_UNDEF(&value);
 
-			v8::Local<v8::Value> php_object;
-			if (jsVal->IsObject()) {
-				php_object = v8::Local<v8::Object>::Cast(jsVal)->GetHiddenValue(V8JS_SYM(PHPJS_OBJECT_KEY));
-			}
-			if (!php_object.IsEmpty()) {
+			if (jsVal->IsObject() && jsVal->ToObject()->InternalFieldCount()) {
 				/* This is a PHP object, passed to JS and back. */
-				zend_object *object = reinterpret_cast<zend_object *>(v8::External::Cast(*php_object)->Value());
+				zend_object *object = reinterpret_cast<zend_object *>(jsVal->ToObject()->GetAlignedPointerFromInternalField(1));
 				ZVAL_OBJ(&value, object);
 				Z_ADDREF_P(&value);
 			}

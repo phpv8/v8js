@@ -1,7 +1,13 @@
 --TEST--
 Test V8::executeString() : Memory limit
 --SKIPIF--
-<?php require_once(dirname(__FILE__) . '/skipif.inc'); ?>
+<?php
+require_once(dirname(__FILE__) . '/skipif.inc');
+
+if (getenv("SKIP_SLOW_TESTS")) {
+	die("skip slow test");
+}
+?>
 --FILE--
 <?php
 $JS = <<< EOT

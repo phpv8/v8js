@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<package packagerversion="1.9.5" version="2.0" xmlns="http://pear.php.net/dtd/package-2.0" xmlns:tasks="http://pear.php.net/dtd/tasks-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0 http://pear.php.net/dtd/tasks-1.0.xsd http://pear.php.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
+<package packagerversion="1.10.1" version="2.0" xmlns="http://pear.php.net/dtd/package-2.0" xmlns:tasks="http://pear.php.net/dtd/tasks-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0 http://pear.php.net/dtd/tasks-1.0.xsd http://pear.php.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
  <name>v8js</name>
  <channel>pecl.php.net</channel>
  <summary>V8 Javascript Engine for PHP</summary>
@@ -16,8 +16,8 @@
   <email>stesie@php.net</email>
   <active>yes</active>
  </lead>
- <date>2016-03-05</date>
- <time>23:24:43</time>
+ <date>2016-05-22</date>
+ <time>21:16:17</time>
  <version>
   <release>1.2.0</release>
   <api>1.2.0</api>
@@ -39,20 +39,6 @@ Merge improvements from V8Js for PHP 5.x (version 0.5.0) to PHP 7.0 branch:
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
-   <file baseinstalldir="/" md5sum="9532b5359069afc8bdccb5e01c288493" name="js/json-template.js" role="data" />
-   <file baseinstalldir="/" md5sum="a490e5a575deeceab9872035fbe74eb1" name="js/jstparser.js" role="data" />
-   <file baseinstalldir="/" md5sum="ddbae43f7979c5fe082e08ff4f2e8765" name="samples/dlopen.supp" role="src" />
-   <file baseinstalldir="/" md5sum="045e094122747e8e71f02ffc1ba88d4a" name="samples/test_call.php" role="php" />
-   <file baseinstalldir="/" md5sum="87cb416c6bc17d657abbbf314a41ff85" name="samples/test_callback.php" role="php" />
-   <file baseinstalldir="/" md5sum="ce6958537730e437aecf4f99044a78ce" name="samples/test_closure.php" role="php" />
-   <file baseinstalldir="/" md5sum="07f6c82a56280bfe86dce8feecf52c45" name="samples/test_crash.php" role="php" />
-   <file baseinstalldir="/" md5sum="0e89021f07fd28bef6d8444b9fda3f9a" name="samples/test_date.php" role="php" />
-   <file baseinstalldir="/" md5sum="8e224fd19d8fda0c532d410153cc5b01" name="samples/test_dumper.php" role="php" />
-   <file baseinstalldir="/" md5sum="220347fdf7c1c14f2c346fd97b55a025" name="samples/test_exception.php" role="php" />
-   <file baseinstalldir="/" md5sum="6432eedc51c3dd34abd0b0986c6268da" name="samples/test_exception2.php" role="php" />
-   <file baseinstalldir="/" md5sum="194dab9bb37e8456afd7eb5dd9f7a81e" name="samples/test_extend.php" role="php" />
-   <file baseinstalldir="/" md5sum="f9af8067e0113ca3048573813eee7272" name="samples/test_extension.php" role="php" />
-   <file baseinstalldir="/" md5sum="b9491aff4c5647784f0c7ae9e0638c18" name="samples/test_method.php" role="php" />
    <file baseinstalldir="/" md5sum="30d379088150c4d4dd0cd97ea21d8156" name="tests/array_access.phpt" role="test" />
    <file baseinstalldir="/" md5sum="c91b16332cdc186ecf8a8dc5581f17c7" name="tests/array_access_001.phpt" role="test" />
    <file baseinstalldir="/" md5sum="2f1e1a8788439173b4629d63e7bbe083" name="tests/array_access_002.phpt" role="test" />
@@ -164,7 +150,7 @@ Merge improvements from V8Js for PHP 5.x (version 0.5.0) to PHP 7.0 branch:
    <file baseinstalldir="/" md5sum="46d8c3c3efb87cb310af0d9dbcd84431" name="tests/leak-php-object.phpt" role="test" />
    <file baseinstalldir="/" md5sum="23fd9824ef435408ca93c01a79247237" name="tests/long.phpt" role="test" />
    <file baseinstalldir="/" md5sum="8fb9e33bf07c2e4fdc7dee4f499fded7" name="tests/magic_func.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="4b4649efff8a97cb6ac60e78d70af3df" name="tests/memory_limit.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="8645a8f43663294192f48ed7639afd0f" name="tests/memory_limit.phpt" role="test" />
    <file baseinstalldir="/" md5sum="4ce74d22310618686e37829a24c7ce8d" name="tests/multi-object.phpt" role="test" />
    <file baseinstalldir="/" md5sum="34e4df80d655576e146732118d29880e" name="tests/multi.phpt" role="test" />
    <file baseinstalldir="/" md5sum="6b603cb54da83955ca6a309352858bce" name="tests/null_byte_string.phpt" role="test" />
@@ -172,6 +158,7 @@ Merge improvements from V8Js for PHP 5.x (version 0.5.0) to PHP 7.0 branch:
    <file baseinstalldir="/" md5sum="97ac85efe2aa7318c9a4daa49d544165" name="tests/object_dom.phpt" role="test" />
    <file baseinstalldir="/" md5sum="7c34aed266f6cdb2278a5561cd6de45b" name="tests/object_method_call.phpt" role="test" />
    <file baseinstalldir="/" md5sum="ed1d6d0aafe39f41545c375507507564" name="tests/object_passback.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="d16c0d23ff223b006a9c9c83df257708" name="tests/object_passback_002.phpt" role="test" />
    <file baseinstalldir="/" md5sum="95e8658755180e9dc7533c0ed4d61bb2" name="tests/object_prototype.phpt" role="test" />
    <file baseinstalldir="/" md5sum="732770da7b148dcb702894dcb9462674" name="tests/object_reuse.phpt" role="test" />
    <file baseinstalldir="/" md5sum="e49bb15778697eea7d717de4cfc0c385" name="tests/php_exceptions_001.phpt" role="test" />
@@ -191,61 +178,63 @@ Merge improvements from V8Js for PHP 5.x (version 0.5.0) to PHP 7.0 branch:
    <file baseinstalldir="/" md5sum="76bdcf96941321e372516413f65c8576" name="tests/property_visibility__set.phpt" role="test" />
    <file baseinstalldir="/" md5sum="6fffe3110dcad47ed41cb7d026b97e49" name="tests/pthreads_001.phpt" role="test" />
    <file baseinstalldir="/" md5sum="5a97aad8f07d8a9a67882b614e956c72" name="tests/regression_121.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="130c02c6d60a1a9943ec1a9c4d0f7085" name="tests/return_this_001.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="be5746f51f76ad249f6521dedd240462" name="tests/return_this_basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="3b256c85a054b728a37b3429d4157f02" name="tests/return_value.phpt" role="test" />
    <file baseinstalldir="/" md5sum="1a9c261661b08cfc6879f7f427b9f0de" name="tests/serialize_001.phpt" role="test" />
    <file baseinstalldir="/" md5sum="53d16ab569633b031059bfd92ad888da" name="tests/serialize_002.phpt" role="test" />
    <file baseinstalldir="/" md5sum="f13ed20a96e5547b3cc0541259fe51e5" name="tests/serialize_basic.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="c67118d201153666d586134c8f275434" name="tests/set_memory_limit_001.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="b4865b48112b4c224f1704a1c29bfc8e" name="tests/set_memory_limit_003.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="b66f99b6b019a3abb69dc77257d984df" name="tests/set_memory_limit_basic.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="352885da189cfd10573814bcd4a59eda" name="tests/set_time_limit_001.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="3a2ccc98e237ae29606d7079cb62c168" name="tests/set_time_limit_002.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="824c26f9f4cc9c469772fb6f0719c41c" name="tests/set_time_limit_003.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="c54ef9796fe5279ea421ba74c2c2b156" name="tests/set_time_limit_004.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="529ca5dc55aba00a1e72e7759d822868" name="tests/set_time_limit_basic.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="e610855ff600c2da79009389c3268aa2" name="tests/set_average_object_size_basic.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="1a5d2983c48712708826f746fa0c9d5f" name="tests/set_memory_limit_001.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="88f5a3ac11d1c3898a02639d5b0f538d" name="tests/set_memory_limit_003.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="9a29a6c28f37c2b7abf6d0e8b26702e9" name="tests/set_memory_limit_basic.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="a7fc4f90d65dadefe169c2736119d958" name="tests/set_time_limit_001.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="7943ab689a61df2ab062ab59b3c779a6" name="tests/set_time_limit_002.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="9ef513915ae9808383eda06ffd0ea0c5" name="tests/set_time_limit_003.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="cb8fe5f7776a58e6f37f7967cc2b3422" name="tests/set_time_limit_004.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="c7c54b949f2ba452bf9a6c3085aaf6bc" name="tests/set_time_limit_basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="4886fac4c06e560fd0fef88c81357870" name="tests/skipif.inc" role="test" />
    <file baseinstalldir="/" md5sum="bdf52e983e410ace13f78611e2684673" name="tests/timezones.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="ad1acf475092854b3fa1b5d061405f41" name="tests/time_limit.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="90ccf12ee3ce42b555858aa71623f9c1" name="tests/time_limit.phpt" role="test" />
    <file baseinstalldir="/" md5sum="73075b58cfce4db091b7f6f8c480e0a4" name="tests/use_after_dispose.phpt" role="test" />
    <file baseinstalldir="/" md5sum="aabbf8a564c546eef38c1e9e3b02bb14" name="tests/v8_unset_property.phpt" role="test" />
    <file baseinstalldir="/" md5sum="35ce3816ae00e697fca26142c46e0c79" name="tests/v8_write_property.phpt" role="test" />
    <file baseinstalldir="/" md5sum="ae504a63e5ff800e3aa7d529835d0e8e" name="tests/variable_passing.phpt" role="test" />
    <file baseinstalldir="/" md5sum="1bd7738aeeb5cf80d80561554f59f2ed" name="tests/var_dump.phpt" role="test" />
    <file baseinstalldir="/" md5sum="19a662f86a1bed6c0a12a276cdabe7ae" name="appveyor.yml" role="data" />
-   <file baseinstalldir="/" md5sum="f6f34bf39ed7d66fd2271310de9569a9" name="config.m4" role="src" />
-   <file baseinstalldir="/" md5sum="9d75e21fff18328abe6636f9504d1e6a" name="config.w32" role="src" />
+   <file baseinstalldir="/" md5sum="28db201e7171789b1ade57210a6412d1" name="config.m4" role="src" />
+   <file baseinstalldir="/" md5sum="6e2812f6a18b57fad7a026656b423836" name="config.w32" role="src" />
    <file baseinstalldir="/" md5sum="cea72666538d5b0b80a64ccdbda24919" name="CREDITS" role="doc" />
    <file baseinstalldir="/" md5sum="9f5b5f41204bcde55d9df87d5a970b30" name="LICENSE" role="doc" />
-   <file baseinstalldir="/" md5sum="679b9046688ed6f60969415b182b1cac" name="Makefile.frag" role="src" />
+   <file baseinstalldir="/" md5sum="716540317726f97d61cbbdc155102e01" name="Makefile.frag" role="src" />
    <file baseinstalldir="/" md5sum="31e331386def7ce98943694151c0d5cb" name="Makefile.travis" role="src" />
    <file baseinstalldir="/" md5sum="0e23fa6446e52a3b1cff8b18a6e0bd79" name="php_v8js.h" role="src" />
-   <file baseinstalldir="/" md5sum="817677afde6e2feec6f2c35059b76c5a" name="php_v8js_macros.h" role="src" />
-   <file baseinstalldir="/" md5sum="f6f2c7689fd36998b2f2a20a5756ee20" name="README.Linux.md" role="doc" />
+   <file baseinstalldir="/" md5sum="5725a21a7063305213791962116c5f5c" name="php_v8js_macros.h" role="src" />
+   <file baseinstalldir="/" md5sum="8d51598bd192df6e257ab0374d7f47c9" name="README.Linux.md" role="doc" />
    <file baseinstalldir="/" md5sum="d686d8e52af92521d4b8b0e86d00c463" name="README.MacOS.md" role="doc" />
-   <file baseinstalldir="/" md5sum="10318f67634c0f80ff13f4ee7bccbfb0" name="README.md" role="doc" />
+   <file baseinstalldir="/" md5sum="774a66bf34ff0923e3a2e075c9a8ce8a" name="README.md" role="doc" />
    <file baseinstalldir="/" md5sum="e88cfe2d7e76c7be1db283766a10dd51" name="README.Win32.md" role="doc" />
-   <file baseinstalldir="/" md5sum="542f52c54898f33ac53b173970cba305" name="test.php" role="php" />
-   <file baseinstalldir="/" md5sum="65294fadb5ed766094b1f587fc20ad37" name="TODO" role="doc" />
-   <file baseinstalldir="/" md5sum="40a7872fac33eeefa3e31a80a391f347" name="v8js.cc" role="src" />
-   <file baseinstalldir="/" md5sum="e4271e069340cce3b3c039c2ae6bf19b" name="v8js_array_access.cc" role="src" />
+   <file baseinstalldir="/" md5sum="d4a8e3fd2e228c61db4e76e7da10fc61" name="v8js-0.6.3.tgz" role="data" />
+   <file baseinstalldir="/" md5sum="98c0f00bcb80411b72422232fcd575f3" name="v8js.cc" role="src" />
+   <file baseinstalldir="/" md5sum="33fca37296f54143e6d57ccd819b9c83" name="v8js_array_access.cc" role="src" />
    <file baseinstalldir="/" md5sum="7baf3fe5b77d1374b39a1d8332e05df4" name="v8js_array_access.h" role="src" />
-   <file baseinstalldir="/" md5sum="e65c88069439ec71ed5a65fa091a43d6" name="v8js_class.cc" role="src" />
-   <file baseinstalldir="/" md5sum="11d20c0e080ace815d4d1d4bfcff0559" name="v8js_class.h" role="src" />
+   <file baseinstalldir="/" md5sum="3e490a7a00f2faa190d3aaa3fd63b13c" name="v8js_class.cc" role="src" />
+   <file baseinstalldir="/" md5sum="a69966968a1e3610150ebbd752f39483" name="v8js_class.h" role="src" />
    <file baseinstalldir="/" md5sum="4fc9e39231e977ac0d415f1682fcb2bd" name="v8js_commonjs.cc" role="src" />
    <file baseinstalldir="/" md5sum="32a5d1a65f64ec37ec294f496fc11ff1" name="v8js_commonjs.h" role="src" />
-   <file baseinstalldir="/" md5sum="af6fb42ed4822ff6e2defd196b6546a8" name="v8js_convert.cc" role="src" />
-   <file baseinstalldir="/" md5sum="7a2a998e0e6cbca26c223875a529fca5" name="v8js_exceptions.cc" role="src" />
+   <file baseinstalldir="/" md5sum="52ec041be78a47269a39ee0cc66d8530" name="v8js_convert.cc" role="src" />
+   <file baseinstalldir="/" md5sum="d644e3090f34ea08d62effd2d105588a" name="v8js_exceptions.cc" role="src" />
    <file baseinstalldir="/" md5sum="9d13bf5f413c2d76664670e847e1a801" name="v8js_exceptions.h" role="src" />
    <file baseinstalldir="/" md5sum="accfcfab37ae520fbf01f70fc4210465" name="v8js_generator_export.cc" role="data" />
    <file baseinstalldir="/" md5sum="177f62d686bc4e3465d5599651496b93" name="v8js_generator_export.h" role="src" />
-   <file baseinstalldir="/" md5sum="8e714185feaea8242690989b056267d3" name="v8js_methods.cc" role="src" />
-   <file baseinstalldir="/" md5sum="2e1aecd759e0630831a9f537b1a6141a" name="v8js_object_export.cc" role="src" />
+   <file baseinstalldir="/" md5sum="03ef3415c1e0f0d470acd5163b7df4f1" name="v8js_methods.cc" role="src" />
+   <file baseinstalldir="/" md5sum="840e83cc053b2fb348a2d02702d1ab8d" name="v8js_object_export.cc" role="src" />
    <file baseinstalldir="/" md5sum="bf0141470862151449311b81c947ecb3" name="v8js_object_export.h" role="src" />
-   <file baseinstalldir="/" md5sum="7353fbef57b2efc610ac090bf79d6a26" name="v8js_timer.cc" role="src" />
+   <file baseinstalldir="/" md5sum="6e7e0dfeb40d8fe2f57d309f121b98f8" name="v8js_timer.cc" role="src" />
    <file baseinstalldir="/" md5sum="5935c66a0bd8e819d35cf05d7a9e3c89" name="v8js_timer.h" role="src" />
-   <file baseinstalldir="/" md5sum="7d7dcdb6117d362e59842295e219c2be" name="v8js_v8.cc" role="src" />
+   <file baseinstalldir="/" md5sum="ad9c1c6559eb3687127be2fde12e6068" name="v8js_v8.cc" role="src" />
    <file baseinstalldir="/" md5sum="e551ee5b243164a3806a5b4ec4b2bf30" name="v8js_v8.h" role="src" />
-   <file baseinstalldir="/" md5sum="e13b0e1e1bc7ebb701451e02d76c361d" name="v8js_v8object_class.cc" role="src" />
+   <file baseinstalldir="/" md5sum="48a90b7fa9e00c0cb59f51dc069dc547" name="v8js_v8object_class.cc" role="src" />
    <file baseinstalldir="/" md5sum="1b329fe614d75d56fd6f9fa4f1425f2a" name="v8js_v8object_class.h" role="src" />
    <file baseinstalldir="/" md5sum="86f950271e3c6d37457f20e034a576e5" name="v8js_variables.cc" role="src" />
   </dir>
@@ -586,6 +575,75 @@ This release also merges in new features from V8Js 0.4.0, namely
   </release>
   <release>
    <version>
+    <release>0.6.0</release>
+    <api>0.6.0</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <date>2016-03-08</date>
+   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <notes>
+- Allow to adjust the considered &quot;amount of external memory&quot; by objects exported to V8
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>0.6.1</release>
+    <api>0.6.1</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <date>2016-03-24</date>
+   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <notes>
+- Fix configuration on MacOS platform
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>0.6.2</release>
+    <api>0.6.2</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <date>2016-03-25</date>
+   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <notes>
+- Pass back V8Object instances, don&apos;t re-wrap
+- Retain object identity on &apos;return $this&apos;
+- Retain object identity on JS-side &apos;return this&apos;
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>0.6.3</release>
+    <api>0.6.3</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <date>2016-05-22</date>
+   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <notes>
+Bug Fixes
+- Send LowMemoryNotification signals to V8 before imposing memory limit
+- Fix build against V8 version 5.2 (deprecated WeakCallbackInfo &amp; GetHiddenValue et al)
+- Improve/Clarify README
+
+Code Cleanup
+- Removed support for &quot;old-age&quot; V8 versions (i.e. V8 &lt; 4.6.76)
+- Removed old examples and pre-phpt test script
+   </notes>
+  </release>
+  <release>
+   <version>
     <release>1.2.0</release>
     <api>1.2.0</api>
    </version>
@@ -593,7 +651,7 @@ This release also merges in new features from V8Js 0.4.0, namely
     <release>stable</release>
     <api>stable</api>
    </stability>
-   <date>2016-03-05</date>
+   <date>2016-05-22</date>
    <license uri="http://www.php.net/license">The MIT License (MIT)</license>
    <notes>
 - allow to pass generators from PHP to JS and vice versa

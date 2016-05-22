@@ -62,9 +62,6 @@ extern "C" {
 /* V8Js Version */
 #define PHP_V8JS_VERSION "1.2.0"
 
-/* Hidden field name used to link JS wrappers with underlying PHP object */
-#define PHPJS_OBJECT_KEY "phpjs::object"
-
 /* Helper macros */
 #define V8JS_GET_CLASS_NAME(var, obj) \
 	v8::String::Utf8Value var(obj->GetConstructorName());
@@ -166,9 +163,7 @@ struct _v8js_process_globals {
 	/* V8 command line flags */
 	char *v8_flags;
 
-#if PHP_V8_API_VERSION >= 3029036
 	v8::Platform *v8_platform;
-#endif
 };
 
 extern struct _v8js_process_globals v8js_process_globals;
