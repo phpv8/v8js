@@ -1175,7 +1175,7 @@ ZEND_END_ARG_INFO()
 const zend_function_entry v8js_methods[] = { /* {{{ */
 	PHP_ME(V8Js,	__construct,			arginfo_v8js_construct,				ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
 	PHP_ME(V8Js,	__sleep,				arginfo_v8js_sleep,					ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
-	PHP_ME(V8Js,	__wakeup,				arginfo_v8js_sleep,					ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
+	PHP_ME(V8Js,	__wakeup,				arginfo_v8js_wakeup,				ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
 	PHP_ME(V8Js,	executeString,			arginfo_v8js_executestring,			ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	compileString,			arginfo_v8js_compilestring,			ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,    executeScript,			arginfo_v8js_executescript,			ZEND_ACC_PUBLIC)
