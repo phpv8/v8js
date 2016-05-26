@@ -307,7 +307,6 @@ static void v8js_named_property_enumerator(const v8::PropertyCallbackInfo<v8::Ar
 	zend_class_entry *ce;
 	void *ptr;
 	HashTable *proptable;
-	HashPosition pos;
 	zend_string *key;
 	ulong index;
 
@@ -852,7 +851,6 @@ static v8::Handle<v8::Object> v8js_wrap_object(v8::Isolate *isolate, zend_class_
 static v8::Handle<v8::Object> v8js_wrap_array_to_object(v8::Isolate *isolate, zval *value TSRMLS_DC) /* {{{ */
 {
 	int i;
-	HashPosition pos;
 	zend_string *key;
 	ulong index;
 

@@ -484,7 +484,6 @@ static PHP_METHOD(V8Js, __construct)
 	/* Export public methods */
 	void *ptr;
 	zend_string *key;
-	uint key_len;
 
 	ZEND_HASH_FOREACH_STR_KEY_PTR(&c->std.ce->function_table, key, ptr) {
 		zend_function *method_ptr = reinterpret_cast<zend_function *>(ptr);

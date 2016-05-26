@@ -36,8 +36,6 @@ static int v8js_is_assoc_array(HashTable *myht TSRMLS_DC) /* {{{ */
 {
 	zend_string *key;
 	ulong index, idx = 0;
-	uint key_len;
-	HashPosition pos;
 
 	ZEND_HASH_FOREACH_KEY(myht, index, key) {
 		if(key) {

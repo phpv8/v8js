@@ -186,7 +186,6 @@ static void v8js_v8object_unset_property(zval *object, zval *member, void **cach
 static HashTable *v8js_v8object_get_properties(zval *object TSRMLS_DC) /* {{{ */
 {
 	v8js_v8object *obj = Z_V8JS_V8OBJECT_OBJ_P(object);
-	HashTable *retval;
 
 	if (obj->properties == NULL) {
 		if (GC_G(gc_active)) {

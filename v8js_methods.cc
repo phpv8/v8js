@@ -291,7 +291,6 @@ V8JS_METHOD(require)
 
 		zval *data;
 		ulong index = 0;
-		HashPosition pos;
 
 		ZEND_HASH_FOREACH_VAL(ht, data) {
 			if (Z_TYPE_P(data) != IS_STRING) {
