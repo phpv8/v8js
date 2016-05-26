@@ -42,15 +42,14 @@ For some very first steps, instead of compiling manually you might want to try o
 image](https://registry.hub.docker.com/u/stesie/v8js/).  It has v8, v8js and php-cli pre-installed
 so you can give it a try with PHP in "interactive mode".  There is no Apache, etc. running however.
 
-For Debian & Ubuntu there are packages for most releases made available on the Project's
-[Jenkins installation](https://jenkins.brokenpipe.de/job/linux-packages/)
-as well as an [APT repository](http://packages.brokenpipe.de/).  As the distros still have
-PHP 5.x these binaries are for PHP 5.x as well.
+For Ubuntu @pinepain has PPAs for V8 [5.1](https://launchpad.net/~pinepain/+archive/ubuntu/libv8-5.1)
+and [5.2](https://launchpad.net/~pinepain/+archive/ubuntu/libv8-5.2).  You might want to install
+these (and compile V8Js based on them).
 
-There also is a Heroku buildpack that has recent V8Js versions along with a
-[blog post](http://stesie.github.io/2015/11/v8js-on-heroku/) on how to do it.
+There also is a Heroku extension pack that has recent V8Js versions for both PHP 5.6 and 7.0, see
+[@stesie's blog post](https://stesie.github.io/2016/03/heroku-custom-platform-repo) for details.
 
-Last but not least there are binaries for Windows (PHP7, x86 including V8 4.7.75) that you can use
+Last but not least there are binaries for Windows (PHP7, x86 including V8 4.9.385.29) that you can use
 with the PHP binaries from http://windows.php.net/download:
 
 * [V8Js for Windows, PHP7.0, x86, thread safe (TS)](https://s3.amazonaws.com/win-phpv8/v8js_vc14_php7_ts.zip)
