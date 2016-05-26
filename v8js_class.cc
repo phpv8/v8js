@@ -471,7 +471,7 @@ static PHP_METHOD(V8Js, __construct)
 		zend_property_info *property_info = zend_get_property_info(c->std.ce, member, 1 TSRMLS_CC);
 		if(property_info &&
 		   property_info != ZEND_WRONG_PROPERTY_INFO &&
-		   property_info->flags & ZEND_ACC_PUBLIC) {
+		   (property_info->flags & ZEND_ACC_PUBLIC)) {
 			/* Write value to PHP JS object */
 			value = OBJ_PROP(Z_OBJ_P(getThis()), property_info->offset);
 			php_obj->ForceSet(V8JS_ZSYM(member), zval_to_v8js(value, isolate TSRMLS_CC), v8::ReadOnly);
@@ -1206,7 +1206,7 @@ static void v8js_write_property(zval *object, zval *member, zval *value, void **
 	zend_property_info *property_info = zend_get_property_info(c->std.ce, Z_STR_P(member), 1 TSRMLS_CC);
 	if(!property_info ||
 	   (property_info != ZEND_WRONG_PROPERTY_INFO &&
-		property_info->flags & ZEND_ACC_PUBLIC)) {
+		(property_info->flags & ZEND_ACC_PUBLIC))) {
 		/* Global PHP JS object */
 		v8::Local<v8::String> object_name_js = v8::Local<v8::String>::New(isolate, c->object_name);
 		v8::Local<v8::Object> jsobj = V8JS_GLOBAL(isolate)->Get(object_name_js)->ToObject();
