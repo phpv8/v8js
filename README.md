@@ -1,7 +1,7 @@
 V8Js
 ====
 
-[![Build Status](https://jenkins.brokenpipe.de/job/V8Js-PHP5.x/job/v8+php+v8js/badge/icon)](https://jenkins.brokenpipe.de/job/V8Js-PHP5.x/job/v8+php+v8js/)
+[![Build Status](https://travis-ci.org/phpv8/v8js.svg?branch=master)](https://travis-ci.org/phpv8/v8js)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/preillyme/v8js/master/LICENSE)
 [![Join the chat at https://gitter.im/preillyme/v8js](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/preillyme/v8js?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
