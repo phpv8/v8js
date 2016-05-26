@@ -9,7 +9,7 @@ before_install:
 	sudo apt-get update -q
 
 install:
-	sudo apt-get install php7.0-cli php7.0-dev libv8-$(V8VER)-dev
+	sudo apt-get install -y libv8-$(V8VER)-dev
 
 build:
 	phpize
