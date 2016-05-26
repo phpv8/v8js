@@ -1,12 +1,15 @@
 language: php
+sudo: required
+dist: trusty
+
 php:
   - 5.6
   - 5.5
-  - 5.4
-  - 5.3
+
 env:
-  - V8VER=3.22.22
-  - V8VER=3.21.12
+  - V8VER=5.2
+  - V8VER=5.1
+
 before_install: make -f Makefile.travis before_install
 install: make -f Makefile.travis install
 script: make -f Makefile.travis test
