@@ -621,7 +621,7 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> property
 			if(!property_info ||
 			   (property_info != ZEND_WRONG_PROPERTY_INFO &&
 				property_info->flags & ZEND_ACC_PUBLIC)) {
-				zval *property_val = zend_read_property(NULL, &zobject, V8JS_CONST name, name_len, true, &php_value TSRMLS_CC);
+				zval *property_val = zend_read_property(NULL, &zobject, name, name_len, true, &php_value TSRMLS_CC);
 				// special case uninitialized_zval_ptr and return an empty value
 				// (indicating that we don't intercept this property) if the
 				// property doesn't exist.
@@ -656,7 +656,7 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> property
 				if(!property_info ||
 				   (property_info != ZEND_WRONG_PROPERTY_INFO &&
 					property_info->flags & ZEND_ACC_PUBLIC)) {
-					zend_update_property(scope, &zobject, V8JS_CONST name, name_len, &php_value TSRMLS_CC);
+					zend_update_property(scope, &zobject, name, name_len, &php_value TSRMLS_CC);
 					ret_value = set_value;
 				}
 				else if (ce->__set
