@@ -16,11 +16,11 @@
   <email>stesie@php.net</email>
   <active>yes</active>
  </lead>
- <date>2016-05-22</date>
- <time>21:05:58</time>
+ <date>2016-07-02</date>
+ <time>22:48:51</time>
  <version>
-  <release>0.6.3</release>
-  <api>0.6.3</api>
+  <release>0.6.4</release>
+  <api>0.6.4</api>
  </version>
  <stability>
   <release>stable</release>
@@ -28,14 +28,7 @@
  </stability>
  <license uri="http://www.php.net/license">The MIT License (MIT)</license>
  <notes>
-Bug Fixes
-- Send LowMemoryNotification signals to V8 before imposing memory limit
-- Fix build against V8 version 5.2 (deprecated WeakCallbackInfo &amp; GetHiddenValue et al)
-- Improve/Clarify README
-
-Code Cleanup
-- Removed support for &quot;old-age&quot; V8 versions (i.e. V8 &lt; 4.6.76)
-- Removed old examples and pre-phpt test script
+Fix build against V8 5.3.337 (and higher)
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -190,33 +183,33 @@ Code Cleanup
    <file baseinstalldir="/" md5sum="cea72666538d5b0b80a64ccdbda24919" name="CREDITS" role="doc" />
    <file baseinstalldir="/" md5sum="9f5b5f41204bcde55d9df87d5a970b30" name="LICENSE" role="doc" />
    <file baseinstalldir="/" md5sum="716540317726f97d61cbbdc155102e01" name="Makefile.frag" role="src" />
-   <file baseinstalldir="/" md5sum="31e331386def7ce98943694151c0d5cb" name="Makefile.travis" role="src" />
-   <file baseinstalldir="/" md5sum="0e23fa6446e52a3b1cff8b18a6e0bd79" name="php_v8js.h" role="src" />
-   <file baseinstalldir="/" md5sum="cceace5167716392075035fec4331cba" name="php_v8js_macros.h" role="src" />
-   <file baseinstalldir="/" md5sum="8d51598bd192df6e257ab0374d7f47c9" name="README.Linux.md" role="doc" />
+   <file baseinstalldir="/" md5sum="f26e2b75e481750cd6b84bacb05b2c8b" name="Makefile.travis" role="src" />
+   <file baseinstalldir="/" md5sum="1e0ed87dab5e48352f5d007ae915de86" name="php_v8js.h" role="src" />
+   <file baseinstalldir="/" md5sum="39a3edc2f35f0699891bb0be236ec37a" name="php_v8js_macros.h" role="src" />
+   <file baseinstalldir="/" md5sum="dd314db91049868160e61da0ad874a87" name="README.Linux.md" role="doc" />
    <file baseinstalldir="/" md5sum="d686d8e52af92521d4b8b0e86d00c463" name="README.MacOS.md" role="doc" />
-   <file baseinstalldir="/" md5sum="fd05ddc6fec8f0bd6ebdf9a454543686" name="README.md" role="doc" />
+   <file baseinstalldir="/" md5sum="84d58dd31004985d2c5d9e627c742c99" name="README.md" role="doc" />
    <file baseinstalldir="/" md5sum="9839870e001306943797003e8828d855" name="README.Win32.md" role="doc" />
-   <file baseinstalldir="/" md5sum="9fa31064f2d5570088ff5dbf96449ac4" name="v8js.cc" role="src" />
-   <file baseinstalldir="/" md5sum="2fba78ae476f6c4b549c0359e246d436" name="v8js_array_access.cc" role="src" />
-   <file baseinstalldir="/" md5sum="7baf3fe5b77d1374b39a1d8332e05df4" name="v8js_array_access.h" role="src" />
-   <file baseinstalldir="/" md5sum="cc2efcf87d89ce69c16f98b492c41ea6" name="v8js_class.cc" role="src" />
-   <file baseinstalldir="/" md5sum="9cb99ff0bc2cb5b4c0b4b7a9c6d86a27" name="v8js_class.h" role="src" />
-   <file baseinstalldir="/" md5sum="88b49988a5ef55edbd7ba085e7857f64" name="v8js_commonjs.cc" role="src" />
-   <file baseinstalldir="/" md5sum="32a5d1a65f64ec37ec294f496fc11ff1" name="v8js_commonjs.h" role="src" />
-   <file baseinstalldir="/" md5sum="c5030312638e3df5e625b3eaf7247452" name="v8js_convert.cc" role="src" />
-   <file baseinstalldir="/" md5sum="3e332da294177547e84efeb0e6887a92" name="v8js_exceptions.cc" role="src" />
-   <file baseinstalldir="/" md5sum="9d13bf5f413c2d76664670e847e1a801" name="v8js_exceptions.h" role="src" />
-   <file baseinstalldir="/" md5sum="df60543ec6b98473e4b336731585524d" name="v8js_methods.cc" role="src" />
-   <file baseinstalldir="/" md5sum="7f6b40633a3f762dd6cca5dc56b60492" name="v8js_object_export.cc" role="src" />
-   <file baseinstalldir="/" md5sum="bf0141470862151449311b81c947ecb3" name="v8js_object_export.h" role="src" />
-   <file baseinstalldir="/" md5sum="df6d559353c418fde5646f21359deebb" name="v8js_timer.cc" role="src" />
-   <file baseinstalldir="/" md5sum="49f609c8cea6033f2ad1e6c9c829a571" name="v8js_timer.h" role="src" />
-   <file baseinstalldir="/" md5sum="3b9f2ed1fc2f10b04cabb7712281078c" name="v8js_v8.cc" role="src" />
-   <file baseinstalldir="/" md5sum="0c4829d52ff46116c381b1b66ec27541" name="v8js_v8.h" role="src" />
-   <file baseinstalldir="/" md5sum="6506a28818b32d89226d4395bc0f28b6" name="v8js_v8object_class.cc" role="src" />
-   <file baseinstalldir="/" md5sum="8a80d71ff40dfa833d3b58ac94475a9f" name="v8js_v8object_class.h" role="src" />
-   <file baseinstalldir="/" md5sum="29be67d9bf8bfb1642d1219356109063" name="v8js_variables.cc" role="src" />
+   <file baseinstalldir="/" md5sum="605f4253202e06aecee897495d4f2899" name="v8js.cc" role="src" />
+   <file baseinstalldir="/" md5sum="440e5dee67451f646b8c7609022e3828" name="v8js_array_access.cc" role="src" />
+   <file baseinstalldir="/" md5sum="0c7f5b2aa1dca106962f737835c7e4fa" name="v8js_array_access.h" role="src" />
+   <file baseinstalldir="/" md5sum="88df31a23b92a10374c9e8ba39d4318e" name="v8js_class.cc" role="src" />
+   <file baseinstalldir="/" md5sum="bc7e813f049873bb6e814b9279657708" name="v8js_class.h" role="src" />
+   <file baseinstalldir="/" md5sum="c703b08959d39633b0143398a899759b" name="v8js_commonjs.cc" role="src" />
+   <file baseinstalldir="/" md5sum="75eb04f2582fe4dbb505de44b1752ec8" name="v8js_commonjs.h" role="src" />
+   <file baseinstalldir="/" md5sum="f08e8093b5fad62d2f8ffb43fe6ed476" name="v8js_convert.cc" role="src" />
+   <file baseinstalldir="/" md5sum="d5e034dec54295d3568eb7700815266e" name="v8js_exceptions.cc" role="src" />
+   <file baseinstalldir="/" md5sum="9660094c1895ed56b128c9713b65abce" name="v8js_exceptions.h" role="src" />
+   <file baseinstalldir="/" md5sum="23a88155b9e11e7914ff556224ddecbe" name="v8js_methods.cc" role="src" />
+   <file baseinstalldir="/" md5sum="b18450f5eb25e5710568c99ed5ccae95" name="v8js_object_export.cc" role="src" />
+   <file baseinstalldir="/" md5sum="8ad998e544fd40cfb65dbb2cb343786a" name="v8js_object_export.h" role="src" />
+   <file baseinstalldir="/" md5sum="2ed0d5b10dfa25e3363951aede1cee3d" name="v8js_timer.cc" role="src" />
+   <file baseinstalldir="/" md5sum="618189f590162d2f0ce32a74915fe45a" name="v8js_timer.h" role="src" />
+   <file baseinstalldir="/" md5sum="99769b8df967af0c513fa5334cc8a9fb" name="v8js_v8.cc" role="src" />
+   <file baseinstalldir="/" md5sum="62ce79fde3815706f6c605cf63a0196f" name="v8js_v8.h" role="src" />
+   <file baseinstalldir="/" md5sum="93809c6a1e6614dfceb66ff307743bb7" name="v8js_v8object_class.cc" role="src" />
+   <file baseinstalldir="/" md5sum="1bf5e4552861aa97b47c2a73ad585561" name="v8js_v8object_class.h" role="src" />
+   <file baseinstalldir="/" md5sum="8ebef149eb19ba2e63a310d0e529f9a3" name="v8js_variables.cc" role="src" />
   </dir>
  </contents>
  <dependencies>
@@ -576,6 +569,21 @@ Bug Fixes
 Code Cleanup
 - Removed support for &quot;old-age&quot; V8 versions (i.e. V8 &lt; 4.6.76)
 - Removed old examples and pre-phpt test script
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>0.6.4</release>
+    <api>0.6.4</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <date>2016-07-02</date>
+   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <notes>
+Fix build against V8 5.3.337 (and higher)
    </notes>
   </release>
  </changelog>
