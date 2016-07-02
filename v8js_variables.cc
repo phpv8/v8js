@@ -98,6 +98,7 @@ void v8js_register_accessors(std::vector<v8js_accessor_ctx*> *accessor_list, v8:
  * Local variables:
  * tab-width: 4
  * c-basic-offset: 4
+ * indent-tabs-mode: t
  * End:
  * vim600: noet sw=4 ts=4 fdm=marker
  * vim<600: noet sw=4 ts=4
