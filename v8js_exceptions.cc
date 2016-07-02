@@ -83,7 +83,7 @@ void v8js_create_script_exception(zval *return_value, v8::Isolate *isolate, v8::
 			PHPV8_EXPROP(_string, JsTrace, stacktrace_string);
 		}
 
-		if(try_catch->Exception()->IsObject() && try_catch->Exception()->ToObject()->InternalFieldCount()) {
+		if(try_catch->Exception()->IsObject() && try_catch->Exception()->ToObject()->InternalFieldCount() == 2) {
 			zval *php_exception = reinterpret_cast<zval *>(try_catch->Exception()->ToObject()->GetAlignedPointerFromInternalField(1));
 
 			zend_class_entry *exception_ce = zend_exception_get_default(TSRMLS_C);

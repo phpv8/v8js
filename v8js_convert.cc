@@ -240,7 +240,7 @@ int v8js_to_zval(v8::Handle<v8::Value> jsValue, zval *return_value, int flags, v
 		v8::Local<v8::Object> self = jsValue->ToObject();
 
 		// if this is a wrapped PHP object, then just unwrap it.
-		if (self->InternalFieldCount()) {
+		if (self->InternalFieldCount() == 2) {
 			zval *object = reinterpret_cast<zval *>(self->GetAlignedPointerFromInternalField(1));
 			RETVAL_ZVAL(object, 1, 0);
 			return SUCCESS;

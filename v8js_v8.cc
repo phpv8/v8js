@@ -276,7 +276,7 @@ int v8js_get_properties_hash(v8::Handle<v8::Value> jsValue, HashTable *retval, i
 			const char *key = ToCString(cstr);
 			zval *value = NULL;
 
-			if (jsVal->IsObject() && jsVal->ToObject()->InternalFieldCount()) {
+			if (jsVal->IsObject() && jsVal->ToObject()->InternalFieldCount() == 2) {
 				value = reinterpret_cast<zval *>(jsVal->ToObject()->GetAlignedPointerFromInternalField(1));
 				Z_ADDREF_P(value);
 			}
