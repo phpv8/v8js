@@ -81,7 +81,7 @@ void v8js_create_script_exception(zval *return_value, v8::Isolate *isolate, v8::
 			PHPV8_EXPROP(_string, JsTrace, stacktrace_string);
 		}
 
-		if(try_catch->Exception()->IsObject() && try_catch->Exception()->ToObject()->InternalFieldCount()) {
+		if(try_catch->Exception()->IsObject() && try_catch->Exception()->ToObject()->InternalFieldCount() == 2) {
 			zend_object *php_exception = reinterpret_cast<zend_object *>(try_catch->Exception()->ToObject()->GetAlignedPointerFromInternalField(1));
 
 			zend_class_entry *exception_ce = zend_exception_get_default(TSRMLS_C);
@@ -245,6 +245,7 @@ PHP_MINIT_FUNCTION(v8js_exceptions) /* {{{ */
  * Local variables:
  * tab-width: 4
  * c-basic-offset: 4
+ * indent-tabs-mode: t
  * End:
  * vim600: noet sw=4 ts=4 fdm=marker
  * vim<600: noet sw=4 ts=4

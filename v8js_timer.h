@@ -33,6 +33,7 @@ void v8js_timer_push(long time_limit, long memory_limit, v8js_ctx *c TSRMLS_DC);
  * Local variables:
  * tab-width: 4
  * c-basic-offset: 4
+ * indent-tabs-mode: t
  * End:
  * vim600: noet sw=4 ts=4 fdm=marker
  * vim<600: noet sw=4 ts=4

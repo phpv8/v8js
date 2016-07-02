@@ -700,5 +700,20 @@ Code Cleanup
 - Removed old examples and pre-phpt test script
    </notes>
   </release>
+  <release>
+   <version>
+    <release>0.6.4</release>
+    <api>0.6.4</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <date>2016-07-02</date>
+   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <notes>
+Fix build against V8 5.3.337 (and higher)
+   </notes>
+  </release>
  </changelog>
 </package>

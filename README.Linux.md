@@ -31,6 +31,9 @@ Compile latest V8
 
 
 ```
+# Install `build-essential` if you haven't already:
+sudo apt-get install build-essential
+
 # Install `libicu-dev` if you haven't already:
 sudo apt-get install libicu-dev
 

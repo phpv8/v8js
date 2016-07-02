@@ -227,7 +227,7 @@ int v8js_to_zval(v8::Handle<v8::Value> jsValue, zval *return_value, int flags, v
 		v8::Local<v8::Object> self = jsValue->ToObject();
 
 		// if this is a wrapped PHP object, then just unwrap it.
-		if (self->InternalFieldCount()) {
+		if (self->InternalFieldCount() == 2) {
 			zend_object *object = reinterpret_cast<zend_object *>(self->GetAlignedPointerFromInternalField(1));
 			zval zval_object;
 			ZVAL_OBJ(&zval_object, object);
@@ -256,6 +256,7 @@ int v8js_to_zval(v8::Handle<v8::Value> jsValue, zval *return_value, int flags, v
  * Local variables:
  * tab-width: 4
  * c-basic-offset: 4
+ * indent-tabs-mode: t
  * End:
  * vim600: noet sw=4 ts=4 fdm=marker
  * vim<600: noet sw=4 ts=4

@@ -33,3 +33,13 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> property
 void v8js_php_callback(const v8::FunctionCallbackInfo<v8::Value>& info);
 
 #endif /* V8JS_OBJECT_EXPORT_H */
+
+/*
+ * Local variables:
+ * tab-width: 4
+ * c-basic-offset: 4
+ * indent-tabs-mode: t
+ * End:
+ * vim600: noet sw=4 ts=4 fdm=marker
+ * vim<600: noet sw=4 ts=4
+ */

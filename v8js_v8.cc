@@ -274,7 +274,7 @@ int v8js_get_properties_hash(v8::Handle<v8::Value> jsValue, HashTable *retval, i
 			zval value;
 			ZVAL_UNDEF(&value);
 
-			if (jsVal->IsObject() && jsVal->ToObject()->InternalFieldCount()) {
+			if (jsVal->IsObject() && jsVal->ToObject()->InternalFieldCount() == 2) {
 				/* This is a PHP object, passed to JS and back. */
 				zend_object *object = reinterpret_cast<zend_object *>(jsVal->ToObject()->GetAlignedPointerFromInternalField(1));
 				ZVAL_OBJ(&value, object);
@@ -308,6 +308,7 @@ int v8js_get_properties_hash(v8::Handle<v8::Value> jsValue, HashTable *retval, i
  * Local variables:
  * tab-width: 4
  * c-basic-offset: 4
+ * indent-tabs-mode: t
  * End:
  * vim600: noet sw=4 ts=4 fdm=marker
  * vim<600: noet sw=4 ts=4

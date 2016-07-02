@@ -89,7 +89,7 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, v
 	if (argc) {
 		fci.params = (zval *) safe_emalloc(argc, sizeof(zval), 0);
 		for (i = 0; i < argc; i++) {
-			if (info[i]->IsObject() && info[i]->ToObject()->InternalFieldCount()) {
+			if (info[i]->IsObject() && info[i]->ToObject()->InternalFieldCount() == 2) {
 				/* This is a PHP object, passed to JS and back. */
 				zend_object *object = reinterpret_cast<zend_object *>(info[i]->ToObject()->GetAlignedPointerFromInternalField(1));
 				ZVAL_OBJ(&fci.params[i], object);
@@ -964,6 +964,7 @@ v8::Handle<v8::Value> v8js_hash_to_jsobj(zval *value, v8::Isolate *isolate TSRML
  * Local variables:
  * tab-width: 4
  * c-basic-offset: 4
+ * indent-tabs-mode: t
  * End:
  * vim600: noet sw=4 ts=4 fdm=marker
  * vim<600: noet sw=4 ts=4

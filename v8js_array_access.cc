@@ -255,6 +255,7 @@ void v8js_array_access_named_getter(v8::Local<v8::String> property, const v8::Pr
  * Local variables:
  * tab-width: 4
  * c-basic-offset: 4
+ * indent-tabs-mode: t
  * End:
  * vim600: noet sw=4 ts=4 fdm=marker
  * vim<600: noet sw=4 ts=4
