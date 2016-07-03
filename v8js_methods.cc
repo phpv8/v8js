@@ -390,9 +390,15 @@ V8JS_METHOD(require)
 		efree(normalised_module_id);
 		efree(normalised_path);
 
-		// Clear the PHP exception and throw it in V8 instead
-		zend_clear_exception(TSRMLS_C);
-		info.GetReturnValue().Set(isolate->ThrowException(V8JS_SYM("Module loader callback exception")));
+		if (c->flags & V8JS_FLAG_PROPAGATE_PHP_EXCEPTIONS) {
+			zval tmp_zv;
+			ZVAL_OBJ(&tmp_zv, EG(exception));
+			info.GetReturnValue().Set(isolate->ThrowException(zval_to_v8js(&tmp_zv, isolate)));
+			zend_clear_exception();
+		} else {
+			v8js_terminate_execution(isolate);
+		}
+
 		return;
 	}
 
