@@ -39,10 +39,11 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, v
 	v8::Handle<v8::Value> return_value = V8JS_NULL;
 	zend_fcall_info fci;
 	zend_fcall_info_cache fcc;
-	zval fname, retval, **argv = NULL;
+	zval fname, retval;
 	unsigned int argc = info.Length(), min_num_args = 0, max_num_args = 0;
 	char *error;
-	int error_len, i;
+	int error_len;
+	unsigned int i;
 
 	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
 
@@ -779,7 +780,7 @@ static v8::Handle<v8::Object> v8js_wrap_object(v8::Isolate *isolate, zend_class_
 				bool has_array_access = false;
 				bool has_countable = false;
 
-				for (int i = 0; i < ce->num_interfaces; i ++) {
+				for (unsigned int i = 0; i < ce->num_interfaces; i ++) {
 					if (strcmp (ZSTR_VAL(ce->interfaces[i]->name), "ArrayAccess") == 0) {
 						has_array_access = true;
 					}
