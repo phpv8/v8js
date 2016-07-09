@@ -291,10 +291,10 @@ static void v8js_weak_object_callback(const v8::WeakCallbackInfo<zend_object> &d
 	isolate->AdjustAmountOfExternalAllocatedMemory(-ctx->average_object_size);
 }
 
-static void v8js_weak_closure_callback(const v8::WeakCallbackInfo<v8js_tmpl_t> &data) {
+static void v8js_weak_closure_callback(const v8::WeakCallbackInfo<v8js_function_tmpl_t> &data) {
 	v8::Isolate *isolate = data.GetIsolate();
 
-	v8js_tmpl_t *persist_tpl_ = data.GetParameter();
+	v8js_function_tmpl_t *persist_tpl_ = data.GetParameter();
 	persist_tpl_->Reset();
 	delete persist_tpl_;
 
@@ -559,7 +559,7 @@ static void v8js_fake_call_impl(const v8::FunctionCallbackInfo<v8::Value>& info)
 
 	v8::Local<v8::FunctionTemplate> tmpl =
 		v8::Local<v8::FunctionTemplate>::New
-			(isolate, *reinterpret_cast<v8js_tmpl_t *>(self->GetAlignedPointerFromInternalField(0)));
+			(isolate, *reinterpret_cast<v8js_function_tmpl_t *>(self->GetAlignedPointerFromInternalField(0)));
 	// use v8js_php_callback to actually execute the method
 	v8::Local<v8::Function> cb = PHP_V8JS_CALLBACK(isolate, method_ptr, tmpl);
 	uint32_t i, argc = args->Length();
@@ -597,7 +597,7 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> property
 	zval zobject;
 	ZVAL_OBJ(&zobject, object);
 
-	v8js_tmpl_t *tmpl_ptr = reinterpret_cast<v8js_tmpl_t *>(self->GetAlignedPointerFromInternalField(0));
+	v8js_function_tmpl_t *tmpl_ptr = reinterpret_cast<v8js_function_tmpl_t *>(self->GetAlignedPointerFromInternalField(0));
 	v8::Local<v8::FunctionTemplate> tmpl = v8::Local<v8::FunctionTemplate>::New(isolate, *tmpl_ptr);
 	ce = scope = object->ce;
 
@@ -641,7 +641,7 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> property
 						ft = v8::FunctionTemplate::New(isolate,
 								v8js_fake_call_impl, V8JS_NULL,
 								v8::Signature::New(isolate, tmpl));
-						v8js_tmpl_t *persistent_ft = &ctx->call_impls[tmpl_ptr];
+						v8js_function_tmpl_t *persistent_ft = &ctx->call_impls[tmpl_ptr];
 						persistent_ft->Reset(isolate, ft);
 					}
 					v8::Local<v8::Function> cb = ft->GetFunction();
@@ -657,7 +657,7 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> property
 						ft = v8::FunctionTemplate::New(isolate, v8js_php_callback,
 								v8::External::New((isolate), method_ptr),
 								v8::Signature::New((isolate), tmpl));
-						v8js_tmpl_t *persistent_ft = &ctx->method_tmpls[method_ptr];
+						v8js_function_tmpl_t *persistent_ft = &ctx->method_tmpls[method_ptr];
 						persistent_ft->Reset(isolate, ft);
 					}
 					ret_value = ft->GetFunction();
@@ -815,7 +815,7 @@ static v8::MaybeLocal<v8::Object> v8js_wrap_object(v8::Isolate *isolate, zend_cl
 {
 	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
 	v8::Local<v8::FunctionTemplate> new_tpl;
-	v8js_tmpl_t *persist_tpl_;
+	v8js_function_tmpl_t *persist_tpl_;
 
 	try {
 		new_tpl = v8::Local<v8::FunctionTemplate>::New
@@ -836,7 +836,7 @@ static v8::MaybeLocal<v8::Object> v8js_wrap_object(v8::Isolate *isolate, zend_cl
 
 		if (ce == zend_ce_closure) {
 			/* Got a closure, mustn't cache ... */
-			persist_tpl_ = new v8js_tmpl_t(isolate, new_tpl);
+			persist_tpl_ = new v8js_function_tmpl_t(isolate, new_tpl);
 			/* We'll free persist_tpl_ via v8js_weak_closure_callback, below */
 			new_tpl->InstanceTemplate()->SetCallAsFunctionHandler(v8js_php_callback);
 		} else {

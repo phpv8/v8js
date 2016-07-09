@@ -17,7 +17,7 @@
 
 
 /* Abbreviate long type names */
-typedef v8::Persistent<v8::FunctionTemplate, v8::CopyablePersistentTraits<v8::FunctionTemplate> > v8js_tmpl_t;
+typedef v8::Persistent<v8::FunctionTemplate, v8::CopyablePersistentTraits<v8::FunctionTemplate> > v8js_function_tmpl_t;
 typedef v8::Persistent<v8::Object, v8::CopyablePersistentTraits<v8::Object> > v8js_persistent_obj_t;
 
 /* Forward declarations */
@@ -48,8 +48,8 @@ struct v8js_ctx {
   bool memory_limit_hit;
   long average_object_size;
 
-  v8js_tmpl_t global_template;
-  v8js_tmpl_t array_tmpl;
+  v8js_function_tmpl_t global_template;
+  v8js_function_tmpl_t array_tmpl;
 
   zval module_normaliser;
   zval module_loader;
@@ -57,12 +57,12 @@ struct v8js_ctx {
   std::vector<char *> modules_stack;
   std::vector<char *> modules_base;
   std::map<char *, v8js_persistent_obj_t, cmp_str> modules_loaded;
-  std::map<const zend_string *,v8js_tmpl_t> template_cache;
+  std::map<const zend_string *,v8js_function_tmpl_t> template_cache;
 
   std::map<zend_object *, v8js_persistent_obj_t> weak_objects;
-  std::map<v8js_tmpl_t *, v8js_persistent_obj_t> weak_closures;
-  std::map<v8js_tmpl_t *, v8js_tmpl_t> call_impls;
-  std::map<zend_function *, v8js_tmpl_t> method_tmpls;
+  std::map<v8js_function_tmpl_t *, v8js_persistent_obj_t> weak_closures;
+  std::map<v8js_function_tmpl_t *, v8js_function_tmpl_t> call_impls;
+  std::map<zend_function *, v8js_function_tmpl_t> method_tmpls;
 
   std::list<v8js_v8object *> v8js_v8objects;
 

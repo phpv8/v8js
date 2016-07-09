@@ -113,21 +113,21 @@ static void v8js_free_storage(zend_object *object) /* {{{ */
 	c->array_tmpl.~Persistent();
 
 	/* Clear persistent call_impl & method_tmpls templates */
-	for (std::map<v8js_tmpl_t *, v8js_tmpl_t>::iterator it = c->call_impls.begin();
+	for (std::map<v8js_function_tmpl_t *, v8js_function_tmpl_t>::iterator it = c->call_impls.begin();
 		 it != c->call_impls.end(); ++it) {
 		// No need to free it->first, as it is stored in c->template_cache and freed below
 		it->second.Reset();
 	}
 	c->call_impls.~map();
 
-	for (std::map<zend_function *, v8js_tmpl_t>::iterator it = c->method_tmpls.begin();
+	for (std::map<zend_function *, v8js_function_tmpl_t>::iterator it = c->method_tmpls.begin();
 		 it != c->method_tmpls.end(); ++it) {
 		it->second.Reset();
 	}
 	c->method_tmpls.~map();
 
 	/* Clear persistent handles in template cache */
-	for (std::map<const zend_string *,v8js_tmpl_t>::iterator it = c->template_cache.begin();
+	for (std::map<const zend_string *,v8js_function_tmpl_t>::iterator it = c->template_cache.begin();
 		 it != c->template_cache.end(); ++it) {
 		it->second.Reset();
 	}
@@ -158,9 +158,9 @@ static void v8js_free_storage(zend_object *object) /* {{{ */
 	}
 	c->weak_objects.~map();
 
-	for (std::map<v8js_tmpl_t *, v8js_persistent_obj_t>::iterator it = c->weak_closures.begin();
+	for (std::map<v8js_function_tmpl_t *, v8js_persistent_obj_t>::iterator it = c->weak_closures.begin();
 		 it != c->weak_closures.end(); ++it) {
-		v8js_tmpl_t *persist_tpl_ = it->first;
+		v8js_function_tmpl_t *persist_tpl_ = it->first;
 		persist_tpl_->Reset();
 		delete persist_tpl_;
 		it->second.Reset();
@@ -229,13 +229,13 @@ static zend_object* v8js_new(zend_class_entry *ce) /* {{{ */
 	new(&c->modules_base) std::vector<char*>();
 	new(&c->modules_loaded) std::map<char *, v8js_persistent_obj_t, cmp_str>;
 
-	new(&c->template_cache) std::map<const zend_string *,v8js_tmpl_t>();
+	new(&c->template_cache) std::map<const zend_string *,v8js_function_tmpl_t>();
 	new(&c->accessor_list) std::vector<v8js_accessor_ctx *>();
 
-	new(&c->weak_closures) std::map<v8js_tmpl_t *, v8js_persistent_obj_t>();
+	new(&c->weak_closures) std::map<v8js_function_tmpl_t *, v8js_persistent_obj_t>();
 	new(&c->weak_objects) std::map<zend_object *, v8js_persistent_obj_t>();
-	new(&c->call_impls) std::map<v8js_tmpl_t *, v8js_tmpl_t>();
-	new(&c->method_tmpls) std::map<zend_function *, v8js_tmpl_t>();
+	new(&c->call_impls) std::map<v8js_function_tmpl_t *, v8js_function_tmpl_t>();
+	new(&c->method_tmpls) std::map<zend_function *, v8js_function_tmpl_t>();
 
 	new(&c->v8js_v8objects) std::list<v8js_v8object *>();
 	new(&c->script_objects) std::vector<v8js_script *>();
@@ -589,7 +589,7 @@ static PHP_METHOD(V8Js, __construct)
 			ft = v8::FunctionTemplate::New(isolate, v8js_php_callback,
 					v8::External::New((isolate), method_ptr));
 			// @fixme add/check Signature v8::Signature::New((isolate), tmpl));
-			v8js_tmpl_t *persistent_ft = &c->method_tmpls[method_ptr];
+			v8js_function_tmpl_t *persistent_ft = &c->method_tmpls[method_ptr];
 			persistent_ft->Reset(isolate, ft);
 		}
 
