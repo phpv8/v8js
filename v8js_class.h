@@ -18,6 +18,7 @@
 
 /* Abbreviate long type names */
 typedef v8::Persistent<v8::FunctionTemplate, v8::CopyablePersistentTraits<v8::FunctionTemplate> > v8js_function_tmpl_t;
+typedef v8::Persistent<v8::ObjectTemplate, v8::CopyablePersistentTraits<v8::ObjectTemplate> > v8js_object_tmpl_t;
 typedef v8::Persistent<v8::Object, v8::CopyablePersistentTraits<v8::Object> > v8js_persistent_obj_t;
 
 /* Forward declarations */
@@ -48,7 +49,7 @@ struct v8js_ctx {
   bool memory_limit_hit;
   long average_object_size;
 
-  v8js_function_tmpl_t global_template;
+  v8js_object_tmpl_t global_template;
   v8js_function_tmpl_t array_tmpl;
 
   zval module_normaliser;

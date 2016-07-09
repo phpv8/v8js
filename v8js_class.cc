@@ -425,16 +425,14 @@ static PHP_METHOD(V8Js, __construct)
 	/* Create global template for global object */
 	// Now we are using multiple isolates this needs to be created for every context
 
-	v8::Local<v8::FunctionTemplate> tpl = v8::FunctionTemplate::New(c->isolate, 0);
-
-	tpl->SetClassName(V8JS_SYM("V8Js"));
+	v8::Local<v8::ObjectTemplate> tpl = v8::ObjectTemplate::New(c->isolate);
 	c->global_template.Reset(isolate, tpl);
 
 	/* Register builtin methods */
-	v8js_register_methods(tpl->InstanceTemplate(), c);
+	v8js_register_methods(tpl, c);
 
 	/* Create context */
-	v8::Local<v8::Context> context = v8::Context::New(isolate, &extension_conf, tpl->InstanceTemplate());
+	v8::Local<v8::Context> context = v8::Context::New(isolate, &extension_conf, tpl);
 
 	if (exts) {
 		v8js_free_ext_strarr(exts, exts_count);
