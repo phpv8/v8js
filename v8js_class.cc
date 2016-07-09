@@ -425,14 +425,14 @@ static PHP_METHOD(V8Js, __construct)
 	/* Create global template for global object */
 	// Now we are using multiple isolates this needs to be created for every context
 
-	v8::Local<v8::ObjectTemplate> tpl = v8::ObjectTemplate::New(c->isolate);
-	c->global_template.Reset(isolate, tpl);
+	v8::Local<v8::ObjectTemplate> global_template = v8::ObjectTemplate::New(c->isolate);
+	c->global_template.Reset(isolate, global_template);
 
 	/* Register builtin methods */
-	v8js_register_methods(tpl, c);
+	v8js_register_methods(global_template, c);
 
 	/* Create context */
-	v8::Local<v8::Context> context = v8::Context::New(isolate, &extension_conf, tpl);
+	v8::Local<v8::Context> context = v8::Context::New(isolate, &extension_conf, global_template);
 
 	if (exts) {
 		v8js_free_ext_strarr(exts, exts_count);
@@ -447,6 +447,7 @@ static PHP_METHOD(V8Js, __construct)
 	}
 
 	context->SetAlignedPointerInEmbedderData(1, c);
+	context->Global()->Set(context, V8JS_SYM("global"), context->Global());
 	c->context.Reset(isolate, context);
 
 	/* Enter context */
