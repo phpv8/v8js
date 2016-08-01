@@ -11,9 +11,10 @@ before_install:
 install:
 	sudo apt-get install -y libv8-$(V8VER)-dev
 
+# newer releases (E.g. 5.7) of the ppa install the headers and lib to /opt/libv8-VER
 build:
 	phpize
-	./configure
+	if [ -d /opt/libv8-$(V8VER) ]; then ./configure --with-v8js=/opt/libv8-$(V8VER); else ./configure; fi
 	$(MAKE) -j3
 
 test: build

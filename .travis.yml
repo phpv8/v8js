@@ -1,15 +1,28 @@
 language: php
 sudo: required
 dist: trusty
+cache:
+  directories:
+    - $HOME/travis_cache
 
 php:
   - 7.0
   - 7.1
 
 env:
+  - V8VER=5.7
   - V8VER=5.2
   - V8VER=5.1
+  # Some bugs in v8js only show up without zts enabled.
+  # Notices with valgrind in libv8 were fixed in later v8js versions.
+  - V8VER=5.7 VALGRIND=1
+  - V8VER=5.7 VALGRIND=1 PHP_NTS_USE=1 PHP_CONFIGURE_ARGS="--disable-all --disable-zts --enable-debug" 
 
 before_install: make -f Makefile.travis before_install
-install: make -f Makefile.travis install
+install:
+  # For NTS builds: Install NTS and set the php.ini to a different blank file.
+  - if [ "x$PHP_NTS_USE" != "x" ]; then export PHP_NTS_VERSION=$(./ci/get_global_php_version.sh); echo "Version is $PHP_NTS_VERSION"; ./ci/install_php_nts.sh || exit 1; export PATH="$(./ci/generate_php_install_dir.sh)/bin:$PATH"; export PHPRC=$PWD/ci/; else ./ci/wipe_travis_cache.sh; fi
+  - if [ "$VALGRIND" = 1 ]; then sudo apt-get install -qq valgrind; export TEST_PHP_ARGS="-m"; fi
+  - make -f Makefile.travis install
+
 script: make -f Makefile.travis test
