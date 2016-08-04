@@ -15,6 +15,8 @@
 #ifndef V8JS_CLASS_H
 #define V8JS_CLASS_H
 
+/* Forward declarations */
+struct v8js_jsext;
 
 /* Abbreviate long type names */
 typedef v8::Persistent<v8::FunctionTemplate, v8::CopyablePersistentTraits<v8::FunctionTemplate> > v8js_tmpl_t;
@@ -87,6 +89,8 @@ struct v8js_ctx {
 #else
 # define V8JS_TSRMLS_FETCH()
 #endif
+
+void v8js_jsext_free_storage(v8js_jsext *jsext);
 
 static inline struct v8js_ctx *v8js_ctx_fetch_object(zend_object *obj) {
 	return (struct v8js_ctx *)((char *)obj - XtOffsetOf(struct v8js_ctx, std));

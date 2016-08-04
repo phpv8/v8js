@@ -163,11 +163,10 @@ static PHP_MSHUTDOWN_FUNCTION(v8js)
 		v8js_process_globals.v8_flags = NULL;
 	}
 
-	if (v8js_process_globals.extensions) {
-		zend_hash_destroy(v8js_process_globals.extensions);
-		free(v8js_process_globals.extensions);
-		v8js_process_globals.extensions = NULL;
+	for (auto& it: v8js_process_globals.extensions) {
+		v8js_jsext_free_storage(it.second);
 	}
+	v8js_process_globals.extensions.clear();
 
 	return SUCCESS;
 }

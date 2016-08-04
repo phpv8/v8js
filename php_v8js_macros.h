@@ -27,6 +27,7 @@
 #include <list>
 #include <vector>
 #include <mutex>
+#include <unordered_map>
 
 #include <cmath>
 #ifndef isnan
@@ -77,7 +78,6 @@ extern "C" {
 #define ZEND_SLEEP_FUNC_NAME     "__sleep"
 #define ZEND_SET_STATE_FUNC_NAME "__set_state"
 
-
 /* Convert zval into V8 value */
 v8::Handle<v8::Value> zval_to_v8js(zval *, v8::Isolate * TSRMLS_DC);
 
@@ -97,7 +97,9 @@ void v8js_register_accessors(std::vector<v8js_accessor_ctx*> *accessor_list, v8:
 
 
 /* Forward declarations */
+struct v8js_jsext;
 struct v8js_timer_ctx;
+
 
 /* Module globals */
 ZEND_BEGIN_MODULE_GLOBALS(v8js)
@@ -145,7 +147,7 @@ struct _v8js_process_globals {
 	std::mutex lock;
 #endif
 
-	HashTable *extensions;
+	std::unordered_map<std::string, v8js_jsext*> extensions;
 
 	/* V8 command line flags */
 	char *v8_flags;
