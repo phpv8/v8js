@@ -479,7 +479,7 @@ PHP_METHOD(V8Function, __wakeup)
 static void v8js_v8generator_free_storage(zend_object *object) /* {{{ */
 {
 	v8js_v8generator *c = v8js_v8generator_fetch_object(object);
-	zval_dtor(&c->value);
+	zval_ptr_dtor(&c->value);
 
 	v8js_v8object_free_storage(object);
 }
@@ -533,7 +533,7 @@ static void v8js_v8generator_next(v8js_v8generator *g) /* {{{ */
 			v8::Local<v8::Value> val = resultObj->Get(V8JS_STR("value"));
 			v8::Local<v8::Value> done = resultObj->Get(V8JS_STR("done"));
 
-			zval_dtor(&g->value);
+			zval_ptr_dtor(&g->value);
 			v8js_to_zval(val, &g->value, 0, isolate);
 
 			g->done = done->IsTrue();

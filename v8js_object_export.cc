@@ -81,7 +81,7 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, v
 		}
 		efree(error);
 		info.GetReturnValue().Set(return_value);
-		zval_dtor(&fname);
+		zval_ptr_dtor(&fname);
 		return;
 	}
 
@@ -138,7 +138,7 @@ failure:
 	/* Cleanup */
 	if (argc) {
 		for (i = 0; i < fci.param_count; i++) {
-			zval_dtor(&fci.params[i]);
+			zval_ptr_dtor(&fci.params[i]);
 		}
 		efree(fci.params);
 	}
@@ -159,8 +159,8 @@ failure:
 		return_value = zval_to_v8js(&retval, isolate TSRMLS_CC);
 	}
 
-	zval_dtor(&retval);
-	zval_dtor(&fname);
+	zval_ptr_dtor(&retval);
+	zval_ptr_dtor(&fname);
 
 	info.GetReturnValue().Set(return_value);
 }
@@ -264,7 +264,7 @@ static void v8js_weak_object_callback(const v8::WeakCallbackInfo<zend_object> &d
 	zend_object *object = data.GetParameter();
 	zval value;
 	ZVAL_OBJ(&value, object);
-	zval_dtor(&value);
+	zval_ptr_dtor(&value);
 
 	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
 
@@ -643,7 +643,7 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> property
 				/* Okay, let's call __get. */
 				zend_call_method_with_1_params(&zobject, ce, &ce->__get, ZEND_GET_FUNC_NAME, &php_value, &zname);
 				ret_value = zval_to_v8js(&php_value, isolate TSRMLS_CC);
-				zval_dtor(&php_value);
+				zval_ptr_dtor(&php_value);
 			}
 
 		} else if (callback_type == V8JS_PROP_SETTER) {
@@ -701,7 +701,7 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> property
 			ret_value = v8::Handle<v8::Value>();
 		}
 
-		zval_dtor(&zname);
+		zval_ptr_dtor(&zname);
 	}
 
 	zend_string_release(method_name);

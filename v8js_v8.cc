@@ -282,7 +282,7 @@ int v8js_get_properties_hash(v8::Handle<v8::Value> jsValue, HashTable *retval, i
 			}
 			else {
 				if (v8js_to_zval(jsVal, &value, flags, isolate TSRMLS_CC) == FAILURE) {
-					zval_dtor(&value);
+					zval_ptr_dtor(&value);
 					return FAILURE;
 				}
 			}
