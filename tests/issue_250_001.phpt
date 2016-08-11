@@ -54,19 +54,19 @@ try {
 
 ?>
 ===EOF===
---EXPECT--
-Warning: Creating default object from empty value in /home/stesie/Projekte/php-7.0.9/ext/v8js/tests/issue_250_001.php on line 9
-object(TestObject)#2 (3) {
+--EXPECTF--
+Warning: Creating default object from empty value in %s%eissue_250_001.php on line 9
+object(TestObject)#%d (3) {
   ["data":"TestObject":private]=>
-  object(V8Object)#3 (0) {
+  object(V8Object)#%d (0) {
   }
   ["meta":"TestObject":private]=>
   array(0) {
   }
   ["a"]=>
-  object(stdClass)#4 (1) {
+  object(stdClass)#%d (1) {
     ["b"]=>
-    object(stdClass)#5 (1) {
+    object(stdClass)#%d (1) {
       ["title"]=>
       string(4) "ouch"
     }
