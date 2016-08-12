@@ -18,6 +18,8 @@
 
 #include <functional>
 #include <algorithm>
+#include <string>
+#include <unordered_map>
 
 #include "php_v8js_macros.h"
 #include "v8js_v8.h"
@@ -62,11 +64,10 @@ int le_v8js_script;
 /* {{{ Extension container */
 struct v8js_jsext {
 	zend_bool auto_enable;
-	HashTable *deps_ht;
 	const char **deps;
 	int deps_count;
-	zend_string *name;
-	zend_string *source;
+	const char *name;
+	const char *source;
 	v8::Extension *extension;
 };
 /* }}} */
@@ -260,26 +261,16 @@ static void v8js_free_ext_strarr(const char **arr, int count) /* {{{ */
 }
 /* }}} */
 
-static void v8js_jsext_free_storage(v8js_jsext *jsext) /* {{{ */
+void v8js_jsext_free_storage(v8js_jsext *jsext) /* {{{ */
 {
-	if (jsext->deps_ht) {
-		zend_hash_destroy(jsext->deps_ht);
-		free(jsext->deps_ht);
-	}
 	if (jsext->deps) {
 		v8js_free_ext_strarr(jsext->deps, jsext->deps_count);
 	}
 	delete jsext->extension;
-	zend_string_release(jsext->name);
-	zend_string_release(jsext->source);
+	free((char*) jsext->name);
+	free((char*) jsext->source);
 
 	free(jsext);
-}
-/* }}} */
-
-static void v8js_jsext_dtor(zval *zv) /* {{{ */
-{
-	v8js_jsext_free_storage(reinterpret_cast<v8js_jsext *>(Z_PTR_P(zv)));
 }
 /* }}} */
 
@@ -893,13 +884,6 @@ static void v8js_persistent_zval_ctor(zval *p) /* {{{ */
 }
 /* }}} */
 
-static void v8js_persistent_zval_dtor(zval *p) /* {{{ */
-{
-	assert(Z_TYPE_P(p) == IS_STRING);
-	free(Z_STR_P(p));
-}
-/* }}} */
-
 static void v8js_script_free(v8js_script *res)
 {
 	efree(res->name);
@@ -921,18 +905,24 @@ static void v8js_script_dtor(zend_resource *rsrc) /* {{{ */
 }
 /* }}} */
 
+static char* zend_string_to_new_cstring(zend_string *string) { /* {{{ */
+	char* s = (char*) malloc(ZSTR_LEN(string) + 1);
+	memcpy(s, ZSTR_VAL(string), ZSTR_LEN(string));
+	s[ZSTR_LEN(string)] = '\0';
+	return s;
+}
+/* }}} */
+
 static int v8js_register_extension(zend_string *name, zend_string *source, zval *deps_arr, zend_bool auto_enable TSRMLS_DC) /* {{{ */
 {
 	v8js_jsext *jsext = NULL;
+	std::string key(ZSTR_VAL(name), ZSTR_LEN(name));
 
 #ifdef ZTS
 	v8js_process_globals.lock.lock();
 #endif
 
-	if (!v8js_process_globals.extensions) {
-		v8js_process_globals.extensions = (HashTable *) malloc(sizeof(HashTable));
-		zend_hash_init(v8js_process_globals.extensions, 1, NULL, v8js_jsext_dtor, 1);
-	} else if (zend_hash_exists(v8js_process_globals.extensions, name)) {
+	if (v8js_process_globals.extensions.find(key) != v8js_process_globals.extensions.end()) {
 #ifdef ZTS
 		v8js_process_globals.lock.unlock();
 #endif
@@ -955,24 +945,15 @@ static int v8js_register_extension(zend_string *name, zend_string *source, zval 
 	}
 
 	jsext->auto_enable = auto_enable;
-	jsext->name = zend_string_dup(name, 1);
-	jsext->source = zend_string_dup(source, 1);
+	// TODO helper method
+	// Allocate character pointers, which need to outlive the allocated v8::Extension
+	jsext->name = zend_string_to_new_cstring(name);	
+	jsext->source = zend_string_to_new_cstring(source);
 
-	if (jsext->deps) {
-		jsext->deps_ht = (HashTable *) malloc(sizeof(HashTable));
-		zend_hash_init(jsext->deps_ht, jsext->deps_count, NULL, v8js_persistent_zval_dtor, 1);
-		zend_hash_copy(jsext->deps_ht, Z_ARRVAL_P(deps_arr), v8js_persistent_zval_ctor);
-	}
+	// TODO: custom comparators
+	jsext->extension = new v8::Extension(jsext->name, jsext->source, jsext->deps_count, jsext->deps);
 
-	jsext->extension = new v8::Extension(ZSTR_VAL(jsext->name), ZSTR_VAL(jsext->source), jsext->deps_count, jsext->deps);
-
-	if (!zend_hash_add_ptr(v8js_process_globals.extensions, jsext->name, jsext)) {
-		v8js_jsext_free_storage(jsext);
-#ifdef ZTS
-		v8js_process_globals.lock.unlock();
-#endif
-		return FAILURE;
-	}
+	v8js_process_globals.extensions.insert(std::pair<std::string, v8js_jsext*>(key, jsext));
 
 #ifdef ZTS
 	v8js_process_globals.lock.unlock();
@@ -1017,9 +998,6 @@ static PHP_METHOD(V8Js, registerExtension)
 static PHP_METHOD(V8Js, getExtensions)
 {
 	v8js_jsext *jsext;
-	ulong index;
-	zend_string *key;
-	zval *val, ext;
 
 	if (zend_parse_parameters_none() == FAILURE) {
 		return;
@@ -1031,21 +1009,25 @@ static PHP_METHOD(V8Js, getExtensions)
 	v8js_process_globals.lock.lock();
 #endif
 
-	if (v8js_process_globals.extensions) {
-		ZEND_HASH_FOREACH_KEY_VAL(v8js_process_globals.extensions, index, key, val) {
-			if (key) {
-				jsext = (v8js_jsext *) Z_PTR_P(val);
-				array_init(&ext);
-				add_assoc_bool_ex(&ext, ZEND_STRL("auto_enable"), jsext->auto_enable);
-				if (jsext->deps_ht) {
-					zval deps_arr;
-					array_init(&deps_arr);
-					zend_hash_copy(Z_ARRVAL_P(&deps_arr), jsext->deps_ht, (copy_ctor_func_t) zval_add_ref);
-					add_assoc_zval_ex(&ext, ZEND_STRL("deps"), &deps_arr);
+	if (v8js_process_globals.extensions.size() > 0) {
+		for (auto &it: v8js_process_globals.extensions) {
+			zval ext;
+			jsext = it.second;
+			array_init(&ext);
+			add_assoc_bool_ex(&ext, ZEND_STRL("auto_enable"), jsext->auto_enable);
+			if (jsext->deps) {
+				zval deps_arr;
+				int i;
+				array_init_size(&deps_arr, jsext->deps_count);
+				for (i = 0; i < jsext->deps_count; i++) {
+					zval z;
+					ZVAL_STRING(&z, jsext->deps[i]);
+					zend_hash_next_index_insert(Z_ARRVAL_P(&deps_arr), &z);
 				}
-				add_assoc_zval_ex(return_value, ZSTR_VAL(key), ZSTR_LEN(key), &ext);
+				add_assoc_zval_ex(&ext, ZEND_STRL("deps"), &deps_arr);
 			}
-		} ZEND_HASH_FOREACH_END();
+			add_assoc_zval_ex(return_value, it.first.data(), it.first.size(), &ext);
+		}
 	}
 
 #ifdef ZTS

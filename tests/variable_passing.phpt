@@ -44,6 +44,7 @@ $a->executeString($JS, "test.js");
 
 // Check that variable has not been modified
 var_dump($a->somevar);
+$a = NULL;
 ?>
 ===EOF===
 --EXPECT--

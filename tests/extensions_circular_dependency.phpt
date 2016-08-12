@@ -8,7 +8,9 @@ Test V8::registerExtension() : Circular dependencies
 V8Js::registerExtension('a', 'print("A");', array('b'));
 V8Js::registerExtension('b', 'print("B");', array('a'));
 
-var_dump(V8JS::getExtensions());
+$extensions = V8JS::getExtensions();
+ksort($extensions);
+var_dump($extensions);
 
 $a = new V8Js('myobj', array(), array('a'));
 ?>
@@ -36,10 +38,10 @@ array(2) {
   }
 }
 
-Warning: Fatal V8 error in v8::Context::New(): Circular extension dependency in %s on line 8
+Warning: Fatal V8 error in v8::Context::New(): Circular extension dependency in %s on line %d
 
-Fatal error: Uncaught V8JsException: Failed to create V8 context. Check that registered extensions do not have errors. in %s:8
+Fatal error: Uncaught V8JsException: Failed to create V8 context. Check that registered extensions do not have errors. in %s:%d
 Stack trace:
-#0 %s(8): V8Js->__construct('myobj', Array, Array)
+#0 %s(%d): V8Js->__construct('myobj', Array, Array)
 #1 {main}
-  thrown in %s on line 8
+  thrown in %s on line %d
