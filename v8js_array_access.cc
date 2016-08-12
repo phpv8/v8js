@@ -33,9 +33,11 @@ static zval v8js_array_access_dispatch(zend_object *object, const char *method_n
 	zval php_value;
 
 	fci.size = sizeof(fci);
+#if (PHP_MAJOR_VERSION == 7 && PHP_MINOR_VERSION == 0)
 	fci.function_table = &object->ce->function_table;
-	ZVAL_STRING(&fci.function_name, method_name);
 	fci.symbol_table = NULL;
+#endif
+	ZVAL_STRING(&fci.function_name, method_name);
 	fci.retval = &php_value;
 
 	zval params[2];
