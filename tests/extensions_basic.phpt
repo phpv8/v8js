@@ -8,7 +8,9 @@ Test V8::registerExtension() : Basic extension registering
 V8Js::registerExtension('a', 'print("world!\n");', array('b'));
 V8Js::registerExtension('b', 'print("Hello ");');
 
-var_dump(V8JS::getExtensions());
+$extensions = V8JS::getExtensions();
+ksort($extensions);
+var_dump($extensions);
 
 $a = new V8Js('myobj', array(), array('a'));
 ?>
