@@ -32,10 +32,10 @@ Compile latest V8
 
 ```
 # Install `build-essential` if you haven't already:
-sudo apt-get install build-essential
+sudo apt install build-essential
 
-# Install `libicu-dev` if you haven't already:
-sudo apt-get install libicu-dev
+# Install `chrpath` for fixing libv8.so's RUNPATH header, if you haven't already:
+sudo apt install chrpath
 
 cd /tmp
 
@@ -51,9 +51,6 @@ cd v8
 git checkout 4.9.385.28
 gclient sync
 
-# use libicu of operating system
-export GYP_DEFINES="use_system_icu=1"
-
 # Build (with internal snapshots)
 export GYPFLAGS="-Dv8_use_external_startup_data=0"
 
@@ -66,6 +63,9 @@ make native library=shared snapshot=on -j8
 sudo mkdir -p /usr/lib /usr/include
 sudo cp out/native/lib.target/lib*.so /usr/lib/
 sudo cp -R include/* /usr/include
+
+# Fix libv8.so's RUNPATH header
+sudo chrpath -r '$ORIGIN' /usr/lib/libv8.so
 
 # Install libv8_libplatform.a (V8 >= 5.2.51)
 echo -e "create /usr/lib/libv8_libplatform.a\naddlib out/native/obj.target/src/libv8_libplatform.a\nsave\nend" | sudo ar -M
