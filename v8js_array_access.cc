@@ -70,7 +70,7 @@ void v8js_array_access_getter(uint32_t index, const v8::PropertyCallbackInfo<v8:
 
 	zval php_value = v8js_array_access_dispatch(object, "offsetGet", 1, index, zvalue TSRMLS_CC);
 	v8::Local<v8::Value> ret_value = zval_to_v8js(&php_value, isolate TSRMLS_CC);
-	zval_dtor(&php_value);
+	zval_ptr_dtor(&php_value);
 
 	info.GetReturnValue().Set(ret_value);
 }
@@ -95,7 +95,7 @@ void v8js_array_access_setter(uint32_t index, v8::Local<v8::Value> value,
 	}
 
 	zval php_value = v8js_array_access_dispatch(object, "offsetSet", 2, index, zvalue TSRMLS_CC);
-	zval_dtor(&php_value);
+	zval_ptr_dtor(&php_value);
 
 	/* simply pass back the value to tell we intercepted the call
 	 * as the offsetSet function returns void. */
@@ -103,7 +103,7 @@ void v8js_array_access_setter(uint32_t index, v8::Local<v8::Value> value,
 
 	/* if PHP wanted to hold on to this value, zend_call_function would
 	 * have bumped the refcount. */
-	zval_dtor(&zvalue);
+	zval_ptr_dtor(&zvalue);
 }
 /* }}} */
 
@@ -117,7 +117,7 @@ static int v8js_array_access_get_count_result(zend_object *object TSRMLS_DC) /* 
 
 	if(Z_TYPE(php_value) != IS_LONG) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Non-numeric return value from count() method");
-		zval_dtor(&php_value);
+		zval_ptr_dtor(&php_value);
 		return 0;
 	}
 
@@ -135,7 +135,7 @@ static bool v8js_array_access_isset_p(zend_object *object, int index TSRMLS_DC) 
 
 	if(Z_TYPE(php_value) != IS_TRUE && Z_TYPE(php_value) != IS_FALSE) {
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Non-boolean return value from offsetExists() method");
-		zval_dtor(&php_value);
+		zval_ptr_dtor(&php_value);
 		return false;
 	}
 

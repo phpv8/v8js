@@ -88,9 +88,9 @@ static void v8js_free_storage(zend_object *object TSRMLS_DC) /* {{{ */
 
 	zend_object_std_dtor(&c->std TSRMLS_CC);
 
-	zval_dtor(&c->pending_exception);
-	zval_dtor(&c->module_normaliser);
-	zval_dtor(&c->module_loader);
+	zval_ptr_dtor(&c->pending_exception);
+	zval_ptr_dtor(&c->module_normaliser);
+	zval_ptr_dtor(&c->module_loader);
 
 	/* Delete PHP global object from JavaScript */
 	if (!c->context.IsEmpty()) {
@@ -150,7 +150,7 @@ static void v8js_free_storage(zend_object *object TSRMLS_DC) /* {{{ */
 		zend_object *object = it->first;
 		zval value;
 		ZVAL_OBJ(&value, object);
-		zval_dtor(&value);
+		zval_ptr_dtor(&value);
 		c->isolate->AdjustAmountOfExternalAllocatedMemory(-c->average_object_size);
 		it->second.Reset();
 	}
@@ -200,7 +200,7 @@ static void v8js_free_storage(zend_object *object TSRMLS_DC) /* {{{ */
 	c->modules_stack.~vector();
 	c->modules_base.~vector();
 
-	zval_dtor(&c->zval_snapshot_blob);
+	zval_ptr_dtor(&c->zval_snapshot_blob);
 }
 /* }}} */
 
@@ -769,7 +769,7 @@ static PHP_METHOD(V8Js, clearPendingException)
 	c = Z_V8JS_CTX_OBJ_P(getThis());
 
 	if (Z_TYPE(c->pending_exception) == IS_OBJECT) {
-		zval_dtor(&c->pending_exception);
+		zval_ptr_dtor(&c->pending_exception);
 		ZVAL_NULL(&c->pending_exception);
 	}
 }

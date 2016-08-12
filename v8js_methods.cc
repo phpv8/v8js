@@ -259,8 +259,8 @@ V8JS_METHOD(require)
 		}
 		zend_end_try();
 
-		zval_dtor(&params[0]);
-		zval_dtor(&params[1]);
+		zval_ptr_dtor(&params[0]);
+		zval_ptr_dtor(&params[1]);
 
 		if(call_result == FAILURE) {
 			return;
@@ -275,7 +275,7 @@ V8JS_METHOD(require)
 		}
 
 		if (Z_TYPE(normaliser_result) != IS_ARRAY) {
-			zval_dtor(&normaliser_result);
+			zval_ptr_dtor(&normaliser_result);
 			info.GetReturnValue().Set(isolate->ThrowException(V8JS_SYM("Module normaliser didn't return an array")));
 			return;
 		}
@@ -284,7 +284,7 @@ V8JS_METHOD(require)
 		int num_elements = zend_hash_num_elements(ht);
 
 		if(num_elements != 2) {
-			zval_dtor(&normaliser_result);
+			zval_ptr_dtor(&normaliser_result);
 			info.GetReturnValue().Set(isolate->ThrowException(V8JS_SYM("Module normaliser expected to return array of 2 strings")));
 			return;
 		}
@@ -309,7 +309,7 @@ V8JS_METHOD(require)
 		}
 		ZEND_HASH_FOREACH_END();
 
-		zval_dtor(&normaliser_result);
+		zval_ptr_dtor(&normaliser_result);
 	}
 
 	char *normalised_module_id = (char *)emalloc(strlen(normalised_path)+1+strlen(module_name)+1);
@@ -377,7 +377,7 @@ V8JS_METHOD(require)
 		info.GetReturnValue().Set(isolate->ThrowException(V8JS_SYM("Module loader callback failed")));
 	}
 
-	zval_dtor(&params[0]);
+	zval_ptr_dtor(&params[0]);
 
 	if (call_result == FAILURE) {
 		efree(normalised_module_id);
