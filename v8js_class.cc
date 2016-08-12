@@ -638,7 +638,6 @@ static void v8js_execute_script(zval *this_ptr, v8js_script *res, long flags, lo
 static PHP_METHOD(V8Js, executeString)
 {
 	zend_string *str = NULL, *identifier = NULL;
-	int str_len = 0, identifier_len = 0;
 	long flags = V8JS_FLAG_NONE, time_limit = 0, memory_limit = 0;
 	v8js_script *res = NULL;
 
@@ -671,7 +670,6 @@ static PHP_METHOD(V8Js, executeString)
 static PHP_METHOD(V8Js, compileString)
 {
 	zend_string *str = NULL, *identifier = NULL;
-	int str_len = 0, identifier_len = 0;
 	v8js_script *res = NULL;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "S|S", &str, &identifier) == FAILURE) {
@@ -686,7 +684,6 @@ static PHP_METHOD(V8Js, compileString)
 		ctx = Z_V8JS_CTX_OBJ_P(getThis());
 		ctx->script_objects.push_back(res);
 	}
-	return;
 }
 
 /* }}} */
@@ -716,7 +713,6 @@ static PHP_METHOD(V8Js, executeScript)
 static PHP_METHOD(V8Js, checkString)
 {
 	zend_string *str = NULL;
-	int str_len = 0;
 	zend_string *identifier = zend_string_init("V8Js::checkString()", 19, 0);
 
 	v8js_script *res = NULL;

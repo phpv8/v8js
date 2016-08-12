@@ -510,8 +510,6 @@ static void v8js_v8generator_next(v8js_v8generator *g) /* {{{ */
 	 * some memory on bailout. */
 	{
 		std::function< v8::Local<v8::Value>(v8::Isolate *) > v8_call = [g](v8::Isolate *isolate) {
-			int i = 0;
-
 			v8::Local<v8::String> method_name = V8JS_STR("next");
 			v8::Local<v8::Object> v8obj = v8::Local<v8::Value>::New(isolate, g->v8obj.v8obj)->ToObject();
 			v8::Local<v8::Function> cb = v8::Local<v8::Function>::Cast(v8obj->Get(method_name));;
