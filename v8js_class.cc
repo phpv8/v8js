@@ -270,6 +270,7 @@ static void v8js_jsext_free_storage(v8js_jsext *jsext) /* {{{ */
 		v8js_free_ext_strarr(jsext->deps, jsext->deps_count);
 	}
 	delete jsext->extension;
+	// Free the persisted non-interned strings we allocated.
 	zend_string_release(jsext->name);
 	zend_string_release(jsext->source);
 
@@ -955,8 +956,10 @@ static int v8js_register_extension(zend_string *name, zend_string *source, zval 
 	}
 
 	jsext->auto_enable = auto_enable;
-	jsext->name = zend_string_dup(name, 1);
-	jsext->source = zend_string_dup(source, 1);
+	// Allocate a persistent string which will survive until module shutdown on both ZTS(Persistent) and NTS(Not interned, those would be cleaned up)
+	// (zend_string_dup would return the original interned string, if interned, so we don't use that)
+	jsext->name = zend_string_init(ZSTR_VAL(name), ZSTR_LEN(name), 1);
+	jsext->source = zend_string_init(ZSTR_VAL(source), ZSTR_LEN(source), 1);
 
 	if (jsext->deps) {
 		jsext->deps_ht = (HashTable *) malloc(sizeof(HashTable));
