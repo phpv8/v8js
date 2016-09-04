@@ -132,17 +132,8 @@ int main ()
 
   PHP_ADD_INCLUDE($V8_DIR)
 
-  case $host_os in
-	darwin* )
-	  static_link_extra="libv8_libplatform.a libv8_libbase.a"
-	  ;;
-	* )
-	  static_link_extra="libv8_libplatform.a"
-	  ;;
-  esac
-
   LDFLAGS_libplatform=""
-  for static_link_extra_file in $static_link_extra; do
+  for static_link_extra_file in libv8_libplatform.a libv8_libbase.a; do
 	AC_MSG_CHECKING([for $static_link_extra_file])
 
 	if test -r $V8_DIR/lib64/$static_link_extra_file; then
@@ -157,10 +148,9 @@ int main ()
 
 	if test -z "$static_link_dir"; then
 	  AC_MSG_RESULT([not found])
-	  AC_MSG_ERROR([Please provide $static_link_extra_file next to the libv8.so, see README.md for details])
+    else
+      LDFLAGS_libplatform="$LDFLAGS_libplatform $static_link_dir/$static_link_extra_file"
 	fi
-
-	LDFLAGS_libplatform="$LDFLAGS_libplatform $static_link_dir/$static_link_extra_file"
   done
 
   # modify flags for (possibly) succeeding V8 startup check
