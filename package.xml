@@ -26,7 +26,7 @@
   <release>stable</release>
   <api>stable</api>
  </stability>
- <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+ <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
  <notes>
 - fix reference counting issue (and hence use-after-free memory error)
 - fix another use-after-free issue with registerExtension
@@ -309,7 +309,7 @@
     <release>beta</release>
     <api>beta</api>
    </stability>
-   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
    <date>2013-09-28</date>
    <notes>
 - Added time/memory limit support
@@ -326,7 +326,7 @@
     <api>beta</api>
    </stability>
    <date>2015-03-13</date>
-   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
    <notes>
 - Fix package
    </notes>
@@ -341,7 +341,7 @@
     <api>beta</api>
    </stability>
    <date>2015-03-13</date>
-   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
    <notes>
 - adapt to latest v8 API (v8 versions from 3.24.6 up to latest 4.3 branch supported now)
 - v8 debugging support
@@ -364,7 +364,7 @@
     <api>beta</api>
    </stability>
    <date>2015-07-26</date>
-   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
    <notes>
 - adapt to latest v8 API (v8 versions from 3.24.6 up to latest 4.6 branch supported now)
 - fixed FLAG_FORCE_ARRAY behaviour regarding property assignments
@@ -382,7 +382,7 @@
     <api>beta</api>
    </stability>
    <date>2015-08-26</date>
-   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
    <notes>
 - Fix CommonJS module caching
 - Fix use-after-free issue on CommonJS module reuse
@@ -401,7 +401,7 @@
     <api>beta</api>
    </stability>
    <date>2015-08-27</date>
-   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
    <notes>
 - Fix FLAG_FORCE_ARRAY affecting V8Function objects
 - Fix memory leak with repeated calls of methods on exported PHP objects
@@ -417,7 +417,7 @@
     <api>beta</api>
    </stability>
    <date>2015-09-01</date>
-   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
    <notes>
 - Fix memory leak with repeated Array exports from PHP to JS
    </notes>
@@ -432,7 +432,7 @@
     <api>beta</api>
    </stability>
    <date>2015-09-23</date>
-   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
    <notes>
 - Stop JS execution on PHP exceptions (instead of continuing silently)
 - Allow propagation of PHP exceptions to JS context (disabled by default)
@@ -449,7 +449,7 @@
     <api>beta</api>
    </stability>
    <date>2015-09-26</date>
-   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
    <notes>
 - Fix reference counting issue on PHP-&gt;JS-&gt;PHP exception propagation
    </notes>
@@ -464,7 +464,7 @@
     <api>stable</api>
    </stability>
    <date>2015-10-11</date>
-   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
    <notes>
 - Fix multi-threading with pthreads extension
 - Remove v8 debug agent support (which is unsupported by V8 since 3.28.4)
@@ -480,7 +480,7 @@
     <api>stable</api>
    </stability>
    <date>2015-12-04</date>
-   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
    <notes>
 First PHP 7 release
    </notes>
@@ -495,7 +495,7 @@ First PHP 7 release
     <api>stable</api>
    </stability>
    <date>2015-12-07</date>
-   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
    <notes>
 - Improve -Wno-c++11-narrowing/-Wno-narrowing flag detection (clang/gcc5 support)
 - Added ability to set properties on V8Function
@@ -516,7 +516,7 @@ First PHP 7 release
     <api>stable</api>
    </stability>
    <date>2016-01-08</date>
-   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
    <notes>
 - Fix PHP.var_dump output on regexp objects (for consistency over all V8 versions)
 - Fix &quot;this&quot; on V8Object method invocations
@@ -532,7 +532,7 @@ First PHP 7 release
     <api>stable</api>
    </stability>
    <date>2016-01-08</date>
-   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
    <notes>
 - fix build on Windows with Visual Studio 2015
 - use libv8_platform on Windows
@@ -561,7 +561,7 @@ This release also merges in new features from V8Js 0.4.0, namely
     <api>stable</api>
    </stability>
    <date>2016-03-05</date>
-   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
    <notes>
 - Export public methods on classes derived from \V8Js to V8
 - Support V8 compiled with external snapshots
@@ -580,7 +580,7 @@ This release also merges in new features from V8Js 0.4.0, namely
     <api>stable</api>
    </stability>
    <date>2016-03-05</date>
-   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
    <notes>
 - allow to pass generators from PHP to JS and vice versa
 
@@ -602,7 +602,7 @@ Merge improvements from V8Js for PHP 5.x (version 0.5.0) to PHP 7.0 branch:
     <api>stable</api>
    </stability>
    <date>2016-03-08</date>
-   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
    <notes>
 - Allow to adjust the considered &quot;amount of external memory&quot; by objects exported to V8
    </notes>
@@ -617,7 +617,7 @@ Merge improvements from V8Js for PHP 5.x (version 0.5.0) to PHP 7.0 branch:
     <api>stable</api>
    </stability>
    <date>2016-03-24</date>
-   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
    <notes>
 - Fix configuration on MacOS platform
    </notes>
@@ -632,7 +632,7 @@ Merge improvements from V8Js for PHP 5.x (version 0.5.0) to PHP 7.0 branch:
     <api>stable</api>
    </stability>
    <date>2016-03-25</date>
-   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
    <notes>
 - Pass back V8Object instances, don&apos;t re-wrap
 - Retain object identity on &apos;return $this&apos;
@@ -649,7 +649,7 @@ Merge improvements from V8Js for PHP 5.x (version 0.5.0) to PHP 7.0 branch:
     <api>stable</api>
    </stability>
    <date>2016-05-22</date>
-   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
    <notes>
 Bug Fixes
 - Send LowMemoryNotification signals to V8 before imposing memory limit
@@ -671,7 +671,7 @@ Code Cleanup
     <api>stable</api>
    </stability>
    <date>2016-05-22</date>
-   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
    <notes>
 This release merges changes from V8Js for PHP 5.x (version 0.6.3) to PHP 7.0 branch.
 
@@ -701,7 +701,7 @@ Code Cleanup
     <api>stable</api>
    </stability>
    <date>2016-07-02</date>
-   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
    <notes>
 Fix build against V8 5.3.337 (and higher)
    </notes>
@@ -716,7 +716,7 @@ Fix build against V8 5.3.337 (and higher)
     <api>stable</api>
    </stability>
    <date>2016-07-02</date>
-   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
    <notes>
 Fix build against V8 5.3.337 (and higher)
    </notes>
@@ -731,7 +731,7 @@ Fix build against V8 5.3.337 (and higher)
     <api>stable</api>
    </stability>
    <date>2016-09-04</date>
-   <license uri="http://www.php.net/license">The MIT License (MIT)</license>
+   <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
    <notes>
 - fix reference counting issue (and hence use-after-free memory error)
 - fix another use-after-free issue with registerExtension
