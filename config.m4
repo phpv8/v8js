@@ -135,6 +135,7 @@ int main ()
   LDFLAGS_libplatform=""
   for static_link_extra_file in libv8_libplatform.a libv8_libbase.a; do
 	AC_MSG_CHECKING([for $static_link_extra_file])
+	static_link_dir=""
 
 	if test -r $V8_DIR/lib64/$static_link_extra_file; then
 	  static_link_dir=$V8_DIR/lib64
