@@ -137,14 +137,9 @@ int main ()
 	AC_MSG_CHECKING([for $static_link_extra_file])
 	static_link_dir=""
 
-	if test -r $V8_DIR/lib64/$static_link_extra_file; then
-	  static_link_dir=$V8_DIR/lib64
-	  AC_MSG_RESULT(found in $V8_DIR/lib64)
-	fi
-
-	if test -r $V8_DIR/lib/$static_link_extra_file; then
-	  static_link_dir=$V8_DIR/lib
-	  AC_MSG_RESULT(found in $V8_DIR/lib)
+	if test -r $V8_DIR/$PHP_LIBDIR/$static_link_extra_file; then
+	  static_link_dir=$V8_DIR/$PHP_LIBDIR
+	  AC_MSG_RESULT(found in $V8_DIR/$PHP_LIBDIR)
 	fi
 
 	if test -z "$static_link_dir"; then
@@ -196,7 +191,7 @@ public:
 	  AC_MSG_RESULT([yes])
 	  AC_DEFINE([PHP_V8_USE_EXTERNAL_STARTUP_DATA], [1], [Whether V8 requires (and can be provided with custom versions of) external startup data])
 
-	  SEARCH_PATH="$V8_DIR/lib $V8_DIR/share/v8"
+	  SEARCH_PATH="$V8_DIR/$PHP_LIBDIR $V8_DIR/share/v8"
 
 	  AC_MSG_CHECKING([for natives_blob.bin])
 	  SEARCH_FOR="natives_blob.bin"
