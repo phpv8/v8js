@@ -57,6 +57,7 @@ export GYPFLAGS="-Dv8_use_external_startup_data=0"
 # Force gyp to use system-wide ld.gold
 export GYPFLAGS="${GYPFLAGS} -Dlinux_use_bundled_gold=0"
 
+# Compile V8 (using up to 8 CPU cores, requires a lot of RAM, adapt as needed)
 make native library=shared snapshot=on -j8
 
 # Install to /usr
