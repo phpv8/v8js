@@ -55,6 +55,8 @@ with the PHP binaries from http://windows.php.net/download:
 * [V8Js for Windows, PHP7.0, x86, thread safe (TS)](https://s3.amazonaws.com/win-phpv8/v8js_vc14_php7_ts.zip)
 * [V8Js for Windows, PHP7.0, x86, non thread safe (NTS)](https://s3.amazonaws.com/win-phpv8/v8js_vc14_php7_nts.zip)
 
+64-bit binaries for Windows [are made available by Jan-E here](https://www.apachelounge.com/viewtopic.php?t=6359).
+
 
 Compiling latest version
 ------------------------
