@@ -72,7 +72,7 @@ with (compared to gcc).
 
 ```
 cd /tmp
-git clone https://github.com/preillyme/v8js.git
+git clone https://github.com/phpv8/v8js.git
 cd v8js
 phpize
 ./configure CXXFLAGS="-Wno-c++11-narrowing"

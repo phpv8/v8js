@@ -223,7 +223,7 @@ static void v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value>& i
 		}
 
 		// Increase the reference count of this value because we're storing it internally for use later
-		// See https://github.com/preillyme/v8js/issues/6
+		// See https://github.com/phpv8/v8js/issues/6
 		Z_ADDREF_P(&value);
 	} else {
 		// Object created from JavaScript context.  Need to create PHP object first.

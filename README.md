@@ -3,15 +3,15 @@ V8Js
 
 [![Build Status](https://travis-ci.org/phpv8/v8js.svg?branch=php7)](https://travis-ci.org/phpv8/v8js)
 [![Windows Build Status](https://ci.appveyor.com/api/projects/status/gr8fkq8c08s06h31/branch/php7?svg=true)](https://ci.appveyor.com/project/stesie/v8js)
-[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/preillyme/v8js/master/LICENSE)
-[![Join the chat at https://gitter.im/preillyme/v8js](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/preillyme/v8js?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/phpv8/v8js/master/LICENSE)
+[![Join the chat at https://gitter.im/phpv8/v8js](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/phpv8/v8js?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 V8Js is a PHP extension for Google's V8 Javascript engine.
 
 The extension allows you to execute Javascript code in a secure sandbox from PHP. The executed code can be restricted using a time limit and/or memory limit. This provides the possibility to execute untrusted code with confidence.
 
 **This is the PHP 7 branch of V8Js**, it requires PHP 7 and does *not* compile against PHP 5.x versions.
-If you're running PHP 5.x, see the [master branch](https://github.com/preillyme/v8js/tree/master)
+If you're running PHP 5.x, see the [master branch](https://github.com/phpv8/v8js/tree/master)
 of this repository.
 
 
