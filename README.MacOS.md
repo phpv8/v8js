@@ -28,7 +28,7 @@ cd v8
 git checkout 3.32.6
 gclient sync
 
-# Build
+# Compile V8 (using up to 8 CPU cores, requires a lot of RAM, adapt as needed)
 make native library=shared -j8
 
 # Install to /usr
