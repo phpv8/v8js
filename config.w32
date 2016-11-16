@@ -7,11 +7,7 @@ function v8js_zeroPad(num, places) {
 }
 
 if (PHP_V8JS != "no") {
-	if (CHECK_LIB("v8_libplatform.lib", "v8js") &&
-			CHECK_LIB("v8_libbase.lib", "v8js") &&
-			CHECK_LIB("winmm.lib", "v8js") &&
-
-			CHECK_LIB("v8.lib", "v8js") &&
+	if (CHECK_LIB("winmm.lib", "v8js") &&
 			CHECK_HEADER_ADD_INCLUDE("v8.h", "CFLAGS_V8JS")) {
 
 		ADD_FLAG("CFLAGS_V8JS", "/EHcs");
@@ -45,6 +41,39 @@ if (PHP_V8JS != "no") {
 
 		var v8api = v8major + v8js_zeroPad(v8minor, 3) + v8js_zeroPad(v8build, 3);
 		var v8ver = v8major + "." + v8minor + "." + v8build + "." + v8patch;
+
+		if (v8api >= 5003000) {
+			// For SymLoadModule64 e.a.
+			// #include <dbghelp.h> in src\base\win32-headers.h
+			// Adds dependency on dbghelp.dll
+			CHECK_LIB("dbghelp.lib", "v8js");
+		}
+		if (v8api >= 5004000) {
+			// For PathRemoveFileSpecW
+			/*
+			v8_libbase.lib(stack_trace_win.obj) :
+			error LNK2019: unresolved external symbol
+			__imp_PathRemoveFileSpecW referenced in function "bool __cdecl
+			v8::base::debug::`anonymous namespace'::InitializeSymbols(void)"
+			(?InitializeSymbols@?A0x38ef2142@debug@base@v8@@YA_NXZ)
+			*/
+			CHECK_LIB("Shlwapi.lib", "v8js");
+		}
+		if (v8api >= 5002000) {
+			CHECK_LIB("v8.dll.lib", "v8js");
+			// created by 'cd obj\v8_libplatform && lib /out:v8_libplatform.lib *.obj'
+			CHECK_LIB("v8_libplatform.lib", "v8js");
+			// created by 'cd obj\v8_libbase && lib /out:v8_libbase.lib *.obj'
+			CHECK_LIB("v8_libbase.lib", "v8js");
+		} else if (v8api >= 5006000) {
+			CHECK_LIB("v8.dll.lib", "v8js");
+			CHECK_LIB("v8_libplatform.dll.lib", "v8js");
+			CHECK_LIB("v8_libbase.dll.lib", "v8js");
+		} else {
+			CHECK_LIB("v8.lib", "v8js");
+			CHECK_LIB("v8_libplatform.lib", "v8js");
+			CHECK_LIB("v8_libbase.lib", "v8js");
+		}
 
 		AC_DEFINE("PHP_V8_API_VERSION", v8api, "", false);
 		AC_DEFINE("PHP_V8_VERSION", v8ver, "", true);
