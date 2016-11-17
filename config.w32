@@ -42,11 +42,7 @@ if (PHP_V8JS != "no") {
 		var v8api = v8major + v8js_zeroPad(v8minor, 3) + v8js_zeroPad(v8build, 3);
 		var v8ver = v8major + "." + v8minor + "." + v8build + "." + v8patch;
 
-		if (v8api >= 5006000) {
-			CHECK_LIB("v8.dll.lib", "v8js");
-			CHECK_LIB("v8_libplatform.dll.lib", "v8js");
-			CHECK_LIB("v8_libbase.dll.lib", "v8js");
-		} else if (v8api >= 5002000) {
+		if (v8api >= 5002000) {
 			CHECK_LIB("v8.dll.lib", "v8js");
 			// created by 'cd obj\v8_libplatform && lib /out:v8_libplatform.lib *.obj'
 			CHECK_LIB("v8_libplatform.lib", "v8js");
