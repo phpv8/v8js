@@ -4,6 +4,7 @@ dist: trusty
 
 php:
   - 7.0
+  - 7.1
 
 env:
   - V8VER=5.2
