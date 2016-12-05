@@ -81,21 +81,43 @@ if test "$PHP_V8JS" != "no"; then
   old_LDFLAGS=$LDFLAGS
   old_CPPFLAGS=$CPPFLAGS
 
-  case $host_os in
-    darwin* )
-      # MacOS does not support --rpath
-      LDFLAGS="-L$V8_DIR/$PHP_LIBDIR"
-      ;;
-    * )
-      LDFLAGS="-Wl,--rpath=$V8_DIR/$PHP_LIBDIR -L$V8_DIR/$PHP_LIBDIR"
-      ;;
-  esac
-
-  LIBS=-lv8
-  CPPFLAGS="-I$V8_DIR/include -std=$ac_cv_v8_cstd"
   AC_LANG_SAVE
   AC_LANG_CPLUSPLUS
 
+  CPPFLAGS="$CPPFLAGS -I$V8_DIR/include -std=$ac_cv_v8_cstd"
+  LDFLAGS="$LDFLAGS -L$V8_DIR/$PHP_LIBDIR"
+
+  AC_DEFUN([V8_CHECK_LINK], [
+	AC_MSG_CHECKING([for libv8_libplatform])
+    save_LIBS="$LIBS"
+	LIBS="$LIBS $1 -lv8_libplatform -lv8"
+	AC_LINK_IFELSE([AC_LANG_PROGRAM([
+	  namespace v8 {
+		namespace platform {
+		  void* CreateDefaultPlatform(int thread_pool_size = 0);
+		}
+	  }
+	], [ v8::platform::CreateDefaultPlatform(); ])], [
+	  dnl libv8_libplatform.so found
+	  AC_MSG_RESULT(found)
+	  V8JS_SHARED_LIBADD="$1 -lv8_libplatform $V8JS_SHARED_LIBADD"
+      $2
+	], [ $3 ])
+    LIBS="$save_LIBS"
+  ])
+
+  V8_CHECK_LINK([], [], [
+    V8_CHECK_LINK([-lv8_libbase], [], [ AC_MSG_ERROR([could not find libv8_libplatform library]) ])
+  ])
+
+
+  dnl
+  dnl Check for V8 version
+  dnl (basic support for library linking assumed to be achieved above)
+  dnl
+
+
+  LIBS="$LIBS $V8JS_SHARED_LIBADD"
   AC_CACHE_CHECK(for V8 version, ac_cv_v8_version, [
 AC_TRY_RUN([#include <v8.h>
 #include <iostream>
@@ -132,26 +154,8 @@ int main ()
 
   PHP_ADD_INCLUDE($V8_DIR)
 
-  LDFLAGS_libplatform=""
-  for static_link_extra_file in libv8_libplatform.a libv8_libbase.a; do
-	AC_MSG_CHECKING([for $static_link_extra_file])
-	static_link_dir=""
-
-	if test -r $V8_DIR/$PHP_LIBDIR/$static_link_extra_file; then
-	  static_link_dir=$V8_DIR/$PHP_LIBDIR
-	  AC_MSG_RESULT(found in $V8_DIR/$PHP_LIBDIR)
-	fi
-
-	if test -z "$static_link_dir"; then
-	  AC_MSG_RESULT([not found])
-    else
-      LDFLAGS_libplatform="$LDFLAGS_libplatform $static_link_dir/$static_link_extra_file"
-	fi
-  done
-
   # modify flags for (possibly) succeeding V8 startup check
   CPPFLAGS="$CPPFLAGS -I$V8_DIR"
-  LIBS="$LIBS $LDFLAGS_libplatform"
 
   dnl building for v8 4.4.10 or later, which requires us to
   dnl provide startup data, if V8 wasn't compiled with snapshot=off.
