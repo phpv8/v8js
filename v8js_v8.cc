@@ -54,7 +54,7 @@ void v8js_v8_init(TSRMLS_D) /* {{{ */
 	}
 #endif
 
-#ifdef PHP_V8_USE_EXTERNAL_STARTUP_DATA
+#if defined(PHP_V8_NATIVES_BLOB_PATH) && defined(PHP_V8_SNAPSHOT_BLOB_PATH)
 	/* V8 doesn't work without startup data, load it. */
 	v8::V8::InitializeExternalStartupData(
 		PHP_V8_NATIVES_BLOB_PATH,
