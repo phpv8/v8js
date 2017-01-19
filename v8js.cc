@@ -186,6 +186,8 @@ static PHP_RSHUTDOWN_FUNCTION(v8js)
 		V8JSG(timer_thread) = NULL;
 	}
 
+	V8JSG(fatal_error_abort) = 0;
+
 	return SUCCESS;
 }
 /* }}} */
