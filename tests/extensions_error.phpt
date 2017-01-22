@@ -17,10 +17,10 @@ if(strtoupper(substr(PHP_OS, 0, 3)) == 'WIN') {
 
 if(preg_match("/V8 Engine Linked Version => (.*)/", $minfo, $matches)) {
     $version = explode('.', $matches[1]);
-    if($version[0] < 3 || ($version[0] == 3 && $version[1] < 30)) {
+    if($version[0] < 5 || ($version[0] == 5 && $version[1] < 7)) {
 	// old v8 version, has shorter error message and hence doesn't
 	// fit our EXCEPTF below
-	echo "skip";
+	echo "SKIP too old V8 version";
     }
 }
 
@@ -39,8 +39,6 @@ var_dump($v8);
 --EXPECTF--
 -- registerExtension --
 -- creating V8Js object --
-Exception thrown during bootstrapping
-Extension or internal compilation error%sin handlebars at line 1.
 Error installing extension 'handlebars'.
 
 Fatal error: Uncaught V8JsException: Failed to create V8 context. Check that registered extensions do not have errors. in %s%eextensions_error.php:7
