@@ -3,10 +3,12 @@ environment:
   - BUILD_PLATFORM: x86
     ARTIFACT_NAME: v8js_vc14_php7_ts.zip
     OUTDIR: Release_TS
+    V8_ASSETS: win32build.vc14.zip
   - BUILD_PLATFORM: x86
     ARTIFACT_NAME: v8js_vc14_php7_nts.zip
     OUTDIR: Release
     CONFIGURE_EXTRA: --disable-zts
+    V8_ASSETS: win32build.vc14.zip
 
   PHP_VERSION: 7.0.16
   PHP_SDK: c:\projects\php-sdk
@@ -26,8 +28,8 @@ install:
   - cd v8js-ci\vc14\x86
   - md deps
   - cd deps
-  - curl -fSL -o win32build.vc14.zip 'https://s3.amazonaws.com/win-phpv8/win32build.vc14.zip'
-  - 7z.exe x win32build.vc14.zip
+  - curl -fSL -o %V8_ASSETS% 'https://s3.amazonaws.com/win-phpv8/%V8_ASSETS%'
+  - 7z.exe x %V8_ASSETS%
   - cd ..
   - curl -fSL -o 'php-%PHP_VERSION%.tar.gz' 'http://us1.php.net/distributions/php-%PHP_VERSION%.tar.gz'
   - ren php php-%PHP_VERSION%
