@@ -79,7 +79,7 @@ pause
 unittests
 ```
 
-Compiling V8 5.5 (and before)
+Compiling V8 5.1 (and before)
 -----------------------------
 
 The Google v8 project already has excellent step-by-step guide on
