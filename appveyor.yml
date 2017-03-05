@@ -25,15 +25,17 @@ install:
   - call bin\phpsdk_buildtree.bat v8js-ci
   - cd v8js-ci\vc14\x86
   - md deps
-  - curl -fSL -o v8-4.9.385.29-x86-deps.zip 'https://s3.amazonaws.com/win-phpv8/v8-4.9.385.29-x86-deps.zip'
-  - 7z.exe x v8-4.9.385.29-x86-deps.zip
+  - cd deps
+  - curl -fSL -o win32build.vc14.zip 'https://s3.amazonaws.com/win-phpv8/win32build.vc14.zip'
+  - 7z.exe x win32build.vc14.zip
+  - cd ..
   - curl -fSL -o 'php-%PHP_VERSION%.tar.gz' 'http://us1.php.net/distributions/php-%PHP_VERSION%.tar.gz'
   - ren php php-%PHP_VERSION%
   - 7z.exe x php-%PHP_VERSION%.tar.gz -y
   - 7z.exe x php-%PHP_VERSION%.tar -y | find /v "Extracting"
   - cd php-%PHP_VERSION%
   - mkdir %OUTDIR%
-  - move ..\deps\lib\*.dll %OUTDIR%\
+  - move ..\deps\bin\*.dll %OUTDIR%\
 
 build_script:
   - '"%VS140COMNTOOLS%\VsDevCmd" %BUILD_PLATFORM%'
