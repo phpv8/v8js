@@ -16,11 +16,11 @@
   <email>stesie@php.net</email>
   <active>yes</active>
  </lead>
- <date>2016-09-22</date>
- <time>18:13:01</time>
+ <date>2017-03-05</date>
+ <time>20:15:13</time>
  <version>
-  <release>1.3.3</release>
-  <api>1.3.3</api>
+  <release>1.3.4</release>
+  <api>1.3.4</api>
  </version>
  <stability>
   <release>stable</release>
@@ -28,8 +28,9 @@
  </stability>
  <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
  <notes>
-- fix detection of libv8_libbase.a during configuration
-- fix license URIs in package.xml
+- Bugfix: Reset fatal_error_abort on RSHUTDOWN
+- Improve auto configuration (V8 detection)
+- Improve build instructions on Linux &amp; Windows
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -92,7 +93,7 @@
    <file baseinstalldir="/" md5sum="b2853876eaf71577361e443f1be1fc7d" name="tests/execute_flags_property_writing.phpt" role="test" />
    <file baseinstalldir="/" md5sum="c6bb03e78b889428564d43a918c6579d" name="tests/extensions_basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="912551ffccc81a11a1b4837f6ba94a30" name="tests/extensions_circular_dependency.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="427c21c80ade5077341b2381fff696be" name="tests/extensions_error.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="8f3e77d58d14f2f7cad9223f49931d0e" name="tests/extensions_error.phpt" role="test" />
    <file baseinstalldir="/" md5sum="11390b75f900defae70e86fbcb41d4fe" name="tests/fatal_error_ignore_non_fatals.phpt" role="test" />
    <file baseinstalldir="/" md5sum="87417bc1097bba05db7b79bb9a605c06" name="tests/fatal_error_no_uninstall_inner_frame.phpt" role="test" />
    <file baseinstalldir="/" md5sum="9228a7cd3419eb12e84d633fbd89b660" name="tests/fatal_error_recursive.phpt" role="test" />
@@ -198,19 +199,19 @@
    <file baseinstalldir="/" md5sum="ae504a63e5ff800e3aa7d529835d0e8e" name="tests/variable_passing.phpt" role="test" />
    <file baseinstalldir="/" md5sum="1bd7738aeeb5cf80d80561554f59f2ed" name="tests/var_dump.phpt" role="test" />
    <file baseinstalldir="/" md5sum="d3b8abd454e6aefe423723e09625a041" name="appveyor.yml" role="data" />
-   <file baseinstalldir="/" md5sum="7bb9ede901e6d4e96e0045d89f01bbd1" name="config.m4" role="src" />
-   <file baseinstalldir="/" md5sum="6e2812f6a18b57fad7a026656b423836" name="config.w32" role="src" />
+   <file baseinstalldir="/" md5sum="10329ed4188a8ee2239c0df078b5e40d" name="config.m4" role="src" />
+   <file baseinstalldir="/" md5sum="a107827969d61087903aa811030869df" name="config.w32" role="src" />
    <file baseinstalldir="/" md5sum="cea72666538d5b0b80a64ccdbda24919" name="CREDITS" role="doc" />
    <file baseinstalldir="/" md5sum="9f5b5f41204bcde55d9df87d5a970b30" name="LICENSE" role="doc" />
    <file baseinstalldir="/" md5sum="716540317726f97d61cbbdc155102e01" name="Makefile.frag" role="src" />
    <file baseinstalldir="/" md5sum="f26e2b75e481750cd6b84bacb05b2c8b" name="Makefile.travis" role="src" />
    <file baseinstalldir="/" md5sum="1e0ed87dab5e48352f5d007ae915de86" name="php_v8js.h" role="src" />
-   <file baseinstalldir="/" md5sum="e36665e8ac44d6e247a0522edeb64eaa" name="php_v8js_macros.h" role="src" />
-   <file baseinstalldir="/" md5sum="3bb002ba9653319bb949d9c0999f0c50" name="README.Linux.md" role="doc" />
-   <file baseinstalldir="/" md5sum="d686d8e52af92521d4b8b0e86d00c463" name="README.MacOS.md" role="doc" />
-   <file baseinstalldir="/" md5sum="7cdd500ee5f7587fadf84616399887e0" name="README.md" role="doc" />
-   <file baseinstalldir="/" md5sum="e88cfe2d7e76c7be1db283766a10dd51" name="README.Win32.md" role="doc" />
-   <file baseinstalldir="/" md5sum="7d58c0a6c245d9ce9cd2eb7b044f06b9" name="v8js.cc" role="src" />
+   <file baseinstalldir="/" md5sum="cd878a7656666b998d60fa8265ef0bed" name="php_v8js_macros.h" role="src" />
+   <file baseinstalldir="/" md5sum="fdd89ab3167271270cf6c238a1deba6b" name="README.Linux.md" role="doc" />
+   <file baseinstalldir="/" md5sum="dacff4a6abd502e4f13b094a92cc57f3" name="README.MacOS.md" role="doc" />
+   <file baseinstalldir="/" md5sum="88fc861560867ca70f9c74e9e633392e" name="README.md" role="doc" />
+   <file baseinstalldir="/" md5sum="177f5310b344ac06469b1a955ed9126d" name="README.Win32.md" role="doc" />
+   <file baseinstalldir="/" md5sum="37b33f763f10b2d4d948870e15d042b5" name="v8js.cc" role="src" />
    <file baseinstalldir="/" md5sum="7183e92d4812922eb2c3fd8dd886b76a" name="v8js_array_access.cc" role="src" />
    <file baseinstalldir="/" md5sum="0c7f5b2aa1dca106962f737835c7e4fa" name="v8js_array_access.h" role="src" />
    <file baseinstalldir="/" md5sum="ad717b50eb763979060f1ddaf6bbd933" name="v8js_class.cc" role="src" />
@@ -223,11 +224,11 @@
    <file baseinstalldir="/" md5sum="d2b5ef6472cb277c34b13a062f9a9cc8" name="v8js_generator_export.cc" role="src" />
    <file baseinstalldir="/" md5sum="0bfa1eb796acf31f8bebc10dfd357a8f" name="v8js_generator_export.h" role="src" />
    <file baseinstalldir="/" md5sum="41635580298ef67d4a0fc1a632228033" name="v8js_methods.cc" role="src" />
-   <file baseinstalldir="/" md5sum="166cbbc8e74ce04132ad994b5f42836c" name="v8js_object_export.cc" role="src" />
+   <file baseinstalldir="/" md5sum="222e0a82d6933b967eaa2675ff424eaf" name="v8js_object_export.cc" role="src" />
    <file baseinstalldir="/" md5sum="8ad998e544fd40cfb65dbb2cb343786a" name="v8js_object_export.h" role="src" />
    <file baseinstalldir="/" md5sum="071ec7c0a22bc6360786e7a40aa4ce26" name="v8js_timer.cc" role="src" />
    <file baseinstalldir="/" md5sum="79da1482f9ed4998b3b7a09e504975ac" name="v8js_timer.h" role="src" />
-   <file baseinstalldir="/" md5sum="396cbdae10110db3ac37511d246b4723" name="v8js_v8.cc" role="src" />
+   <file baseinstalldir="/" md5sum="3fc0b240bb25327c73f830ee8d641c4f" name="v8js_v8.cc" role="src" />
    <file baseinstalldir="/" md5sum="26411a791688b8b3c61e1c0026fe1b36" name="v8js_v8.h" role="src" />
    <file baseinstalldir="/" md5sum="99dc76e2eb937deba350513363deecb5" name="v8js_v8object_class.cc" role="src" />
    <file baseinstalldir="/" md5sum="7a3bc856242d6dede9eda01c5b2c3679" name="v8js_v8object_class.h" role="src" />
@@ -751,6 +752,23 @@ Fix build against V8 5.3.337 (and higher)
    <notes>
 - fix detection of libv8_libbase.a during configuration
 - fix license URIs in package.xml
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>1.3.4</release>
+    <api>1.3.4</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <date>2017-03-05</date>
+   <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
+   <notes>
+- Bugfix: Reset fatal_error_abort on RSHUTDOWN
+- Improve auto configuration (V8 detection)
+- Improve build instructions on Linux &amp; Windows
    </notes>
   </release>
  </changelog>
