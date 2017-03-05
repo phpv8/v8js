@@ -51,6 +51,7 @@ cd chromium
 fetch v8
 git stash
 ```
+Note: do not add the checkout dir to your path permanently if you've already installed git.exe somewhere in your path: the depot tools will create a git.bat in the checkout dir!
 
 Then I ran the following batch script, inside a 'VS2015 x64 Native Tools Command Prompt' (x64) or a 'VS2015 x86 Native Tools Command Prompt' (x86):
 
