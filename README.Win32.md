@@ -158,7 +158,7 @@ nmake
 After nmake completes the php.exe is in Release_TS\ directory.
 
 In order to try things out in place, copy over `icui18n.dll`, `icuuc.dll` and
-`v8.dll` file from `\v8\build\Release` folder to
+`v8*.dll` files from `\v8\build\Release` folder to
 `\php-sdk\phpdev\vc14\x86\php-7.0.1\Release_TS\` first.
 
 Then run
@@ -167,5 +167,4 @@ Then run
 Release_TS\php.exe -d extension=php_v8js.dll -d extension_dir=Release_TS\
 ```
 
-Alternatively copy all stuff to c:\php\ (including the three DLL files from
-v8 build).
+Alternatively copy all stuff to c:\php\ (including the DLL files from v8 build).
