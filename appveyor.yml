@@ -1,23 +1,22 @@
 environment:
   matrix:
-  - BUILD_PLATFORM: x86
-    ARTIFACT_NAME: v8js_vc14_php7_ts.zip
+  - ARTIFACT_NAME: v8js_vc14_php7_%Platform%_ts.zip
     OUTDIR: Release_TS
-    V8_ASSETS: win32build.vc14.zip
-  - BUILD_PLATFORM: x86
-    ARTIFACT_NAME: v8js_vc14_php7_nts.zip
+    V8_ASSETS: V8-5.8.301.0-%Platform%.zip
+  - ARTIFACT_NAME: v8js_vc14_php7_%Platform%_nts.zip
     OUTDIR: Release
     CONFIGURE_EXTRA: --disable-zts
-    V8_ASSETS: win32build.vc14.zip
+    V8_ASSETS: V8-5.8.301.0-%Platform%.zip
 
   PHP_VERSION: 7.0.16
   PHP_SDK: c:\projects\php-sdk
 
 os: Windows Server 2012
-clone_folder: c:\projects\php-sdk\v8js-ci\vc14\x86\php\ext\v8js
+clone_folder: c:\projects\php-sdk\v8js-ci\vc14\%Platform%\php\ext\v8js
 
-matrix:
-  fast_finish: true
+platform:
+  - x64
+  - x86
 
 install:
   - cd %PHP_SDK%
@@ -25,7 +24,7 @@ install:
   - 7z.exe x php-sdk-binary-tools-20110915.zip
   - call bin\phpsdk_setvars.bat
   - call bin\phpsdk_buildtree.bat v8js-ci
-  - cd v8js-ci\vc14\x86
+  - cd v8js-ci\vc14\%Platform%
   - md deps
   - cd deps
   - curl -fSL -o %V8_ASSETS% 'https://s3.amazonaws.com/win-phpv8/%V8_ASSETS%'
@@ -36,12 +35,20 @@ install:
   - 7z.exe x php-%PHP_VERSION%.tar.gz -y
   - 7z.exe x php-%PHP_VERSION%.tar -y | find /v "Extracting"
   - cd php-%PHP_VERSION%
+  - IF "%Platform%" == "x64" SET OUTDIR=x64\%OUTDIR%
   - mkdir %OUTDIR%
   - move ..\deps\bin\*.dll %OUTDIR%\
 
 build_script:
-  - '"%VS140COMNTOOLS%\VsDevCmd" %BUILD_PLATFORM%'
-  - set
+  - ps: >-
+      If ($env:Platform -Match "x86") {
+        $env:VCVARS_PLATFORM="x86"
+        $env:ENV_PLATFORM="x86"
+      } Else {
+        $env:VCVARS_PLATFORM="amd64"
+        $env:ENV_PLATFORM="x64"
+      }
+  - call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %VCVARS_PLATFORM%
   - echo Building PHP [%PHP_VERSION%]
   - '%PHP_SDK%\bin\phpsdk_setvars'
   - buildconf
@@ -54,14 +61,14 @@ after_build:
   - ps: Push-AppveyorArtifact $env:ARTIFACT_NAME
 
 test_script:
-  - cd c:\projects\php-sdk\v8js-ci\vc14\x86\php-%PHP_VERSION%
+  - cd c:\projects\php-sdk\v8js-ci\vc14\%Platform%\php-%PHP_VERSION%
   - set NO_INTERACTION=1
   - set TEST_PHP_JUNIT=junit.xml
   - set REPORT_EXIT_STATUS=1
   - "%OUTDIR%\\php.exe run-tests.php -p %OUTDIR%\\php.exe ext/v8js/tests/ -d extension=php_v8js.dll -d extension_dir=%OUTDIR%\\"
 
 on_finish:
-  - cd c:\projects\php-sdk\v8js-ci\vc14\x86\php-%PHP_VERSION%
+  - cd c:\projects\php-sdk\v8js-ci\vc14\%Platform%\php-%PHP_VERSION%
   - ps: |
       # upload results to AppVeyor
       $wc = New-Object 'System.Net.WebClient'
