@@ -25,7 +25,15 @@ Vagrant.configure("2") do |config|
     add-apt-repository ppa:ondrej/php
   SHELL
 
-  config.vm.define "default" do |i|
+  config.vm.define "v8-5.8" do |i|
+    i.vm.provision "shell", inline: <<-SHELL
+    add-apt-repository ppa:pinepain/libv8-5.8
+    apt-get update
+    apt-get install -y php7.0-dev libv8-5.8-dbg libv8-5.8-dev
+  SHELL
+  end
+
+  config.vm.define "v8-5.7" do |i|
     i.vm.provision "shell", inline: <<-SHELL
     add-apt-repository ppa:pinepain/libv8-5.7
     apt-get update
