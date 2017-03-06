@@ -16,6 +16,10 @@ Vagrant.configure("2") do |config|
   # argument is a set of non-required options.
   config.vm.synced_folder ".", "/data/v8js"
 
+  config.vm.provider "lxc" do |lxc, override|
+    override.vm.box = "fgrehm/trusty64-lxc"
+  end
+
   config.vm.provision "shell", inline: <<-SHELL
     gpg --keyserver keys.gnupg.net --recv 7F438280EF8D349F
     gpg --armor --export 7F438280EF8D349F | apt-key add -
