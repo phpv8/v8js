@@ -32,6 +32,11 @@ extern "C" {
 #include "zend_closures.h"
 }
 
+/* On Windows there are max and min macros, which would clobber the
+ * method names of std::numeric_limits< > otherwise. */
+#undef max
+#undef min
+
 static int v8js_is_assoc_array(HashTable *myht TSRMLS_DC) /* {{{ */
 {
 	zend_string *key;
@@ -138,10 +143,6 @@ v8::Handle<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate TSRMLS_DC) 
 
 		case IS_LONG:
 		    v = Z_LVAL_P(value);
-			/* On Windows there are max and min macros, which would clobber the
-			 * method names of std::numeric_limits< > otherwise. */
-#undef max
-#undef min
 			if (v < - std::numeric_limits<int32_t>::min() || v > std::numeric_limits<int32_t>::max()) {
 				jsValue = V8JS_FLOAT(static_cast<double>(v));
 			} else {
