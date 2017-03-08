@@ -20,6 +20,7 @@
 #include <limits>
 
 #include "php_v8js_macros.h"
+#include "v8js_exceptions.h"
 #include "v8js_object_export.h"
 #include "v8js_v8object_class.h"
 #include "v8js_v8.h"
@@ -30,6 +31,7 @@ extern "C" {
 #include "ext/standard/php_string.h"
 #include "zend_interfaces.h"
 #include "zend_closures.h"
+#include "zend_exceptions.h"
 }
 
 /* On Windows there are max and min macros, which would clobber the
@@ -107,6 +109,7 @@ v8::Handle<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate TSRMLS_DC) 
 {
 	v8::Handle<v8::Value> jsValue;
 	zend_long v;
+	zend_string *value_str;
 	zend_class_entry *ce;
 
 	switch (Z_TYPE_P(value))
@@ -138,7 +141,14 @@ v8::Handle<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate TSRMLS_DC) 
 			break;
 
 		case IS_STRING:
-			jsValue = V8JS_ZSTR(Z_STR_P(value));
+			value_str = Z_STR_P(value);
+			if (ZSTR_LEN(value_str) > std::numeric_limits<int>::max()) {
+				zend_throw_exception(php_ce_v8js_exception,
+					"String exceeds maximum string length", 0);
+				break;
+			}
+
+			jsValue = v8::String::NewFromUtf8(isolate, ZSTR_VAL(value_str), v8::String::kNormalString, static_cast<int>(ZSTR_LEN(value_str)));
 			break;
 
 		case IS_LONG:
