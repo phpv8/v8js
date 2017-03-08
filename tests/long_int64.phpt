@@ -1,7 +1,11 @@
 --TEST--
 Test V8::executeString() : Check long 64-bit export from PHP to JS
 --SKIPIF--
-<?php require_once(dirname(__FILE__) . '/skipif.inc'); ?>
+<?php
+require_once(dirname(__FILE__) . '/skipif.inc');
+if (4 == PHP_INT_SIZE)
+	die("SKIP test not supported on 32bit PHP");
+?>
 --FILE--
 <?php
 
