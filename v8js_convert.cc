@@ -101,7 +101,7 @@ static v8::Handle<v8::Value> v8js_hash_to_jsarr(zval *value, v8::Isolate *isolat
 v8::Handle<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
 {
 	v8::Handle<v8::Value> jsValue;
-	long v;
+	zend_long v;
 	zend_class_entry *ce;
 
 	switch (Z_TYPE_P(value))
@@ -143,9 +143,9 @@ v8::Handle<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate TSRMLS_DC) 
 #undef max
 #undef min
 			if (v < - std::numeric_limits<int32_t>::min() || v > std::numeric_limits<int32_t>::max()) {
-				jsValue = V8JS_FLOAT((double)v);
+				jsValue = V8JS_FLOAT(static_cast<double>(v));
 			} else {
-				jsValue = V8JS_INT(v);
+				jsValue = V8JS_INT(static_cast<int32_t>(v));
 			}
 			break;
 
