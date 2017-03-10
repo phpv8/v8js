@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2016 The PHP Group                                |
+  | Copyright (c) 1997-2017 The PHP Group                                |
   +----------------------------------------------------------------------+
   | http://www.opensource.org/licenses/mit-license.php  MIT License      |
   +----------------------------------------------------------------------+
@@ -79,7 +79,10 @@ extern "C" {
 
 
 /* Convert zval into V8 value */
-v8::Handle<v8::Value> zval_to_v8js(zval *, v8::Isolate * TSRMLS_DC);
+v8::Handle<v8::Value> zval_to_v8js(zval *, v8::Isolate *);
+
+/* Convert zend_long into V8 value */
+v8::Handle<v8::Value> zend_long_to_v8js(zend_long, v8::Isolate *);
 
 /* Convert V8 value into zval */
 int v8js_to_zval(v8::Handle<v8::Value>, zval *, int, v8::Isolate * TSRMLS_DC);

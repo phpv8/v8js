@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2016 The PHP Group                                |
+  | Copyright (c) 1997-2017 The PHP Group                                |
   +----------------------------------------------------------------------+
   | http://www.opensource.org/licenses/mit-license.php  MIT License      |
   +----------------------------------------------------------------------+
@@ -100,10 +100,19 @@ static v8::Handle<v8::Value> v8js_hash_to_jsarr(zval *value, v8::Isolate *isolat
 }
 /* }}} */
 
-v8::Handle<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
+v8::Handle<v8::Value> zend_long_to_v8js(zend_long v, v8::Isolate *isolate) /* {{{ */
+{
+	if (v < - std::numeric_limits<int32_t>::min() || v > std::numeric_limits<int32_t>::max()) {
+		return V8JS_FLOAT(static_cast<double>(v));
+	} else {
+		return V8JS_INT(static_cast<int32_t>(v));
+	}
+}
+/* }}} */
+
+v8::Handle<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate) /* {{{ */
 {
 	v8::Handle<v8::Value> jsValue;
-	zend_long v;
 	zend_string *value_str;
 	zend_class_entry *ce;
 
@@ -147,12 +156,7 @@ v8::Handle<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate TSRMLS_DC) 
 			break;
 
 		case IS_LONG:
-		    v = Z_LVAL_P(value);
-			if (v < - std::numeric_limits<int32_t>::min() || v > std::numeric_limits<int32_t>::max()) {
-				jsValue = V8JS_FLOAT(static_cast<double>(v));
-			} else {
-				jsValue = V8JS_INT(static_cast<int32_t>(v));
-			}
+			jsValue = zend_long_to_v8js(Z_LVAL_P(value), isolate);
 			break;
 
 		case IS_DOUBLE:
