@@ -65,8 +65,15 @@ void v8js_v8_init(TSRMLS_D) /* {{{ */
 
 	/* Set V8 command line flags (must be done before V8::Initialize()!) */
 	if (v8js_process_globals.v8_flags) {
-		v8::V8::SetFlagsFromString(v8js_process_globals.v8_flags,
-								   strlen(v8js_process_globals.v8_flags));
+		size_t flags_len = strlen(v8js_process_globals.v8_flags);
+
+		if (flags_len > std::numeric_limits<uint32_t>::max()) {
+			zend_throw_exception(php_ce_v8js_exception,
+				"Length of V8 flags exceeds maximum supported length", 0);
+		}
+		else {
+			v8::V8::SetFlagsFromString(v8js_process_globals.v8_flags, static_cast<int>(flags_len));
+		}
 	}
 
 	/* Initialize V8 */
