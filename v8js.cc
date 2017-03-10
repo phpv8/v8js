@@ -77,7 +77,7 @@ static bool v8js_ini_to_bool(const zend_string *new_value) /* {{{ */
 	} else if (ZSTR_LEN(new_value) == 4 && strcasecmp("true", ZSTR_VAL(new_value)) == 0) {
 		return true;
 	} else {
-		return (bool) atoi(ZSTR_VAL(new_value));
+		return 0 != atoi(ZSTR_VAL(new_value));
 	}
 }
 /* }}} */
