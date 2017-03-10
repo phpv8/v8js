@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2016 The PHP Group                                |
+  | Copyright (c) 1997-2017 The PHP Group                                |
   +----------------------------------------------------------------------+
   | http://www.opensource.org/licenses/mit-license.php  MIT License      |
   +----------------------------------------------------------------------+
@@ -67,9 +67,14 @@ static int v8js_v8object_has_property(zval *object, zval *member, int has_set_ex
 
 	if (Z_TYPE_P(member) == IS_STRING && v8obj->IsObject())
 	{
+		if (Z_STRLEN_P(member) > std::numeric_limits<int>::max()) {
+			zend_throw_exception(php_ce_v8js_exception,
+				"Member name length exceeds maximum supported length", 0);
+			return retval;
+		}
 
 		v8::Local<v8::Object> jsObj = v8obj->ToObject();
-		v8::Local<v8::String> jsKey = V8JS_ZSTR(Z_STR_P(member));
+		v8::Local<v8::String> jsKey = V8JS_STRL(Z_STRVAL_P(member), static_cast<int>(Z_STRLEN_P(member)));
 		v8::Local<v8::Value> jsVal;
 
 		/* Skip any prototype properties */
@@ -126,9 +131,14 @@ static zval *v8js_v8object_read_property(zval *object, zval *member, int type, v
 
 	if (Z_TYPE_P(member) == IS_STRING && v8obj->IsObject())
 	{
+		if (Z_STRLEN_P(member) > std::numeric_limits<int>::max()) {
+			zend_throw_exception(php_ce_v8js_exception,
+				"Member name length exceeds maximum supported length", 0);
+			return retval;
+		}
 
 		v8::Local<v8::Object> jsObj = v8obj->ToObject();
-		v8::Local<v8::String> jsKey = V8JS_ZSTR(Z_STR_P(member));
+		v8::Local<v8::String> jsKey = V8JS_STRL(Z_STRVAL_P(member), static_cast<int>(Z_STRLEN_P(member)));
 		v8::Local<v8::Value> jsVal;
 
 		/* Skip any prototype properties */
@@ -158,8 +168,14 @@ static void v8js_v8object_write_property(zval *object, zval *member, zval *value
 	V8JS_CTX_PROLOGUE(obj->ctx);
 	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
+	if (Z_STRLEN_P(member) > std::numeric_limits<int>::max()) {
+		zend_throw_exception(php_ce_v8js_exception,
+			"Member name length exceeds maximum supported length", 0);
+		return;
+	}
+
 	if (v8obj->IsObject()) {
-		v8obj->ToObject()->ForceSet(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)), zval_to_v8js(value, isolate TSRMLS_CC));
+		v8obj->ToObject()->ForceSet(V8JS_SYML(Z_STRVAL_P(member), static_cast<int>(Z_STRLEN_P(member))), zval_to_v8js(value, isolate));
 	}
 }
 /* }}} */
@@ -177,8 +193,14 @@ static void v8js_v8object_unset_property(zval *object, zval *member, void **cach
 	V8JS_CTX_PROLOGUE(obj->ctx);
 	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
+	if (Z_STRLEN_P(member) > std::numeric_limits<int>::max()) {
+		zend_throw_exception(php_ce_v8js_exception,
+			"Member name length exceeds maximum supported length", 0);
+		return;
+	}
+
 	if (v8obj->IsObject()) {
-		v8obj->ToObject()->Delete(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)));
+		v8obj->ToObject()->Delete(V8JS_SYML(Z_STRVAL_P(member), static_cast<int>(Z_STRLEN_P(member))));
 	}
 }
 /* }}} */
@@ -241,8 +263,14 @@ static zend_function *v8js_v8object_get_method(zend_object **object_ptr, zend_st
 		return NULL;
 	}
 
+	if (ZSTR_LEN(method) > std::numeric_limits<int>::max()) {
+		zend_throw_exception(php_ce_v8js_exception,
+			"Method name length exceeds maximum supported length", 0);
+		return NULL;
+	}
+
 	V8JS_CTX_PROLOGUE_EX(obj->ctx, NULL);
-	v8::Local<v8::String> jsKey = V8JS_ZSTR(method);
+	v8::Local<v8::String> jsKey = V8JS_STRL(ZSTR_VAL(method), static_cast<int>(ZSTR_LEN(method)));
 	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
 	if (!obj->v8obj.IsEmpty() && v8obj->IsObject() && !v8obj->IsFunction()) {
@@ -277,6 +305,12 @@ static int v8js_v8object_call_method(zend_string *method, zend_object *object, I
 		return FAILURE;
 	}
 
+	if (ZSTR_LEN(method) > std::numeric_limits<int>::max()) {
+		zend_throw_exception(php_ce_v8js_exception,
+			"Method name length exceeds maximum supported length", 0);
+		return FAILURE;
+	}
+
 	if (argc > 0) {
 		argv = (zval*)safe_emalloc(sizeof(zval), argc, 0);
 		zend_get_parameters_array_ex(argc, argv);
@@ -288,7 +322,7 @@ static int v8js_v8object_call_method(zend_string *method, zend_object *object, I
 		std::function< v8::Local<v8::Value>(v8::Isolate *) > v8_call = [obj, method, argc, argv, object, &return_value TSRMLS_CC](v8::Isolate *isolate) {
 			int i = 0;
 
-			v8::Local<v8::String> method_name = V8JS_ZSYM(method);
+			v8::Local<v8::String> method_name = V8JS_SYML(ZSTR_VAL(method), static_cast<int>(ZSTR_LEN(method)));
 			v8::Local<v8::Object> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj)->ToObject();
 			v8::Local<v8::Object> thisObj;
 			v8::Local<v8::Function> cb;
