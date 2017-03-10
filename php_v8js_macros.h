@@ -102,7 +102,7 @@ struct v8js_timer_ctx;
 /* Module globals */
 ZEND_BEGIN_MODULE_GLOBALS(v8js)
   // Thread-local cache whether V8 has been initialized so far
-  int v8_initialized;
+  bool v8_initialized;
 
   /* Ini globals */
   bool use_date; /* Generate JS Date objects instead of PHP DateTime */
@@ -141,7 +141,7 @@ ZEND_EXTERN_MODULE_GLOBALS(v8js)
  */
 struct _v8js_process_globals {
 #ifdef ZTS
-	int v8_initialized;
+	bool v8_initialized;
 	std::mutex lock;
 #endif
 
