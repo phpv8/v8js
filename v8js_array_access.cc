@@ -16,6 +16,7 @@
 
 #include "php_v8js_macros.h"
 #include "v8js_array_access.h"
+#include "v8js_exceptions.h"
 #include "v8js_object_export.h"
 
 extern "C" {
@@ -24,6 +25,7 @@ extern "C" {
 #include "ext/standard/php_string.h"
 #include "zend_interfaces.h"
 #include "zend_closures.h"
+#include "zend_exceptions.h"
 }
 
 static zval v8js_array_access_dispatch(zend_object *object, const char *method_name, int param_count,
@@ -123,8 +125,15 @@ static int v8js_array_access_get_count_result(zend_object *object TSRMLS_DC) /* 
 		return 0;
 	}
 
-	int result = Z_LVAL(php_value);
-	return result;
+	zend_long result = Z_LVAL(php_value);
+	
+	if (result > std::numeric_limits<int>::max()) {
+		zend_throw_exception(php_ce_v8js_exception,
+			"Array size/offset exceeds maximum supported length", 0);
+		return 0;
+	}
+
+	return static_cast<int>(result);
 }
 /* }}} */
 
