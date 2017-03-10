@@ -36,11 +36,6 @@ extern "C" {
 #include "zend_exceptions.h"
 }
 
-/* On Windows there are max and min macros, which would clobber the
- * method names of std::numeric_limits< > otherwise. */
-#undef max
-#undef min
-
 #define PHP_V8JS_SCRIPT_RES_NAME "V8Js script"
 
 /* {{{ Class Entries */

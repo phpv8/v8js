@@ -36,6 +36,12 @@
 #define V8JS_GLOBAL(isolate)			((isolate)->GetCurrentContext()->Global())
 
 
+/* On Windows there are max and min macros, which would clobber the
+ * method names of std::numeric_limits< > otherwise. */
+#undef max
+#undef min
+
+
 /* Extracts a C string from a V8 Utf8Value. */
 static inline const char * ToCString(const v8::String::Utf8Value &value) /* {{{ */
 {

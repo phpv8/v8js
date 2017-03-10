@@ -34,11 +34,6 @@ extern "C" {
 #include "zend_exceptions.h"
 }
 
-/* On Windows there are max and min macros, which would clobber the
- * method names of std::numeric_limits< > otherwise. */
-#undef max
-#undef min
-
 static int v8js_is_assoc_array(HashTable *myht TSRMLS_DC) /* {{{ */
 {
 	zend_string *key;
