@@ -2,16 +2,15 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2013 The PHP Group                                |
+  | Copyright (c) 1997-2017 The PHP Group                                |
   +----------------------------------------------------------------------+
   | http://www.opensource.org/licenses/mit-license.php  MIT License      |
   +----------------------------------------------------------------------+
   | Author: Jani Taskinen <jani.taskinen@iki.fi>                         |
   | Author: Patrick Reilly <preilly@php.net>                             |
+  | Author: Stefan Siegl <stesie@php.net>                                |
   +----------------------------------------------------------------------+
 */
-
-/* $Id:$ */
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -20,6 +19,11 @@
 #include <string>
 
 #include "php_v8js_macros.h"
+#include "v8js_exceptions.h"
+
+extern "C" {
+#include "zend_exceptions.h"
+}
 
 static void v8js_fetch_php_variable(v8::Local<v8::String> name, const v8::PropertyCallbackInfo<v8::Value>& info) /* {{{ */
 {
@@ -66,13 +70,19 @@ void v8js_register_accessors(std::vector<v8js_accessor_ctx*> *accessor_list, v8:
 				continue; /* Ignore invalid values */
 		}
 
+		if (ZSTR_LEN(property_name) > std::numeric_limits<int>::max()) {
+			zend_throw_exception(php_ce_v8js_exception,
+				"Property name length exceeds maximum supported length", 0);
+			continue;
+		}
+
         // Create context to store accessor data
         v8js_accessor_ctx *ctx = (v8js_accessor_ctx *)emalloc(sizeof(v8js_accessor_ctx));
         ctx->variable_name = zend_string_copy(Z_STR_P(item));
         ctx->isolate = isolate;
 
 		/* Set the variable fetch callback for given symbol on named property */
-		php_obj->SetAccessor(V8JS_ZSTR(property_name), v8js_fetch_php_variable, NULL, v8::External::New(isolate, ctx), v8::PROHIBITS_OVERWRITING, v8::ReadOnly, v8::AccessorSignature::New(isolate, php_obj_t));
+		php_obj->SetAccessor(V8JS_STRL(ZSTR_VAL(property_name), static_cast<int>(ZSTR_LEN(property_name))), v8js_fetch_php_variable, NULL, v8::External::New(isolate, ctx), v8::PROHIBITS_OVERWRITING, v8::ReadOnly, v8::AccessorSignature::New(isolate, php_obj_t));
 
 		/* record the context so we can free it later */
 		accessor_list->push_back(ctx);
