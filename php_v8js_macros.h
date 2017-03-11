@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2016 The PHP Group                                |
+  | Copyright (c) 1997-2017 The PHP Group                                |
   +----------------------------------------------------------------------+
   | http://www.opensource.org/licenses/mit-license.php  MIT License      |
   +----------------------------------------------------------------------+
@@ -79,7 +79,10 @@ extern "C" {
 
 
 /* Convert zval into V8 value */
-v8::Handle<v8::Value> zval_to_v8js(zval *, v8::Isolate * TSRMLS_DC);
+v8::Handle<v8::Value> zval_to_v8js(zval *, v8::Isolate *);
+
+/* Convert zend_long into V8 value */
+v8::Handle<v8::Value> zend_long_to_v8js(zend_long, v8::Isolate *);
 
 /* Convert V8 value into zval */
 int v8js_to_zval(v8::Handle<v8::Value>, zval *, int, v8::Isolate * TSRMLS_DC);
@@ -102,7 +105,7 @@ struct v8js_timer_ctx;
 /* Module globals */
 ZEND_BEGIN_MODULE_GLOBALS(v8js)
   // Thread-local cache whether V8 has been initialized so far
-  int v8_initialized;
+  bool v8_initialized;
 
   /* Ini globals */
   bool use_date; /* Generate JS Date objects instead of PHP DateTime */
@@ -141,7 +144,7 @@ ZEND_EXTERN_MODULE_GLOBALS(v8js)
  */
 struct _v8js_process_globals {
 #ifdef ZTS
-	int v8_initialized;
+	bool v8_initialized;
 	std::mutex lock;
 #endif
 

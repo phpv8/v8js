@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2016 The PHP Group                                |
+  | Copyright (c) 1997-2017 The PHP Group                                |
   +----------------------------------------------------------------------+
   | http://www.opensource.org/licenses/mit-license.php  MIT License      |
   +----------------------------------------------------------------------+
@@ -362,8 +362,14 @@ static PHP_METHOD(V8Js, __construct)
 		if (Z_TYPE_P(snapshot_blob) == IS_STRING) {
 			ZVAL_COPY(&c->zval_snapshot_blob, snapshot_blob);
 
+			if (Z_STRLEN_P(snapshot_blob) > std::numeric_limits<int>::max()) {
+				zend_throw_exception(php_ce_v8js_exception,
+					"Snapshot size exceeds maximum supported length", 0);
+				return;
+			}
+
 			c->snapshot_blob.data = Z_STRVAL_P(snapshot_blob);
-			c->snapshot_blob.raw_size = Z_STRLEN_P(snapshot_blob);
+			c->snapshot_blob.raw_size = static_cast<int>(Z_STRLEN_P(snapshot_blob));
 			c->create_params.snapshot_blob = &c->snapshot_blob;
 		} else {
 			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Argument snapshot_blob expected to be of string type");
@@ -445,7 +451,14 @@ static PHP_METHOD(V8Js, __construct)
 
 	/* Set class name for PHP object */
 	zend_class_entry *ce = Z_OBJCE_P(getThis());
-	php_obj_t->SetClassName(V8JS_SYML(ZSTR_VAL(ce->name), ZSTR_LEN(ce->name)));
+
+	if (ZSTR_LEN(ce->name) > std::numeric_limits<int>::max()) {
+		zend_throw_exception(php_ce_v8js_exception,
+			"PHP object class name exceeds maximum supported length", 0);
+		return;
+	}
+
+	php_obj_t->SetClassName(V8JS_SYML(ZSTR_VAL(ce->name), static_cast<int>(ZSTR_LEN(ce->name))));
 
 	/* Register Get accessor for passed variables */
 	if (vars_arr && zend_hash_num_elements(Z_ARRVAL_P(vars_arr)) > 0) {
@@ -453,9 +466,22 @@ static PHP_METHOD(V8Js, __construct)
 	}
 
 	/* Set name for the PHP JS object */
-	v8::Local<v8::String> object_name_js = (object_name && ZSTR_LEN(object_name))
-		? V8JS_ZSYM(object_name)
-		: V8JS_SYM("PHP");
+	v8::Local<v8::String> object_name_js;
+
+	if (object_name && ZSTR_LEN(object_name)) {
+		if (ZSTR_LEN(object_name) > std::numeric_limits<int>::max()) {
+			zend_throw_exception(php_ce_v8js_exception,
+				"PHP JS object class name exceeds maximum supported length", 0);
+			return;
+		}
+
+		object_name_js = v8::String::NewFromUtf8(isolate, ZSTR_VAL(object_name),
+			v8::String::kInternalizedString, static_cast<int>(ZSTR_LEN(object_name)));
+	}
+	else {
+		object_name_js = V8JS_SYM("PHP");
+	}
+
 	c->object_name.Reset(isolate, object_name_js);
 
 	/* Add the PHP object into global object */
@@ -473,9 +499,18 @@ static PHP_METHOD(V8Js, __construct)
 		if(property_info &&
 		   property_info != ZEND_WRONG_PROPERTY_INFO &&
 		   (property_info->flags & ZEND_ACC_PUBLIC)) {
+			if (ZSTR_LEN(member) > std::numeric_limits<int>::max()) {
+				zend_throw_exception(php_ce_v8js_exception,
+					"Property name exceeds maximum supported length", 0);
+				return;
+			}
+
+			v8::Local<v8::Value> key = v8::String::NewFromUtf8(isolate, ZSTR_VAL(member),
+				v8::String::kInternalizedString, static_cast<int>(ZSTR_LEN(member)));
+
 			/* Write value to PHP JS object */
 			value = OBJ_PROP(Z_OBJ_P(getThis()), property_info->offset);
-			php_obj->ForceSet(V8JS_ZSYM(member), zval_to_v8js(value, isolate TSRMLS_CC), v8::ReadOnly);
+			php_obj->ForceSet(key, zval_to_v8js(value, isolate TSRMLS_CC), v8::ReadOnly);
 		}
 	} ZEND_HASH_FOREACH_END();
 
@@ -527,7 +562,15 @@ static PHP_METHOD(V8Js, __construct)
 			continue;
 		}
 
-		v8::Local<v8::String> method_name = V8JS_ZSTR(method_ptr->common.function_name);
+		if (ZSTR_LEN(method_ptr->common.function_name) > std::numeric_limits<int>::max()) {
+			zend_throw_exception(php_ce_v8js_exception,
+				"Method name exceeds maximum supported length", 0);
+			return;
+		}
+
+		v8::Local<v8::String> method_name = v8::String::NewFromUtf8(isolate,
+			ZSTR_VAL(method_ptr->common.function_name), v8::String::kInternalizedString,
+			static_cast<int>(ZSTR_LEN(method_ptr->common.function_name)));
 		v8::Local<v8::FunctionTemplate> ft;
 
 		/*try {
@@ -567,7 +610,7 @@ PHP_METHOD(V8Js, __wakeup)
 }
 /* }}} */
 
-static void v8js_compile_script(zval *this_ptr, zend_string *str, zend_string *identifier, v8js_script **ret TSRMLS_DC)
+static void v8js_compile_script(zval *this_ptr, const zend_string *str, const zend_string *identifier, v8js_script **ret TSRMLS_DC)
 {
 	v8js_script *res = NULL;
 
@@ -577,10 +620,24 @@ static void v8js_compile_script(zval *this_ptr, zend_string *str, zend_string *i
 	v8::TryCatch try_catch;
 
 	/* Set script identifier */
-	v8::Local<v8::String> sname = identifier ? V8JS_ZSTR(identifier) : V8JS_SYM("V8Js::compileString()");
+	if (identifier && ZSTR_LEN(identifier) > std::numeric_limits<int>::max()) {
+		zend_throw_exception(php_ce_v8js_exception,
+			"Script identifier exceeds maximum supported length", 0);
+		return;
+	}
+
+	v8::Local<v8::String> sname = identifier
+		? v8::String::NewFromUtf8(isolate, ZSTR_VAL(identifier), v8::String::kNormalString, static_cast<int>(ZSTR_LEN(identifier)))
+		: V8JS_SYM("V8Js::compileString()");
 
 	/* Compiles a string context independently. TODO: Add a php function which calls this and returns the result as resource which can be executed later. */
-	v8::Local<v8::String> source = V8JS_ZSTR(str);
+	if (ZSTR_LEN(str) > std::numeric_limits<int>::max()) {
+		zend_throw_exception(php_ce_v8js_exception,
+			"Script source exceeds maximum supported length", 0);
+		return;
+	}
+
+	v8::Local<v8::String> source = v8::String::NewFromUtf8(isolate, ZSTR_VAL(str), v8::String::kNormalString, static_cast<int>(ZSTR_LEN(str)));
 	v8::Local<v8::Script> script = v8::Script::Compile(source, sname);
 
 	/* Compile errors? */
@@ -1020,7 +1077,7 @@ static PHP_METHOD(V8Js, registerExtension)
 static PHP_METHOD(V8Js, getExtensions)
 {
 	v8js_jsext *jsext;
-	ulong index;
+	zend_ulong index;
 	zend_string *key;
 	zval *val, ext;
 
@@ -1209,8 +1266,15 @@ static void v8js_write_property(zval *object, zval *member, zval *value, void **
 		v8::Local<v8::String> object_name_js = v8::Local<v8::String>::New(isolate, c->object_name);
 		v8::Local<v8::Object> jsobj = V8JS_GLOBAL(isolate)->Get(object_name_js)->ToObject();
 
+		if (Z_STRLEN_P(member) > std::numeric_limits<int>::max()) {
+				zend_throw_exception(php_ce_v8js_exception,
+						"Property name exceeds maximum supported length", 0);
+				return;
+		}
+
 		/* Write value to PHP JS object */
-		jsobj->ForceSet(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)), zval_to_v8js(value, isolate TSRMLS_CC), v8::ReadOnly);
+		v8::Local<v8::Value> key = V8JS_SYML(Z_STRVAL_P(member), static_cast<int>(Z_STRLEN_P(member)));
+		jsobj->ForceSet(key, zval_to_v8js(value, isolate TSRMLS_CC), v8::ReadOnly);
 	}
 
 	/* Write value to PHP object */
@@ -1226,8 +1290,15 @@ static void v8js_unset_property(zval *object, zval *member, void **cache_slot TS
 	v8::Local<v8::String> object_name_js = v8::Local<v8::String>::New(isolate, c->object_name);
 	v8::Local<v8::Object> jsobj = V8JS_GLOBAL(isolate)->Get(object_name_js)->ToObject();
 
+	if (Z_STRLEN_P(member) > std::numeric_limits<int>::max()) {
+			zend_throw_exception(php_ce_v8js_exception,
+					"Property name exceeds maximum supported length", 0);
+			return;
+	}
+
 	/* Delete value from PHP JS object */
-	jsobj->Delete(V8JS_SYML(Z_STRVAL_P(member), Z_STRLEN_P(member)));
+	v8::Local<v8::Value> key = V8JS_SYML(Z_STRVAL_P(member), static_cast<int>(Z_STRLEN_P(member)));
+	jsobj->Delete(key);
 
 	/* Unset from PHP object */
 	std_object_handlers.unset_property(object, member, NULL);

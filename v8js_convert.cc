@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2016 The PHP Group                                |
+  | Copyright (c) 1997-2017 The PHP Group                                |
   +----------------------------------------------------------------------+
   | http://www.opensource.org/licenses/mit-license.php  MIT License      |
   +----------------------------------------------------------------------+
@@ -20,6 +20,7 @@
 #include <limits>
 
 #include "php_v8js_macros.h"
+#include "v8js_exceptions.h"
 #include "v8js_object_export.h"
 #include "v8js_v8object_class.h"
 #include "v8js_v8.h"
@@ -30,12 +31,13 @@ extern "C" {
 #include "ext/standard/php_string.h"
 #include "zend_interfaces.h"
 #include "zend_closures.h"
+#include "zend_exceptions.h"
 }
 
 static int v8js_is_assoc_array(HashTable *myht TSRMLS_DC) /* {{{ */
 {
 	zend_string *key;
-	ulong index, idx = 0;
+	zend_ulong index, idx = 0;
 
 	ZEND_HASH_FOREACH_KEY(myht, index, key) {
 		if(key) {
@@ -98,10 +100,20 @@ static v8::Handle<v8::Value> v8js_hash_to_jsarr(zval *value, v8::Isolate *isolat
 }
 /* }}} */
 
-v8::Handle<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
+v8::Handle<v8::Value> zend_long_to_v8js(zend_long v, v8::Isolate *isolate) /* {{{ */
+{
+	if (v < - std::numeric_limits<int32_t>::min() || v > std::numeric_limits<int32_t>::max()) {
+		return V8JS_FLOAT(static_cast<double>(v));
+	} else {
+		return V8JS_INT(static_cast<int32_t>(v));
+	}
+}
+/* }}} */
+
+v8::Handle<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate) /* {{{ */
 {
 	v8::Handle<v8::Value> jsValue;
-	zend_long v;
+	zend_string *value_str;
 	zend_class_entry *ce;
 
 	switch (Z_TYPE_P(value))
@@ -133,20 +145,18 @@ v8::Handle<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate TSRMLS_DC) 
 			break;
 
 		case IS_STRING:
-			jsValue = V8JS_ZSTR(Z_STR_P(value));
+			value_str = Z_STR_P(value);
+			if (ZSTR_LEN(value_str) > std::numeric_limits<int>::max()) {
+				zend_throw_exception(php_ce_v8js_exception,
+					"String exceeds maximum string length", 0);
+				break;
+			}
+
+			jsValue = v8::String::NewFromUtf8(isolate, ZSTR_VAL(value_str), v8::String::kNormalString, static_cast<int>(ZSTR_LEN(value_str)));
 			break;
 
 		case IS_LONG:
-		    v = Z_LVAL_P(value);
-			/* On Windows there are max and min macros, which would clobber the
-			 * method names of std::numeric_limits< > otherwise. */
-#undef max
-#undef min
-			if (v < - std::numeric_limits<int32_t>::min() || v > std::numeric_limits<int32_t>::max()) {
-				jsValue = V8JS_FLOAT(static_cast<double>(v));
-			} else {
-				jsValue = V8JS_INT(static_cast<int32_t>(v));
-			}
+			jsValue = zend_long_to_v8js(Z_LVAL_P(value), isolate);
 			break;
 
 		case IS_DOUBLE:

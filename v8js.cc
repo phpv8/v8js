@@ -2,12 +2,13 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2013 The PHP Group                                |
+  | Copyright (c) 1997-2017 The PHP Group                                |
   +----------------------------------------------------------------------+
   | http://www.opensource.org/licenses/mit-license.php  MIT License      |
   +----------------------------------------------------------------------+
   | Author: Jani Taskinen <jani.taskinen@iki.fi>                         |
   | Author: Patrick Reilly <preilly@php.net>                             |
+  | Author: Stefan Siegl <stesie@php.net>                                |
   +----------------------------------------------------------------------+
 */
 
@@ -77,7 +78,7 @@ static bool v8js_ini_to_bool(const zend_string *new_value) /* {{{ */
 	} else if (ZSTR_LEN(new_value) == 4 && strcasecmp("true", ZSTR_VAL(new_value)) == 0) {
 		return true;
 	} else {
-		return (bool) atoi(ZSTR_VAL(new_value));
+		return 0 != atoi(ZSTR_VAL(new_value));
 	}
 }
 /* }}} */

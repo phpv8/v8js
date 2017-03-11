@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2016 The PHP Group                                |
+  | Copyright (c) 1997-2017 The PHP Group                                |
   +----------------------------------------------------------------------+
   | http://www.opensource.org/licenses/mit-license.php  MIT License      |
   +----------------------------------------------------------------------+
@@ -18,6 +18,7 @@
 
 #include "php_v8js_macros.h"
 #include "v8js_array_access.h"
+#include "v8js_exceptions.h"
 #include "v8js_generator_export.h"
 #include "v8js_object_export.h"
 #include "v8js_v8object_class.h"
@@ -42,7 +43,7 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, v
 	zval fname, retval;
 	unsigned int argc = info.Length(), min_num_args = 0, max_num_args = 0;
 	char *error;
-	int error_len;
+	zend_ulong error_len;
 	unsigned int i;
 
 	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
@@ -77,7 +78,14 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, v
 				(argc < min_num_args ? min_num_args : max_num_args) == 1 ? "" : "s",
 				argc);
 
-		return_value = V8JS_THROW(isolate, TypeError, error, error_len);
+		if (error_len > std::numeric_limits<int>::max()) {
+			zend_throw_exception(php_ce_v8js_exception,
+				"Generated error message length exceeds maximum supported length", 0);
+		}
+		else {
+			return_value = V8JS_THROW(isolate, TypeError, error, static_cast<int>(error_len));
+		}
+
 		if (object->ce == zend_ce_closure) {
 			zend_string_release(method_ptr->internal_function.function_name);
 			efree(method_ptr);
@@ -100,7 +108,15 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, v
 			} else {
 				if (v8js_to_zval(info[i], &fci.params[i], ctx->flags, isolate TSRMLS_CC) == FAILURE) {
 					error_len = spprintf(&error, 0, "converting parameter #%d passed to %s() failed", i + 1, method_ptr->common.function_name);
-					return_value = V8JS_THROW(isolate, Error, error, error_len);
+
+					if (error_len > std::numeric_limits<int>::max()) {
+						zend_throw_exception(php_ce_v8js_exception,
+							"Generated error message length exceeds maximum supported length", 0);
+					}
+					else {
+						return_value = V8JS_THROW(isolate, Error, error, static_cast<int>(error_len));
+					}
+
 					efree(error);
 					goto failure;
 				}
@@ -311,7 +327,7 @@ static void v8js_named_property_enumerator(const v8::PropertyCallbackInfo<v8::Ar
 	void *ptr;
 	HashTable *proptable;
 	zend_string *key;
-	ulong index;
+	zend_ulong index;
 
 	zend_object *object = reinterpret_cast<zend_object *>(self->GetAlignedPointerFromInternalField(1));
 	ce = object->ce;
@@ -340,11 +356,23 @@ static void v8js_named_property_enumerator(const v8::PropertyCallbackInfo<v8::Ar
 			IS_MAGIC_FUNC(ZEND_ISSET_FUNC_NAME)) {
 			continue;
 		}
-		v8::Local<v8::String> method_name = V8JS_ZSTR(method_ptr->common.function_name);
+
+		v8::Local<v8::String> method_name;
+
 		// rename PHP special method names to JS equivalents.
 		if (IS_MAGIC_FUNC(ZEND_TOSTRING_FUNC_NAME)) {
 			method_name = V8JS_SYM("toString");
 		}
+		else {
+			if (ZSTR_LEN(method_ptr->common.function_name) > std::numeric_limits<int>::max()) {
+				zend_throw_exception(php_ce_v8js_exception,
+					"Method name length exceeds maximum supported length", 0);
+				return;
+			}
+
+			method_name = V8JS_STRL(ZSTR_VAL(method_ptr->common.function_name), static_cast<int>(ZSTR_LEN(method_ptr->common.function_name)));
+		}
+
 		result->Set(result_len++, method_name);
 	} ZEND_HASH_FOREACH_END();
 
@@ -362,13 +390,20 @@ static void v8js_named_property_enumerator(const v8::PropertyCallbackInfo<v8::Ar
 			if(ZSTR_VAL(key)[0] == '\0') {
 				continue;
 			}
+
+			if (ZSTR_LEN(key) + 1 > std::numeric_limits<int>::max()) {
+				zend_throw_exception(php_ce_v8js_exception,
+					"Object key length exceeds maximum supported length", 0);
+				continue;
+			}
+
 			// prefix enumerated property names with '$' so they can be
 			// dereferenced unambiguously (ie, don't conflict with method
 			// names)
 			char *prefixed = static_cast<char *>(emalloc(ZSTR_LEN(key) + 2));
 			prefixed[0] = '$';
 			strncpy(prefixed + 1, ZSTR_VAL(key), ZSTR_LEN(key) + 1);
-			result->Set(result_len++, V8JS_STRL(prefixed, ZSTR_LEN(key) + 1));
+			result->Set(result_len++, V8JS_STRL(prefixed, static_cast<int>(ZSTR_LEN(key) + 1)));
 			efree(prefixed);
 		} else {
 			// even numeric indices are enumerated as strings in JavaScript
@@ -425,10 +460,10 @@ static void v8js_fake_call_impl(const v8::FunctionCallbackInfo<v8::Value>& info)
 {
 	v8::Isolate *isolate = info.GetIsolate();
 	v8::Local<v8::Object> self = info.Holder();
-	v8::Handle<v8::Value> return_value;
+	v8::Handle<v8::Value> return_value = V8JS_NULL;
 
 	char *error;
-	int error_len;
+	size_t error_len;
 
 	V8JS_TSRMLS_FETCH();
 	zend_class_entry *ce;
@@ -440,16 +475,33 @@ static void v8js_fake_call_impl(const v8::FunctionCallbackInfo<v8::Value>& info)
 		error_len = spprintf(&error, 0,
 			"%s::__call expects 2 parameters, %d given",
 			ce->name, (int) info.Length());
-		return_value = V8JS_THROW(isolate, TypeError, error, error_len);
+
+		if (error_len > std::numeric_limits<int>::max()) {
+			zend_throw_exception(php_ce_v8js_exception,
+				"Generated error message length exceeds maximum supported length", 0);
+		}
+		else {
+			return_value = V8JS_THROW(isolate, TypeError, error, static_cast<int>(error_len));
+		}
+
 		efree(error);
 		info.GetReturnValue().Set(return_value);
 		return;
 	}
+
 	if (!info[1]->IsArray()) {
 		error_len = spprintf(&error, 0,
 			"%s::__call expects 2nd parameter to be an array",
 			ce->name);
-		return_value = V8JS_THROW(isolate, TypeError, error, error_len);
+
+		if (error_len > std::numeric_limits<int>::max()) {
+			zend_throw_exception(php_ce_v8js_exception,
+				"Generated error message length exceeds maximum supported length", 0);
+		}
+		else {
+			return_value = V8JS_THROW(isolate, TypeError, error, static_cast<int>(error_len));
+		}
+
 		efree(error);
 		info.GetReturnValue().Set(return_value);
 		return;
@@ -462,7 +514,15 @@ static void v8js_fake_call_impl(const v8::FunctionCallbackInfo<v8::Value>& info)
 		error_len = spprintf(&error, 0,
 			"%s::__call expects fewer than a million arguments",
 			ce->name);
-		return_value = V8JS_THROW(isolate, TypeError, error, error_len);
+
+		if (error_len > std::numeric_limits<int>::max()) {
+			zend_throw_exception(php_ce_v8js_exception,
+				"Generated error message length exceeds maximum supported length", 0);
+		}
+		else {
+			return_value = V8JS_THROW(isolate, TypeError, error, static_cast<int>(error_len));
+		}
+
 		efree(error);
 		info.GetReturnValue().Set(return_value);
 		return;
@@ -484,7 +544,15 @@ static void v8js_fake_call_impl(const v8::FunctionCallbackInfo<v8::Value>& info)
 		error_len = spprintf(&error, 0,
 			"%s::__call to %s method %s", ce->name,
 			(method_ptr == NULL) ? "undefined" : "non-public", method_name);
-		return_value = V8JS_THROW(isolate, TypeError, error, error_len);
+
+		if (error_len > std::numeric_limits<int>::max()) {
+			zend_throw_exception(php_ce_v8js_exception,
+				"Generated error message length exceeds maximum supported length", 0);
+		}
+		else {
+			return_value = V8JS_THROW(isolate, TypeError, error, static_cast<int>(error_len));
+		}
+
 		efree(error);
 		info.GetReturnValue().Set(return_value);
 		return;
@@ -759,7 +827,13 @@ static v8::Handle<v8::Object> v8js_wrap_object(v8::Isolate *isolate, zend_class_
 		/* No cached v8::FunctionTemplate available as of yet, create one. */
 		new_tpl = v8::FunctionTemplate::New(isolate, 0);
 
-		new_tpl->SetClassName(V8JS_ZSTR(ce->name));
+		if (ZSTR_LEN(ce->name) > std::numeric_limits<int>::max()) {
+			zend_throw_exception(php_ce_v8js_exception,
+				"Class name length exceeds maximum supported length", 0);
+			return v8::Local<v8::Object>();
+		}
+
+		new_tpl->SetClassName(V8JS_STRL(ZSTR_VAL(ce->name), static_cast<int>(ZSTR_LEN(ce->name))));
 		new_tpl->InstanceTemplate()->SetInternalFieldCount(2);
 
 		if (ce == zend_ce_closure) {
@@ -855,7 +929,7 @@ static v8::Handle<v8::Object> v8js_wrap_array_to_object(v8::Isolate *isolate, zv
 {
 	int i;
 	zend_string *key;
-	ulong index;
+	zend_ulong index;
 
 	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
 	v8::Local<v8::FunctionTemplate> new_tpl;
@@ -899,9 +973,23 @@ static v8::Handle<v8::Object> v8js_wrap_array_to_object(v8::Isolate *isolate, zv
 					}
 					continue;
 				}
-				newobj->Set(V8JS_ZSTR(key), zval_to_v8js(data, isolate TSRMLS_CC));
+
+				if (ZSTR_LEN(key) > std::numeric_limits<int>::max()) {
+					zend_throw_exception(php_ce_v8js_exception,
+						"Object key length exceeds maximum supported length", 0);
+					continue;
+				}
+
+				newobj->Set(V8JS_STRL(ZSTR_VAL(key), static_cast<int>(ZSTR_LEN(key))),
+					zval_to_v8js(data, isolate));
 			} else {
-				newobj->Set(index, zval_to_v8js(data, isolate TSRMLS_CC));
+				if (index > std::numeric_limits<uint32_t>::max()) {
+					zend_throw_exception(php_ce_v8js_exception,
+						"Array index exceeds maximum supported bound", 0);
+					continue;
+				}
+
+				newobj->Set(static_cast<uint32_t>(index), zval_to_v8js(data, isolate));
 			}
 
 			if (tmp_ht) {

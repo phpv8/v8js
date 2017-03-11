@@ -2,13 +2,13 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2013 The PHP Group                                |
+  | Copyright (c) 1997-2017 The PHP Group                                |
   +----------------------------------------------------------------------+
   | http://www.opensource.org/licenses/mit-license.php  MIT License      |
   +----------------------------------------------------------------------+
   | Author: Jani Taskinen <jani.taskinen@iki.fi>                         |
   | Author: Patrick Reilly <preilly@php.net>                             |
-  | Author: Stefan Siegl <stesie@brokenpipe.de>                          |
+  | Author: Stefan Siegl <stesie@php.net>                                |
   +----------------------------------------------------------------------+
 */
 
@@ -18,6 +18,7 @@
 
 #include "php_v8js_macros.h"
 #include "v8js_commonjs.h"
+#include "v8js_exceptions.h"
 
 extern "C" {
 #include "zend_exceptions.h"
@@ -42,15 +43,15 @@ V8JS_METHOD(sleep) /* {{{ */
 V8JS_METHOD(print) /* {{{ */
 {
 	v8::Isolate *isolate = info.GetIsolate();
-	int ret = 0;
-	V8JS_TSRMLS_FETCH();
+	zend_long ret = 0;
 
 	for (int i = 0; i < info.Length(); i++) {
 		v8::String::Utf8Value str(info[i]);
 		const char *cstr = ToCString(str);
 		ret = PHPWRITE(cstr, strlen(cstr));
 	}
-	info.GetReturnValue().Set(V8JS_INT(ret));
+
+	info.GetReturnValue().Set(zend_long_to_v8js(ret, isolate));
 }
 /* }}} */
 
@@ -433,7 +434,13 @@ V8JS_METHOD(require)
 	// Set script identifier
 	v8::Local<v8::String> sname = V8JS_STR(normalised_module_id);
 
-	v8::Local<v8::String> source = V8JS_ZSTR(Z_STR(module_code));
+	if (Z_STRLEN(module_code) > std::numeric_limits<int>::max()) {
+		zend_throw_exception(php_ce_v8js_exception,
+			"Module code size exceeds maximum supported length", 0);
+		return;
+	}
+
+	v8::Local<v8::String> source = V8JS_STRL(Z_STRVAL(module_code), static_cast<int>(Z_STRLEN(module_code)));
 	zval_ptr_dtor(&module_code);
 
 	// Create and compile script
