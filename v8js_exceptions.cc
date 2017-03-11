@@ -41,7 +41,7 @@ void v8js_create_script_exception(zval *return_value, v8::Isolate *isolate, v8::
 {
 	v8::String::Utf8Value exception(try_catch->Exception());
 	const char *exception_string = ToCString(exception);
-	v8::Handle<v8::Message> tc_message = try_catch->Message();
+	v8::Local<v8::Message> tc_message = try_catch->Message();
 	const char *filename_string, *sourceline_string;
 	char *message_string;
 	int linenum, start_col, end_col;

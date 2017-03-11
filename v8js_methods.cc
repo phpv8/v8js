@@ -502,7 +502,7 @@ V8JS_METHOD(require)
 	info.GetReturnValue().Set(newobj);
 }
 
-void v8js_register_methods(v8::Handle<v8::ObjectTemplate> global, v8js_ctx *c) /* {{{ */
+void v8js_register_methods(v8::Local<v8::ObjectTemplate> global, v8js_ctx *c) /* {{{ */
 {
 	v8::Isolate *isolate = c->isolate;
 	global->Set(V8JS_SYM("exit"), v8::FunctionTemplate::New(isolate, V8JS_MN(exit)), v8::ReadOnly);

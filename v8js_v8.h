@@ -58,7 +58,7 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 void v8js_terminate_execution(v8::Isolate *isolate);
 
 /* Fetch V8 object properties */
-int v8js_get_properties_hash(v8::Handle<v8::Value> jsValue, HashTable *retval, int flags, v8::Isolate *isolate TSRMLS_DC);
+int v8js_get_properties_hash(v8::Local<v8::Value> jsValue, HashTable *retval, int flags, v8::Isolate *isolate TSRMLS_DC);
 
 #define V8JS_CTX_PROLOGUE_EX(ctx, ret) \
 	if (!V8JSG(v8_initialized)) { \

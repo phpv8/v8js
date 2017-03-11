@@ -258,7 +258,7 @@ void v8js_terminate_execution(v8::Isolate *isolate) /* {{{ */
 /* }}} */
 
 
-int v8js_get_properties_hash(v8::Handle<v8::Value> jsValue, HashTable *retval, int flags, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
+int v8js_get_properties_hash(v8::Local<v8::Value> jsValue, HashTable *retval, int flags, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
 {
 	v8::Local<v8::Object> jsObj = jsValue->ToObject();
 

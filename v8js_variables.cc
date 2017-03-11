@@ -27,7 +27,7 @@ extern "C" {
 
 static void v8js_fetch_php_variable(v8::Local<v8::String> name, const v8::PropertyCallbackInfo<v8::Value>& info) /* {{{ */
 {
-    v8::Handle<v8::External> data = v8::Handle<v8::External>::Cast(info.Data());
+    v8::Local<v8::External> data = v8::Local<v8::External>::Cast(info.Data());
     v8js_accessor_ctx *ctx = static_cast<v8js_accessor_ctx *>(data->Value());
 	v8::Isolate *isolate = ctx->isolate;
 	zval *variable;

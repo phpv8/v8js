@@ -94,7 +94,7 @@ void v8js_array_access_setter(uint32_t index, v8::Local<v8::Value> value,
 	ZVAL_UNDEF(&zvalue);
 
 	if (v8js_to_zval(value, &zvalue, 0, isolate TSRMLS_CC) != SUCCESS) {
-		info.GetReturnValue().Set(v8::Handle<v8::Value>());
+		info.GetReturnValue().Set(v8::Local<v8::Value>());
 		return;
 	}
 
