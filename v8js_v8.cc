@@ -67,7 +67,7 @@ void v8js_v8_init(TSRMLS_D) /* {{{ */
 	if (v8js_process_globals.v8_flags) {
 		size_t flags_len = strlen(v8js_process_globals.v8_flags);
 
-		if (flags_len > std::numeric_limits<uint32_t>::max()) {
+		if (flags_len > std::numeric_limits<int>::max()) {
 			zend_throw_exception(php_ce_v8js_exception,
 				"Length of V8 flags exceeds maximum supported length", 0);
 		}
