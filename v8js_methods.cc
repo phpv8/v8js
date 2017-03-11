@@ -8,7 +8,7 @@
   +----------------------------------------------------------------------+
   | Author: Jani Taskinen <jani.taskinen@iki.fi>                         |
   | Author: Patrick Reilly <preilly@php.net>                             |
-  | Author: Stefan Siegl <stesie@brokenpipe.de>                          |
+  | Author: Stefan Siegl <stesie@php.net>                                |
   +----------------------------------------------------------------------+
 */
 
