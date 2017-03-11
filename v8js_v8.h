@@ -53,7 +53,7 @@ static inline const char * ToCString(const v8::String::Utf8Value &value) /* {{{ 
 
 void v8js_v8_init();
 void v8js_v8_call(v8js_ctx *c, zval **return_value,
-				  long flags, long time_limit, long memory_limit,
+				  long flags, long time_limit, size_t memory_limit,
 				  std::function< v8::Local<v8::Value>(v8::Isolate *) >& v8_call);
 void v8js_terminate_execution(v8::Isolate *isolate);
 

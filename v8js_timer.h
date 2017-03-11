@@ -18,14 +18,14 @@
 struct v8js_timer_ctx
 {
   long time_limit;
-  long memory_limit;
+  size_t memory_limit;
   std::chrono::time_point<std::chrono::high_resolution_clock> time_point;
   v8js_ctx *ctx;
   bool killed;
 };
 
 void v8js_timer_thread(zend_v8js_globals *globals);
-void v8js_timer_push(long time_limit, long memory_limit, v8js_ctx *c);
+void v8js_timer_push(long time_limit, size_t memory_limit, v8js_ctx *c);
 
 #endif /* V8JS_TIMER_H */
 
