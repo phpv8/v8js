@@ -58,7 +58,34 @@ Vagrant.configure("2") do |config|
     SHELL
   end
 
+
+  #
+  # FreeBSD 11.0 box
+  # (compiles V8 5.1.281.47 with Gyp; using port from https://raw.githubusercontent.com/Kronuz/Xapiand/master/contrib/freebsd/v8.shar)
+  #
+  config.vm.define "freebsd-11" do |i|
+    i.vm.box = "freebsd/FreeBSD-11.0-RELEASE-p1"
+    i.ssh.shell = "/bin/sh"
+
+    # vboxsf doesn't work on FreeBSD (yet), use nfs
+    i.vm.synced_folder ".", "/data/v8js", type: "nfs"
+    i.vm.network "private_network", type: "dhcp"
+
+    i.vm.provision "shell", inline: <<-SHELL
+      pkg install -y git python bash gmake icu gdb tmux git tig curl vim autoconf php70
+
+      portsnap auto --interactive
+
+      mkdir -p /data && cd /data
+      [ -x v8 ] || curl https://raw.githubusercontent.com/Kronuz/Xapiand/master/contrib/freebsd/v8.shar | sh
+
+      cd /data/v8
+      make install
+    SHELL
+  end
+
+
   config.vm.provision "shell", inline: <<-SHELL
-    mkdir -p /data/build && chown vagrant. /data/build
+    mkdir -p /data/build && chown vagrant:vagrant /data/build
   SHELL
 end
