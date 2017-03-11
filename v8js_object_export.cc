@@ -379,9 +379,7 @@ static void v8js_named_property_enumerator(const v8::PropertyCallbackInfo<v8::Ar
 	ZVAL_OBJ(&tmp_zv, object);
 	proptable = Z_OBJPROP(tmp_zv);
 
-	zval *data;
-
-	ZEND_HASH_FOREACH_KEY_VAL(proptable, index, key, data) {
+	ZEND_HASH_FOREACH_KEY(proptable, index, key) {
 		if(key) {
 			/* skip protected and private members */
 			if(ZSTR_VAL(key)[0] == '\0') {
