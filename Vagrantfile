@@ -10,32 +10,55 @@ Vagrant.configure("2") do |config|
   # boxes at https://atlas.hashicorp.com/search.
   config.vm.box = "ubuntu/trusty64"
 
-  # Share an additional folder to the guest VM. The first argument is
-  # the path on the host to the actual folder. The second argument is
-  # the path on the guest to mount the folder. And the optional third
-  # argument is a set of non-required options.
-  config.vm.synced_folder ".", "/data/v8js"
-
   config.vm.provider "lxc" do |lxc, override|
     override.vm.box = "fgrehm/trusty64-lxc"
   end
 
-  config.vm.provision "shell", inline: <<-SHELL
-    gpg --keyserver keys.gnupg.net --recv 7F438280EF8D349F
-    gpg --armor --export 7F438280EF8D349F | apt-key add -
 
-    apt-get update
-    apt-get install -y software-properties-common gdb tmux git tig curl apache2-utils
-    add-apt-repository ppa:ondrej/php
-  SHELL
-
+  #
+  # mass-define "generic" Ubuntu boxes
+  #
   %w{5.1 5.2 5.4 5.7 5.8 5.9}.each { |version|
     config.vm.define "v8-#{version}" do |i|
+      i.vm.synced_folder ".", "/data/v8js"
+
       i.vm.provision "shell", inline: <<-SHELL
+      gpg --keyserver keys.gnupg.net --recv 7F438280EF8D349F
+      gpg --armor --export 7F438280EF8D349F | apt-key add -
+
+      apt-get update
+      apt-get install -y software-properties-common gdb tmux git tig curl apache2-utils
+
+      add-apt-repository ppa:ondrej/php
       add-apt-repository ppa:pinepain/libv8-#{version}
       apt-get update
       apt-get install -y php7.1-dev libv8-#{version}-dbg libv8-#{version}-dev
     SHELL
     end
   }
+
+
+  #
+  # Fedora-based box with GCC7, V8 5.2 + PHP 7.1 installed
+  # (primarily to reproduce #294)
+  #
+  config.vm.define "fedora-26-gcc7" do |i|
+    i.vm.box = "vbenes/fedora-rawhide-server"
+    i.ssh.insert_key = false
+
+    # unfortunately vboxsf isn't currently available (due to an issue with the base image)
+    # therefore fall back to nfs
+    i.vm.synced_folder ".", "/data/v8js", type: "nfs"
+    i.vm.network "private_network", ip: "192.168.50.2"
+
+    i.vm.provision "shell", inline: <<-SHELL
+      dnf -y update
+      dnf -y install gcc-c++ gdb tmux git tig curl vim
+      dnf -y install v8-devel php-devel
+    SHELL
+  end
+
+  config.vm.provision "shell", inline: <<-SHELL
+    mkdir -p /data/build && chown vagrant. /data/build
+  SHELL
 end
