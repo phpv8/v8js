@@ -25,7 +25,7 @@ struct v8js_timer_ctx
 };
 
 void v8js_timer_thread(zend_v8js_globals *globals);
-void v8js_timer_push(long time_limit, long memory_limit, v8js_ctx *c TSRMLS_DC);
+void v8js_timer_push(long time_limit, long memory_limit, v8js_ctx *c);
 
 #endif /* V8JS_TIMER_H */
 

@@ -96,7 +96,7 @@ void v8js_v8_init(TSRMLS_D) /* {{{ */
  */
 void v8js_v8_call(v8js_ctx *c, zval **return_value,
 				  long flags, long time_limit, long memory_limit,
-				  std::function< v8::Local<v8::Value>(v8::Isolate *) >& v8_call TSRMLS_DC) /* {{{ */
+				  std::function< v8::Local<v8::Value>(v8::Isolate *) >& v8_call) /* {{{ */
 {
 	char *tz = NULL;
 
@@ -138,7 +138,7 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 
 	/* Always pass the timer to the stack so there can be follow-up changes to
 	 * the time & memory limit. */
-	v8js_timer_push(time_limit, memory_limit, c TSRMLS_CC);
+	v8js_timer_push(time_limit, memory_limit, c);
 
 	/* Execute script */
 	c->in_execution++;
@@ -163,7 +163,7 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 		if (c->time_limit_hit) {
 			// Execution has been terminated due to time limit
 			sprintf(exception_string, "Script time limit of %lu milliseconds exceeded", time_limit);
-			zend_throw_exception(php_ce_v8js_time_limit_exception, exception_string, 0 TSRMLS_CC);
+			zend_throw_exception(php_ce_v8js_time_limit_exception, exception_string, 0);
 			return;
 		}
 
@@ -185,7 +185,7 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 		if (c->memory_limit_hit) {
 			// Execution has been terminated due to memory limit
 			sprintf(exception_string, "Script memory limit of %lu bytes exceeded", memory_limit);
-			zend_throw_exception(php_ce_v8js_memory_limit_exception, exception_string, 0 TSRMLS_CC);
+			zend_throw_exception(php_ce_v8js_memory_limit_exception, exception_string, 0);
 			return;
 		}
 
@@ -196,7 +196,7 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 
 		/* There was pending exception left from earlier executions -> throw to PHP */
 		if (Z_TYPE(c->pending_exception) == IS_OBJECT) {
-			zend_throw_exception_object(&c->pending_exception TSRMLS_CC);
+			zend_throw_exception_object(&c->pending_exception);
 			ZVAL_NULL(&c->pending_exception);
 		}
 
@@ -208,13 +208,13 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 
 				/* Report immediately if report_uncaught is true */
 				if (c->report_uncaught) {
-					v8js_throw_script_exception(c->isolate, &try_catch TSRMLS_CC);
+					v8js_throw_script_exception(c->isolate, &try_catch);
 					return;
 				}
 
 				/* Exception thrown from JS, preserve it for future execution */
 				if (result.IsEmpty()) {
-					v8js_create_script_exception(&c->pending_exception, c->isolate, &try_catch TSRMLS_CC);
+					v8js_create_script_exception(&c->pending_exception, c->isolate, &try_catch);
 					return;
 				}
 			}
@@ -226,7 +226,7 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 
 		/* Convert V8 value to PHP value */
 		if (return_value && !result.IsEmpty()) {
-			v8js_to_zval(result, *return_value, flags, c->isolate TSRMLS_CC);
+			v8js_to_zval(result, *return_value, flags, c->isolate);
 		}
 	}
 }
@@ -258,7 +258,7 @@ void v8js_terminate_execution(v8::Isolate *isolate) /* {{{ */
 /* }}} */
 
 
-int v8js_get_properties_hash(v8::Local<v8::Value> jsValue, HashTable *retval, int flags, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
+int v8js_get_properties_hash(v8::Local<v8::Value> jsValue, HashTable *retval, int flags, v8::Isolate *isolate) /* {{{ */
 {
 	v8::Local<v8::Object> jsObj = jsValue->ToObject();
 
@@ -288,7 +288,7 @@ int v8js_get_properties_hash(v8::Local<v8::Value> jsValue, HashTable *retval, in
 				Z_ADDREF_P(&value);
 			}
 			else {
-				if (v8js_to_zval(jsVal, &value, flags, isolate TSRMLS_CC) == FAILURE) {
+				if (v8js_to_zval(jsVal, &value, flags, isolate) == FAILURE) {
 					zval_ptr_dtor(&value);
 					return FAILURE;
 				}

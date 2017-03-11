@@ -54,11 +54,11 @@ static inline const char * ToCString(const v8::String::Utf8Value &value) /* {{{ 
 void v8js_v8_init(TSRMLS_D);
 void v8js_v8_call(v8js_ctx *c, zval **return_value,
 				  long flags, long time_limit, long memory_limit,
-				  std::function< v8::Local<v8::Value>(v8::Isolate *) >& v8_call TSRMLS_DC);
+				  std::function< v8::Local<v8::Value>(v8::Isolate *) >& v8_call);
 void v8js_terminate_execution(v8::Isolate *isolate);
 
 /* Fetch V8 object properties */
-int v8js_get_properties_hash(v8::Local<v8::Value> jsValue, HashTable *retval, int flags, v8::Isolate *isolate TSRMLS_DC);
+int v8js_get_properties_hash(v8::Local<v8::Value> jsValue, HashTable *retval, int flags, v8::Isolate *isolate);
 
 #define V8JS_CTX_PROLOGUE_EX(ctx, ret) \
 	if (!V8JSG(v8_initialized)) { \

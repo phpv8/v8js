@@ -55,7 +55,7 @@ V8JS_METHOD(print) /* {{{ */
 }
 /* }}} */
 
-static void v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int level TSRMLS_DC) /* {{{ */
+static void v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int level) /* {{{ */
 {
 	if (level > 1) {
 		php_printf("%*c", (level - 1) * 2, ' ');
@@ -135,7 +135,7 @@ static void v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int leve
 
 		for (unsigned i = 0; i < length; i++) {
 			php_printf("%*c[%d] =>\n", level * 2, ' ', i);
-			v8js_dumper(isolate, array->Get(i), level + 1 TSRMLS_CC);
+			v8js_dumper(isolate, array->Get(i), level + 1);
 		}
 
 		if (level > 1) {
@@ -172,7 +172,7 @@ static void v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int leve
 				v8::Local<v8::String> key = keys->Get(i)->ToString();
 				v8::String::Utf8Value kname(key);
 				php_printf("%*c[\"%s\"] =>\n", level * 2, ' ', ToCString(kname));
-				v8js_dumper(isolate, object->Get(key), level + 1 TSRMLS_CC);
+				v8js_dumper(isolate, object->Get(key), level + 1);
 			}
 		}
 
@@ -196,7 +196,7 @@ V8JS_METHOD(var_dump) /* {{{ */
 	V8JS_TSRMLS_FETCH();
 
 	for (int i = 0; i < info.Length(); i++) {
-		v8js_dumper(isolate, info[i], 1 TSRMLS_CC);
+		v8js_dumper(isolate, info[i], 1);
 	}
 
 	info.GetReturnValue().Set(V8JS_NULL);
@@ -244,7 +244,7 @@ V8JS_METHOD(require)
 				ZVAL_STRING(&params[1], module_id);
 
 				call_result = call_user_function_ex(EG(function_table), NULL, &c->module_normaliser,
-													&normaliser_result, 2, params, 0, NULL TSRMLS_CC);
+													&normaliser_result, 2, params, 0, NULL);
 			}
 
 			isolate->Enter();
@@ -360,7 +360,7 @@ V8JS_METHOD(require)
 
 		zend_try {
 			ZVAL_STRING(&params[0], normalised_module_id);
-			call_result = call_user_function_ex(EG(function_table), NULL, &c->module_loader, &module_code, 1, params, 0, NULL TSRMLS_CC);
+			call_result = call_user_function_ex(EG(function_table), NULL, &c->module_loader, &module_code, 1, params, 0, NULL);
 		}
 		zend_catch {
 			v8js_terminate_execution(isolate);

@@ -46,7 +46,7 @@ static zend_object_handlers v8js_v8generator_handlers;
 
 /* V8 Object handlers */
 
-static int v8js_v8object_has_property(zval *object, zval *member, int has_set_exists, void **cache_slot TSRMLS_DC) /* {{{ */
+static int v8js_v8object_has_property(zval *object, zval *member, int has_set_exists, void **cache_slot) /* {{{ */
 {
 	/* param has_set_exists:
 	 * 0 (has) whether property exists and is not NULL  - isset()
@@ -58,7 +58,7 @@ static int v8js_v8object_has_property(zval *object, zval *member, int has_set_ex
 
 	if (!obj->ctx) {
 		zend_throw_exception(php_ce_v8js_exception,
-			"Can't access V8Object after V8Js instance is destroyed!", 0 TSRMLS_CC);
+			"Can't access V8Object after V8Js instance is destroyed!", 0);
 		return retval;
 	}
 
@@ -115,14 +115,14 @@ static int v8js_v8object_has_property(zval *object, zval *member, int has_set_ex
 }
 /* }}} */
 
-static zval *v8js_v8object_read_property(zval *object, zval *member, int type, void **cache_slot, zval *rv TSRMLS_DC) /* {{{ */
+static zval *v8js_v8object_read_property(zval *object, zval *member, int type, void **cache_slot, zval *rv) /* {{{ */
 {
 	zval *retval = rv;
 	v8js_v8object *obj = Z_V8JS_V8OBJECT_OBJ_P(object);
 
 	if (!obj->ctx) {
 		zend_throw_exception(php_ce_v8js_exception,
-			"Can't access V8Object after V8Js instance is destroyed!", 0 TSRMLS_CC);
+			"Can't access V8Object after V8Js instance is destroyed!", 0);
 		return retval;
 	}
 
@@ -145,7 +145,7 @@ static zval *v8js_v8object_read_property(zval *object, zval *member, int type, v
 		if (jsObj->HasRealNamedProperty(jsKey) || jsObj->HasRealNamedCallbackProperty(jsKey)) {
 			jsVal = jsObj->Get(jsKey);
 			
-			if (v8js_to_zval(jsVal, retval, obj->flags, isolate TSRMLS_CC) == SUCCESS) {
+			if (v8js_to_zval(jsVal, retval, obj->flags, isolate) == SUCCESS) {
 				return retval;
 			}
 		}
@@ -155,13 +155,13 @@ static zval *v8js_v8object_read_property(zval *object, zval *member, int type, v
 }
 /* }}} */
 
-static void v8js_v8object_write_property(zval *object, zval *member, zval *value, void **cache_slot  TSRMLS_DC) /* {{{ */
+static void v8js_v8object_write_property(zval *object, zval *member, zval *value, void **cache_slot ) /* {{{ */
 {
 	v8js_v8object *obj = Z_V8JS_V8OBJECT_OBJ_P(object);
 
 	if (!obj->ctx) {
 		zend_throw_exception(php_ce_v8js_exception,
-			"Can't access V8Object after V8Js instance is destroyed!", 0 TSRMLS_CC);
+			"Can't access V8Object after V8Js instance is destroyed!", 0);
 		return;
 	}
 
@@ -180,13 +180,13 @@ static void v8js_v8object_write_property(zval *object, zval *member, zval *value
 }
 /* }}} */
 
-static void v8js_v8object_unset_property(zval *object, zval *member, void **cache_slot TSRMLS_DC) /* {{{ */
+static void v8js_v8object_unset_property(zval *object, zval *member, void **cache_slot) /* {{{ */
 {
 	v8js_v8object *obj = Z_V8JS_V8OBJECT_OBJ_P(object);
 
 	if (!obj->ctx) {
 		zend_throw_exception(php_ce_v8js_exception,
-			"Can't access V8Object after V8Js instance is destroyed!", 0 TSRMLS_CC);
+			"Can't access V8Object after V8Js instance is destroyed!", 0);
 		return;
 	}
 
@@ -205,7 +205,7 @@ static void v8js_v8object_unset_property(zval *object, zval *member, void **cach
 }
 /* }}} */
 
-static HashTable *v8js_v8object_get_properties(zval *object TSRMLS_DC) /* {{{ */
+static HashTable *v8js_v8object_get_properties(zval *object) /* {{{ */
 {
 	v8js_v8object *obj = Z_V8JS_V8OBJECT_OBJ_P(object);
 
@@ -230,14 +230,14 @@ static HashTable *v8js_v8object_get_properties(zval *object TSRMLS_DC) /* {{{ */
 
 	if (!obj->ctx) {
 		zend_throw_exception(php_ce_v8js_exception,
-			"Can't access V8Object after V8Js instance is destroyed!", 0 TSRMLS_CC);
+			"Can't access V8Object after V8Js instance is destroyed!", 0);
 		return NULL;
 	}
 
 	V8JS_CTX_PROLOGUE_EX(obj->ctx, NULL);
 	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
-	if (v8js_get_properties_hash(v8obj, obj->properties, obj->flags, isolate TSRMLS_CC) == SUCCESS) {
+	if (v8js_get_properties_hash(v8obj, obj->properties, obj->flags, isolate) == SUCCESS) {
 		return obj->properties;
 	}
 
@@ -245,21 +245,21 @@ static HashTable *v8js_v8object_get_properties(zval *object TSRMLS_DC) /* {{{ */
 }
 /* }}} */
 
-static HashTable *v8js_v8object_get_debug_info(zval *object, int *is_temp TSRMLS_DC) /* {{{ */
+static HashTable *v8js_v8object_get_debug_info(zval *object, int *is_temp) /* {{{ */
 {
 	*is_temp = 0;
-	return v8js_v8object_get_properties(object TSRMLS_CC);
+	return v8js_v8object_get_properties(object);
 }
 /* }}} */
 
-static zend_function *v8js_v8object_get_method(zend_object **object_ptr, zend_string *method, const zval *key TSRMLS_DC) /* {{{ */
+static zend_function *v8js_v8object_get_method(zend_object **object_ptr, zend_string *method, const zval *key) /* {{{ */
 {
 	v8js_v8object *obj = v8js_v8object_fetch_object(*object_ptr);
 	zend_function *f;
 
 	if (!obj->ctx) {
 		zend_throw_exception(php_ce_v8js_exception,
-			"Can't access V8Object after V8Js instance is destroyed!", 0 TSRMLS_CC);
+			"Can't access V8Object after V8Js instance is destroyed!", 0);
 		return NULL;
 	}
 
@@ -297,7 +297,7 @@ static int v8js_v8object_call_method(zend_string *method, zend_object *object, I
 
 	if (!obj->ctx) {
 		zend_throw_exception(php_ce_v8js_exception,
-			"Can't access V8Object after V8Js instance is destroyed!", 0 TSRMLS_CC);
+			"Can't access V8Object after V8Js instance is destroyed!", 0);
 		return FAILURE;
 	}
 
@@ -319,7 +319,7 @@ static int v8js_v8object_call_method(zend_string *method, zend_object *object, I
 	/* std::function relies on its dtor to be executed, otherwise it leaks
 	 * some memory on bailout. */
 	{
-		std::function< v8::Local<v8::Value>(v8::Isolate *) > v8_call = [obj, method, argc, argv, object, &return_value TSRMLS_CC](v8::Isolate *isolate) {
+		std::function< v8::Local<v8::Value>(v8::Isolate *) > v8_call = [obj, method, argc, argv, object, &return_value](v8::Isolate *isolate) {
 			int i = 0;
 
 			v8::Local<v8::String> method_name = V8JS_SYML(ZSTR_VAL(method), static_cast<int>(ZSTR_LEN(method)));
@@ -346,7 +346,7 @@ static int v8js_v8object_call_method(zend_string *method, zend_object *object, I
 
 			for (i = 0; i < argc; i++) {
 				new(&jsArgv[i]) v8::Local<v8::Value>;
-				jsArgv[i] = v8::Local<v8::Value>::New(isolate, zval_to_v8js(&argv[i], isolate TSRMLS_CC));
+				jsArgv[i] = v8::Local<v8::Value>::New(isolate, zval_to_v8js(&argv[i], isolate));
 			}
 
 			v8::Local<v8::Value> result = cb->Call(thisObj, argc, jsArgv);
@@ -361,7 +361,7 @@ static int v8js_v8object_call_method(zend_string *method, zend_object *object, I
 			return result;
 		};
 
-		v8js_v8_call(obj->ctx, &return_value, obj->flags, obj->ctx->time_limit, obj->ctx->memory_limit, v8_call TSRMLS_CC);
+		v8js_v8_call(obj->ctx, &return_value, obj->flags, obj->ctx->time_limit, obj->ctx->memory_limit, v8_call);
 	}
 
 	if (argc > 0) {
@@ -378,14 +378,14 @@ static int v8js_v8object_call_method(zend_string *method, zend_object *object, I
 }
 /* }}} */
 
-static int v8js_v8object_get_closure(zval *object, zend_class_entry **ce_ptr, zend_function **fptr_ptr, zend_object **zobj_ptr TSRMLS_DC) /* {{{ */
+static int v8js_v8object_get_closure(zval *object, zend_class_entry **ce_ptr, zend_function **fptr_ptr, zend_object **zobj_ptr) /* {{{ */
 {
 	zend_function *invoke;
 	v8js_v8object *obj = Z_V8JS_V8OBJECT_OBJ_P(object);
 
 	if (!obj->ctx) {
 		zend_throw_exception(php_ce_v8js_exception,
-			"Can't access V8Object after V8Js instance is destroyed!", 0 TSRMLS_CC);
+			"Can't access V8Object after V8Js instance is destroyed!", 0);
 		return FAILURE;
 	}
 
@@ -412,7 +412,7 @@ static int v8js_v8object_get_closure(zval *object, zend_class_entry **ce_ptr, ze
 }
 /* }}} */
 
-static void v8js_v8object_free_storage(zend_object *object TSRMLS_DC) /* {{{ */
+static void v8js_v8object_free_storage(zend_object *object) /* {{{ */
 {
 	v8js_v8object *c = v8js_v8object_fetch_object(object);
 
@@ -422,7 +422,7 @@ static void v8js_v8object_free_storage(zend_object *object TSRMLS_DC) /* {{{ */
 		c->properties = NULL;
 	}
 
-	zend_object_std_dtor(&c->std TSRMLS_CC);
+	zend_object_std_dtor(&c->std);
 
 	if(c->ctx) {
 		c->v8obj.Reset();
@@ -431,12 +431,12 @@ static void v8js_v8object_free_storage(zend_object *object TSRMLS_DC) /* {{{ */
 }
 /* }}} */
 
-static zend_object *v8js_v8object_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
+static zend_object *v8js_v8object_new(zend_class_entry *ce) /* {{{ */
 {
 	v8js_v8object *c;
 	c = (v8js_v8object *) ecalloc(1, sizeof(v8js_v8object) + zend_object_properties_size(ce));
 
-	zend_object_std_init(&c->std, ce TSRMLS_CC);
+	zend_object_std_init(&c->std, ce);
 	c->std.handlers = &v8js_v8object_handlers;
 	new(&c->v8obj) v8::Persistent<v8::Value>();
 
@@ -454,7 +454,7 @@ static zend_object *v8js_v8object_new(zend_class_entry *ce TSRMLS_DC) /* {{{ */
 PHP_METHOD(V8Object,__construct)
 {
 	zend_throw_exception(php_ce_v8js_exception,
-		"Can't directly construct V8 objects!", 0 TSRMLS_CC);
+		"Can't directly construct V8 objects!", 0);
 	RETURN_FALSE;
 }
 /* }}} */
@@ -464,7 +464,7 @@ PHP_METHOD(V8Object,__construct)
 PHP_METHOD(V8Object, __sleep)
 {
 	zend_throw_exception(php_ce_v8js_exception,
-		"You cannot serialize or unserialize V8Object instances", 0 TSRMLS_CC);
+		"You cannot serialize or unserialize V8Object instances", 0);
 	RETURN_FALSE;
 }
 /* }}} */
@@ -474,7 +474,7 @@ PHP_METHOD(V8Object, __sleep)
 PHP_METHOD(V8Object, __wakeup)
 {
 	zend_throw_exception(php_ce_v8js_exception,
-		"You cannot serialize or unserialize V8Object instances", 0 TSRMLS_CC);
+		"You cannot serialize or unserialize V8Object instances", 0);
 	RETURN_FALSE;
 }
 /* }}} */
@@ -484,7 +484,7 @@ PHP_METHOD(V8Object, __wakeup)
 PHP_METHOD(V8Function,__construct)
 {
 	zend_throw_exception(php_ce_v8js_exception,
-		"Can't directly construct V8 objects!", 0 TSRMLS_CC);
+		"Can't directly construct V8 objects!", 0);
 	RETURN_FALSE;
 }
 /* }}} */
@@ -494,7 +494,7 @@ PHP_METHOD(V8Function,__construct)
 PHP_METHOD(V8Function, __sleep)
 {
 	zend_throw_exception(php_ce_v8js_exception,
-		"You cannot serialize or unserialize V8Function instances", 0 TSRMLS_CC);
+		"You cannot serialize or unserialize V8Function instances", 0);
 	RETURN_FALSE;
 }
 /* }}} */
@@ -504,7 +504,7 @@ PHP_METHOD(V8Function, __sleep)
 PHP_METHOD(V8Function, __wakeup)
 {
 	zend_throw_exception(php_ce_v8js_exception,
-		"You cannot serialize or unserialize V8Function instances", 0 TSRMLS_CC);
+		"You cannot serialize or unserialize V8Function instances", 0);
 	RETURN_FALSE;
 }
 /* }}} */
@@ -601,7 +601,7 @@ static zend_function *v8js_v8generator_get_method(zend_object **object_ptr, zend
 PHP_METHOD(V8Generator,__construct)
 {
 	zend_throw_exception(php_ce_v8js_exception,
-		"Can't directly construct V8 objects!", 0 TSRMLS_CC);
+		"Can't directly construct V8 objects!", 0);
 	RETURN_FALSE;
 }
 /* }}} */
@@ -611,7 +611,7 @@ PHP_METHOD(V8Generator,__construct)
 PHP_METHOD(V8Generator, __sleep)
 {
 	zend_throw_exception(php_ce_v8js_exception,
-		"You cannot serialize or unserialize V8Generator instances", 0 TSRMLS_CC);
+		"You cannot serialize or unserialize V8Generator instances", 0);
 	RETURN_FALSE;
 }
 /* }}} */
@@ -621,7 +621,7 @@ PHP_METHOD(V8Generator, __sleep)
 PHP_METHOD(V8Generator, __wakeup)
 {
 	zend_throw_exception(php_ce_v8js_exception,
-		"You cannot serialize or unserialize V8Generator instances", 0 TSRMLS_CC);
+		"You cannot serialize or unserialize V8Generator instances", 0);
 	RETURN_FALSE;
 }
 /* }}} */
@@ -665,7 +665,7 @@ PHP_METHOD(V8Generator, rewind)
 
 	if(g->primed) {
 		zend_throw_exception(php_ce_v8js_exception,
-			"V8Generator::rewind not supported by ES6", 0 TSRMLS_CC);
+			"V8Generator::rewind not supported by ES6", 0);
 
 	}
 
@@ -688,7 +688,7 @@ PHP_METHOD(V8Generator, valid)
 /* }}} */
 
 
-void v8js_v8object_create(zval *res, v8::Local<v8::Value> value, int flags, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
+void v8js_v8object_create(zval *res, v8::Local<v8::Value> value, int flags, v8::Isolate *isolate) /* {{{ */
 {
 	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
 
@@ -766,19 +766,19 @@ PHP_MINIT_FUNCTION(v8js_v8object_class) /* {{{ */
 
 	/* V8Object Class */
 	INIT_CLASS_ENTRY(ce, "V8Object", v8js_v8object_methods);
-	php_ce_v8object = zend_register_internal_class(&ce TSRMLS_CC);
+	php_ce_v8object = zend_register_internal_class(&ce);
 	php_ce_v8object->ce_flags |= ZEND_ACC_FINAL;
 	php_ce_v8object->create_object = v8js_v8object_new;
 
 	/* V8Function Class */
 	INIT_CLASS_ENTRY(ce, "V8Function", v8js_v8function_methods);
-	php_ce_v8function = zend_register_internal_class(&ce TSRMLS_CC);
+	php_ce_v8function = zend_register_internal_class(&ce);
 	php_ce_v8function->ce_flags |= ZEND_ACC_FINAL;
 	php_ce_v8function->create_object = v8js_v8object_new;
 
 	/* V8Generator Class */
 	INIT_CLASS_ENTRY(ce, "V8Generator", v8js_v8generator_methods);
-	php_ce_v8generator = zend_register_internal_class(&ce TSRMLS_CC);
+	php_ce_v8generator = zend_register_internal_class(&ce);
 	php_ce_v8generator->ce_flags |= ZEND_ACC_FINAL;
 	php_ce_v8generator->create_object = v8js_v8generator_new;
 
