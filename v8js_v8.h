@@ -14,6 +14,8 @@
 #ifndef V8JS_V8_H
 #define V8JS_V8_H
 
+#include <functional>
+
 /* Helper macros */
 #define V8JS_SYM(v)			v8::String::NewFromUtf8(isolate, v, v8::String::kInternalizedString, sizeof(v) - 1)
 #define V8JS_SYML(v, l)		v8::String::NewFromUtf8(isolate, v, v8::String::kInternalizedString, l)
