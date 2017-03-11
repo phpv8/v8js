@@ -654,7 +654,7 @@ static void v8js_compile_script(zval *this_ptr, const zend_string *str, const ze
 	return;
 }
 
-static void v8js_execute_script(zval *this_ptr, v8js_script *res, long flags, long time_limit, long memory_limit, zval **return_value)
+static void v8js_execute_script(zval *this_ptr, v8js_script *res, long flags, long time_limit, size_t memory_limit, zval **return_value)
 {
 	v8js_ctx *c = Z_V8JS_CTX_OBJ_P(this_ptr);
 
@@ -702,13 +702,19 @@ static PHP_METHOD(V8Js, executeString)
 		return;
 	}
 
+	if (memory_limit < 0) {
+		zend_throw_exception(php_ce_v8js_exception,
+				"memory_limit must not be negative", 0);
+		return;
+	}
+
 	v8js_compile_script(getThis(), str, identifier, &res);
 	if (!res) {
 		RETURN_FALSE;
 	}
 
 	zend_try {
-		v8js_execute_script(getThis(), res, flags, time_limit, memory_limit, &return_value);
+		v8js_execute_script(getThis(), res, flags, time_limit, static_cast<size_t>(memory_limit), &return_value);
 		v8js_script_free(res);
 	}
 	zend_catch {
@@ -757,11 +763,17 @@ static PHP_METHOD(V8Js, executeScript)
 		return;
 	}
 
+	if (memory_limit < 0) {
+		zend_throw_exception(php_ce_v8js_exception,
+				"memory_limit must not be negative", 0);
+		return;
+	}
+
 	if((res = (v8js_script *)zend_fetch_resource(Z_RES_P(zscript), PHP_V8JS_SCRIPT_RES_NAME, le_v8js_script)) == NULL) {
 		RETURN_FALSE;
 	}
 
-	v8js_execute_script(getThis(), res, flags, time_limit, memory_limit, &return_value);
+	v8js_execute_script(getThis(), res, flags, time_limit, static_cast<size_t>(memory_limit), &return_value);
 }
 /* }}} */
 
@@ -907,14 +919,20 @@ static PHP_METHOD(V8Js, setMemoryLimit)
 		return;
 	}
 
+	if (memory_limit < 0) {
+		zend_throw_exception(php_ce_v8js_exception,
+				"memory_limit must not be negative", 0);
+		return;
+	}
+
 	c = Z_V8JS_CTX_OBJ_P(getThis());
-	c->memory_limit = memory_limit;
+	c->memory_limit = static_cast<size_t>(memory_limit);
 
 	V8JSG(timer_mutex).lock();
 	for (std::deque< v8js_timer_ctx* >::iterator it = V8JSG(timer_stack).begin();
 		 it != V8JSG(timer_stack).end(); it ++) {
 		if((*it)->ctx == c && !(*it)->killed) {
-			(*it)->memory_limit = memory_limit;
+			(*it)->memory_limit = static_cast<size_t>(memory_limit);
 		}
 	}
 	V8JSG(timer_mutex).unlock();
@@ -1076,7 +1094,6 @@ static PHP_METHOD(V8Js, registerExtension)
 static PHP_METHOD(V8Js, getExtensions)
 {
 	v8js_jsext *jsext;
-	zend_ulong index;
 	zend_string *key;
 	zval *val, ext;
 
@@ -1091,7 +1108,7 @@ static PHP_METHOD(V8Js, getExtensions)
 #endif
 
 	if (v8js_process_globals.extensions) {
-		ZEND_HASH_FOREACH_KEY_VAL(v8js_process_globals.extensions, index, key, val) {
+		ZEND_HASH_FOREACH_STR_KEY_VAL(v8js_process_globals.extensions, key, val) {
 			if (key) {
 				jsext = (v8js_jsext *) Z_PTR_P(val);
 				array_init(&ext);
