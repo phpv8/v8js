@@ -34,7 +34,7 @@ Vagrant.configure("2") do |config|
       i.vm.provision "shell", inline: <<-SHELL
       add-apt-repository ppa:pinepain/libv8-#{version}
       apt-get update
-      apt-get install -y php7.0-dev libv8-#{version}-dbg libv8-#{version}-dev
+      apt-get install -y php7.1-dev libv8-#{version}-dbg libv8-#{version}-dev
     SHELL
     end
   }
