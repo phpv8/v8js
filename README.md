@@ -322,6 +322,17 @@ $v8->executeString('PHP.foo.__call("bar", ["function"]);');
 Mapping Rules
 =============
 
+PHP and JavaScript data types don't match exactly.  This is of course both languages have
+data types to handle numbers.  Yet PHP differentiates between integers and floating point
+numbers contrary JavaScript only has a type `Number`, which is a IEEE 754 floating point
+number.  In many cases this doesn't matter at all, when both languages can represent the
+same number well.  However there are edge cases.
+
+On 64-bit systems PHP allows integers to have 64 significant bits, JavaScripts number type
+(i.e. IEEE 754) however has 52 bit mantissa only.  Hence some precission will be lost.  This
+starts to matter if you pass around integer values with more then 15 accurate decimal digits.
+
+
 Native Arrays
 -------------
 
