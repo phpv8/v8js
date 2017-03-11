@@ -7,6 +7,7 @@ require_once(dirname(__FILE__) . '/skipif.inc');
 if (getenv("SKIP_SLOW_TESTS")) {
 	die("skip slow test");
 }
+skip_if_using_valgrind();
 ?>
 --FILE--
 <?php
