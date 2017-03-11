@@ -79,13 +79,13 @@ extern "C" {
 
 
 /* Convert zval into V8 value */
-v8::Handle<v8::Value> zval_to_v8js(zval *, v8::Isolate *);
+v8::Local<v8::Value> zval_to_v8js(zval *, v8::Isolate *);
 
 /* Convert zend_long into V8 value */
-v8::Handle<v8::Value> zend_long_to_v8js(zend_long, v8::Isolate *);
+v8::Local<v8::Value> zend_long_to_v8js(zend_long, v8::Isolate *);
 
 /* Convert V8 value into zval */
-int v8js_to_zval(v8::Handle<v8::Value>, zval *, int, v8::Isolate * TSRMLS_DC);
+int v8js_to_zval(v8::Local<v8::Value>, zval *, int, v8::Isolate *);
 
 struct v8js_accessor_ctx
 {
@@ -93,10 +93,10 @@ struct v8js_accessor_ctx
     v8::Isolate *isolate;
 };
 
-void v8js_accessor_ctx_dtor(v8js_accessor_ctx * TSRMLS_DC);
+void v8js_accessor_ctx_dtor(v8js_accessor_ctx *);
 
 /* Register accessors into passed object */
-void v8js_register_accessors(std::vector<v8js_accessor_ctx*> *accessor_list, v8::Local<v8::FunctionTemplate>, zval *, v8::Isolate * TSRMLS_DC);
+void v8js_register_accessors(std::vector<v8js_accessor_ctx*> *accessor_list, v8::Local<v8::FunctionTemplate>, zval *, v8::Isolate *);
 
 
 /* Forward declarations */
@@ -159,7 +159,7 @@ struct _v8js_process_globals {
 extern struct _v8js_process_globals v8js_process_globals;
 
 /* Register builtin methods into passed object */
-void v8js_register_methods(v8::Handle<v8::ObjectTemplate>, v8js_ctx *c);
+void v8js_register_methods(v8::Local<v8::ObjectTemplate>, v8js_ctx *c);
 
 #endif	/* PHP_V8JS_MACROS_H */
 

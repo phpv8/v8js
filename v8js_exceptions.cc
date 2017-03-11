@@ -37,11 +37,11 @@ zend_class_entry *php_ce_v8js_memory_limit_exception;
 
 /* {{{ Class: V8JsScriptException */
 
-void v8js_create_script_exception(zval *return_value, v8::Isolate *isolate, v8::TryCatch *try_catch TSRMLS_DC) /* {{{ */
+void v8js_create_script_exception(zval *return_value, v8::Isolate *isolate, v8::TryCatch *try_catch) /* {{{ */
 {
 	v8::String::Utf8Value exception(try_catch->Exception());
 	const char *exception_string = ToCString(exception);
-	v8::Handle<v8::Message> tc_message = try_catch->Message();
+	v8::Local<v8::Message> tc_message = try_catch->Message();
 	const char *filename_string, *sourceline_string;
 	char *message_string;
 	int linenum, start_col, end_col;
@@ -49,7 +49,7 @@ void v8js_create_script_exception(zval *return_value, v8::Isolate *isolate, v8::
 	object_init_ex(return_value, php_ce_v8js_script_exception);
 
 #define PHPV8_EXPROP(type, name, value) \
-	zend_update_property##type(php_ce_v8js_script_exception, return_value, #name, sizeof(#name) - 1, value TSRMLS_CC);
+	zend_update_property##type(php_ce_v8js_script_exception, return_value, #name, sizeof(#name) - 1, value);
 
 	if (tc_message.IsEmpty()) {
 		spprintf(&message_string, 0, "%s", exception_string);
@@ -84,8 +84,8 @@ void v8js_create_script_exception(zval *return_value, v8::Isolate *isolate, v8::
 		if(try_catch->Exception()->IsObject() && try_catch->Exception()->ToObject()->InternalFieldCount() == 2) {
 			zend_object *php_exception = reinterpret_cast<zend_object *>(try_catch->Exception()->ToObject()->GetAlignedPointerFromInternalField(1));
 
-			zend_class_entry *exception_ce = zend_exception_get_default(TSRMLS_C);
-			if (instanceof_function(php_exception->ce, exception_ce TSRMLS_CC)) {
+			zend_class_entry *exception_ce = zend_exception_get_default();
+			if (instanceof_function(php_exception->ce, exception_ce)) {
 				++GC_REFCOUNT(php_exception);
 				zend_exception_set_previous(Z_OBJ_P(return_value), php_exception);
 			}
@@ -98,17 +98,17 @@ void v8js_create_script_exception(zval *return_value, v8::Isolate *isolate, v8::
 }
 /* }}} */
 
-void v8js_throw_script_exception(v8::Isolate *isolate, v8::TryCatch *try_catch TSRMLS_DC) /* {{{ */
+void v8js_throw_script_exception(v8::Isolate *isolate, v8::TryCatch *try_catch) /* {{{ */
 {
 	v8::String::Utf8Value exception(try_catch->Exception());
 	const char *exception_string = ToCString(exception);
 	zval zexception;
 
 	if (try_catch->Message().IsEmpty()) {
-		zend_throw_exception(php_ce_v8js_script_exception, (char *) exception_string, 0 TSRMLS_CC);
+		zend_throw_exception(php_ce_v8js_script_exception, (char *) exception_string, 0);
 	} else {
-		v8js_create_script_exception(&zexception, isolate, try_catch TSRMLS_CC);
-		zend_throw_exception_object(&zexception TSRMLS_CC);
+		v8js_create_script_exception(&zexception, isolate, try_catch);
+		zend_throw_exception_object(&zexception);
 	}
 }
 /* }}} */
@@ -121,7 +121,7 @@ void v8js_throw_script_exception(v8::Isolate *isolate, v8::TryCatch *try_catch T
 		if (zend_parse_parameters_none() == FAILURE) { \
 			return; \
 		} \
-		value = zend_read_property(php_ce_v8js_script_exception, getThis(), #property, sizeof(#property) - 1, 0, &rv TSRMLS_CC); \
+		value = zend_read_property(php_ce_v8js_script_exception, getThis(), #property, sizeof(#property) - 1, 0, &rv); \
 		RETURN_ZVAL(value, 1, 0); \
 	}
 
@@ -213,29 +213,29 @@ PHP_MINIT_FUNCTION(v8js_exceptions) /* {{{ */
 
 	/* V8JsException Class */
 	INIT_CLASS_ENTRY(ce, "V8JsException", v8js_exception_methods);
-	php_ce_v8js_exception = zend_register_internal_class_ex(&ce, spl_ce_RuntimeException TSRMLS_CC);
+	php_ce_v8js_exception = zend_register_internal_class_ex(&ce, spl_ce_RuntimeException);
 
 	/* V8JsScriptException Class */
 	INIT_CLASS_ENTRY(ce, "V8JsScriptException", v8js_script_exception_methods);
-	php_ce_v8js_script_exception = zend_register_internal_class_ex(&ce, php_ce_v8js_exception TSRMLS_CC);
+	php_ce_v8js_script_exception = zend_register_internal_class_ex(&ce, php_ce_v8js_exception);
 	php_ce_v8js_script_exception->ce_flags |= ZEND_ACC_FINAL;
 
 	/* Add custom JS specific properties */
-	zend_declare_property_null(php_ce_v8js_script_exception, ZEND_STRL("JsFileName"),		ZEND_ACC_PROTECTED TSRMLS_CC);
-	zend_declare_property_null(php_ce_v8js_script_exception, ZEND_STRL("JsLineNumber"),		ZEND_ACC_PROTECTED TSRMLS_CC);
-	zend_declare_property_null(php_ce_v8js_script_exception, ZEND_STRL("JsStartColumn"),	ZEND_ACC_PROTECTED TSRMLS_CC);
-	zend_declare_property_null(php_ce_v8js_script_exception, ZEND_STRL("JsEndColumn"),		ZEND_ACC_PROTECTED TSRMLS_CC);
-	zend_declare_property_null(php_ce_v8js_script_exception, ZEND_STRL("JsSourceLine"),		ZEND_ACC_PROTECTED TSRMLS_CC);
-	zend_declare_property_null(php_ce_v8js_script_exception, ZEND_STRL("JsTrace"),			ZEND_ACC_PROTECTED TSRMLS_CC);
+	zend_declare_property_null(php_ce_v8js_script_exception, ZEND_STRL("JsFileName"),		ZEND_ACC_PROTECTED);
+	zend_declare_property_null(php_ce_v8js_script_exception, ZEND_STRL("JsLineNumber"),		ZEND_ACC_PROTECTED);
+	zend_declare_property_null(php_ce_v8js_script_exception, ZEND_STRL("JsStartColumn"),	ZEND_ACC_PROTECTED);
+	zend_declare_property_null(php_ce_v8js_script_exception, ZEND_STRL("JsEndColumn"),		ZEND_ACC_PROTECTED);
+	zend_declare_property_null(php_ce_v8js_script_exception, ZEND_STRL("JsSourceLine"),		ZEND_ACC_PROTECTED);
+	zend_declare_property_null(php_ce_v8js_script_exception, ZEND_STRL("JsTrace"),			ZEND_ACC_PROTECTED);
 
 	/* V8JsTimeLimitException Class */
 	INIT_CLASS_ENTRY(ce, "V8JsTimeLimitException", v8js_time_limit_exception_methods);
-	php_ce_v8js_time_limit_exception = zend_register_internal_class_ex(&ce, php_ce_v8js_exception TSRMLS_CC);
+	php_ce_v8js_time_limit_exception = zend_register_internal_class_ex(&ce, php_ce_v8js_exception);
 	php_ce_v8js_time_limit_exception->ce_flags |= ZEND_ACC_FINAL;
 
 	/* V8JsMemoryLimitException Class */
 	INIT_CLASS_ENTRY(ce, "V8JsMemoryLimitException", v8js_memory_limit_exception_methods);
-	php_ce_v8js_memory_limit_exception = zend_register_internal_class_ex(&ce, php_ce_v8js_exception TSRMLS_CC);
+	php_ce_v8js_memory_limit_exception = zend_register_internal_class_ex(&ce, php_ce_v8js_exception);
 	php_ce_v8js_memory_limit_exception->ce_flags |= ZEND_ACC_FINAL;
 
 	return SUCCESS;

@@ -27,30 +27,28 @@ extern "C" {
 
 static void v8js_fetch_php_variable(v8::Local<v8::String> name, const v8::PropertyCallbackInfo<v8::Value>& info) /* {{{ */
 {
-    v8::Handle<v8::External> data = v8::Handle<v8::External>::Cast(info.Data());
+    v8::Local<v8::External> data = v8::Local<v8::External>::Cast(info.Data());
     v8js_accessor_ctx *ctx = static_cast<v8js_accessor_ctx *>(data->Value());
 	v8::Isolate *isolate = ctx->isolate;
 	zval *variable;
 
-	V8JS_TSRMLS_FETCH();
-
-	zend_is_auto_global(ctx->variable_name TSRMLS_CC);
+	zend_is_auto_global(ctx->variable_name);
 
 	if ((variable = zend_hash_find(&EG(symbol_table), ctx->variable_name))) {
-		info.GetReturnValue().Set(zval_to_v8js(variable, isolate TSRMLS_CC));
+		info.GetReturnValue().Set(zval_to_v8js(variable, isolate));
 		return;
 	}
 }
 /* }}} */
 
-void v8js_accessor_ctx_dtor(v8js_accessor_ctx *ctx TSRMLS_DC) /* {{{ */
+void v8js_accessor_ctx_dtor(v8js_accessor_ctx *ctx) /* {{{ */
 {
 	zend_string_release(ctx->variable_name);
 	efree(ctx);
 }
 /* }}} */
 
-void v8js_register_accessors(std::vector<v8js_accessor_ctx*> *accessor_list, v8::Local<v8::FunctionTemplate> php_obj_t, zval *array, v8::Isolate *isolate TSRMLS_DC) /* {{{ */
+void v8js_register_accessors(std::vector<v8js_accessor_ctx*> *accessor_list, v8::Local<v8::FunctionTemplate> php_obj_t, zval *array, v8::Isolate *isolate) /* {{{ */
 {
 	zend_string *property_name;
 	zval *item;
