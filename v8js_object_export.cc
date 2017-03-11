@@ -191,7 +191,6 @@ void v8js_php_callback(const v8::FunctionCallbackInfo<v8::Value>& info) /* {{{ *
 	v8::Isolate *isolate = info.GetIsolate();
 	v8::Local<v8::Object> self = info.Holder();
 
-	V8JS_TSRMLS_FETCH();
 	zend_object *object = reinterpret_cast<zend_object *>(self->GetAlignedPointerFromInternalField(1));
 	zend_function *method_ptr;
 
@@ -243,7 +242,6 @@ static void v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value>& i
 		Z_ADDREF_P(&value);
 	} else {
 		// Object created from JavaScript context.  Need to create PHP object first.
-		V8JS_TSRMLS_FETCH();
 		zend_class_entry *ce = static_cast<zend_class_entry *>(ext_ce->Value());
 		zend_function *ctor_ptr = ce->constructor;
 
@@ -322,7 +320,6 @@ static void v8js_named_property_enumerator(const v8::PropertyCallbackInfo<v8::Ar
 	v8::Local<v8::Array> result = v8::Array::New(isolate, 0);
 	uint32_t result_len = 0;
 
-	V8JS_TSRMLS_FETCH();
 	zend_class_entry *ce;
 	void *ptr;
 	HashTable *proptable;
@@ -425,8 +422,6 @@ static void v8js_invoke_callback(const v8::FunctionCallbackInfo<v8::Value>& info
 	v8::Local<v8::Value> *argv = static_cast<v8::Local<v8::Value> *>(alloca(sizeof(v8::Local<v8::Value>) * argc));
 	v8::Local<v8::Value> result;
 
-	V8JS_TSRMLS_FETCH();
-
 	for (i=0; i<argc; i++) {
 		new(&argv[i]) v8::Local<v8::Value>;
 		argv[i] = info[i];
@@ -465,7 +460,6 @@ static void v8js_fake_call_impl(const v8::FunctionCallbackInfo<v8::Value>& info)
 	char *error;
 	size_t error_len;
 
-	V8JS_TSRMLS_FETCH();
 	zend_class_entry *ce;
 	zend_object *object = reinterpret_cast<zend_object *>(self->GetAlignedPointerFromInternalField(1));
 	ce = object->ce;
@@ -590,7 +584,6 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> property
 	v8::Local<v8::Value> ret_value;
 	v8::Local<v8::Function> cb;
 
-	V8JS_TSRMLS_FETCH();
 	zend_class_entry *scope, *ce;
 	zend_function *method_ptr = NULL;
 	zval php_value;

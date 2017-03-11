@@ -213,7 +213,6 @@ static zend_object* v8js_new(zend_class_entry *ce) /* {{{ */
 	object_properties_init(&c->std, ce);
 
 	c->std.handlers = &v8js_object_handlers;
-	TSRMLS_SET_CTX(c->zts_ctx);
 
 	new(&c->object_name) v8::Persistent<v8::String>();
 	new(&c->context) v8::Persistent<v8::Context>();

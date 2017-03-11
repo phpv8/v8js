@@ -65,8 +65,6 @@ void v8js_array_access_getter(uint32_t index, const v8::PropertyCallbackInfo<v8:
 	v8::Isolate *isolate = info.GetIsolate();
 	v8::Local<v8::Object> self = info.Holder();
 
-	V8JS_TSRMLS_FETCH();
-
 	zend_object *object = reinterpret_cast<zend_object *>(self->GetAlignedPointerFromInternalField(1));
 
 	zval zvalue;
@@ -85,8 +83,6 @@ void v8js_array_access_setter(uint32_t index, v8::Local<v8::Value> value,
 {
 	v8::Isolate *isolate = info.GetIsolate();
 	v8::Local<v8::Object> self = info.Holder();
-
-	V8JS_TSRMLS_FETCH();
 
 	zend_object *object = reinterpret_cast<zend_object *>(self->GetAlignedPointerFromInternalField(1));
 
@@ -160,8 +156,6 @@ static void v8js_array_access_length(v8::Local<v8::String> property, const v8::P
 	v8::Isolate *isolate = info.GetIsolate();
 	v8::Local<v8::Object> self = info.Holder();
 
-	V8JS_TSRMLS_FETCH();
-
 	zend_object *object = reinterpret_cast<zend_object *>(self->GetAlignedPointerFromInternalField(1));
 
 	int length = v8js_array_access_get_count_result(object);
@@ -173,8 +167,6 @@ void v8js_array_access_deleter(uint32_t index, const v8::PropertyCallbackInfo<v8
 {
 	v8::Isolate *isolate = info.GetIsolate();
 	v8::Local<v8::Object> self = info.Holder();
-
-	V8JS_TSRMLS_FETCH();
 
 	zend_object *object = reinterpret_cast<zend_object *>(self->GetAlignedPointerFromInternalField(1));
 
@@ -193,8 +185,6 @@ void v8js_array_access_query(uint32_t index, const v8::PropertyCallbackInfo<v8::
 	v8::Isolate *isolate = info.GetIsolate();
 	v8::Local<v8::Object> self = info.Holder();
 
-	V8JS_TSRMLS_FETCH();
-
 	zend_object *object = reinterpret_cast<zend_object *>(self->GetAlignedPointerFromInternalField(1));
 
 	/* If index is set, then return an integer encoding a v8::PropertyAttribute;
@@ -210,8 +200,6 @@ void v8js_array_access_enumerator(const v8::PropertyCallbackInfo<v8::Array>& inf
 {
 	v8::Isolate *isolate = info.GetIsolate();
 	v8::Local<v8::Object> self = info.Holder();
-
-	V8JS_TSRMLS_FETCH();
 
 	zend_object *object = reinterpret_cast<zend_object *>(self->GetAlignedPointerFromInternalField(1));
 

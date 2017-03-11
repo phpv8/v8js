@@ -32,8 +32,6 @@ static void v8js_fetch_php_variable(v8::Local<v8::String> name, const v8::Proper
 	v8::Isolate *isolate = ctx->isolate;
 	zval *variable;
 
-	V8JS_TSRMLS_FETCH();
-
 	zend_is_auto_global(ctx->variable_name);
 
 	if ((variable = zend_hash_find(&EG(symbol_table), ctx->variable_name))) {

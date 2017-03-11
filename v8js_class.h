@@ -74,19 +74,9 @@ struct v8js_ctx {
   zval zval_snapshot_blob;
   v8::StartupData snapshot_blob;
 
-#ifdef ZTS
-  void ***zts_ctx;
-#endif
-
   zend_object std;
 };
 /* }}} */
-
-#ifdef ZTS
-# define V8JS_TSRMLS_FETCH() TSRMLS_FETCH_FROM_CTX(((v8js_ctx *) isolate->GetData(0))->zts_ctx);
-#else
-# define V8JS_TSRMLS_FETCH()
-#endif
 
 static inline struct v8js_ctx *v8js_ctx_fetch_object(zend_object *obj) {
 	return (struct v8js_ctx *)((char *)obj - XtOffsetOf(struct v8js_ctx, std));

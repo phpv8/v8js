@@ -193,7 +193,6 @@ static void v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int leve
 V8JS_METHOD(var_dump) /* {{{ */
 {
 	v8::Isolate *isolate = info.GetIsolate();
-	V8JS_TSRMLS_FETCH();
 
 	for (int i = 0; i < info.Length(); i++) {
 		v8js_dumper(isolate, info[i], 1);
@@ -206,7 +205,6 @@ V8JS_METHOD(var_dump) /* {{{ */
 V8JS_METHOD(require)
 {
 	v8::Isolate *isolate = info.GetIsolate();
-	V8JS_TSRMLS_FETCH();
 
 	// Get the extension context
 	v8::Local<v8::External> data = v8::Local<v8::External>::Cast(info.Data());
