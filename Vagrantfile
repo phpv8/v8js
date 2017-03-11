@@ -29,7 +29,7 @@ Vagrant.configure("2") do |config|
     add-apt-repository ppa:ondrej/php
   SHELL
 
-  %w{5.2 5.7 5.8}.each { |version|
+  %w{5.1 5.2 5.4 5.7 5.8 5.9}.each { |version|
     config.vm.define "v8-#{version}" do |i|
       i.vm.provision "shell", inline: <<-SHELL
       add-apt-repository ppa:pinepain/libv8-#{version}
