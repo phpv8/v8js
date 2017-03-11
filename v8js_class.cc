@@ -1076,7 +1076,6 @@ static PHP_METHOD(V8Js, registerExtension)
 static PHP_METHOD(V8Js, getExtensions)
 {
 	v8js_jsext *jsext;
-	zend_ulong index;
 	zend_string *key;
 	zval *val, ext;
 
@@ -1091,7 +1090,7 @@ static PHP_METHOD(V8Js, getExtensions)
 #endif
 
 	if (v8js_process_globals.extensions) {
-		ZEND_HASH_FOREACH_KEY_VAL(v8js_process_globals.extensions, index, key, val) {
+		ZEND_HASH_FOREACH_STR_KEY_VAL(v8js_process_globals.extensions, key, val) {
 			if (key) {
 				jsext = (v8js_jsext *) Z_PTR_P(val);
 				array_init(&ext);
