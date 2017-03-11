@@ -13,7 +13,7 @@ install:
 
 build:
 	phpize
-	./configure
+	./configure CXXFLAGS="-Wall -Wno-write-strings -Werror"
 	$(MAKE) -j3
 
 test: build
