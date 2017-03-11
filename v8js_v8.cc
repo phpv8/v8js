@@ -32,7 +32,7 @@ extern "C" {
 #include <libplatform/libplatform.h>
 
 
-void v8js_v8_init(TSRMLS_D) /* {{{ */
+void v8js_v8_init() /* {{{ */
 {
 	/* Run only once; thread-local test first */
 	if (V8JSG(v8_initialized)) {

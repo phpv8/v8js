@@ -344,7 +344,7 @@ static PHP_METHOD(V8Js, __construct)
 	}
 
 	/* Initialize V8 */
-	v8js_v8_init(TSRMLS_C);
+	v8js_v8_init();
 
 	/* Throw PHP exception if uncaught exceptions exist */
 	c->report_uncaught = report_uncaught;
@@ -1130,7 +1130,7 @@ static PHP_METHOD(V8Js, createSnapshot)
 	}
 
 	/* Initialize V8, if not already done. */
-	v8js_v8_init(TSRMLS_C);
+	v8js_v8_init();
 
 	v8::StartupData snapshot_blob = v8::V8::CreateSnapshotDataBlob(ZSTR_VAL(script));
 
@@ -1320,10 +1320,10 @@ PHP_MINIT_FUNCTION(v8js_class) /* {{{ */
 	v8js_object_handlers.unset_property = v8js_unset_property;
 
 	/* V8Js Class Constants */
-	zend_declare_class_constant_string(php_ce_v8js, ZEND_STRL("V8_VERSION"),		PHP_V8_VERSION			TSRMLS_CC);
+	zend_declare_class_constant_string(php_ce_v8js, ZEND_STRL("V8_VERSION"),		PHP_V8_VERSION);
 
-	zend_declare_class_constant_long(php_ce_v8js, ZEND_STRL("FLAG_NONE"),			V8JS_FLAG_NONE			TSRMLS_CC);
-	zend_declare_class_constant_long(php_ce_v8js, ZEND_STRL("FLAG_FORCE_ARRAY"),	V8JS_FLAG_FORCE_ARRAY	TSRMLS_CC);
+	zend_declare_class_constant_long(php_ce_v8js, ZEND_STRL("FLAG_NONE"),			V8JS_FLAG_NONE);
+	zend_declare_class_constant_long(php_ce_v8js, ZEND_STRL("FLAG_FORCE_ARRAY"),	V8JS_FLAG_FORCE_ARRAY);
 	zend_declare_class_constant_long(php_ce_v8js, ZEND_STRL("FLAG_PROPAGATE_PHP_EXCEPTIONS"), V8JS_FLAG_PROPAGATE_PHP_EXCEPTIONS);
 
 	le_v8js_script = zend_register_list_destructors_ex(v8js_script_dtor, NULL, PHP_V8JS_SCRIPT_RES_NAME, module_number);

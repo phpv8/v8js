@@ -167,7 +167,7 @@ failure:
 			zval tmp_zv;
 			ZVAL_OBJ(&tmp_zv, EG(exception));
 			return_value = isolate->ThrowException(zval_to_v8js(&tmp_zv, isolate));
-			zend_clear_exception(TSRMLS_C);
+			zend_clear_exception();
 		} else {
 			v8js_terminate_execution(isolate);
 		}
