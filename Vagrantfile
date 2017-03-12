@@ -85,6 +85,21 @@ Vagrant.configure("2") do |config|
   end
 
 
+  #
+  # Fedora 25 box with 32-bit
+  #
+  config.vm.define "fedora25-32" do |i|
+    i.vm.box = "wholebits/fedora25-32"
+    i.vm.synced_folder ".", "/data/v8js"
+
+    i.vm.provision "shell", inline: <<-SHELL
+      dnf -y update
+      dnf -y install gcc-c++ gdb tmux git tig curl vim
+      dnf -y install v8-devel php-devel
+    SHELL
+  end
+
+
   config.vm.provision "shell", inline: <<-SHELL
     mkdir -p /data/build && chown vagrant:vagrant /data/build
   SHELL
