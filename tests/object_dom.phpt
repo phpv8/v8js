@@ -3,7 +3,7 @@ Test V8::executeString() : DOM object passed from PHP
 --SKIPIF--
 <?php
 if(!class_exists('DomDocument')) {
-  die('skip');
+  die('SKIP ext-dom required');
 }
 require_once(dirname(__FILE__) . '/skipif.inc');
 ?>

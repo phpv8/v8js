@@ -7,3 +7,8 @@ endif
 ifneq (,$(realpath $(EXTENSION_DIR)/pthreads.so))
 PHP_TEST_SHARED_EXTENSIONS+=-d extension=$(EXTENSION_DIR)/pthreads.so
 endif
+
+# add dom extension, if available
+ifneq (,$(realpath $(EXTENSION_DIR)/dom.so))
+PHP_TEST_SHARED_EXTENSIONS+=-d extension=$(EXTENSION_DIR)/dom.so
+endif
