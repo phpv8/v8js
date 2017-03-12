@@ -9,8 +9,12 @@ command 'phpize',
 
 command 'configure',
   description: 'executes "configure" to prepare build',
+  parameters: {
+    cxxflags: { default: "-ggdb -Wall -Wno-write-strings" },
+    ldflags: { default: "-ggdb" },
+  },
   script: <<-eof
-    bash -c 'cd /data/build; ../v8js/configure `bash -c "if test -d /opt/libv8-*; then echo -n --with-v8js=; echo /opt/libv8-*; fi"` `test -d "/usr/lib64" && echo --with-libdir=lib64` CXXFLAGS="-Wall -Wno-write-strings"'
+    bash -c 'cd /data/build; ../v8js/configure `bash -c "if test -d /opt/libv8-*; then echo -n --with-v8js=; echo /opt/libv8-*; fi"` `test -d "/usr/lib64" && echo --with-libdir=lib64` CXXFLAGS="%{cxxflags}" LDFLAGS="%{ldflags}"'
     eof
 
 command 'clean',
