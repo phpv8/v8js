@@ -182,12 +182,12 @@ int main ()
   PHP_ADD_INCLUDE($V8_DIR)
   PHP_NEW_EXTENSION(v8js, [	\
     v8js_array_access.cc	\
-    v8js.cc					\
     v8js_class.cc			\
     v8js_commonjs.cc		\
     v8js_convert.cc			\
     v8js_exceptions.cc		\
     v8js_generator_export.cc	\
+    v8js_main.cc			\
     v8js_methods.cc			\
     v8js_object_export.cc	\
 	v8js_timer.cc			\

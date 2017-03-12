@@ -210,7 +210,6 @@
    <file baseinstalldir="/" md5sum="dacff4a6abd502e4f13b094a92cc57f3" name="README.MacOS.md" role="doc" />
    <file baseinstalldir="/" md5sum="0a083021c2423a3d16cd4023ee1bb301" name="README.md" role="doc" />
    <file baseinstalldir="/" md5sum="177f5310b344ac06469b1a955ed9126d" name="README.Win32.md" role="doc" />
-   <file baseinstalldir="/" md5sum="daf0b6cab35b5cf09719a6dce415de87" name="v8js.cc" role="src" />
    <file baseinstalldir="/" md5sum="8f7116732de5809bcf51a7ebc69b7a89" name="v8js_array_access.cc" role="src" />
    <file baseinstalldir="/" md5sum="51905856eab666cbc19762c6fb83f931" name="v8js_array_access.h" role="src" />
    <file baseinstalldir="/" md5sum="ac7a0ce119d0633a074c641ab7779a39" name="v8js_class.cc" role="src" />
@@ -222,6 +221,7 @@
    <file baseinstalldir="/" md5sum="388ee331f4f5f5d4f39b49d6eaca8ce5" name="v8js_exceptions.h" role="src" />
    <file baseinstalldir="/" md5sum="d2b5ef6472cb277c34b13a062f9a9cc8" name="v8js_generator_export.cc" role="src" />
    <file baseinstalldir="/" md5sum="0bfa1eb796acf31f8bebc10dfd357a8f" name="v8js_generator_export.h" role="src" />
+   <file baseinstalldir="/" md5sum="daf0b6cab35b5cf09719a6dce415de87" name="v8js_main.cc" role="src" />
    <file baseinstalldir="/" md5sum="49542555d4f8b39400e3ebead6cd98cd" name="v8js_methods.cc" role="src" />
    <file baseinstalldir="/" md5sum="20927ddbc1922dc25a2c3456fd6c142b" name="v8js_object_export.cc" role="src" />
    <file baseinstalldir="/" md5sum="01bd52c79dc6f7c4ab6b87a85e71d6b4" name="v8js_object_export.h" role="src" />
