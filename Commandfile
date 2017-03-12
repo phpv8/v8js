@@ -1,0 +1,41 @@
+#
+# Vagrant Commandfile
+# (use with vagrant-devcommands plugin)
+#
+
+command 'phpize',
+  description: 'executes "phpize" to configure source tree for installed PHP version',
+  script: 'cd /data/v8js && phpize'
+
+command 'configure',
+  description: 'executes "configure" to prepare build',
+  script: <<-eof
+    bash -c 'cd /data/build; ../v8js/configure `bash -c "if test -d /opt/libv8-*; then echo -n --with-v8js=; echo /opt/libv8-*; fi"` `test -d "/usr/lib64" && echo --with-libdir=lib64` CXXFLAGS="-Wall -Wno-write-strings"'
+    eof
+
+command 'clean',
+  description: 'executes "make clean"',
+  script: <<-eof
+    cd /data/build; `which gmake || which make` clean
+    eof
+
+command 'build',
+  description: 'executes "make"',
+  script: <<-eof
+    cd /data/build; `which gmake || which make`
+    eof
+
+command 'test',
+  description: 'executes "make test"',
+  script: <<-eof
+    cd /data/build; `which gmake || which make` test NO_INTERACTION=1 REPORT_EXIT_STATUS=1
+    eof
+
+chain 'all',
+  commands: [
+    { command: 'phpize' },
+    { command: 'configure' },
+    { command: 'clean' },
+    { command: 'build' },
+    { command: 'test' }
+  ]
