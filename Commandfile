@@ -31,6 +31,12 @@ command 'test',
     cd /data/build; `which gmake || which make` test NO_INTERACTION=1 REPORT_EXIT_STATUS=1
     eof
 
+command 'shell',
+  description: 'execute a PHP CLI interactive shell with V8Js loaded',
+  script: <<-eof
+    cd /data/build; php -a -d extension=modules/v8js.so
+    eof
+
 chain 'all',
   commands: [
     { command: 'phpize' },
