@@ -20,7 +20,7 @@ command 'configure',
 command 'clean',
   description: 'executes "make clean"',
   script: <<-eof
-    cd /data/build; `which gmake || which make` clean
+    cd /data/build; `which gmake || which make` clean; rm -rf /data/v8js/coverage_report /data/build/gcov.info
     eof
 
 command 'build',
@@ -48,4 +48,22 @@ chain 'all',
     { command: 'clean' },
     { command: 'build' },
     { command: 'test' }
+  ]
+
+command 'coverage_report',
+  description: 'capture *.gcda files and generate code coverage report',
+  script: <<-eof
+    cd /data/build
+    lcov --base-directory=.libs --directory=.libs --directory ../v8js/ --no-external --capture --output-file gcov.info
+    genhtml --legend --output-directory ../v8js/coverage_report/ --title "V8Js Code Coverage" gcov.info
+    eof
+
+chain 'coverage',
+  commands: [
+    { command: 'phpize' },
+    { command: 'configure', argv: ['--cxxflags=-O0 --coverage', '--ldflags=--coverage'] },
+    { command: 'clean' },
+    { command: 'build' },
+    { command: 'test' },
+    { command: 'coverage_report' },
   ]

@@ -27,7 +27,7 @@ Vagrant.configure("2") do |config|
       gpg --armor --export 7F438280EF8D349F | apt-key add -
 
       apt-get update
-      apt-get install -y software-properties-common gdb tmux git tig curl apache2-utils
+      apt-get install -y software-properties-common gdb tmux git tig curl apache2-utils lcov
 
       add-apt-repository ppa:ondrej/php
       add-apt-repository ppa:pinepain/libv8-#{version}
