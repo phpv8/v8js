@@ -87,27 +87,34 @@ if test "$PHP_V8JS" != "no"; then
   CPPFLAGS="$CPPFLAGS -I$V8_DIR/include -std=$ac_cv_v8_cstd"
   LDFLAGS="$LDFLAGS -L$V8_DIR/$PHP_LIBDIR"
 
+  AC_MSG_CHECKING([for libv8_libplatform])
   AC_DEFUN([V8_CHECK_LINK], [
-	AC_MSG_CHECKING([for libv8_libplatform])
     save_LIBS="$LIBS"
 	LIBS="$LIBS $1 -lv8_libplatform -lv8"
 	AC_LINK_IFELSE([AC_LANG_PROGRAM([
 	  namespace v8 {
 		namespace platform {
-		  void* CreateDefaultPlatform(int thread_pool_size = 0);
+		  enum class IdleTaskSupport { kDisabled, kEnabled };
+		  void* CreateDefaultPlatform($2);
 		}
 	  }
 	], [ v8::platform::CreateDefaultPlatform(); ])], [
 	  dnl libv8_libplatform.so found
 	  AC_MSG_RESULT(found)
 	  V8JS_SHARED_LIBADD="$1 -lv8_libplatform $V8JS_SHARED_LIBADD"
-      $2
-	], [ $3 ])
+      $3
+	], [ $4 ])
     LIBS="$save_LIBS"
   ])
 
-  V8_CHECK_LINK([], [], [
-    V8_CHECK_LINK([-lv8_libbase], [], [ AC_MSG_ERROR([could not find libv8_libplatform library]) ])
+  V8_CHECK_LINK([], [int thread_pool_size = 0, IdleTaskSupport idle_task_support = IdleTaskSupport::kDisabled], [], [
+    V8_CHECK_LINK([], [int thread_pool_size = 0], [], [
+      V8_CHECK_LINK([-lv8_libbase], [int thread_pool_size = 0, IdleTaskSupport idle_task_support = IdleTaskSupport::kDisabled], [], [
+        V8_CHECK_LINK([-lv8_libbase], [int thread_pool_size = 0], [], [
+          AC_MSG_ERROR([could not find libv8_libplatform library])
+        ])
+	  ])
+	])
   ])
 
 
