@@ -37,6 +37,50 @@ Vagrant.configure("2") do |config|
     end
   }
 
+  %w{5.9.35}.each { |version|
+    config.vm.define "v8-#{version}" do |i|
+      i.vm.synced_folder ".", "/data/v8js"
+
+      i.vm.provision "shell", inline: <<-SHELL
+      gpg --keyserver keys.gnupg.net --recv 7F438280EF8D349F
+      gpg --armor --export 7F438280EF8D349F | apt-key add -
+
+      apt-get update
+      apt-get install -y software-properties-common gdb tmux git tig curl apache2-utils lcov build-essential python libglib2.0-dev
+
+      add-apt-repository ppa:ondrej/php
+      apt-get update
+      apt-get install -y php7.1-dev
+
+      mkdir -p /data
+      cd /data
+
+      # Install depot_tools first (needed for source checkout)
+      git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+      export PATH=`pwd`/depot_tools:"$PATH"
+
+      # Download v8
+      fetch v8
+      cd v8
+
+      # checkout version
+      git checkout #{version}
+      gclient sync
+
+      # Setup GN
+      tools/dev/v8gen.py -vv x64.release -- is_component_build=true
+
+      # Build
+      ninja -C out.gn/x64.release/
+
+      # Install to /opt/libv8-#{version}/
+      sudo mkdir -p /opt/libv8-#{version}/{lib,include}
+      sudo cp out.gn/x64.release/lib*.so out.gn/x64.release/*_blob.bin /opt/libv8-#{version}/lib/
+      sudo cp -R include/* /opt/libv8-#{version}/include/
+    SHELL
+    end
+  }
+
 
   #
   # Fedora-based box with GCC7, V8 5.2 + PHP 7.1 installed
