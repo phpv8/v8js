@@ -31,8 +31,11 @@ command 'build',
 
 command 'test',
   description: 'executes "make test"',
+  parameters: {
+    tests: { wrap: "TESTS=tests/%s", optional: true },
+  },
   script: <<-eof
-    cd /data/build; `which gmake || which make` test NO_INTERACTION=1 REPORT_EXIT_STATUS=1
+    cd /data/build; `which gmake || which make` test %{tests} NO_INTERACTION=1 REPORT_EXIT_STATUS=1
     eof
 
 command 'shell',
