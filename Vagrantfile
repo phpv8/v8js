@@ -144,7 +144,30 @@ Vagrant.configure("2") do |config|
   end
 
 
+  #
+  # ubuntu xenial(16.04) box with PHP 7.1.3, V8 5.2
+  # (to reproduce issue #304)
+  #
+  config.vm.define "xenial-v8-5.2" do |i|
+    i.vm.box = "ubuntu/xenial64"
+    i.vm.synced_folder ".", "/data/v8js"
+
+    i.vm.provision "shell", inline: <<-SHELL
+    gpg --keyserver keys.gnupg.net --recv 7F438280EF8D349F
+    gpg --armor --export 7F438280EF8D349F | apt-key add -
+
+    apt-get update
+    apt-get install -y software-properties-common gdb tmux git tig curl apache2-utils lcov
+
+    add-apt-repository ppa:ondrej/php
+    add-apt-repository ppa:pinepain/libv8-5.2
+    apt-get update
+    apt-get install -y php7.1-dev libv8-5.2-dbg libv8-5.2-dev
+  SHELL
+  end
+
+
   config.vm.provision "shell", inline: <<-SHELL
-    mkdir -p /data/build && chown vagrant:vagrant /data/build
+    mkdir -p /data/build && chown 1000:1000 /data/build
   SHELL
 end
