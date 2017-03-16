@@ -167,7 +167,7 @@ Vagrant.configure("2") do |config|
   end
 
 
-  config.vm.provision "shell", inline: <<-SHELL
-    mkdir -p /data/build && chown 1000:1000 /data/build
+  config.vm.provision "shell", privileged: false, inline: <<-SHELL
+    sudo mkdir -p /data/build && sudo chown $USER:$USER /data/build
   SHELL
 end
