@@ -69,6 +69,7 @@ test_script:
 
 on_finish:
   - cd c:\projects\php-sdk\v8js-ci\vc14\%Platform%\php-%PHP_VERSION%
+  - type ext\v8js\tests\issue_306_basic.out
   - ps: |
       # upload results to AppVeyor
       $wc = New-Object 'System.Net.WebClient'
