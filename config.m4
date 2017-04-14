@@ -3,7 +3,7 @@ PHP_ARG_WITH(v8js, for V8 Javascript Engine,
 
 if test "$PHP_V8JS" != "no"; then
   SEARCH_PATH="/usr/local /usr"
-  SEARCH_FOR="$PHP_LIBDIR/libv8.$SHLIB_DL_SUFFIX_NAME"
+  SEARCH_FOR="$PHP_LIBDIR/libv8.$SHLIB_SUFFIX_NAME"
   
   if test -r $PHP_V8JS/$SEARCH_FOR; then
     case $host_os in
