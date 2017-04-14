@@ -76,8 +76,8 @@ void v8js_v8_init() /* {{{ */
 		}
 	}
 
-#ifdef PHP_V8_EXEC_PATH
-    /* Initialize ICU */
+#if defined(PHP_V8_EXEC_PATH) && PHP_V8_API_VERSION >= 5003178
+    /* Initialize ICU, call introduced in V8 5.3.178 */
 	v8::V8::InitializeICUDefaultLocation(PHP_V8_EXEC_PATH, nullptr);
 #endif
 
