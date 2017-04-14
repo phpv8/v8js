@@ -7,12 +7,22 @@ Test V8::executeString() : Issue #306 V8 crashing on toLocaleString()
 
 $v8 = new V8Js();
 
-$v8 = new V8Js;
 $expr = 'new Date("10/11/2009").toLocaleString("en-us", { month: "long" });';
-var_dump( $v8->executeString($expr, null, V8Js::FLAG_FORCE_ARRAY) );
+$result = $v8->executeString($expr);
+
+// V8 can be compiled with i18n support and without;
+// without i18n support however toLocaleString doesn't really work,
+// it just returns the date string...
+
+if ($result === 'October') {
+    var_dump(true);
+} else {
+    $expr = 'new Date("10/11/2009").toString();';
+    var_dump($v8->executeString($expr) === $result);
+}
 
 ?>
 ===EOF===
 --EXPECT--
-string(7) "October"
+bool(true)
 ===EOF===
