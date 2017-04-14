@@ -166,6 +166,31 @@ Vagrant.configure("2") do |config|
   SHELL
   end
 
+  config.vm.define "macos-sierra" do |i|
+    i.vm.box = "gobadiah/macos-sierra"
+
+    i.vm.synced_folder ".", "/data/v8js", type: "nfs", mount_options:["resvport"]
+    i.vm.network "private_network", ip: "192.168.50.3"
+
+    i.vm.provider "virtualbox" do |vb|
+      vb.memory = "3000"
+
+      vb.customize ["modifyvm", :id, "--cpuidset", "1","000106e5","00100800","0098e3fd","bfebfbff"]
+      vb.customize ["setextradata", :id, "VBoxInternal/Devices/efi/0/Config/DmiSystemProduct", "iMac11,3"]
+      vb.customize ["setextradata", :id, "VBoxInternal/Devices/efi/0/Config/DmiSystemVersion", "1.0"]
+      vb.customize ["setextradata", :id, "VBoxInternal/Devices/efi/0/Config/DmiBoardProduct", "Iloveapple"]
+      vb.customize ["setextradata", :id, "VBoxInternal/Devices/smc/0/Config/DeviceKey", "ourhardworkbythesewordsguardedpleasedontsteal(c)AppleComputerInc"]
+      vb.customize ["setextradata", :id, "VBoxInternal/Devices/smc/0/Config/GetKeyFromRealSMC", 1]
+    end
+
+    i.vm.provision "shell", privileged: false, inline: <<-SHELL
+      # install homebrew
+      /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+      brew install autoconf
+      brew install homebrew/php/php71
+      brew install v8
+    SHELL
+  end
 
   config.vm.provision "shell", privileged: false, inline: <<-SHELL
     sudo mkdir -p /data/build && sudo chown $USER:$USER /data/build
