@@ -3,7 +3,7 @@ PHP_ARG_WITH(v8js, for V8 Javascript Engine,
 
 if test "$PHP_V8JS" != "no"; then
   SEARCH_PATH="/usr/local /usr"
-  SEARCH_FOR="include/v8.h"
+  SEARCH_FOR="$PHP_LIBDIR/libv8.$SHLIB_DL_SUFFIX_NAME"
   
   if test -r $PHP_V8JS/$SEARCH_FOR; then
     case $host_os in
@@ -24,6 +24,8 @@ if test "$PHP_V8JS" != "no"; then
       fi
     done
   fi
+
+  AC_DEFINE_UNQUOTED([PHP_V8_EXEC_PATH], "$V8_DIR/$SEARCH_FOR", [Full path to libv8 library file])
 
   if test -z "$V8_DIR"; then
     AC_MSG_RESULT([not found])

@@ -76,6 +76,11 @@ void v8js_v8_init() /* {{{ */
 		}
 	}
 
+#ifdef PHP_V8_EXEC_PATH
+    /* Initialize ICU */
+	v8::V8::InitializeICUDefaultLocation(PHP_V8_EXEC_PATH, nullptr);
+#endif
+
 	/* Initialize V8 */
 	v8::V8::Initialize();
 
