@@ -2,11 +2,11 @@ environment:
   matrix:
   - ARTIFACT_NAME: v8js_vc14_php7_%Platform%_ts.zip
     OUTDIR: Release_TS
-    V8_ASSETS: V8-5.8.301.0-%Platform%.zip
+    V8_ASSETS: V8-5.8.283.31-%Platform%.zip
   - ARTIFACT_NAME: v8js_vc14_php7_%Platform%_nts.zip
     OUTDIR: Release
     CONFIGURE_EXTRA: --disable-zts
-    V8_ASSETS: V8-5.8.301.0-%Platform%.zip
+    V8_ASSETS: V8-5.8.283.31-%Platform%.zip
 
   PHP_VERSION: 7.0.16
   PHP_SDK: c:\projects\php-sdk
@@ -27,7 +27,7 @@ install:
   - cd v8js-ci\vc14\%Platform%
   - md deps
   - cd deps
-  - curl -fSL -o %V8_ASSETS% "https://s3.amazonaws.com/win-phpv8/%V8_ASSETS%"
+  - curl -fSL -o %V8_ASSETS% "https://phpdev.toolsforresearch.com/%V8_ASSETS%"
   - 7z.exe x %V8_ASSETS%
   - cd ..
   - curl -fSL -o "php-%PHP_VERSION%.tar.gz" "http://us1.php.net/distributions/php-%PHP_VERSION%.tar.gz"
