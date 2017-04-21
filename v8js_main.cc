@@ -33,7 +33,7 @@ struct _v8js_process_globals v8js_process_globals;
 
 /* {{{ INI Settings */
 
-static ZEND_INI_MH(v8js_OnUpdateV8Flags) /* {{{ */
+static bool v8js_ini_string(char **field, const zend_string *new_value)/* {{{ */
 {
 	bool immutable = false;
 
@@ -56,18 +56,33 @@ static ZEND_INI_MH(v8js_OnUpdateV8Flags) /* {{{ */
 	}
 
 	if (new_value) {
-		if (v8js_process_globals.v8_flags) {
-			free(v8js_process_globals.v8_flags);
-			v8js_process_globals.v8_flags = NULL;
+		if (*field) {
+			free(*field);
+			*field = NULL;
 		}
+
 		if (!ZSTR_VAL(new_value)[0]) {
-			return FAILURE;
+			return SUCCESS;
 		}
-		v8js_process_globals.v8_flags = zend_strndup(ZSTR_VAL(new_value), ZSTR_LEN(new_value));
+
+		*field = zend_strndup(ZSTR_VAL(new_value), ZSTR_LEN(new_value));
 	}
 
 	return SUCCESS;
 }
+/* }}} */
+
+static ZEND_INI_MH(v8js_OnUpdateV8Flags) /* {{{ */
+{
+	return v8js_ini_string(&v8js_process_globals.v8_flags, new_value);
+}
+/* }}} */
+
+static ZEND_INI_MH(v8js_OnUpdateIcudatPath) /* {{{ */
+{
+	return v8js_ini_string(&v8js_process_globals.icudtl_dat_path, new_value);
+}
+/* }}} */
 
 static bool v8js_ini_to_bool(const zend_string *new_value) /* {{{ */
 {
@@ -106,6 +121,7 @@ static ZEND_INI_MH(v8js_OnUpdateCompatExceptions) /* {{{ */
 
 ZEND_INI_BEGIN() /* {{{ */
 	ZEND_INI_ENTRY("v8js.flags", NULL, ZEND_INI_ALL, v8js_OnUpdateV8Flags)
+	ZEND_INI_ENTRY("v8js.icudtl_dat_path", NULL, ZEND_INI_ALL, v8js_OnUpdateIcudatPath)
 	ZEND_INI_ENTRY("v8js.use_date", "0", ZEND_INI_ALL, v8js_OnUpdateUseDate)
 	ZEND_INI_ENTRY("v8js.use_array_access", "0", ZEND_INI_ALL, v8js_OnUpdateUseArrayAccess)
 	ZEND_INI_ENTRY("v8js.compat_php_exceptions", "0", ZEND_INI_ALL, v8js_OnUpdateCompatExceptions)
