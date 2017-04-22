@@ -156,6 +156,9 @@ struct _v8js_process_globals {
 	/* V8 command line flags */
 	char *v8_flags;
 
+	/* Path to icudtl.dat file */
+	char *icudtl_dat_path;
+
 	v8::Platform *v8_platform;
 };
 

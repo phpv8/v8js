@@ -76,6 +76,18 @@ void v8js_v8_init() /* {{{ */
 		}
 	}
 
+#if PHP_V8_API_VERSION >= 5003178
+	/* Initialize ICU, call introduced in V8 5.3.178 */
+	if (v8js_process_globals.icudtl_dat_path != NULL && v8js_process_globals.icudtl_dat_path[0] != 0) {
+		v8::V8::InitializeICUDefaultLocation(nullptr, v8js_process_globals.icudtl_dat_path);
+	}
+#ifdef PHP_V8_EXEC_PATH
+	else {
+		v8::V8::InitializeICUDefaultLocation(PHP_V8_EXEC_PATH, nullptr);
+	}
+#endif
+#endif  /* PHP_V8_API_VERSION >= 5003178 */
+
 	/* Initialize V8 */
 	v8::V8::Initialize();
 
