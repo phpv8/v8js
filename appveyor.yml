@@ -27,7 +27,7 @@ install:
   - cd v8js-ci\vc14\%Platform%
   - md deps
   - cd deps
-  - curl -fSL -o %V8_ASSETS% "https://s3.amazonaws.com/win-phpv8/%V8_ASSETS%"
+  - curl -fSL -o %V8_ASSETS% "https://phpdev.toolsforresearch.com/%V8_ASSETS%"
   - 7z.exe x %V8_ASSETS%
   - cd ..
   - curl -fSL -o "php-%PHP_VERSION%.tar.gz" "http://us1.php.net/distributions/php-%PHP_VERSION%.tar.gz"
