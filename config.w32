@@ -77,6 +77,8 @@ if (PHP_V8JS != "no") {
 		AC_DEFINE("PHP_V8_API_VERSION", v8api, "", false);
 		AC_DEFINE("PHP_V8_VERSION", v8ver, "", true);
 
+		// AC_DEFINE("PHP_V8_EXEC_PATH", "C:\\php\\bin\\v8.dll", "", true);
+
 		EXTENSION("v8js", "v8js_array_access.cc v8js_class.cc v8js_commonjs.cc v8js_convert.cc v8js_exceptions.cc v8js_generator_export.cc v8js_main.cc v8js_methods.cc v8js_object_export.cc v8js_timer.cc v8js_v8.cc v8js_v8object_class.cc v8js_variables.cc", "yes");
 
 	} else {

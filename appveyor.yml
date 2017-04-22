@@ -2,13 +2,13 @@ environment:
   matrix:
   - ARTIFACT_NAME: v8js_vc14_php7_%Platform%_ts.zip
     OUTDIR: Release_TS
-    V8_ASSETS: V8-5.8.301.0-%Platform%.zip
+    V8_ASSETS: V8-5.8.283.31-%Platform%.zip
   - ARTIFACT_NAME: v8js_vc14_php7_%Platform%_nts.zip
     OUTDIR: Release
     CONFIGURE_EXTRA: --disable-zts
-    V8_ASSETS: V8-5.8.301.0-%Platform%.zip
+    V8_ASSETS: V8-5.8.283.31-%Platform%.zip
 
-  PHP_VERSION: 7.0.16
+  PHP_VERSION: 7.0.18
   PHP_SDK: c:\projects\php-sdk
 
 os: Windows Server 2012
@@ -38,6 +38,7 @@ install:
   - IF "%Platform%" == "x64" SET OUTDIR=x64\%OUTDIR%
   - mkdir %OUTDIR%
   - move ..\deps\bin\*.dll %OUTDIR%\
+  - move ..\deps\bin\icudtl.dat %OUTDIR%\
 
 build_script:
   - ps: >-
@@ -57,7 +58,7 @@ build_script:
 
 after_build:
   - cd %OUTDIR%
-  - 7z a %ARTIFACT_NAME% icu*.dll v8.dll php_v8js.dll
+  - 7z a %ARTIFACT_NAME% icudtl.dat icu*.dll v8.dll php_v8js.dll
   - ps: Push-AppveyorArtifact $env:ARTIFACT_NAME
 
 test_script:
@@ -65,11 +66,10 @@ test_script:
   - set NO_INTERACTION=1
   - set TEST_PHP_JUNIT=junit.xml
   - set REPORT_EXIT_STATUS=1
-  - "%OUTDIR%\\php.exe run-tests.php -p %OUTDIR%\\php.exe ext/v8js/tests/ -d extension=php_v8js.dll -d extension_dir=%OUTDIR%\\"
+  - "%OUTDIR%\\php.exe run-tests.php -p %OUTDIR%\\php.exe ext/v8js/tests/ -d v8js.icudtl_dat_path=%OUTDIR%/icudtl.dat -d extension=php_v8js.dll -d extension_dir=%OUTDIR%\\"
 
 on_finish:
   - cd c:\projects\php-sdk\v8js-ci\vc14\%Platform%\php-%PHP_VERSION%
-  - type ext\v8js\tests\issue_306_basic.out
   - ps: |
       # upload results to AppVeyor
       $wc = New-Object 'System.Net.WebClient'
