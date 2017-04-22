@@ -1,14 +1,24 @@
 environment:
   matrix:
-  - ARTIFACT_NAME: v8js_vc14_php7_%Platform%_ts.zip
+  - ARTIFACT_NAME: v8js_vc14_php-7.1_%Platform%_ts.zip
     OUTDIR: Release_TS
     V8_ASSETS: V8-5.8.283.31-%Platform%.zip
-  - ARTIFACT_NAME: v8js_vc14_php7_%Platform%_nts.zip
+    PHP_VERSION: 7.1.4
+  - ARTIFACT_NAME: v8js_vc14_php-7.1_%Platform%_nts.zip
     OUTDIR: Release
     CONFIGURE_EXTRA: --disable-zts
     V8_ASSETS: V8-5.8.283.31-%Platform%.zip
+    PHP_VERSION: 7.1.4
+  - ARTIFACT_NAME: v8js_vc14_php-7.0_%Platform%_ts.zip
+    OUTDIR: Release_TS
+    V8_ASSETS: V8-5.8.283.31-%Platform%.zip
+    PHP_VERSION: 7.0.18
+  - ARTIFACT_NAME: v8js_vc14_php-7.0_%Platform%_nts.zip
+    OUTDIR: Release
+    CONFIGURE_EXTRA: --disable-zts
+    V8_ASSETS: V8-5.8.283.31-%Platform%.zip
+    PHP_VERSION: 7.0.18
 
-  PHP_VERSION: 7.0.18
   PHP_SDK: c:\projects\php-sdk
 
 os: Windows Server 2012
