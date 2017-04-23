@@ -92,7 +92,7 @@ static void v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int leve
 		return;
 	}
 
-	v8::TryCatch try_catch; /* object.toString() can throw an exception */
+	v8::TryCatch try_catch(isolate); /* object.toString() can throw an exception */
 	v8::Local<v8::String> details;
 
 	if(var->IsRegExp()) {
@@ -100,7 +100,7 @@ static void v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int leve
 		details = re->GetSource();
 	}
 	else {
-		details = var->ToDetailString();
+		details = var->ToDetailString(isolate->GetEnteredContext()).FromMaybe(v8::Local<v8::String>());
 
 		if (try_catch.HasCaught()) {
 			details = V8JS_SYM("<toString threw exception>");
@@ -401,18 +401,18 @@ V8JS_METHOD(require)
 	}
 
 	// Create a template for the global object and set the built-in global functions
-	v8::Local<v8::ObjectTemplate> global_template = v8::ObjectTemplate::New();
+	v8::Local<v8::ObjectTemplate> global_template = v8::ObjectTemplate::New(isolate);
 	global_template->Set(V8JS_SYM("print"), v8::FunctionTemplate::New(isolate, V8JS_MN(print)), v8::ReadOnly);
 	global_template->Set(V8JS_SYM("var_dump"), v8::FunctionTemplate::New(isolate, V8JS_MN(var_dump)), v8::ReadOnly);
 	global_template->Set(V8JS_SYM("sleep"), v8::FunctionTemplate::New(isolate, V8JS_MN(sleep)), v8::ReadOnly);
 	global_template->Set(V8JS_SYM("require"), v8::FunctionTemplate::New(isolate, V8JS_MN(require), v8::External::New(isolate, c)), v8::ReadOnly);
 
 	// Add the exports object in which the module can return its API
-	v8::Local<v8::ObjectTemplate> exports_template = v8::ObjectTemplate::New();
+	v8::Local<v8::ObjectTemplate> exports_template = v8::ObjectTemplate::New(isolate);
 	global_template->Set(V8JS_SYM("exports"), exports_template);
 
 	// Add the module object in which the module can have more fine-grained control over what it can return
-	v8::Local<v8::ObjectTemplate> module_template = v8::ObjectTemplate::New();
+	v8::Local<v8::ObjectTemplate> module_template = v8::ObjectTemplate::New(isolate);
 	module_template->Set(V8JS_SYM("id"), V8JS_STR(normalised_module_id));
 	global_template->Set(V8JS_SYM("module"), module_template);
 
@@ -420,7 +420,7 @@ V8JS_METHOD(require)
 	v8::Local<v8::Context> context = v8::Local<v8::Context>::New(isolate, v8::Context::New(isolate, NULL, global_template));
 
 	// Catch JS exceptions
-	v8::TryCatch try_catch;
+	v8::TryCatch try_catch(isolate);
 
 	v8::Locker locker(isolate);
 	v8::Isolate::Scope isolate_scope(isolate);
