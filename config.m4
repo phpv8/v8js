@@ -188,6 +188,8 @@ int main ()
   LDFLAGS="$old_LDFLAGS"
   CPPFLAGS=$old_CPPFLAGS
 
+  AC_DEFINE([V8_DEPRECATION_WARNINGS], [1], [Enable compiler warnings when using V8_DEPRECATED apis.])
+
   PHP_ADD_INCLUDE($V8_DIR)
   PHP_NEW_EXTENSION(v8js, [	\
     v8js_array_access.cc	\
