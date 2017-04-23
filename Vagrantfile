@@ -8,17 +8,17 @@
 Vagrant.configure("2") do |config|
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://atlas.hashicorp.com/search.
-  config.vm.box = "ubuntu/trusty64"
+  config.vm.box = "ubuntu/xenial64"
 
   config.vm.provider "lxc" do |lxc, override|
-    override.vm.box = "fgrehm/trusty64-lxc"
+    override.vm.box = "zaikin/xenial64-lxc"
   end
 
 
   #
   # mass-define "generic" Ubuntu boxes
   #
-  %w{5.1 5.2 5.4 5.7 5.8 5.9 6.0}.each { |version|
+  %w{5.7 5.8 5.9 6.0}.each { |version|
     config.vm.define "v8-#{version}" do |i|
       i.vm.synced_folder ".", "/data/v8js"
 
