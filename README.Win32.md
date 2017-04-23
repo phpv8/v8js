@@ -168,3 +168,8 @@ Release_TS\php.exe -d extension=php_v8js.dll -d extension_dir=Release_TS\
 ```
 
 Alternatively copy all stuff to c:\php\ (including the DLL files from v8 build).
+
+V8 library itself needs to load the `icudtl.dat` file at runtime.  Make sure php.ini
+variable `v8js.icudtl_dat_path` points to this file; or as an alternative set
+`PHP_V8_EXEC_PATH` in config.w32 to point to the directory where the dll and data file
+are located.

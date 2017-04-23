@@ -62,7 +62,8 @@ ninja -C out.gn/x64.release/
 
 # Install to /opt/v8/
 sudo mkdir -p /opt/v8/{lib,include}
-sudo cp out.gn/x64.release/lib*.so out.gn/x64.release/*_blob.bin /opt/v8/lib/
+sudo cp out.gn/x64.release/lib*.so out.gn/x64.release/*_blob.bin \
+  out.gn/x64.release/icudtl.dat /opt/v8/lib/
 sudo cp -R include/* /opt/v8/include/
 ```
 
@@ -137,3 +138,9 @@ sudo make install
 ```
 
 Then add `extension=v8js.so` to your php.ini file. If you have a separate configuration for CLI, add it there also.
+
+V8Js' build system assumes that the `icudtl.dat` file is located next to the `libv8.so`
+library file and compiles the path into the library itself.  If for whatever reason the
+`icudtl.dat` file is stored at a different place during runtime, you need to set the
+php.ini variable `v8js.icudtl_dat_path` to point to the file.  Otherwise locale-aware
+features of V8 will not work as expected.
