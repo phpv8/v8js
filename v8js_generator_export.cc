@@ -24,7 +24,7 @@ v8::Local<v8::Value> v8js_wrap_generator(v8::Isolate *isolate, v8::Local<v8::Val
 	assert(!wrapped_object.IsEmpty());
 	assert(wrapped_object->IsObject());
 
-	v8::TryCatch try_catch;
+	v8::TryCatch try_catch(isolate);
 	v8::Local<v8::String> source = v8::String::NewFromUtf8(isolate, "(\
 function(wrapped_object) {					\
 	return (function*() {					\

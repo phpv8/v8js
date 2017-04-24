@@ -410,8 +410,7 @@ static PHP_METHOD(V8Js, __construct)
 	v8::HandleScope handle_scope(isolate);
 
 	/* Redirect fatal errors to PHP error handler */
-	// This needs to be done within the context isolate
-	v8::V8::SetFatalErrorHandler(v8js_fatal_error_handler);
+	isolate->SetFatalErrorHandler(v8js_fatal_error_handler);
 
 	/* Create global template for global object */
 	// Now we are using multiple isolates this needs to be created for every context
@@ -486,7 +485,7 @@ static PHP_METHOD(V8Js, __construct)
 	/* Add the PHP object into global object */
 	php_obj_t->InstanceTemplate()->SetInternalFieldCount(2);
 	v8::Local<v8::Object> php_obj = php_obj_t->InstanceTemplate()->NewInstance();
-	V8JS_GLOBAL(isolate)->ForceSet(object_name_js, php_obj, v8::ReadOnly);
+	V8JS_GLOBAL(isolate)->DefineOwnProperty(context, object_name_js, php_obj, v8::ReadOnly);
 
 	/* Export public property values */
 	HashTable *properties = zend_std_get_properties(getThis());
@@ -504,12 +503,12 @@ static PHP_METHOD(V8Js, __construct)
 				return;
 			}
 
-			v8::Local<v8::Value> key = v8::String::NewFromUtf8(isolate, ZSTR_VAL(member),
+			v8::Local<v8::Name> key = v8::String::NewFromUtf8(isolate, ZSTR_VAL(member),
 				v8::String::kInternalizedString, static_cast<int>(ZSTR_LEN(member)));
 
 			/* Write value to PHP JS object */
 			value = OBJ_PROP(Z_OBJ_P(getThis()), property_info->offset);
-			php_obj->ForceSet(key, zval_to_v8js(value, isolate), v8::ReadOnly);
+			php_obj->DefineOwnProperty(context, key, zval_to_v8js(value, isolate), v8::ReadOnly);
 		}
 	} ZEND_HASH_FOREACH_END();
 
@@ -584,7 +583,7 @@ static PHP_METHOD(V8Js, __construct)
 			persistent_ft->Reset(isolate, ft);
 		}
 
-		php_obj->ForceSet(method_name, ft->GetFunction());
+		php_obj->CreateDataProperty(context, method_name, ft->GetFunction());
 	} ZEND_HASH_FOREACH_END();
 }
 /* }}} */
@@ -616,7 +615,7 @@ static void v8js_compile_script(zval *this_ptr, const zend_string *str, const ze
 	V8JS_BEGIN_CTX(c, this_ptr)
 
 	/* Catch JS exceptions */
-	v8::TryCatch try_catch;
+	v8::TryCatch try_catch(isolate);
 
 	/* Set script identifier */
 	if (identifier && ZSTR_LEN(identifier) > std::numeric_limits<int>::max()) {
@@ -1289,8 +1288,8 @@ static void v8js_write_property(zval *object, zval *member, zval *value, void **
 		}
 
 		/* Write value to PHP JS object */
-		v8::Local<v8::Value> key = V8JS_SYML(Z_STRVAL_P(member), static_cast<int>(Z_STRLEN_P(member)));
-		jsobj->ForceSet(key, zval_to_v8js(value, isolate), v8::ReadOnly);
+		v8::Local<v8::Name> key = V8JS_SYML(Z_STRVAL_P(member), static_cast<int>(Z_STRLEN_P(member)));
+		jsobj->DefineOwnProperty(v8_context, key, zval_to_v8js(value, isolate), v8::ReadOnly);
 	}
 
 	/* Write value to PHP object */

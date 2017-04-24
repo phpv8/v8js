@@ -44,7 +44,7 @@ void v8js_create_script_exception(zval *return_value, v8::Isolate *isolate, v8::
 	v8::Local<v8::Message> tc_message = try_catch->Message();
 	const char *filename_string, *sourceline_string;
 	char *message_string;
-	int linenum, start_col, end_col;
+	int linenum, start_col;
 
 	object_init_ex(return_value, php_ce_v8js_script_exception);
 
@@ -70,8 +70,10 @@ void v8js_create_script_exception(zval *return_value, v8::Isolate *isolate, v8::
 		start_col = tc_message->GetStartColumn();
 		PHPV8_EXPROP(_long, JsStartColumn, start_col);
 
-		end_col = tc_message->GetEndColumn();
-		PHPV8_EXPROP(_long, JsEndColumn, end_col);
+		v8::Maybe<int> end_col = tc_message->GetEndColumn(isolate->GetEnteredContext());
+		if (end_col.IsJust()) {
+			PHPV8_EXPROP(_long, JsEndColumn, end_col.FromJust());
+		}
 
 		spprintf(&message_string, 0, "%s:%d: %s", filename_string, linenum, exception_string);
 

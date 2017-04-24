@@ -438,10 +438,17 @@ static void v8js_invoke_callback(const v8::FunctionCallbackInfo<v8::Value>& info
 		new_tpl = v8::Local<v8::FunctionTemplate>::New
 			(isolate, ctx->template_cache.at(ce->name));
 
-		result = new_tpl->GetFunction()->NewInstance(argc, argv);
+		v8::MaybeLocal<v8::Object> maybeResult = new_tpl->GetFunction()->NewInstance(isolate->GetEnteredContext(), argc, argv);
+
+		if (!maybeResult.IsEmpty()) {
+			result = maybeResult.ToLocalChecked();
+		} else {
+			result = V8JS_UNDEFINED;
+		}
 	} else {
 		result = cb->Call(self, argc, argv);
 	}
+
 	info.GetReturnValue().Set(result);
 }
 /* }}} */
@@ -804,7 +811,7 @@ static void v8js_named_property_deleter(v8::Local<v8::String> property, const v8
 
 
 
-static v8::Local<v8::Object> v8js_wrap_object(v8::Isolate *isolate, zend_class_entry *ce, zval *value) /* {{{ */
+static v8::MaybeLocal<v8::Object> v8js_wrap_object(v8::Isolate *isolate, zend_class_entry *ce, zval *value) /* {{{ */
 {
 	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
 	v8::Local<v8::FunctionTemplate> new_tpl;
@@ -903,11 +910,11 @@ static v8::Local<v8::Object> v8js_wrap_object(v8::Isolate *isolate, zend_class_e
 
 	// Create v8 wrapper object
 	v8::Local<v8::Value> external = v8::External::New(isolate, Z_OBJ_P(value));
-	v8::Local<v8::Object> newobj = new_tpl->GetFunction()->NewInstance(1, &external);
+	v8::MaybeLocal<v8::Object> newobj = new_tpl->GetFunction()->NewInstance(isolate->GetEnteredContext(), 1, &external);
 
-	if (ce == zend_ce_closure) {
+	if (ce == zend_ce_closure && !newobj.IsEmpty()) {
 		// free uncached function template when object is freed
-		ctx->weak_closures[persist_tpl_].Reset(isolate, newobj);
+		ctx->weak_closures[persist_tpl_].Reset(isolate, newobj.ToLocalChecked());
 		ctx->weak_closures[persist_tpl_].SetWeak(persist_tpl_, v8js_weak_closure_callback, v8::WeakCallbackType::kParameter);
 	}
 
@@ -1025,15 +1032,19 @@ v8::Local<v8::Value> v8js_hash_to_jsobj(zval *value, v8::Isolate *isolate) /* {{
 
 	/* If it's a PHP object, wrap it */
 	if (ce) {
-		v8::Local<v8::Value> wrapped_object = v8js_wrap_object(isolate, ce, value);
+		v8::MaybeLocal<v8::Object> wrapped_object = v8js_wrap_object(isolate, ce, value);
+
+		if (wrapped_object.IsEmpty()) {
+			return V8JS_UNDEFINED;
+		}
 
 		if (ce == zend_ce_generator) {
 			/* Wrap PHP Generator object in a wrapper function that provides
 			 * ES6 style behaviour. */
-			wrapped_object = v8js_wrap_generator(isolate, wrapped_object);
+			return v8js_wrap_generator(isolate, wrapped_object.ToLocalChecked());
 		}
 
-		return wrapped_object;
+		return wrapped_object.ToLocalChecked();
 	}
 
 	/* Associative PHP arrays cannot be wrapped to JS arrays, convert them to
