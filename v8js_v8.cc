@@ -120,7 +120,7 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 	V8JSG(timer_mutex).unlock();
 
 	/* Catch JS exceptions */
-	v8::TryCatch try_catch;
+	v8::TryCatch try_catch(isolate);
 
 	/* Set flags for runtime use */
 	c->flags = flags;
@@ -246,7 +246,7 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 
 void v8js_terminate_execution(v8::Isolate *isolate) /* {{{ */
 {
-	if(v8::V8::IsExecutionTerminating(isolate)) {
+	if(isolate->IsExecutionTerminating()) {
 		/* Execution already terminating, needn't trigger it again and
 		 * especially must not execute the spinning loop (which would cause
 		 * crashes in V8 itself, at least with 4.2 and 4.3 version lines). */
@@ -264,7 +264,7 @@ void v8js_terminate_execution(v8::Isolate *isolate) /* {{{ */
 
 	v8::Local<v8::String> source = V8JS_STR("for(;;);");
 	v8::Local<v8::Script> script = v8::Script::Compile(source);
-	v8::V8::TerminateExecution(isolate);
+	isolate->TerminateExecution();
 	script->Run();
 }
 /* }}} */
@@ -282,7 +282,9 @@ int v8js_get_properties_hash(v8::Local<v8::Value> jsValue, HashTable *retval, in
 			v8::Local<v8::String> jsKey = jsKeys->Get(i)->ToString();
 
 			/* Skip any prototype properties */
-			if (!jsObj->HasOwnProperty(jsKey) && !jsObj->HasRealNamedProperty(jsKey) && !jsObj->HasRealNamedCallbackProperty(jsKey)) {
+			if (!jsObj->HasOwnProperty(isolate->GetEnteredContext(), jsKey).FromMaybe(false)
+				&& !jsObj->HasRealNamedProperty(jsKey)
+				&& !jsObj->HasRealNamedCallbackProperty(jsKey)) {
 				continue;
 			}
 

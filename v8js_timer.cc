@@ -67,7 +67,7 @@ static void v8js_timer_interrupt_handler(v8::Isolate *isolate, void *data) { /* 
 			if (timer_ctx->memory_limit > 0 && hs.used_heap_size() > timer_ctx->memory_limit) {
 				if (has_sent_notification) {
 					timer_ctx->killed = true;
-					v8::V8::TerminateExecution(c->isolate);
+					c->isolate->TerminateExecution();
 					c->memory_limit_hit = true;
 				} else {
 					// force garbage collection, then check again
@@ -98,7 +98,7 @@ void v8js_timer_thread(zend_v8js_globals *globals) /* {{{ */
 			}
 			else if(timer_ctx->time_limit > 0 && now > timer_ctx->time_point) {
 				timer_ctx->killed = true;
-				v8::V8::TerminateExecution(c->isolate);
+				c->isolate->TerminateExecution();
 				c->time_limit_hit = true;
 			}
 			else if (timer_ctx->memory_limit > 0) {

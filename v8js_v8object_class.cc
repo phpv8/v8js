@@ -175,7 +175,7 @@ static void v8js_v8object_write_property(zval *object, zval *member, zval *value
 	}
 
 	if (v8obj->IsObject()) {
-		v8obj->ToObject()->ForceSet(V8JS_SYML(Z_STRVAL_P(member), static_cast<int>(Z_STRLEN_P(member))), zval_to_v8js(value, isolate));
+		v8obj->ToObject()->CreateDataProperty(v8_context, V8JS_SYML(Z_STRVAL_P(member), static_cast<int>(Z_STRLEN_P(member))), zval_to_v8js(value, isolate));
 	}
 }
 /* }}} */
