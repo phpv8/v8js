@@ -72,7 +72,7 @@ void v8js_create_script_exception(zval *return_value, v8::Isolate *isolate, v8::
 
 		v8::Maybe<int> end_col = tc_message->GetEndColumn(isolate->GetEnteredContext());
 		if (end_col.IsJust()) {
-			PHPV8_EXPROP(_long, JsEndColumn, end_col.ToChecked());
+			PHPV8_EXPROP(_long, JsEndColumn, end_col.FromJust());
 		}
 
 		spprintf(&message_string, 0, "%s:%d: %s", filename_string, linenum, exception_string);
