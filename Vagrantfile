@@ -37,7 +37,7 @@ Vagrant.configure("2") do |config|
     end
   }
 
-  %w{5.9.35}.each { |version|
+  %w{5.9.35 6.0.318}.each { |version|
     config.vm.define "v8-#{version}" do |i|
       i.vm.synced_folder ".", "/data/v8js"
 
