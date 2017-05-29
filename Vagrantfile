@@ -37,7 +37,7 @@ Vagrant.configure("2") do |config|
     end
   }
 
-  %w{5.9.35}.each { |version|
+  %w{5.9.35 6.0.318}.each { |version|
     config.vm.define "v8-#{version}" do |i|
       i.vm.synced_folder ".", "/data/v8js"
 
@@ -75,7 +75,7 @@ Vagrant.configure("2") do |config|
 
       # Install to /opt/libv8-#{version}/
       sudo mkdir -p /opt/libv8-#{version}/{lib,include}
-      sudo cp out.gn/x64.release/lib*.so out.gn/x64.release/*_blob.bin /opt/libv8-#{version}/lib/
+      sudo cp out.gn/x64.release/lib*.so out.gn/x64.release/*_blob.bin out.gn/x64.release/icudtl.dat /opt/libv8-#{version}/lib/
       sudo cp -R include/* /opt/libv8-#{version}/include/
     SHELL
     end

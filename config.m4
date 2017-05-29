@@ -92,31 +92,22 @@ if test "$PHP_V8JS" != "no"; then
   AC_MSG_CHECKING([for libv8_libplatform])
   AC_DEFUN([V8_CHECK_LINK], [
     save_LIBS="$LIBS"
-	LIBS="$LIBS $1 -lv8_libplatform -lv8"
-	AC_LINK_IFELSE([AC_LANG_PROGRAM([
-	  namespace v8 {
-		namespace platform {
-		  enum class IdleTaskSupport { kDisabled, kEnabled };
-		  void* CreateDefaultPlatform($2);
-		}
-	  }
-	], [ v8::platform::CreateDefaultPlatform(); ])], [
-	  dnl libv8_libplatform.so found
-	  AC_MSG_RESULT(found)
-	  V8JS_SHARED_LIBADD="$1 -lv8_libplatform $V8JS_SHARED_LIBADD"
-      $3
-	], [ $4 ])
+    LIBS="$LIBS $1 -lv8_libplatform -lv8"
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([
+      #include <libplatform/libplatform.h>
+    ], [ v8::platform::CreateDefaultPlatform(); ])], [
+      dnl libv8_libplatform.so found
+      AC_MSG_RESULT(found)
+      V8JS_SHARED_LIBADD="$1 -lv8_libplatform $V8JS_SHARED_LIBADD"
+        $3
+    ], [ $4 ])
     LIBS="$save_LIBS"
   ])
 
-  V8_CHECK_LINK([], [int thread_pool_size = 0, IdleTaskSupport idle_task_support = IdleTaskSupport::kDisabled], [], [
-    V8_CHECK_LINK([], [int thread_pool_size = 0], [], [
-      V8_CHECK_LINK([-lv8_libbase], [int thread_pool_size = 0, IdleTaskSupport idle_task_support = IdleTaskSupport::kDisabled], [], [
-        V8_CHECK_LINK([-lv8_libbase], [int thread_pool_size = 0], [], [
-          AC_MSG_ERROR([could not find libv8_libplatform library])
-        ])
-	  ])
-	])
+  V8_CHECK_LINK([], [], [], [
+    V8_CHECK_LINK([-lv8_libbase], [], [], [
+      AC_MSG_ERROR([could not find libv8_libplatform library])
+    ])
   ])
 
 
@@ -182,6 +173,23 @@ int main ()
   V8_SEARCH_BLOB([natives_blob.bin], [PHP_V8_NATIVES_BLOB_PATH])
   V8_SEARCH_BLOB([snapshot_blob.bin], [PHP_V8_SNAPSHOT_BLOB_PATH])
 
+
+  dnl
+  dnl  Check for v8::ArrayBuffer::Allocator::NewDefaultAllocator
+  dnl
+  AC_CACHE_CHECK([for v8::ArrayBuffer::Allocator::NewDefaultAllocator], ac_cv_has_default_allocator, [
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([
+      #include <v8.h>
+    ], [ v8::ArrayBuffer::Allocator::NewDefaultAllocator(); ])], [
+      ac_cv_has_default_allocator=yes
+    ], [ 
+      ac_cv_has_default_allocator=no
+    ])
+  ])
+  if test "x$ac_cv_has_default_allocator" = "xno"; then
+    AC_DEFINE([USE_INTERNAL_ALLOCATOR], [1],
+              [Define unless v8::ArrayBuffer::Allocator::NewDefaultAllocator is usable.])
+  fi
 
   AC_LANG_RESTORE
   LIBS=$old_LIBS

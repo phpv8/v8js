@@ -71,6 +71,7 @@ struct v8js_jsext {
 };
 /* }}} */
 
+#ifdef USE_INTERNAL_ALLOCATOR
 class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
 public:
 	virtual void* Allocate(size_t length) {
@@ -80,6 +81,7 @@ public:
 	virtual void* AllocateUninitialized(size_t length) { return malloc(length); }
 	virtual void Free(void* data, size_t) { free(data); }
 };
+#endif  /** USE_INTERNAL_ALLOCATOR */
 
 
 static void v8js_free_storage(zend_object *object) /* {{{ */
@@ -201,6 +203,10 @@ static void v8js_free_storage(zend_object *object) /* {{{ */
 	c->modules_base.~vector();
 
 	zval_ptr_dtor(&c->zval_snapshot_blob);
+
+#ifndef USE_INTERNAL_ALLOCATOR
+	delete c->create_params.array_buffer_allocator;
+#endif
 }
 /* }}} */
 
@@ -353,8 +359,12 @@ static PHP_METHOD(V8Js, __construct)
 
 	new (&c->create_params) v8::Isolate::CreateParams();
 
+#ifdef USE_INTERNAL_ALLOCATOR
 	static ArrayBufferAllocator array_buffer_allocator;
 	c->create_params.array_buffer_allocator = &array_buffer_allocator;
+#else
+	c->create_params.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
+#endif
 
 	new (&c->snapshot_blob) v8::StartupData();
 	if (snapshot_blob) {
