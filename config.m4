@@ -174,6 +174,23 @@ int main ()
   V8_SEARCH_BLOB([snapshot_blob.bin], [PHP_V8_SNAPSHOT_BLOB_PATH])
 
 
+  dnl
+  dnl  Check for v8::ArrayBuffer::Allocator::NewDefaultAllocator
+  dnl
+  AC_CACHE_CHECK([for v8::ArrayBuffer::Allocator::NewDefaultAllocator], ac_cv_has_default_allocator, [
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([
+      #include <v8.h>
+    ], [ v8::ArrayBuffer::Allocator::NewDefaultAllocator(); ])], [
+      ac_cv_has_default_allocator=yes
+    ], [ 
+      ac_cv_has_default_allocator=no
+    ])
+  ])
+  if test "x$ac_cv_has_default_allocator" = "xno"; then
+    AC_DEFINE([USE_INTERNAL_ALLOCATOR], [1],
+              [Define unless v8::ArrayBuffer::Allocator::NewDefaultAllocator is usable.])
+  fi
+
   AC_LANG_RESTORE
   LIBS=$old_LIBS
   LDFLAGS="$old_LDFLAGS"
