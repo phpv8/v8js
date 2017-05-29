@@ -75,7 +75,7 @@ Vagrant.configure("2") do |config|
 
       # Install to /opt/libv8-#{version}/
       sudo mkdir -p /opt/libv8-#{version}/{lib,include}
-      sudo cp out.gn/x64.release/lib*.so out.gn/x64.release/*_blob.bin /opt/libv8-#{version}/lib/
+      sudo cp out.gn/x64.release/lib*.so out.gn/x64.release/*_blob.bin out.gn/x64.release/icudtl.dat /opt/libv8-#{version}/lib/
       sudo cp -R include/* /opt/libv8-#{version}/include/
     SHELL
     end
