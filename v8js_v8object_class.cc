@@ -224,7 +224,7 @@ static HashTable *v8js_v8object_get_properties(zval *object) /* {{{ */
 			 * it (instead of crashing the engine). */
 			return obj->properties;
 		}
-	} else {
+	} else if (!obj->properties->u.v.nIteratorsCount) {
 		zend_hash_clean(obj->properties);
 	}
 
