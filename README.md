@@ -376,7 +376,7 @@ you need to remove all extension registrations.
 Now an simple example on how to use snapshots:
 
     <?php
-    $snapshot = V8Js::createSnapshot(var fibonacci = n => n < 3 ? 1 : fibonacci(n - 1) + fibonacci(n - 2));
+    $snapshot = V8Js::createSnapshot('var fibonacci = n => n < 3 ? 1 : fibonacci(n - 1) + fibonacci(n - 2)');
     $jscript = new V8Js('php', array(), array(), true, $snapshot);
     echo $jscript->executeString('fibonacci(43)') . "\n";
 
