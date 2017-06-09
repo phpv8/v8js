@@ -361,6 +361,25 @@ The above rule that PHP objects are generally converted to JavaScript objects al
 
 This behaviour can be changed by enabling the php.ini flag `v8js.use_array_access`.  If set, objects of PHP classes that implement the aforementioned interfaces are converted to JavaScript Array-like objects.  This is by-index access of this object results in immediate calls to the `offsetGet` or `offsetSet` PHP methods (effectively this is live-binding of JavaScript against the PHP object).  Such an Array-esque object also supports calling every attached public method of the PHP object + methods of JavaScript's native Array.prototype methods (as long as they are not overloaded by PHP methods).
 
+Snapshots
+=========
+
+First of all snapshots are incompatible with extensions. So when you see
+
+    #
+    # Fatal error in ../src/snapshot/startup-serializer.cc, line 122
+    # Check failed: !isolate->has_installed_extensions().
+    #
+
+you need to remove all extension registrations.
+
+Now an simple example on how to use snapshots:
+
+    <?php
+    $snapshot = V8Js::createSnapshot(var fibonacci = n => n < 3 ? 1 : fibonacci(n - 1) + fibonacci(n - 2));
+    $jscript = new V8Js('php', array(), array(), true, $snapshot);
+    echo $jscript->executeString('fibonacci(43)') . "\n";
+
 Exceptions
 ==========
 
