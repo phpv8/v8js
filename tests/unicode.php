@@ -25,7 +25,7 @@ $jscript->executeString("values = {}");
 $jscript->executeString("values['snapshot'] = snapshot.unicode");
 $jscript->executeString("values['php'] = php.unicode");
 $jscript->executeString("values['execStr'] = execStr.unicode");
-$values = $jscript->executeString("values", V8Js::FLAG_FORCE_ARRAY);
+$values = $jscript->executeString("values");
 
 echo "snapshot: $values->snapshot\n";
 echo "php     : $values->php\n";
