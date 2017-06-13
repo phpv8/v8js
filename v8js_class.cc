@@ -537,7 +537,7 @@ static PHP_METHOD(V8Js, __construct)
 			continue;
 		}
 
-		if ((method_ptr->common.fn_flags & (ZEND_ACC_CTOR|ZEND_ACC_DTOR|ZEND_ACC_CLONE)) != 0) {
+		if ((method_ptr->common.fn_flags & (ZEND_ACC_CTOR|ZEND_ACC_DTOR)) != 0) {
 			/* no __construct, __destruct(), or __clone() functions */
 			continue;
 		}
