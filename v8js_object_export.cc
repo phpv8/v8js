@@ -336,7 +336,7 @@ static void v8js_named_property_enumerator(const v8::PropertyCallbackInfo<v8::Ar
 			/* Allow only public methods */
 			continue;
 		}
-		if ((method_ptr->common.fn_flags & (ZEND_ACC_CTOR|ZEND_ACC_DTOR|ZEND_ACC_CLONE)) != 0) {
+		if ((method_ptr->common.fn_flags & (ZEND_ACC_CTOR|ZEND_ACC_DTOR)) != 0) {
 			/* no __construct, __destruct(), or __clone() functions */
 			continue;
 		}
@@ -539,7 +539,7 @@ static void v8js_fake_call_impl(const v8::FunctionCallbackInfo<v8::Value>& info)
 
 	if (method_ptr == NULL ||
 		(method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) == 0 ||
-		(method_ptr->common.fn_flags & (ZEND_ACC_CTOR|ZEND_ACC_DTOR|ZEND_ACC_CLONE)) != 0) {
+		(method_ptr->common.fn_flags & (ZEND_ACC_CTOR|ZEND_ACC_DTOR)) != 0) {
 		error_len = spprintf(&error, 0,
 			"%s::__call to %s method %s", ce->name,
 			(method_ptr == NULL) ? "undefined" : "non-public", method_name);
@@ -619,7 +619,7 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> property
 		 (method_ptr = reinterpret_cast<zend_function *>
 		  (zend_hash_find_ptr(&ce->function_table, method_name))) &&
 		 ((method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) != 0) && /* Allow only public methods */
-		 ((method_ptr->common.fn_flags & (ZEND_ACC_CTOR|ZEND_ACC_DTOR|ZEND_ACC_CLONE)) == 0) /* no __construct, __destruct(), or __clone() functions */
+		 ((method_ptr->common.fn_flags & (ZEND_ACC_CTOR|ZEND_ACC_DTOR)) == 0) /* no __construct, __destruct(), or __clone() functions */
 		 ) || (method_ptr=NULL, is_magic_call)
 	) {
 		if (callback_type == V8JS_PROP_GETTER) {
