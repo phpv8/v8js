@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<package packagerversion="1.10.1" version="2.0" xmlns="http://pear.php.net/dtd/package-2.0" xmlns:tasks="http://pear.php.net/dtd/tasks-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0 http://pear.php.net/dtd/tasks-1.0.xsd http://pear.php.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
+<package packagerversion="1.10.5" version="2.0" xmlns="http://pear.php.net/dtd/package-2.0" xmlns:tasks="http://pear.php.net/dtd/tasks-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0 http://pear.php.net/dtd/tasks-1.0.xsd http://pear.php.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
  <name>v8js</name>
  <channel>pecl.php.net</channel>
  <summary>V8 Javascript Engine for PHP</summary>
@@ -16,11 +16,11 @@
   <email>stesie@php.net</email>
   <active>yes</active>
  </lead>
- <date>2017-04-23</date>
- <time>21:50:32</time>
+ <date>2017-08-01</date>
+ <time>20:38:30</time>
  <version>
-  <release>1.4.0</release>
-  <api>1.4.0</api>
+  <release>1.4.1</release>
+  <api>1.4.1</api>
  </version>
  <stability>
   <release>stable</release>
@@ -28,9 +28,10 @@
  </stability>
  <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
  <notes>
-Correctly initialize V8&apos;s ICU component
-- path to libv8 library is now baked into the library to find icudtl.dat file
-- if icudtl.dat file is moved after compile time, set v8js.icudtl_dat_path php.ini variable
+- omit usage of deprecated V8 API (#311)
+- fix build against V8 version 6.0 (#313)
+- don&apos;t clean properties hash while it is iterated (#316)
+- fix build against PHP 7.2
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -142,6 +143,7 @@ Correctly initialize V8&apos;s ICU component
    <file baseinstalldir="/" md5sum="8880a6495ca9b1945c2f1d0652300c00" name="tests/issue_250_001.phpt" role="test" />
    <file baseinstalldir="/" md5sum="e4c61dc32c44baa7ae9345abc1bdbe90" name="tests/issue_250_002.phpt" role="test" />
    <file baseinstalldir="/" md5sum="54ac01bc24486b24aeb9c4205802031e" name="tests/issue_306_basic.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="cb0b22dce14ad9991cef493ffd661d44" name="tests/issue_316_basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="9f1e697d63231a03da06de97c14a5076" name="tests/js-construct-basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="0e951523a9abae08b531ecd3193a2581" name="tests/js-construct-direct-call.phpt" role="test" />
    <file baseinstalldir="/" md5sum="1464fca804db711c6c6881a7e02b8c38" name="tests/js-construct-protected-ctor.phpt" role="test" />
@@ -202,41 +204,41 @@ Correctly initialize V8&apos;s ICU component
    <file baseinstalldir="/" md5sum="1bd7738aeeb5cf80d80561554f59f2ed" name="tests/var_dump.phpt" role="test" />
    <file baseinstalldir="/" md5sum="3ebb38e36af0a0a290c40df26b0368c0" name="appveyor.yml" role="data" />
    <file baseinstalldir="/" md5sum="8f98fbb229dc230d24e3fedcf083813b" name="Commandfile" role="data" />
-   <file baseinstalldir="/" md5sum="f76dee642b050fd9089a8251f1570c6f" name="config.m4" role="src" />
+   <file baseinstalldir="/" md5sum="f5c1fa908d96e785da47b3e1913d1f93" name="config.m4" role="src" />
    <file baseinstalldir="/" md5sum="94b111599d9d2b432aeb97b2d096ce53" name="config.w32" role="src" />
    <file baseinstalldir="/" md5sum="cea72666538d5b0b80a64ccdbda24919" name="CREDITS" role="doc" />
    <file baseinstalldir="/" md5sum="9f5b5f41204bcde55d9df87d5a970b30" name="LICENSE" role="doc" />
    <file baseinstalldir="/" md5sum="752113770061470ad7212d818836bd36" name="Makefile.frag" role="src" />
    <file baseinstalldir="/" md5sum="efd4ce357a80624b76fe6f94cda6357b" name="Makefile.travis" role="src" />
    <file baseinstalldir="/" md5sum="08ac27d6cd9d86aed4ce292ff15388fd" name="php_v8js.h" role="src" />
-   <file baseinstalldir="/" md5sum="32970c7d4db5a44edf8fa8f7cef95f98" name="php_v8js_macros.h" role="src" />
+   <file baseinstalldir="/" md5sum="102638c39f2364cfab48ee0678389871" name="php_v8js_macros.h" role="src" />
    <file baseinstalldir="/" md5sum="60a31c9aa30ed213115584bea51c49bb" name="README.Linux.md" role="doc" />
    <file baseinstalldir="/" md5sum="a20db830e5ce8fddfeb01607fc7c7f67" name="README.MacOS.md" role="doc" />
-   <file baseinstalldir="/" md5sum="0a083021c2423a3d16cd4023ee1bb301" name="README.md" role="doc" />
+   <file baseinstalldir="/" md5sum="16176cd8a29413f77a14ece1c5b79db2" name="README.md" role="doc" />
    <file baseinstalldir="/" md5sum="75bfa2f1137a42958dab030e64d79fda" name="README.Win32.md" role="doc" />
    <file baseinstalldir="/" md5sum="dc40933a6a12c05fb833027dbe56df39" name="v8js_array_access.cc" role="src" />
    <file baseinstalldir="/" md5sum="51905856eab666cbc19762c6fb83f931" name="v8js_array_access.h" role="src" />
-   <file baseinstalldir="/" md5sum="9f87c565da3e4a9fa2c753660e2a3c4c" name="v8js_class.cc" role="src" />
+   <file baseinstalldir="/" md5sum="eab28b694245dc568b12ec078cc55a25" name="v8js_class.cc" role="src" />
    <file baseinstalldir="/" md5sum="2e651effb7c65031b8c5903d391fd1b8" name="v8js_class.h" role="src" />
    <file baseinstalldir="/" md5sum="c2795183e35b0c8abae2e2a52a1a766a" name="v8js_commonjs.cc" role="src" />
    <file baseinstalldir="/" md5sum="c47ae971a5315dd101e7d2420f4e73b9" name="v8js_commonjs.h" role="src" />
    <file baseinstalldir="/" md5sum="94d7a79bc397a824908392cdbe69e3e6" name="v8js_convert.cc" role="src" />
-   <file baseinstalldir="/" md5sum="6ecaacfe819d7bcd4957b62e41548013" name="v8js_exceptions.cc" role="src" />
+   <file baseinstalldir="/" md5sum="3076482a4c757ba433c800bf5fabab91" name="v8js_exceptions.cc" role="src" />
    <file baseinstalldir="/" md5sum="ddc09aa635ee9e6f2ee2c9d63511cc00" name="v8js_exceptions.h" role="src" />
-   <file baseinstalldir="/" md5sum="d2b5ef6472cb277c34b13a062f9a9cc8" name="v8js_generator_export.cc" role="src" />
+   <file baseinstalldir="/" md5sum="32f1be1b9afa19eb6812e2ea7fb1bee6" name="v8js_generator_export.cc" role="src" />
    <file baseinstalldir="/" md5sum="0bfa1eb796acf31f8bebc10dfd357a8f" name="v8js_generator_export.h" role="src" />
    <file baseinstalldir="/" md5sum="453e6c199c855bcd2d5e09138c8609c7" name="v8js_main.cc" role="src" />
-   <file baseinstalldir="/" md5sum="9a65567f7af3f65cd542e94d7330f016" name="v8js_methods.cc" role="src" />
-   <file baseinstalldir="/" md5sum="293aeb7925ec8551a57ade6b28dee360" name="v8js_object_export.cc" role="src" />
+   <file baseinstalldir="/" md5sum="32b8e78b36d3510b5838b8698608fab8" name="v8js_methods.cc" role="src" />
+   <file baseinstalldir="/" md5sum="582e360709470da9724b23a1504668bc" name="v8js_object_export.cc" role="src" />
    <file baseinstalldir="/" md5sum="a9992de73db40e343bb9f3303c71e460" name="v8js_object_export.h" role="src" />
-   <file baseinstalldir="/" md5sum="b62eccba0b3f2b8fc311762a92621cf2" name="v8js_timer.cc" role="src" />
+   <file baseinstalldir="/" md5sum="ccd149b929146a4d4fbf5eceb0ed13af" name="v8js_timer.cc" role="src" />
    <file baseinstalldir="/" md5sum="505b5e01105e0edbe06bbbb300539e3e" name="v8js_timer.h" role="src" />
-   <file baseinstalldir="/" md5sum="d8c3120d7facb7b9b8fa8dd690d2eb56" name="v8js_v8.cc" role="src" />
+   <file baseinstalldir="/" md5sum="713c71a2b08dd366d93e33ee5c89707f" name="v8js_v8.cc" role="src" />
    <file baseinstalldir="/" md5sum="0f2828ea202367677ffc43a43aa6c3eb" name="v8js_v8.h" role="src" />
-   <file baseinstalldir="/" md5sum="34f1a120a0829d9b57f2358dadd58c73" name="v8js_v8object_class.cc" role="src" />
+   <file baseinstalldir="/" md5sum="58bdb5d53ea4e7ec7ac082f4f99a9c40" name="v8js_v8object_class.cc" role="src" />
    <file baseinstalldir="/" md5sum="7a6e69720230ee9f00e233095409e2ed" name="v8js_v8object_class.h" role="src" />
    <file baseinstalldir="/" md5sum="82b9f8cb2982e3b6d280447e002177de" name="v8js_variables.cc" role="src" />
-   <file baseinstalldir="/" md5sum="fcd37228bfa357f9519726f7a7cfbaf7" name="Vagrantfile" role="data" />
+   <file baseinstalldir="/" md5sum="4edc577a41ae86a24e566764604127f9" name="Vagrantfile" role="data" />
   </dir>
  </contents>
  <dependencies>
@@ -829,6 +831,24 @@ Refactorings
 Correctly initialize V8&apos;s ICU component
 - path to libv8 library is now baked into the library to find icudtl.dat file
 - if icudtl.dat file is moved after compile time, set v8js.icudtl_dat_path php.ini variable
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>1.4.1</release>
+    <api>1.4.1</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <date>2017-08-01</date>
+   <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
+   <notes>
+- omit usage of deprecated V8 API (#311)
+- fix build against V8 version 6.0 (#313)
+- don&apos;t clean properties hash while it is iterated (#316)
+- fix build against PHP 7.2
    </notes>
   </release>
  </changelog>
