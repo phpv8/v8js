@@ -394,6 +394,9 @@ If you need to create a new V8Js instance, simply pass the snapshot as 5th argum
     echo $jscript->executeString('fibonacci(43)') . "\n";
 ```
 
+Keep in mind, that the code to be included in the snapshot may not directly call any of the functions exported
+from PHP, since they are added right *after* the snapshot code is run.
+
 Exceptions
 ==========
 
