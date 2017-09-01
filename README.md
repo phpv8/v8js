@@ -373,12 +373,26 @@ First of all snapshots are incompatible with extensions. So when you see
 
 you need to remove all extension registrations.
 
-Now an simple example on how to use snapshots:
+First of all [custom startup snapshots](https://v8project.blogspot.de/2015/09/custom-startup-snapshots.html)
+is a feature provided by V8 itself, built on top of it's general heap snapshots feature.  The idea is that, since
+it is quite common to load some JavaScript library prior to any actual work to be done, that this library code
+is also baked into the heap snapshot.
 
-    <?php
+This extension provides an easy way to create those customized snapshots.  In order to create such a snapshot
+with a `fibonacci` function baked into it, just call `V8Js::createSnapshot` statically like this:
+
+```php
     $snapshot = V8Js::createSnapshot('var fibonacci = n => n < 3 ? 1 : fibonacci(n - 1) + fibonacci(n - 2)');
+```
+
+Then persist the contents of `$snapshot` to whereever you like, e.g. the local file system or maybe Redis.
+
+If you need to create a new V8Js instance, simply pass the snapshot as 5th argument to the V8Js constructor:
+
+```php
     $jscript = new V8Js('php', array(), array(), true, $snapshot);
     echo $jscript->executeString('fibonacci(43)') . "\n";
+```
 
 Exceptions
 ==========
