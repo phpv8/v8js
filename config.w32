@@ -12,7 +12,6 @@ if (PHP_V8JS != "no") {
 
 		ADD_FLAG("CFLAGS_V8JS", "/EHcs");
 		ADD_FLAG("CFLAGS_V8JS", "/D _ALLOW_KEYWORD_MACROS");
-		ADD_FLAG("CFLAGS_V8JS", "/D ZEND_WIN32_FORCE_INLINE");
 		ADD_FLAG("CFLAGS_V8JS", "/D __STDC_LIMIT_MACROS");
 
 		// defaults
@@ -80,6 +79,7 @@ if (PHP_V8JS != "no") {
 		// AC_DEFINE("PHP_V8_EXEC_PATH", "C:\\php\\bin\\v8.dll", "", true);
 
 		EXTENSION("v8js", "v8js_array_access.cc v8js_class.cc v8js_commonjs.cc v8js_convert.cc v8js_exceptions.cc v8js_generator_export.cc v8js_main.cc v8js_methods.cc v8js_object_export.cc v8js_timer.cc v8js_v8.cc v8js_v8object_class.cc v8js_variables.cc", "yes");
+		ADD_FLAG("CFLAGS_BD_EXT_V8JS", "/D ZEND_WIN32_KEEP_INLINE=1 /U ZEND_WIN32_FORCE_INLINE");
 
 	} else {
 		WARNING("v8js not enabled, headers or libs not found");
