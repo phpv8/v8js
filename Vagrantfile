@@ -18,7 +18,7 @@ Vagrant.configure("2") do |config|
   #
   # mass-define "generic" Ubuntu boxes
   #
-  %w{5.7 5.8 5.9 6.0}.each { |version|
+  %w{5.7 5.8 5.9 6.0 6.3}.each { |version|
     config.vm.define "v8-#{version}" do |i|
       i.vm.synced_folder ".", "/data/v8js"
 
