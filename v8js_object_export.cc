@@ -664,8 +664,7 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> property
 				}
 			}
 		} else if (callback_type == V8JS_PROP_QUERY) {
-			// methods are not enumerable
-			ret_value = V8JS_UINT(v8::ReadOnly|v8::DontEnum|v8::DontDelete);
+			ret_value = V8JS_UINT(v8::ReadOnly|v8::DontDelete);
 		} else if (callback_type == V8JS_PROP_SETTER) {
 			ret_value = set_value; // lie.  this field is read-only.
 		} else if (callback_type == V8JS_PROP_DELETER) {
