@@ -38,6 +38,7 @@ try {
 ?>
 ===EOF===
 --EXPECTF--
+Deprecated: Function V8Js::getPendingException() is deprecated in %s%eexception_propagation_2.php on line 11
 object(V8JsScriptException)#%d (13) {
   ["message":protected]=>
   string(49) "throw_0:1: ReferenceError: fooobar is not defined"
