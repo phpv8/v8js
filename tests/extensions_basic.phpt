@@ -13,7 +13,12 @@ var_dump(V8JS::getExtensions());
 $a = new V8Js('myobj', array(), array('a'));
 ?>
 ===EOF===
---EXPECT--
+--EXPECTF--
+Deprecated: Function V8Js::registerExtension() is deprecated in %s%eextensions_basic.php on line 3
+
+Deprecated: Function V8Js::registerExtension() is deprecated in %s%eextensions_basic.php on line 4
+
+Deprecated: Function V8Js::getExtensions() is deprecated in %s%eextensions_basic.php on line 6
 array(2) {
   ["a"]=>
   array(2) {
