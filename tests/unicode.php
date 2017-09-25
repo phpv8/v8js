@@ -1,4 +1,4 @@
---TEST
+--TEST--
 Test V8::executeString() : Check if imported code works with umlauts
 --SKIPIF--
 <?php require_once(dirname(__FILE__) . '/skipif.inc'); ?>
@@ -31,8 +31,8 @@ echo "snapshot: $values->snapshot\n";
 echo "php     : $values->php\n";
 echo "execStr : $values->execStr\n";
 ?>
-===EOF  
---EXPECTF--
+===EOF===
+--EXPECT--
 snapshot: äöüßÜÄÖÜß€áàâÁÀÂµ²³▁▂▃▄▅▆▇█    ㌀ ㌁ ㌂ ㌃
 php     : äöüßÜÄÖÜß€áàâÁÀÂµ²³▁▂▃▄▅▆▇█    ㌀ ㌁ ㌂ ㌃
 execStr : äöüßÜÄÖÜß€áàâÁÀÂµ²³▁▂▃▄▅▆▇█    ㌀ ㌁ ㌂ ㌃
