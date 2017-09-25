@@ -21,6 +21,8 @@ var_dump($v8->getPendingException());
 ?>
 ===EOF===
 --EXPECTF--
+Deprecated: V8Js::__construct(): Disabling exception reporting is deprecated, $report_uncaught_exceptions != true in %s%eexception_clearing.php on line 3
+
 Deprecated: Function V8Js::getPendingException() is deprecated in %s%eexception_clearing.php on line 5
 NULL
 

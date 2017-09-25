@@ -38,6 +38,8 @@ try {
 ?>
 ===EOF===
 --EXPECTF--
+Deprecated: V8Js::__construct(): Disabling exception reporting is deprecated, $report_uncaught_exceptions != true in %s%eexception_propagation_2.php on line 8
+
 Deprecated: Function V8Js::getPendingException() is deprecated in %s%eexception_propagation_2.php on line 11
 object(V8JsScriptException)#%d (13) {
   ["message":protected]=>

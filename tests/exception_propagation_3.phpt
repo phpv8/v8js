@@ -31,7 +31,8 @@ try {
 }
 ?>
 ===EOF===
---EXPECT--
+--EXPECTF--
+Deprecated: V8Js::__construct(): Disabling exception reporting is deprecated, $report_uncaught_exceptions != true in %s%eexception_propagation_3.php on line 8
 SyntaxError caught in JS!
 To Bar!
 Error caught via PHP callback!

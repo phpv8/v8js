@@ -357,6 +357,10 @@ static PHP_METHOD(V8Js, __construct)
 	ZVAL_NULL(&c->pending_exception);
 	c->in_execution = 0;
 
+	if (report_uncaught != 1) {
+		php_error_docref(NULL, E_DEPRECATED, "Disabling exception reporting is deprecated, $report_uncaught_exceptions != true");
+	}
+
 	new (&c->create_params) v8::Isolate::CreateParams();
 
 #ifdef USE_INTERNAL_ALLOCATOR
