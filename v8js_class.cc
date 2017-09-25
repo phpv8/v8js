@@ -357,6 +357,10 @@ static PHP_METHOD(V8Js, __construct)
 	ZVAL_NULL(&c->pending_exception);
 	c->in_execution = 0;
 
+	if (report_uncaught != 1) {
+		php_error_docref(NULL, E_DEPRECATED, "Disabling exception reporting is deprecated, $report_uncaught_exceptions != true");
+	}
+
 	new (&c->create_params) v8::Isolate::CreateParams();
 
 #ifdef USE_INTERNAL_ALLOCATOR
@@ -1265,8 +1269,8 @@ const zend_function_entry v8js_methods[] = { /* {{{ */
 	PHP_ME(V8Js,	compileString,			arginfo_v8js_compilestring,			ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,    executeScript,			arginfo_v8js_executescript,			ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,    checkString,			arginfo_v8js_checkstring,			ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED)
-	PHP_ME(V8Js,	getPendingException,	arginfo_v8js_getpendingexception,	ZEND_ACC_PUBLIC)
-	PHP_ME(V8Js,	clearPendingException,	arginfo_v8js_clearpendingexception,	ZEND_ACC_PUBLIC)
+	PHP_ME(V8Js,	getPendingException,	arginfo_v8js_getpendingexception,	ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED)
+	PHP_ME(V8Js,	clearPendingException,	arginfo_v8js_clearpendingexception,	ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED)
 	PHP_ME(V8Js,	setModuleNormaliser,	arginfo_v8js_setmodulenormaliser,	ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	setModuleLoader,		arginfo_v8js_setmoduleloader,		ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	setTimeLimit,			arginfo_v8js_settimelimit,			ZEND_ACC_PUBLIC)
