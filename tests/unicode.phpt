@@ -20,20 +20,31 @@ $jscript->unicode = $unicode;
 # insert unicode via executeString
 $jscript->executeString("var execStr = {unicode: '" . $unicode . "'}");
 
+# insert via module loader
+$jscript->setModuleLoader(function ($path) use ($unicode) {
+    return "module.exports = {unicode: '" . $unicode . "'}";
+});
+
+
 # return  to php
 $jscript->executeString("values = {}");
 $jscript->executeString("values['snapshot'] = snapshot.unicode");
 $jscript->executeString("values['php'] = php.unicode");
 $jscript->executeString("values['execStr'] = execStr.unicode");
+$jscript->executeString("values['module'] = require('module').unicode");
+
 $values = $jscript->executeString("values");
 
 echo "snapshot: $values->snapshot\n";
 echo "php     : $values->php\n";
 echo "execStr : $values->execStr\n";
+echo "module  : $values->module\n";
+
 ?>
 ===EOF===
 --EXPECT--
 snapshot: äöüßÜÄÖÜß€áàâÁÀÂµ²³▁▂▃▄▅▆▇█    ㌀ ㌁ ㌂ ㌃
 php     : äöüßÜÄÖÜß€áàâÁÀÂµ²³▁▂▃▄▅▆▇█    ㌀ ㌁ ㌂ ㌃
 execStr : äöüßÜÄÖÜß€áàâÁÀÂµ²³▁▂▃▄▅▆▇█    ㌀ ㌁ ㌂ ㌃
+module  : äöüßÜÄÖÜß€áàâÁÀÂµ²³▁▂▃▄▅▆▇█    ㌀ ㌁ ㌂ ㌃
 ===EOF===
