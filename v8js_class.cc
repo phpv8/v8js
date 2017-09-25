@@ -401,6 +401,11 @@ static PHP_METHOD(V8Js, __construct)
 	if (exts_arr)
 	{
 		exts_count = zend_hash_num_elements(Z_ARRVAL_P(exts_arr));
+
+		if (exts_count != 0) {
+			php_error_docref(NULL, E_DEPRECATED, "Use of extensions is deprecated, $extensions array passed");
+		}
+
 		if (v8js_create_ext_strarr(&exts, exts_count, Z_ARRVAL_P(exts_arr)) == FAILURE) {
 			zend_throw_exception(php_ce_v8js_exception,
 				"Invalid extensions array passed", 0);

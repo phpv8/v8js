@@ -36,5 +36,7 @@ array(2) {
     bool(false)
   }
 }
+
+Deprecated: V8Js::__construct(): Use of extensions is deprecated, $extensions array passed in %s%eextensions_basic.php on line 8
 Hello world!
 ===EOF===

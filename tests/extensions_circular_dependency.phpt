@@ -41,6 +41,8 @@ array(2) {
   }
 }
 
+Deprecated: V8Js::__construct(): Use of extensions is deprecated, $extensions array passed in %s%eextensions_circular_dependency.php on line 8
+
 Warning: Fatal V8 error in v8::Context::New(): Circular extension dependency in %s on line 8
 
 Fatal error: Uncaught V8JsException: Failed to create V8 context. Check that registered extensions do not have errors. in %s:8
