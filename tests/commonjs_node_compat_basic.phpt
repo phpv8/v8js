@@ -1,5 +1,5 @@
 --TEST--
-Test V8::executeString() : exports/module.exports behaviour
+Test V8Js::setModuleLoader : exports/module.exports behaviour
 --SKIPIF--
 <?php require_once(dirname(__FILE__) . '/skipif.inc'); ?>
 --FILE--

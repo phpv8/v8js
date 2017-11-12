@@ -462,7 +462,7 @@ V8JS_METHOD(require)
 		jsArgv[1] = module;
 
 		// actually call the module
-		v8::Local<v8::Function>::Cast(module_function)->Call(V8JS_GLOBAL(isolate), 2, jsArgv);
+		v8::Local<v8::Function>::Cast(module_function)->Call(exports, 2, jsArgv);
 	}
 
 	// Remove this module and path from the stack
