@@ -38,7 +38,7 @@ Compile V8 5.6 and newer (using GN)
 
 ```
 # Install required dependencies
-sudo apt-get install build-essential git python libglib2.0-dev
+sudo apt-get install build-essential curl git python libglib2.0-dev
 
 cd /tmp
 
