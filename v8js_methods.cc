@@ -336,7 +336,7 @@ V8JS_METHOD(require)
 
     // If we have already loaded and cached this module then use it
 	if (c->modules_loaded.count(normalised_module_id) > 0) {
-		v8::Persistent<v8::Object> newobj;
+		v8::Persistent<v8::Value> newobj;
 		newobj.Reset(isolate, c->modules_loaded[normalised_module_id]);
 		info.GetReturnValue().Set(newobj);
 
@@ -492,12 +492,12 @@ V8JS_METHOD(require)
 		return;
 	}
 
-	v8::Local<v8::Object> newobj;
+	v8::Local<v8::Value> newobj;
 
 	// Cache the module so it doesn't need to be compiled and run again
 	// Ensure compatibility with CommonJS implementations such as NodeJS by playing nicely with module.exports and exports
 	if (module->Has(V8JS_SYM("exports"))) {
-		newobj = module->Get(V8JS_SYM("exports"))->ToObject();
+		newobj = module->Get(V8JS_SYM("exports"));
 	}
 
 	c->modules_loaded[normalised_module_id].Reset(isolate, newobj);

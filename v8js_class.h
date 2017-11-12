@@ -20,6 +20,7 @@
 typedef v8::Persistent<v8::FunctionTemplate, v8::CopyablePersistentTraits<v8::FunctionTemplate> > v8js_function_tmpl_t;
 typedef v8::Persistent<v8::ObjectTemplate, v8::CopyablePersistentTraits<v8::ObjectTemplate> > v8js_object_tmpl_t;
 typedef v8::Persistent<v8::Object, v8::CopyablePersistentTraits<v8::Object> > v8js_persistent_obj_t;
+typedef v8::Persistent<v8::Value, v8::CopyablePersistentTraits<v8::Value> > v8js_persistent_value_t;
 
 /* Forward declarations */
 struct v8js_v8object;
@@ -57,7 +58,7 @@ struct v8js_ctx {
 
   std::vector<char *> modules_stack;
   std::vector<char *> modules_base;
-  std::map<char *, v8js_persistent_obj_t, cmp_str> modules_loaded;
+  std::map<char *, v8js_persistent_value_t, cmp_str> modules_loaded;
   std::map<const zend_string *,v8js_function_tmpl_t> template_cache;
 
   std::map<zend_object *, v8js_persistent_obj_t> weak_objects;
