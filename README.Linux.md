@@ -3,12 +3,12 @@ V8Js on GNU/Linux
 
 Installation of V8Js on GNU/Linux is pretty much straight forward.
 
-The biggest hurdle actually is that you need a rather new v8 library.
-However most distributions still ship the rusty version 3.14, publish
-years ago, since Node.js requires such an old version.
+The biggest hurdle actually is that you need a rather new V8 library.
+However many distributions still ship the rusty version 3.14, published
+years ago.
 
-This means that you usually need to compile v8 on your own before
-you can start to compile & install v8js itself.
+This means that you usually need to compile V8 on your own before
+you can start to compile & install V8Js itself.
 
 It is recommended to install the V8 version for V8Js off your system's
 load path, so it doesn't interfere with the V8 library shipped with your
