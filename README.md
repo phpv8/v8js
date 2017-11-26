@@ -414,10 +414,3 @@ objects obeying the above rules and re-thrown in JavaScript context.  If they
 are not caught by JavaScript code the execution stops and a
 `V8JsScriptException` is thrown, which has the original PHP exception accessible
 via `getPrevious` method.
-
-V8Js versions 0.2.4 and before did not stop JS code execution on PHP exceptions,
-but silently ignored them (even so succeeding PHP calls from within the same piece
-of JS code were not executed by the PHP engine).  This behaviour is considered as
-a bug and hence was fixed with 0.2.5 release.  Nevertheless there is a 
-compatibility php.ini switch (`v8js.compat_php_exceptions`) which turns previous
-behaviour back on.
