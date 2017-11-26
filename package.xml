@@ -16,11 +16,11 @@
   <email>stesie@php.net</email>
   <active>yes</active>
  </lead>
- <date>2017-08-01</date>
- <time>20:38:30</time>
+ <date>2017-11-26</date>
+ <time>14:17:33</time>
  <version>
-  <release>1.4.1</release>
-  <api>1.4.1</api>
+  <release>2.0.0</release>
+  <api>2.0.0</api>
  </version>
  <stability>
   <release>stable</release>
@@ -28,10 +28,36 @@
  </stability>
  <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
  <notes>
-- omit usage of deprecated V8 API (#311)
-- fix build against V8 version 6.0 (#313)
-- don&apos;t clean properties hash while it is iterated (#316)
-- fix build against PHP 7.2
+Backward-incompatible changes
+-----------------------------
+
+- normal script execution shares its context with modules now (like on Node.js)
+- expose a &quot;global&quot; symbol that references the global scope (like on Node.js)
+- modules may return arbitrary values (not just objects; now like on Node.js)
+- pick up exports from &quot;module.exports&quot; also (like on Node.js)
+- handle exceptions thrown in module loader/normaliser like in other PHP scopes called from JS
+  (i.e. by default terminate execution, optionally propagate to JS side)
+
+V8Js&apos; modules vastly behave like Node.js modules now \o/
+
+- php.ini option v8js.compat_php_exceptions has been removed
+
+Deprecations
+------------
+- V8Js::registerExtension and V8Js::getExtensions are now deprecated, use snapshots instead
+- likewise passing $extensions to V8Js::__construct
+- V8Js::getPendingException and and V8Js::clearPendingException are deprecated, use try/catch
+- likewise passing $report_uncaught_exceptions !== true to V8Js::__construct
+
+Improvements
+------------
+- add documentation on heap snapshots
+
+Bugfixes
+--------
+
+- fix build on Windows with VS2017 (thanks @Jan-E)
+- fix enumeration of methods on V8 6.3
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -59,9 +85,15 @@
    <file baseinstalldir="/" md5sum="820ec5e2e6bef545fc60b96f1591d2a3" name="tests/commonjs_cust_normalise_002.phpt" role="test" />
    <file baseinstalldir="/" md5sum="aa4e50f6fd03eb209e9958b3ebbaca6e" name="tests/commonjs_cust_normalise_003.phpt" role="test" />
    <file baseinstalldir="/" md5sum="26e38626ad80e0d979d5353c6a703748" name="tests/commonjs_cust_normalise_004.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="6b7838e17f8495e7926e53584fbcd66f" name="tests/commonjs_exception_001.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="5b7ff8d0251e631e712fa4c01d46bce4" name="tests/commonjs_exception_002.phpt" role="test" />
    <file baseinstalldir="/" md5sum="c32417be448a71cd074e4f2ebdddb463" name="tests/commonjs_fatal_error.phpt" role="test" />
    <file baseinstalldir="/" md5sum="90c628544fa6f401221237511a9a4fb7" name="tests/commonjs_modules.phpt" role="test" />
    <file baseinstalldir="/" md5sum="24e2a74c0d15b94cbcdc926d1e19af0c" name="tests/commonjs_multiassign.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="68aa4898d98f68ad46e7a8df1337584f" name="tests/commonjs_node_compat_001.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="d2b1214d134895d33538691a08e50e6c" name="tests/commonjs_node_compat_002.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="d4e5df97d254598f4a1d3b0cc7830f4c" name="tests/commonjs_node_compat_003.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="b9e92be0b51274f5f51cb914869847d3" name="tests/commonjs_node_compat_basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="1d7a8f251186c47ce92fe7b1fbb0abc0" name="tests/commonjs_normalise_001.phpt" role="test" />
    <file baseinstalldir="/" md5sum="3d705ba0a7c22a73be170c9bae2303ba" name="tests/commonjs_normalise_002.phpt" role="test" />
    <file baseinstalldir="/" md5sum="8e0e5d784e6f7f896dcc94acbf909bbc" name="tests/commonjs_normalise_003.phpt" role="test" />
@@ -84,17 +116,17 @@
    <file baseinstalldir="/" md5sum="25aad3750b5f78cbd4c8b7a2b5aad3eb" name="tests/die.phpt" role="test" />
    <file baseinstalldir="/" md5sum="e8fda61ded483505ee826b48049c1761" name="tests/direct_construct.phpt" role="test" />
    <file baseinstalldir="/" md5sum="7da1f96584a7ed1edd19c73dd80f01d6" name="tests/exception.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="1942e8949e4b323d6ef92aef92334103" name="tests/exception_clearing.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="76aede409eb3d8734b536c6eccc505c4" name="tests/exception_clearing.phpt" role="test" />
    <file baseinstalldir="/" md5sum="446308298f2562a0dd7779486fa561aa" name="tests/exception_propagation_1.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="fafb380c87c0241f18fc4b5d318b282f" name="tests/exception_propagation_2.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="f90813f9ac47107b4630461816ad6221" name="tests/exception_propagation_3.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="5bd70782b943eb74604a62fc9e04ecb3" name="tests/exception_propagation_2.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="26e14de7a689e3fbcb875972c662f3ab" name="tests/exception_propagation_3.phpt" role="test" />
    <file baseinstalldir="/" md5sum="dd3b47fc5dfcde56421f6d6207422ef4" name="tests/exception_start_column.phpt" role="test" />
    <file baseinstalldir="/" md5sum="8ed403ca3798d987b0f29e0132c7686f" name="tests/execute_flags.phpt" role="test" />
    <file baseinstalldir="/" md5sum="c0e9df92043bdc6c589da7155e2eb38d" name="tests/execute_flags_args.phpt" role="test" />
    <file baseinstalldir="/" md5sum="b2853876eaf71577361e443f1be1fc7d" name="tests/execute_flags_property_writing.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="c6bb03e78b889428564d43a918c6579d" name="tests/extensions_basic.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="912551ffccc81a11a1b4837f6ba94a30" name="tests/extensions_circular_dependency.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="8f3e77d58d14f2f7cad9223f49931d0e" name="tests/extensions_error.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="d59e23e46ac0f37713ea20fca2aea8bf" name="tests/extensions_basic.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="f4713ea56fc48a308a202b116c580831" name="tests/extensions_circular_dependency.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="862bafd2ca3c41ddb912ad5d4284421b" name="tests/extensions_error.phpt" role="test" />
    <file baseinstalldir="/" md5sum="11390b75f900defae70e86fbcb41d4fe" name="tests/fatal_error_ignore_non_fatals.phpt" role="test" />
    <file baseinstalldir="/" md5sum="87417bc1097bba05db7b79bb9a605c06" name="tests/fatal_error_no_uninstall_inner_frame.phpt" role="test" />
    <file baseinstalldir="/" md5sum="9228a7cd3419eb12e84d633fbd89b660" name="tests/fatal_error_recursive.phpt" role="test" />
@@ -123,11 +155,11 @@
    <file baseinstalldir="/" md5sum="80b414d8041a30f92b0a9a12707b99ef" name="tests/generators_to_v8_basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="a5b1cef40ecaa8bd86ec587c779bdeb4" name="tests/get_accessor.phpt" role="test" />
    <file baseinstalldir="/" md5sum="b3de35c5e6b1e2e676cf50d596cd2c57" name="tests/get_constructor.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="e3382dc1112ae7c7d28a45815bd89d95" name="tests/global_object_basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="7d240e23d061f59599109cc679084da4" name="tests/has_property_after_dispose.phpt" role="test" />
    <file baseinstalldir="/" md5sum="1443aef2fda8793abd79c06a29639797" name="tests/inheritance_basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="afdb74aca312497cce114a8d9dba6ee9" name="tests/issue_116-v8function-injection.phpt" role="test" />
    <file baseinstalldir="/" md5sum="6d4e573daaf2ca5c177230541c31fc96" name="tests/issue_127_001.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="3ff639cdb2f80e8b0a256aa12fce9c5d" name="tests/issue_156_001.phpt" role="test" />
    <file baseinstalldir="/" md5sum="858c759b267b903dcdd65b5f208dc07f" name="tests/issue_160_basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="ef3b5242a8407b0f50411c1c52c27fe7" name="tests/issue_183_001.phpt" role="test" />
    <file baseinstalldir="/" md5sum="d1eb2758885b5924bfe3917fafedb73b" name="tests/issue_183_002.phpt" role="test" />
@@ -197,29 +229,30 @@
    <file baseinstalldir="/" md5sum="4886fac4c06e560fd0fef88c81357870" name="tests/skipif.inc" role="test" />
    <file baseinstalldir="/" md5sum="bdf52e983e410ace13f78611e2684673" name="tests/timezones.phpt" role="test" />
    <file baseinstalldir="/" md5sum="90ccf12ee3ce42b555858aa71623f9c1" name="tests/time_limit.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="fe06d2554d308afae6b6772f8edee6e3" name="tests/unicode.phpt" role="test" />
    <file baseinstalldir="/" md5sum="73075b58cfce4db091b7f6f8c480e0a4" name="tests/use_after_dispose.phpt" role="test" />
    <file baseinstalldir="/" md5sum="aabbf8a564c546eef38c1e9e3b02bb14" name="tests/v8_unset_property.phpt" role="test" />
    <file baseinstalldir="/" md5sum="35ce3816ae00e697fca26142c46e0c79" name="tests/v8_write_property.phpt" role="test" />
    <file baseinstalldir="/" md5sum="ae504a63e5ff800e3aa7d529835d0e8e" name="tests/variable_passing.phpt" role="test" />
    <file baseinstalldir="/" md5sum="1bd7738aeeb5cf80d80561554f59f2ed" name="tests/var_dump.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="3ebb38e36af0a0a290c40df26b0368c0" name="appveyor.yml" role="data" />
+   <file baseinstalldir="/" md5sum="94afd107393de7aea2485e9ad5c6277d" name="appveyor.yml" role="data" />
    <file baseinstalldir="/" md5sum="8f98fbb229dc230d24e3fedcf083813b" name="Commandfile" role="data" />
    <file baseinstalldir="/" md5sum="f5c1fa908d96e785da47b3e1913d1f93" name="config.m4" role="src" />
-   <file baseinstalldir="/" md5sum="94b111599d9d2b432aeb97b2d096ce53" name="config.w32" role="src" />
+   <file baseinstalldir="/" md5sum="2aaa49288dde02e96c5dce917aaef7a6" name="config.w32" role="src" />
    <file baseinstalldir="/" md5sum="cea72666538d5b0b80a64ccdbda24919" name="CREDITS" role="doc" />
    <file baseinstalldir="/" md5sum="9f5b5f41204bcde55d9df87d5a970b30" name="LICENSE" role="doc" />
    <file baseinstalldir="/" md5sum="752113770061470ad7212d818836bd36" name="Makefile.frag" role="src" />
    <file baseinstalldir="/" md5sum="efd4ce357a80624b76fe6f94cda6357b" name="Makefile.travis" role="src" />
    <file baseinstalldir="/" md5sum="08ac27d6cd9d86aed4ce292ff15388fd" name="php_v8js.h" role="src" />
-   <file baseinstalldir="/" md5sum="102638c39f2364cfab48ee0678389871" name="php_v8js_macros.h" role="src" />
-   <file baseinstalldir="/" md5sum="60a31c9aa30ed213115584bea51c49bb" name="README.Linux.md" role="doc" />
+   <file baseinstalldir="/" md5sum="d0c81c9b09f62eda235ae283950abdb6" name="php_v8js_macros.h" role="src" />
+   <file baseinstalldir="/" md5sum="dc3ea1b4c4104398e6df1759335a9de2" name="README.Linux.md" role="doc" />
    <file baseinstalldir="/" md5sum="a20db830e5ce8fddfeb01607fc7c7f67" name="README.MacOS.md" role="doc" />
-   <file baseinstalldir="/" md5sum="16176cd8a29413f77a14ece1c5b79db2" name="README.md" role="doc" />
+   <file baseinstalldir="/" md5sum="2d1901e3984c3d488038efab396ebe26" name="README.md" role="doc" />
    <file baseinstalldir="/" md5sum="75bfa2f1137a42958dab030e64d79fda" name="README.Win32.md" role="doc" />
    <file baseinstalldir="/" md5sum="dc40933a6a12c05fb833027dbe56df39" name="v8js_array_access.cc" role="src" />
    <file baseinstalldir="/" md5sum="51905856eab666cbc19762c6fb83f931" name="v8js_array_access.h" role="src" />
-   <file baseinstalldir="/" md5sum="eab28b694245dc568b12ec078cc55a25" name="v8js_class.cc" role="src" />
-   <file baseinstalldir="/" md5sum="2e651effb7c65031b8c5903d391fd1b8" name="v8js_class.h" role="src" />
+   <file baseinstalldir="/" md5sum="755e5867f39e82976015cbb2d7da21ab" name="v8js_class.cc" role="src" />
+   <file baseinstalldir="/" md5sum="2b4c8c42124cae012bc288134ab7aa22" name="v8js_class.h" role="src" />
    <file baseinstalldir="/" md5sum="c2795183e35b0c8abae2e2a52a1a766a" name="v8js_commonjs.cc" role="src" />
    <file baseinstalldir="/" md5sum="c47ae971a5315dd101e7d2420f4e73b9" name="v8js_commonjs.h" role="src" />
    <file baseinstalldir="/" md5sum="94d7a79bc397a824908392cdbe69e3e6" name="v8js_convert.cc" role="src" />
@@ -227,9 +260,9 @@
    <file baseinstalldir="/" md5sum="ddc09aa635ee9e6f2ee2c9d63511cc00" name="v8js_exceptions.h" role="src" />
    <file baseinstalldir="/" md5sum="32f1be1b9afa19eb6812e2ea7fb1bee6" name="v8js_generator_export.cc" role="src" />
    <file baseinstalldir="/" md5sum="0bfa1eb796acf31f8bebc10dfd357a8f" name="v8js_generator_export.h" role="src" />
-   <file baseinstalldir="/" md5sum="453e6c199c855bcd2d5e09138c8609c7" name="v8js_main.cc" role="src" />
-   <file baseinstalldir="/" md5sum="32b8e78b36d3510b5838b8698608fab8" name="v8js_methods.cc" role="src" />
-   <file baseinstalldir="/" md5sum="582e360709470da9724b23a1504668bc" name="v8js_object_export.cc" role="src" />
+   <file baseinstalldir="/" md5sum="e056e2a2b8e8e754a3a1e26e10b87e53" name="v8js_main.cc" role="src" />
+   <file baseinstalldir="/" md5sum="5233796d443d4cfa00ccb98dfb55a06f" name="v8js_methods.cc" role="src" />
+   <file baseinstalldir="/" md5sum="8d95c765418f8c30d611475dc7239384" name="v8js_object_export.cc" role="src" />
    <file baseinstalldir="/" md5sum="a9992de73db40e343bb9f3303c71e460" name="v8js_object_export.h" role="src" />
    <file baseinstalldir="/" md5sum="ccd149b929146a4d4fbf5eceb0ed13af" name="v8js_timer.cc" role="src" />
    <file baseinstalldir="/" md5sum="505b5e01105e0edbe06bbbb300539e3e" name="v8js_timer.h" role="src" />
@@ -238,7 +271,7 @@
    <file baseinstalldir="/" md5sum="58bdb5d53ea4e7ec7ac082f4f99a9c40" name="v8js_v8object_class.cc" role="src" />
    <file baseinstalldir="/" md5sum="7a6e69720230ee9f00e233095409e2ed" name="v8js_v8object_class.h" role="src" />
    <file baseinstalldir="/" md5sum="82b9f8cb2982e3b6d280447e002177de" name="v8js_variables.cc" role="src" />
-   <file baseinstalldir="/" md5sum="4edc577a41ae86a24e566764604127f9" name="Vagrantfile" role="data" />
+   <file baseinstalldir="/" md5sum="6b61780aade3a48e15064d3b5aba2013" name="Vagrantfile" role="data" />
   </dir>
  </contents>
  <dependencies>
@@ -842,13 +875,57 @@ Correctly initialize V8&apos;s ICU component
     <release>stable</release>
     <api>stable</api>
    </stability>
-   <date>2017-08-01</date>
+   <date>2017-11-26</date>
    <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
    <notes>
 - omit usage of deprecated V8 API (#311)
 - fix build against V8 version 6.0 (#313)
 - don&apos;t clean properties hash while it is iterated (#316)
 - fix build against PHP 7.2
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.0.0</release>
+    <api>2.0.0</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <date>2017-11-26</date>
+   <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
+   <notes>
+Backward-incompatible changes
+-----------------------------
+
+- normal script execution shares its context with modules now (like on Node.js)
+- expose a &quot;global&quot; symbol that references the global scope (like on Node.js)
+- modules may return arbitrary values (not just objects; now like on Node.js)
+- pick up exports from &quot;module.exports&quot; also (like on Node.js)
+- handle exceptions thrown in module loader/normaliser like in other PHP scopes called from JS
+  (i.e. by default terminate execution, optionally propagate to JS side)
+
+V8Js&apos; modules vastly behave like Node.js modules now \o/
+
+- php.ini option v8js.compat_php_exceptions has been removed
+
+Deprecations
+------------
+- V8Js::registerExtension and V8Js::getExtensions are now deprecated, use snapshots instead
+- likewise passing $extensions to V8Js::__construct
+- V8Js::getPendingException and and V8Js::clearPendingException are deprecated, use try/catch
+- likewise passing $report_uncaught_exceptions !== true to V8Js::__construct
+
+Improvements
+------------
+- add documentation on heap snapshots
+
+Bugfixes
+--------
+
+- fix build on Windows with VS2017 (thanks @Jan-E)
+- fix enumeration of methods on V8 6.3
    </notes>
   </release>
  </changelog>
