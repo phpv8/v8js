@@ -162,7 +162,7 @@ failure:
 		efree(fci.params);
 	}
 
-	if(EG(exception) && !V8JSG(compat_php_exceptions)) {
+	if(EG(exception)) {
 		if(ctx->flags & V8JS_FLAG_PROPAGATE_PHP_EXCEPTIONS) {
 			zval tmp_zv;
 			ZVAL_OBJ(&tmp_zv, EG(exception));
