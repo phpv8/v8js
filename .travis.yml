@@ -7,8 +7,8 @@ php:
   - 7.1
 
 env:
-  - V8VER=5.2
-  - V8VER=5.1
+  - V8VER=6.5
+  - V8VER=6.3
 
 before_install: make -f Makefile.travis before_install
 install: make -f Makefile.travis install

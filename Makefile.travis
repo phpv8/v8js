@@ -1,5 +1,5 @@
 # Configure and build scripts for travis CI system
-V8VER ?= 5.1
+V8VER ?= 6.3
 
 export NO_INTERACTION=1
 export REPORT_EXIT_STATUS=1
