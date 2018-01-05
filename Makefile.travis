@@ -1,20 +1,14 @@
 # Configure and build scripts for travis CI system
-V8VER ?= 5.1
+V8VER ?= 6.3
+
+IMAGENAME ?= v8js-test
 
 export NO_INTERACTION=1
 export REPORT_EXIT_STATUS=1
 
-before_install:
-	sudo add-apt-repository ppa:pinepain/libv8-$(V8VER) -y
-	sudo apt-get update -q
-
-install:
-	sudo apt-get install -y libv8-$(V8VER)-dev
-
 build:
-	phpize
-	./configure CXXFLAGS="-Wall -Wno-write-strings -Werror"
-	$(MAKE) -j3
+	envsubst < Dockerfile.travis > Dockerfile.tmp
+	docker build -t $(IMAGENAME) -f Dockerfile.tmp .
 
 test: build
-	$(MAKE) test
+	docker run --rm -t $(IMAGENAME) make test

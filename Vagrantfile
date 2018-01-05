@@ -11,6 +11,7 @@ Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu/xenial64"
 
   config.vm.provider "lxc" do |lxc, override|
+    lxc.backingstore = "none"
     override.vm.box = "zaikin/xenial64-lxc"
   end
 
@@ -18,7 +19,7 @@ Vagrant.configure("2") do |config|
   #
   # mass-define "generic" Ubuntu boxes
   #
-  %w{5.7 5.8 5.9 6.0 6.3}.each { |version|
+  %w{6.3 6.4 6.5}.each { |version|
     config.vm.define "v8-#{version}" do |i|
       i.vm.synced_folder ".", "/data/v8js"
 
@@ -37,7 +38,7 @@ Vagrant.configure("2") do |config|
     end
   }
 
-  %w{5.9.35 6.0.318}.each { |version|
+  %w{}.each { |version|
     config.vm.define "v8-#{version}" do |i|
       i.vm.synced_folder ".", "/data/v8js"
 
@@ -141,29 +142,6 @@ Vagrant.configure("2") do |config|
       dnf -y install gcc-c++ gdb tmux git tig curl vim
       dnf -y install v8-devel php-devel
     SHELL
-  end
-
-
-  #
-  # ubuntu xenial(16.04) box with PHP 7.1.3, V8 5.2
-  # (to reproduce issue #304)
-  #
-  config.vm.define "xenial-v8-5.2" do |i|
-    i.vm.box = "ubuntu/xenial64"
-    i.vm.synced_folder ".", "/data/v8js"
-
-    i.vm.provision "shell", inline: <<-SHELL
-    gpg --keyserver keys.gnupg.net --recv 7F438280EF8D349F
-    gpg --armor --export 7F438280EF8D349F | apt-key add -
-
-    apt-get update
-    apt-get install -y software-properties-common gdb tmux git tig curl apache2-utils lcov
-
-    add-apt-repository ppa:ondrej/php
-    add-apt-repository ppa:pinepain/libv8-5.2
-    apt-get update
-    apt-get install -y php7.1-dev libv8-5.2-dbg libv8-5.2-dev
-  SHELL
   end
 
   config.vm.define "macos-sierra" do |i|

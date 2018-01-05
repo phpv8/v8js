@@ -1,15 +1,21 @@
 language: php
 sudo: required
-dist: trusty
 
-php:
-  - 7.0
-  - 7.1
+services:
+  - docker
 
 env:
-  - V8VER=5.2
-  - V8VER=5.1
+  - V8VER=6.5
+    PHPVER=7.0
+  - V8VER=6.4
+    PHPVER=7.0
+  - V8VER=6.5
+    PHPVER=7.1
+  - V8VER=6.4
+    PHPVER=7.1
+  - V8VER=6.5
+    PHPVER=7.2
+  - V8VER=6.4
+    PHPVER=7.2
 
-before_install: make -f Makefile.travis before_install
-install: make -f Makefile.travis install
 script: make -f Makefile.travis test
