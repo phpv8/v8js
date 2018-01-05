@@ -2,6 +2,7 @@
 *.o
 .deps
 .libs
+Dockerfile.tmp
 Makefile
 Makefile.fragments
 Makefile.global
