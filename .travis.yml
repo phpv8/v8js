@@ -7,15 +7,15 @@ services:
 env:
   - V8VER=6.5
     PHPVER=7.0
-  - V8VER=6.3
+  - V8VER=6.4
     PHPVER=7.0
   - V8VER=6.5
     PHPVER=7.1
-  - V8VER=6.3
+  - V8VER=6.4
     PHPVER=7.1
   - V8VER=6.5
     PHPVER=7.2
-  - V8VER=6.3
+  - V8VER=6.4
     PHPVER=7.2
 
 script: make -f Makefile.travis test
