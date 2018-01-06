@@ -144,6 +144,9 @@ int main ()
     if test "$V8_API_VERSION" -lt 4006076 ; then
        AC_MSG_ERROR([libv8 must be version 4.6.76 or greater])
     fi
+    if test "$V8_API_VERSION" -lt 6004388 ; then
+       AC_MSG_WARN([libv8 prior to 6.4.388.18 is missing speculative execution mitigations])
+    fi
     AC_DEFINE_UNQUOTED([PHP_V8_API_VERSION], $V8_API_VERSION, [ ])
     AC_DEFINE_UNQUOTED([PHP_V8_VERSION], "$ac_cv_v8_version", [ ])
   else
