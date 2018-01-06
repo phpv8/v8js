@@ -51,7 +51,7 @@ fetch v8
 cd v8
 
 # (optional) If you'd like to build a certain version:
-git checkout 5.6.326.12
+git checkout 6.4.388.18
 gclient sync
 
 # Setup GN
