@@ -67,6 +67,13 @@ sudo cp out.gn/x64.release/lib*.so out.gn/x64.release/*_blob.bin \
 sudo cp -R include/* /opt/v8/include/
 ```
 
+On Debian Stretch you need to set RPATH on the installed libraries,
+so the library loader finds the dependencies:
+
+```
+sudo apt-get install patchelf
+for A in /opt/v8/lib/*.so; do sudo patchelf --set-rpath '$ORIGIN' $A; done
+```
 
 Compile php-v8js itself
 -----------------------
