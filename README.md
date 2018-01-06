@@ -50,12 +50,6 @@ You might want to install these and compile V8Js based on them.
 There also is a Heroku extension pack that has recent V8Js versions for PHP 7.x, see
 [@stesie's blog post](https://stesie.github.io/2016/03/heroku-custom-platform-repo) for details.
 
-Last but not least there are binaries for Windows (PHP7, x86 including V8 4.9.385.29) that you can use
-with the PHP binaries from http://windows.php.net/download:
-
-* [V8Js for Windows, PHP7.0, x86, thread safe (TS)](https://s3.amazonaws.com/win-phpv8/v8js_vc14_php7_ts.zip)
-* [V8Js for Windows, PHP7.0, x86, non thread safe (NTS)](https://s3.amazonaws.com/win-phpv8/v8js_vc14_php7_nts.zip)
-
 64-bit binaries for Windows [are made available by Jan-E here](https://www.apachelounge.com/viewtopic.php?t=6359).
 
 
