@@ -12,7 +12,7 @@ The extension allows you to execute Javascript code in a secure sandbox from PHP
 can be restricted using a time limit and/or memory limit. This provides the possibility to execute
 untrusted code with confidence.
 
-If you execute untrusted JavaScript code, make sure to **use V8 version 6.4.388.18 or higher**.
+If you execute untrusted JavaScript code, make sure to **use V8 version 6.4.388.18, 6.5.143 or higher**.
 See notes on [untrusted code mitigations](https://github.com/v8/v8/wiki/Untrusted-code-mitigations)
 for further details.
 
