@@ -16,11 +16,11 @@
   <email>stesie@php.net</email>
   <active>yes</active>
  </lead>
- <date>2017-11-26</date>
- <time>14:17:33</time>
+ <date>2018-01-07</date>
+ <time>13:19:29</time>
  <version>
-  <release>2.0.0</release>
-  <api>2.0.0</api>
+  <release>2.1.0</release>
+  <api>2.1.0</api>
  </version>
  <stability>
   <release>stable</release>
@@ -28,36 +28,8 @@
  </stability>
  <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
  <notes>
-Backward-incompatible changes
------------------------------
-
-- normal script execution shares its context with modules now (like on Node.js)
-- expose a &quot;global&quot; symbol that references the global scope (like on Node.js)
-- modules may return arbitrary values (not just objects; now like on Node.js)
-- pick up exports from &quot;module.exports&quot; also (like on Node.js)
-- handle exceptions thrown in module loader/normaliser like in other PHP scopes called from JS
-  (i.e. by default terminate execution, optionally propagate to JS side)
-
-V8Js&apos; modules vastly behave like Node.js modules now \o/
-
-- php.ini option v8js.compat_php_exceptions has been removed
-
-Deprecations
-------------
-- V8Js::registerExtension and V8Js::getExtensions are now deprecated, use snapshots instead
-- likewise passing $extensions to V8Js::__construct
-- V8Js::getPendingException and and V8Js::clearPendingException are deprecated, use try/catch
-- likewise passing $report_uncaught_exceptions !== true to V8Js::__construct
-
-Improvements
-------------
-- add documentation on heap snapshots
-
-Bugfixes
---------
-
-- fix build on Windows with VS2017 (thanks @Jan-E)
-- fix enumeration of methods on V8 6.3
+- emit warning when compiling against V8 without untrusted code mitigations
+- support native modules (i.e. expose PHP objects via require(&apos;...&apos;))
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -90,6 +62,7 @@ Bugfixes
    <file baseinstalldir="/" md5sum="c32417be448a71cd074e4f2ebdddb463" name="tests/commonjs_fatal_error.phpt" role="test" />
    <file baseinstalldir="/" md5sum="90c628544fa6f401221237511a9a4fb7" name="tests/commonjs_modules.phpt" role="test" />
    <file baseinstalldir="/" md5sum="24e2a74c0d15b94cbcdc926d1e19af0c" name="tests/commonjs_multiassign.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="0efd91f5e72109b47f7d5fa77be690f5" name="tests/commonjs_native_basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="68aa4898d98f68ad46e7a8df1337584f" name="tests/commonjs_node_compat_001.phpt" role="test" />
    <file baseinstalldir="/" md5sum="d2b1214d134895d33538691a08e50e6c" name="tests/commonjs_node_compat_002.phpt" role="test" />
    <file baseinstalldir="/" md5sum="d4e5df97d254598f4a1d3b0cc7830f4c" name="tests/commonjs_node_compat_003.phpt" role="test" />
@@ -236,18 +209,19 @@ Bugfixes
    <file baseinstalldir="/" md5sum="ae504a63e5ff800e3aa7d529835d0e8e" name="tests/variable_passing.phpt" role="test" />
    <file baseinstalldir="/" md5sum="1bd7738aeeb5cf80d80561554f59f2ed" name="tests/var_dump.phpt" role="test" />
    <file baseinstalldir="/" md5sum="94afd107393de7aea2485e9ad5c6277d" name="appveyor.yml" role="data" />
-   <file baseinstalldir="/" md5sum="8f98fbb229dc230d24e3fedcf083813b" name="Commandfile" role="data" />
-   <file baseinstalldir="/" md5sum="f5c1fa908d96e785da47b3e1913d1f93" name="config.m4" role="src" />
+   <file baseinstalldir="/" md5sum="f921b1588097dee9e4f37c52e9e73750" name="Commandfile" role="data" />
+   <file baseinstalldir="/" md5sum="38eca8812ef0345379930ee8e33d44b2" name="config.m4" role="src" />
    <file baseinstalldir="/" md5sum="2aaa49288dde02e96c5dce917aaef7a6" name="config.w32" role="src" />
    <file baseinstalldir="/" md5sum="cea72666538d5b0b80a64ccdbda24919" name="CREDITS" role="doc" />
+   <file baseinstalldir="/" md5sum="35453d76c8f6eb0ae528453b5f89fa35" name="Dockerfile.travis" role="data" />
    <file baseinstalldir="/" md5sum="9f5b5f41204bcde55d9df87d5a970b30" name="LICENSE" role="doc" />
    <file baseinstalldir="/" md5sum="752113770061470ad7212d818836bd36" name="Makefile.frag" role="src" />
-   <file baseinstalldir="/" md5sum="efd4ce357a80624b76fe6f94cda6357b" name="Makefile.travis" role="src" />
+   <file baseinstalldir="/" md5sum="36e444ca56aea30f5ac530f24feff463" name="Makefile.travis" role="src" />
    <file baseinstalldir="/" md5sum="08ac27d6cd9d86aed4ce292ff15388fd" name="php_v8js.h" role="src" />
-   <file baseinstalldir="/" md5sum="d0c81c9b09f62eda235ae283950abdb6" name="php_v8js_macros.h" role="src" />
-   <file baseinstalldir="/" md5sum="dc3ea1b4c4104398e6df1759335a9de2" name="README.Linux.md" role="doc" />
+   <file baseinstalldir="/" md5sum="ebe79cc9243e5b86f81e65f2b0f8d682" name="php_v8js_macros.h" role="src" />
+   <file baseinstalldir="/" md5sum="2613fba9ad7cb9a56f80da7b8ffe13df" name="README.Linux.md" role="doc" />
    <file baseinstalldir="/" md5sum="a20db830e5ce8fddfeb01607fc7c7f67" name="README.MacOS.md" role="doc" />
-   <file baseinstalldir="/" md5sum="2d1901e3984c3d488038efab396ebe26" name="README.md" role="doc" />
+   <file baseinstalldir="/" md5sum="314f35296641ea74cadcb4d51052bed0" name="README.md" role="doc" />
    <file baseinstalldir="/" md5sum="75bfa2f1137a42958dab030e64d79fda" name="README.Win32.md" role="doc" />
    <file baseinstalldir="/" md5sum="dc40933a6a12c05fb833027dbe56df39" name="v8js_array_access.cc" role="src" />
    <file baseinstalldir="/" md5sum="51905856eab666cbc19762c6fb83f931" name="v8js_array_access.h" role="src" />
@@ -261,7 +235,7 @@ Bugfixes
    <file baseinstalldir="/" md5sum="32f1be1b9afa19eb6812e2ea7fb1bee6" name="v8js_generator_export.cc" role="src" />
    <file baseinstalldir="/" md5sum="0bfa1eb796acf31f8bebc10dfd357a8f" name="v8js_generator_export.h" role="src" />
    <file baseinstalldir="/" md5sum="e056e2a2b8e8e754a3a1e26e10b87e53" name="v8js_main.cc" role="src" />
-   <file baseinstalldir="/" md5sum="5233796d443d4cfa00ccb98dfb55a06f" name="v8js_methods.cc" role="src" />
+   <file baseinstalldir="/" md5sum="8d957b60531ebc123b0e2c7b08f784cc" name="v8js_methods.cc" role="src" />
    <file baseinstalldir="/" md5sum="8d95c765418f8c30d611475dc7239384" name="v8js_object_export.cc" role="src" />
    <file baseinstalldir="/" md5sum="a9992de73db40e343bb9f3303c71e460" name="v8js_object_export.h" role="src" />
    <file baseinstalldir="/" md5sum="ccd149b929146a4d4fbf5eceb0ed13af" name="v8js_timer.cc" role="src" />
@@ -271,7 +245,7 @@ Bugfixes
    <file baseinstalldir="/" md5sum="58bdb5d53ea4e7ec7ac082f4f99a9c40" name="v8js_v8object_class.cc" role="src" />
    <file baseinstalldir="/" md5sum="7a6e69720230ee9f00e233095409e2ed" name="v8js_v8object_class.h" role="src" />
    <file baseinstalldir="/" md5sum="82b9f8cb2982e3b6d280447e002177de" name="v8js_variables.cc" role="src" />
-   <file baseinstalldir="/" md5sum="6b61780aade3a48e15064d3b5aba2013" name="Vagrantfile" role="data" />
+   <file baseinstalldir="/" md5sum="a311c14c8fa25a391b0e803d14c82381" name="Vagrantfile" role="data" />
   </dir>
  </contents>
  <dependencies>
@@ -893,7 +867,7 @@ Correctly initialize V8&apos;s ICU component
     <release>stable</release>
     <api>stable</api>
    </stability>
-   <date>2017-11-26</date>
+   <date>2018-01-07</date>
    <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
    <notes>
 Backward-incompatible changes
@@ -926,6 +900,22 @@ Bugfixes
 
 - fix build on Windows with VS2017 (thanks @Jan-E)
 - fix enumeration of methods on V8 6.3
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.1.0</release>
+    <api>2.1.0</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <date>2018-01-07</date>
+   <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
+   <notes>
+- emit warning when compiling against V8 without untrusted code mitigations
+- support native modules (i.e. expose PHP objects via require(&apos;...&apos;))
    </notes>
   </release>
  </changelog>

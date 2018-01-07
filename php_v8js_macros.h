@@ -63,7 +63,7 @@ extern "C" {
 #endif
 
 /* V8Js Version */
-#define PHP_V8JS_VERSION "2.0.0"
+#define PHP_V8JS_VERSION "2.1.0"
 
 /* Helper macros */
 #define V8JS_GET_CLASS_NAME(var, obj) \
