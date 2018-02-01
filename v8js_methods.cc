@@ -205,10 +205,10 @@ V8JS_METHOD(var_dump) /* {{{ */
 V8JS_METHOD(require)
 {
 	v8::Isolate *isolate = info.GetIsolate();
+	v8js_ctx *c = (v8js_ctx *) isolate->GetData(0);
 
-	// Get the extension context
-	v8::Local<v8::External> data = v8::Local<v8::External>::Cast(info.Data());
-	v8js_ctx *c = static_cast<v8js_ctx*>(data->Value());
+	v8::String::Utf8Value module_base(info.Data());
+	const char *module_base_cstr = ToCString(module_base);
 
 	// Check that we have a module loader
 	if(Z_TYPE(c->module_loader) == IS_NULL) {
@@ -225,7 +225,7 @@ V8JS_METHOD(require)
 		normalised_path = (char *)emalloc(PATH_MAX);
 		module_name = (char *)emalloc(PATH_MAX);
 
-		v8js_commonjs_normalise_identifier(c->modules_base.back(), module_id, normalised_path, module_name);
+		v8js_commonjs_normalise_identifier(module_base_cstr, module_id, normalised_path, module_name);
 	}
 	else {
 		// Call custom normaliser
@@ -238,7 +238,7 @@ V8JS_METHOD(require)
 				isolate->Exit();
 				v8::Unlocker unlocker(isolate);
 
-				ZVAL_STRING(&params[0], c->modules_base.back());
+				ZVAL_STRING(&params[0], module_base_cstr);
 				ZVAL_STRING(&params[1], module_id);
 
 				call_result = call_user_function_ex(EG(function_table), NULL, &c->module_normaliser,
@@ -445,7 +445,7 @@ V8JS_METHOD(require)
 	v8::Local<v8::String> source = V8JS_ZSTR(Z_STR(module_code));
 	zval_ptr_dtor(&module_code);
 
-	source = v8::String::Concat(V8JS_SYM("(function (exports, module) {"), source);
+	source = v8::String::Concat(V8JS_SYM("(function (exports, module, require) {"), source);
 	source = v8::String::Concat(source, V8JS_SYM("\n});"));
 
 	// Create and compile script
@@ -459,9 +459,19 @@ V8JS_METHOD(require)
 		return;
 	}
 
+	v8::Local<v8::String> base_path = V8JS_STR(normalised_path);
+	v8::MaybeLocal<v8::Function> require_fn = v8::FunctionTemplate::New(isolate, V8JS_MN(require), base_path)->GetFunction();
+
+	if (require_fn.IsEmpty()) {
+		efree(normalised_path);
+		efree(normalised_module_id);
+		info.GetReturnValue().Set(isolate->ThrowException(V8JS_SYM("Failed to create require method")));
+		return;
+	}
+
+
 	// Add this module and path to the stack
 	c->modules_stack.push_back(normalised_module_id);
-	c->modules_base.push_back(normalised_path);
 
 	// Run script to evaluate closure
 	v8::Local<v8::Value> module_function = script->Run();
@@ -474,20 +484,22 @@ V8JS_METHOD(require)
 	module->Set(V8JS_SYM("exports"), exports);
 
 	if (module_function->IsFunction()) {
-		v8::Local<v8::Value> *jsArgv = static_cast<v8::Local<v8::Value> *>(alloca(2 * sizeof(v8::Local<v8::Value>)));
+		v8::Local<v8::Value> *jsArgv = static_cast<v8::Local<v8::Value> *>(alloca(3 * sizeof(v8::Local<v8::Value>)));
 		new(&jsArgv[0]) v8::Local<v8::Value>;
 		jsArgv[0] = exports;
 
 		new(&jsArgv[1]) v8::Local<v8::Value>;
 		jsArgv[1] = module;
 
+		new(&jsArgv[2]) v8::Local<v8::Value>;
+		jsArgv[2] = require_fn.ToLocalChecked();
+
 		// actually call the module
-		v8::Local<v8::Function>::Cast(module_function)->Call(exports, 2, jsArgv);
+		v8::Local<v8::Function>::Cast(module_function)->Call(exports, 3, jsArgv);
 	}
 
 	// Remove this module and path from the stack
 	c->modules_stack.pop_back();
-	c->modules_base.pop_back();
 
 	efree(normalised_path);
 
@@ -532,8 +544,8 @@ void v8js_register_methods(v8::Local<v8::ObjectTemplate> global, v8js_ctx *c) /*
 	global->Set(V8JS_SYM("print"), v8::FunctionTemplate::New(isolate, V8JS_MN(print)), v8::ReadOnly);
 	global->Set(V8JS_SYM("var_dump"), v8::FunctionTemplate::New(isolate, V8JS_MN(var_dump)), v8::ReadOnly);
 
-	c->modules_base.push_back("");
-	global->Set(V8JS_SYM("require"), v8::FunctionTemplate::New(isolate, V8JS_MN(require), v8::External::New(isolate, c)), v8::ReadOnly);
+	v8::Local<v8::String> base_path = V8JS_STRL("", 0);
+	global->Set(V8JS_SYM("require"), v8::FunctionTemplate::New(isolate, V8JS_MN(require), base_path), v8::ReadOnly);
 }
 /* }}} */
 
