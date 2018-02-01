@@ -26,7 +26,7 @@ command 'clean',
 command 'build',
   description: 'executes "make"',
   script: <<-eof
-    cd /data/build; `which gmake || which make`
+    cd /data/build; `which gmake || which make` -j4
     eof
 
 command 'test',
