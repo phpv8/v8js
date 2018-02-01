@@ -57,7 +57,6 @@ struct v8js_ctx {
   zval module_loader;
 
   std::vector<char *> modules_stack;
-  std::vector<char *> modules_base;
   std::map<char *, v8js_persistent_value_t, cmp_str> modules_loaded;
   std::map<const zend_string *,v8js_function_tmpl_t> template_cache;
 

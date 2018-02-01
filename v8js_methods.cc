@@ -472,7 +472,6 @@ V8JS_METHOD(require)
 
 	// Add this module and path to the stack
 	c->modules_stack.push_back(normalised_module_id);
-	c->modules_base.push_back(normalised_path);
 
 	// Run script to evaluate closure
 	v8::Local<v8::Value> module_function = script->Run();
@@ -501,7 +500,6 @@ V8JS_METHOD(require)
 
 	// Remove this module and path from the stack
 	c->modules_stack.pop_back();
-	c->modules_base.pop_back();
 
 	efree(normalised_path);
 

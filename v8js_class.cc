@@ -200,7 +200,6 @@ static void v8js_free_storage(zend_object *object) /* {{{ */
 	}
 
 	c->modules_stack.~vector();
-	c->modules_base.~vector();
 
 	zval_ptr_dtor(&c->zval_snapshot_blob);
 
@@ -226,7 +225,6 @@ static zend_object* v8js_new(zend_class_entry *ce) /* {{{ */
 	new(&c->array_tmpl) v8::Persistent<v8::FunctionTemplate>();
 
 	new(&c->modules_stack) std::vector<char*>();
-	new(&c->modules_base) std::vector<char*>();
 	new(&c->modules_loaded) std::map<char *, v8js_persistent_value_t, cmp_str>;
 
 	new(&c->template_cache) std::map<const zend_string *,v8js_function_tmpl_t>();
