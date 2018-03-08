@@ -31,7 +31,8 @@ Vagrant.configure("2") do |config|
       apt-get install -y software-properties-common gdb tmux git tig curl apache2-utils lcov
 
       add-apt-repository ppa:ondrej/php
-      add-apt-repository ppa:pinepain/libv8-#{version}
+      add-apt-repository ppa:pinepain/libv8
+      add-apt-repository ppa:pinepain/libv8-archived
       apt-get update
       apt-get install -y php7.1-dev libv8-#{version}-dbg libv8-#{version}-dev
     SHELL

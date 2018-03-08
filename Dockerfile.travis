@@ -9,7 +9,8 @@ RUN apt-get update -q
 RUN apt-get install -y software-properties-common
 
 RUN add-apt-repository ppa:ondrej/php
-RUN add-apt-repository ppa:pinepain/libv8-$V8VER -y
+RUN add-apt-repository ppa:pinepain/libv8 -y
+RUN add-apt-repository ppa:pinepain/libv8-archived -y
 RUN apt-get update -q
 
 RUN apt-get install -y php$PHPVER-dev libv8-$V8VER-dev
