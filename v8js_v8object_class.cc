@@ -210,7 +210,11 @@ static HashTable *v8js_v8object_get_properties(zval *object) /* {{{ */
 	v8js_v8object *obj = Z_V8JS_V8OBJECT_OBJ_P(object);
 
 	if (obj->properties == NULL) {
+#if PHP_VERSION_ID >= 70300
+		if (zend_gc_collect_cycles()) {
+#else
 		if (GC_G(gc_active)) {
+#endif
 			/* the garbage collector is running, don't create more zvals */
 			return NULL;
 		}
