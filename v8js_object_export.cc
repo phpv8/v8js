@@ -955,21 +955,16 @@ static v8::Local<v8::Object> v8js_wrap_array_to_object(v8::Isolate *isolate, zva
 	if (i > 0)
 	{
 		zval *data;
-		HashTable *tmp_ht;
+
+		if (myht && !(GC_FLAGS(myht) & GC_IMMUTABLE)) {
+			GC_PROTECT_RECURSION(myht);
+		}
 
 		ZEND_HASH_FOREACH_KEY_VAL(myht, index, key, data) {
-			tmp_ht = HASH_OF(data);
-
-			if (tmp_ht) {
-				GC_PROTECT_RECURSION(tmp_ht);
-			}
 
 			if (key) {
 				if (ZSTR_VAL(key)[0] == '\0' && Z_TYPE_P(value) == IS_OBJECT) {
 					/* Skip protected and private members. */
-					if (tmp_ht) {
-						GC_UNPROTECT_RECURSION(tmp_ht);
-					}
 					continue;
 				}
 
@@ -991,10 +986,12 @@ static v8::Local<v8::Object> v8js_wrap_array_to_object(v8::Isolate *isolate, zva
 				newobj->Set(static_cast<uint32_t>(index), zval_to_v8js(data, isolate));
 			}
 
-			if (tmp_ht) {
-				GC_UNPROTECT_RECURSION(tmp_ht);
-			}
 		} ZEND_HASH_FOREACH_END();
+
+		if (myht && !(GC_FLAGS(myht) & GC_IMMUTABLE)) {
+			GC_UNPROTECT_RECURSION(myht);
+		}
+
 	}
 
 	return newobj;

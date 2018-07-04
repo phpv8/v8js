@@ -84,21 +84,18 @@ static v8::Local<v8::Value> v8js_hash_to_jsarr(zval *value, v8::Isolate *isolate
 	{
 		zval *data;
 		ulong index = 0;
-		HashTable *tmp_ht;
+
+		if (myht && !(GC_FLAGS(myht) & GC_IMMUTABLE)) {
+			GC_PROTECT_RECURSION(myht);
+		}
 
 		ZEND_HASH_FOREACH_VAL(myht, data) {
-			tmp_ht = HASH_OF(data);
-
-			if (tmp_ht) {
-				GC_PROTECT_RECURSION(myht);
-			}
-
 			newarr->Set(index++, zval_to_v8js(data, isolate));
-
-			if (tmp_ht) {
-				GC_UNPROTECT_RECURSION(myht);
-			}
 		} ZEND_HASH_FOREACH_END();
+
+		if (myht && !(GC_FLAGS(myht) & GC_IMMUTABLE)) {
+			GC_UNPROTECT_RECURSION(myht);
+		}
 	}
 	return newarr;
 }
