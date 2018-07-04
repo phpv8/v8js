@@ -211,7 +211,9 @@ static HashTable *v8js_v8object_get_properties(zval *object) /* {{{ */
 
 	if (obj->properties == NULL) {
 #if PHP_VERSION_ID >= 70300
-		if (zend_gc_collect_cycles()) {
+		zend_gc_status gc_status;
+		zend_gc_get_status(&gc_status);
+		if (gc_status.runs) {
 #else
 		if (GC_G(gc_active)) {
 #endif
