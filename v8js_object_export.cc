@@ -956,7 +956,11 @@ static v8::Local<v8::Object> v8js_wrap_array_to_object(v8::Isolate *isolate, zva
 	{
 		zval *data;
 
+#if PHP_VERSION_ID >= 70300
 		if (myht && !(GC_FLAGS(myht) & GC_IMMUTABLE)) {
+#else
+		if (myht) {
+#endif
 			GC_PROTECT_RECURSION(myht);
 		}
 
@@ -988,7 +992,11 @@ static v8::Local<v8::Object> v8js_wrap_array_to_object(v8::Isolate *isolate, zva
 
 		} ZEND_HASH_FOREACH_END();
 
+#if PHP_VERSION_ID >= 70300
 		if (myht && !(GC_FLAGS(myht) & GC_IMMUTABLE)) {
+#else
+		if (myht) {
+#endif
 			GC_UNPROTECT_RECURSION(myht);
 		}
 
