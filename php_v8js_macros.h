@@ -166,6 +166,17 @@ extern struct _v8js_process_globals v8js_process_globals;
 /* Register builtin methods into passed object */
 void v8js_register_methods(v8::Local<v8::ObjectTemplate>, v8js_ctx *c);
 
+#ifdef ZEND_HASH_INC_APPLY_COUNT
+#ifndef GC_PROTECT_RECURSION
+#	define GC_PROTECT_RECURSION(ht) ZEND_HASH_INC_APPLY_COUNT(ht)
+#endif
+#endif
+#ifdef ZEND_HASH_DEC_APPLY_COUNT
+#ifndef GC_UNPROTECT_RECURSION
+#	define GC_UNPROTECT_RECURSION(ht) ZEND_HASH_DEC_APPLY_COUNT(ht)
+#endif
+#endif
+
 #endif	/* PHP_V8JS_MACROS_H */
 
 /*
