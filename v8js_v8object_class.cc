@@ -210,10 +210,19 @@ static HashTable *v8js_v8object_get_properties(zval *object) /* {{{ */
 	v8js_v8object *obj = Z_V8JS_V8OBJECT_OBJ_P(object);
 
 	if (obj->properties == NULL) {
+#if PHP_VERSION_ID >= 70300
+		/*
+		TODO: Fixme
+		The right way to handle this is to implement a get_gc() handler,
+		which is called instead of get_properties() during GC.
+		https://github.com/phpv8/v8js/pull/363#pullrequestreview-134439462
+		*/
+#else
 		if (GC_G(gc_active)) {
 			/* the garbage collector is running, don't create more zvals */
 			return NULL;
 		}
+#endif
 
 		ALLOC_HASHTABLE(obj->properties);
 		zend_hash_init(obj->properties, 0, NULL, ZVAL_PTR_DTOR, 0);

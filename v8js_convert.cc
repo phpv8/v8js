@@ -70,7 +70,11 @@ static v8::Local<v8::Value> v8js_hash_to_jsarr(zval *value, v8::Isolate *isolate
 	v8::Local<v8::Array> newarr;
 
 	/* Prevent recursion */
+#if PHP_VERSION_ID >= 70300
+	if (myht && GC_IS_RECURSIVE(myht)) {
+#else
 	if (myht && ZEND_HASH_GET_APPLY_COUNT(myht) > 1) {
+#endif
 		return V8JS_NULL;
 	}
 
@@ -80,21 +84,26 @@ static v8::Local<v8::Value> v8js_hash_to_jsarr(zval *value, v8::Isolate *isolate
 	{
 		zval *data;
 		ulong index = 0;
-		HashTable *tmp_ht;
+
+#if PHP_VERSION_ID >= 70300
+		if (myht && !(GC_FLAGS(myht) & GC_IMMUTABLE)) {
+#else
+		if (myht) {
+#endif
+			GC_PROTECT_RECURSION(myht);
+		}
 
 		ZEND_HASH_FOREACH_VAL(myht, data) {
-			tmp_ht = HASH_OF(data);
-
-			if (tmp_ht) {
-				ZEND_HASH_INC_APPLY_COUNT(myht);
-			}
-
 			newarr->Set(index++, zval_to_v8js(data, isolate));
-
-			if (tmp_ht) {
-				ZEND_HASH_DEC_APPLY_COUNT(myht);
-			}
 		} ZEND_HASH_FOREACH_END();
+
+#if PHP_VERSION_ID >= 70300
+		if (myht && !(GC_FLAGS(myht) & GC_IMMUTABLE)) {
+#else
+		if (myht) {
+#endif
+			GC_UNPROTECT_RECURSION(myht);
+		}
 	}
 	return newarr;
 }

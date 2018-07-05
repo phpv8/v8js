@@ -137,7 +137,9 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, v
 
 		zend_try {
 			/* zend_fcall_info_cache */
+#if PHP_VERSION_ID < 70300
 			fcc.initialized = 1;
+#endif
 			fcc.function_handler = method_ptr;
 			fcc.calling_scope = object->ce;
 			fcc.called_scope = object->ce;
@@ -953,21 +955,20 @@ static v8::Local<v8::Object> v8js_wrap_array_to_object(v8::Isolate *isolate, zva
 	if (i > 0)
 	{
 		zval *data;
-		HashTable *tmp_ht;
+
+#if PHP_VERSION_ID >= 70300
+		if (myht && !(GC_FLAGS(myht) & GC_IMMUTABLE)) {
+#else
+		if (myht) {
+#endif
+			GC_PROTECT_RECURSION(myht);
+		}
 
 		ZEND_HASH_FOREACH_KEY_VAL(myht, index, key, data) {
-			tmp_ht = HASH_OF(data);
-
-			if (tmp_ht) {
-				ZEND_HASH_INC_APPLY_COUNT(tmp_ht);
-			}
 
 			if (key) {
 				if (ZSTR_VAL(key)[0] == '\0' && Z_TYPE_P(value) == IS_OBJECT) {
 					/* Skip protected and private members. */
-					if (tmp_ht) {
-						ZEND_HASH_DEC_APPLY_COUNT(tmp_ht);
-					}
 					continue;
 				}
 
@@ -989,10 +990,16 @@ static v8::Local<v8::Object> v8js_wrap_array_to_object(v8::Isolate *isolate, zva
 				newobj->Set(static_cast<uint32_t>(index), zval_to_v8js(data, isolate));
 			}
 
-			if (tmp_ht) {
-				ZEND_HASH_DEC_APPLY_COUNT(tmp_ht);
-			}
 		} ZEND_HASH_FOREACH_END();
+
+#if PHP_VERSION_ID >= 70300
+		if (myht && !(GC_FLAGS(myht) & GC_IMMUTABLE)) {
+#else
+		if (myht) {
+#endif
+			GC_UNPROTECT_RECURSION(myht);
+		}
+
 	}
 
 	return newobj;
@@ -1013,7 +1020,11 @@ v8::Local<v8::Value> v8js_hash_to_jsobj(zval *value, v8::Isolate *isolate) /* {{
 	}
 
 	/* Prevent recursion */
+#if PHP_VERSION_ID >= 70300
+	if (myht && GC_IS_RECURSIVE(myht)) {
+#else
 	if (myht && ZEND_HASH_GET_APPLY_COUNT(myht) > 1) {
+#endif
 		return V8JS_NULL;
 	}
 
