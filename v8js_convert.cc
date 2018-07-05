@@ -70,7 +70,11 @@ static v8::Local<v8::Value> v8js_hash_to_jsarr(zval *value, v8::Isolate *isolate
 	v8::Local<v8::Array> newarr;
 
 	/* Prevent recursion */
+#if PHP_VERSION_ID >= 70300
+	if (myht && GC_IS_RECURSIVE(myht)) {
+#else
 	if (myht && ZEND_HASH_GET_APPLY_COUNT(myht) > 1) {
+#endif
 		return V8JS_NULL;
 	}
 

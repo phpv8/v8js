@@ -137,7 +137,9 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, v
 
 		zend_try {
 			/* zend_fcall_info_cache */
+#if PHP_VERSION_ID < 70300
 			fcc.initialized = 1;
+#endif
 			fcc.function_handler = method_ptr;
 			fcc.calling_scope = object->ce;
 			fcc.called_scope = object->ce;
@@ -1013,7 +1015,11 @@ v8::Local<v8::Value> v8js_hash_to_jsobj(zval *value, v8::Isolate *isolate) /* {{
 	}
 
 	/* Prevent recursion */
+#if PHP_VERSION_ID >= 70300
+	if (myht && GC_IS_RECURSIVE(myht)) {
+#else
 	if (myht && ZEND_HASH_GET_APPLY_COUNT(myht) > 1) {
+#endif
 		return V8JS_NULL;
 	}
 

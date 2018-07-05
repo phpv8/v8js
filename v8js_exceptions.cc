@@ -88,7 +88,11 @@ void v8js_create_script_exception(zval *return_value, v8::Isolate *isolate, v8::
 
 			zend_class_entry *exception_ce = zend_exception_get_default();
 			if (instanceof_function(php_exception->ce, exception_ce)) {
+#ifdef GC_ADDREF
+				GC_ADDREF(php_exception);
+#else
 				++GC_REFCOUNT(php_exception);
+#endif
 				zend_exception_set_previous(Z_OBJ_P(return_value), php_exception);
 			}
 		}
