@@ -1,28 +1,28 @@
 environment:
   matrix:
-  - ARTIFACT_NAME: v8js_vc14_php-7.1_%Platform%_ts.zip
+  - ARTIFACT_NAME: v8js_vc15_php-7.3_%Platform%_ts.zip
     OUTDIR: Release_TS
     V8_ASSETS: V8-5.8.283.31-%Platform%.zip
-    PHP_VERSION: 7.1.4
-  - ARTIFACT_NAME: v8js_vc14_php-7.1_%Platform%_nts.zip
+    PHP_VERSION: 7.3.0alpha3
+  - ARTIFACT_NAME: v8js_vc15_php-7.3_%Platform%_nts.zip
     OUTDIR: Release
     CONFIGURE_EXTRA: --disable-zts
     V8_ASSETS: V8-5.8.283.31-%Platform%.zip
-    PHP_VERSION: 7.1.4
-  - ARTIFACT_NAME: v8js_vc14_php-7.0_%Platform%_ts.zip
+    PHP_VERSION: 7.3.0alpha3
+  - ARTIFACT_NAME: v8js_vc15_php-7.2_%Platform%_ts.zip
     OUTDIR: Release_TS
     V8_ASSETS: V8-5.8.283.31-%Platform%.zip
-    PHP_VERSION: 7.0.18
-  - ARTIFACT_NAME: v8js_vc14_php-7.0_%Platform%_nts.zip
+    PHP_VERSION: 7.2.7
+  - ARTIFACT_NAME: v8js_vc15_php-7.2_%Platform%_nts.zip
     OUTDIR: Release
     CONFIGURE_EXTRA: --disable-zts
     V8_ASSETS: V8-5.8.283.31-%Platform%.zip
-    PHP_VERSION: 7.0.18
+    PHP_VERSION: 7.2.7
 
   PHP_SDK: c:\projects\php-sdk
 
-os: Windows Server 2012
-clone_folder: c:\projects\php-sdk\v8js-ci\vc14\%Platform%\php\ext\v8js
+os: Visual Studio 2017
+clone_folder: c:\projects\php-sdk\v8js-ci\vc15\%Platform%\php\ext\v8js
 
 platform:
   - x64
@@ -30,20 +30,24 @@ platform:
 
 install:
   - cd %PHP_SDK%
-  - curl -fSL -o php-sdk-binary-tools-20110915.zip "http://windows.php.net/downloads/php-sdk/php-sdk-binary-tools-20110915.zip"
-  - 7z.exe x php-sdk-binary-tools-20110915.zip
+  - curl -fSL -o php-sdk-2.1.7beta1.zip "https://github.com/Microsoft/php-sdk-binary-tools/archive/php-sdk-2.1.7beta1.zip"
+  - 7z.exe x php-sdk-2.1.7beta1.zip
+  - move /y php-sdk-binary-tools-php-sdk-2.1.7beta1\* .
+  - for /R /D %%f in (php-sdk-binary-tools-php-sdk-2.1.7beta1\*) do move /y %%f .
   - call bin\phpsdk_setvars.bat
   - call bin\phpsdk_buildtree.bat v8js-ci
-  - cd v8js-ci\vc14\%Platform%
+  - cd v8js-ci\vc15\%Platform%
   - md deps
   - cd deps
   - curl -fSL -o %V8_ASSETS% "https://s3.amazonaws.com/win-phpv8/%V8_ASSETS%"
   - 7z.exe x %V8_ASSETS%
   - cd ..
-  - curl -fSL -o "php-%PHP_VERSION%.tar.gz" "http://us2.php.net/distributions/php-%PHP_VERSION%.tar.gz"
-  - ren php php-%PHP_VERSION%
+  - curl -fSL -o "php-%PHP_VERSION%.tar.gz" "https://github.com/php/php-src/archive/php-%PHP_VERSION%.tar.gz"
+  - ren php php-src-php-%PHP_VERSION%
   - 7z.exe x php-%PHP_VERSION%.tar.gz -y
   - 7z.exe x php-%PHP_VERSION%.tar -y | find /v "Extracting"
+  - dir
+  - ren php-src-php-%PHP_VERSION% php-%PHP_VERSION%
   - cd php-%PHP_VERSION%
   - IF "%Platform%" == "x64" SET OUTDIR=x64\%OUTDIR%
   - mkdir %OUTDIR%
@@ -59,7 +63,8 @@ build_script:
         $env:VCVARS_PLATFORM="amd64"
         $env:ENV_PLATFORM="x64"
       }
-  - call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %VCVARS_PLATFORM%
+  - call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" %VCVARS_PLATFORM%
+  - cd
   - echo Building PHP [%PHP_VERSION%]
   - '%PHP_SDK%\bin\phpsdk_setvars'
   - buildconf
@@ -72,14 +77,14 @@ after_build:
   - ps: Push-AppveyorArtifact $env:ARTIFACT_NAME
 
 test_script:
-  - cd c:\projects\php-sdk\v8js-ci\vc14\%Platform%\php-%PHP_VERSION%
+  - cd c:\projects\php-sdk\v8js-ci\vc15\%Platform%\php-%PHP_VERSION%
   - set NO_INTERACTION=1
   - set TEST_PHP_JUNIT=junit.xml
   - set REPORT_EXIT_STATUS=1
-  - "%OUTDIR%\\php.exe run-tests.php -p %OUTDIR%\\php.exe ext/v8js/tests/ -d v8js.icudtl_dat_path=%OUTDIR%/icudtl.dat -d extension=php_v8js.dll -d extension_dir=%OUTDIR%\\"
+  - "%OUTDIR%\\php.exe run-tests.php -p %OUTDIR%\\php.exe ext/v8js/tests/ -d v8js.icudtl_dat_path=%OUTDIR%/icudtl.dat -d extension=php_v8js.dll -d extension_dir=%OUTDIR%\\ --show-diff"
 
 on_finish:
-  - cd c:\projects\php-sdk\v8js-ci\vc14\%Platform%\php-%PHP_VERSION%
+  - cd c:\projects\php-sdk\v8js-ci\vc15\%Platform%\php-%PHP_VERSION%
   - ps: |
       # upload results to AppVeyor
       $wc = New-Object 'System.Net.WebClient'
