@@ -3,7 +3,7 @@ Test V8::executeString() : var_dump
 --SKIPIF--
 <?php
 require_once(dirname(__FILE__) . '/skipif.inc');
-if (PHP_VERSION_ID >= 70300) die('skip Only for php version < 7.3');
+if (PHP_VERSION_ID < 70300) die('skip Only for php version >= 7.3');
 ?>
 --INI--
 date.timezone=UTC
@@ -140,7 +140,11 @@ array (11) {
   ["number"] =>
   float(3.141593)
   ["date"] =>
-  object(DateTime)#%d (18) {
+  object(DateTime)#%d (19) {
+    ["createFromImmutable"] =>
+    object(Closure)#%d {
+        function () { [native code] }
+    }
     ["createFromFormat"] =>
     object(Closure)#%d {
         function () { [native code] }
