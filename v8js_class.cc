@@ -983,12 +983,14 @@ static void v8js_persistent_zval_ctor(zval *p) /* {{{ */
 }
 /* }}} */
 
+#if PHP_VERSION_ID < 70300
 static void v8js_persistent_zval_dtor(zval *p) /* {{{ */
 {
 	assert(Z_TYPE_P(p) == IS_STRING);
 	free(Z_STR_P(p));
 }
 /* }}} */
+#endif
 
 static void v8js_script_free(v8js_script *res)
 {
@@ -1052,7 +1054,11 @@ static int v8js_register_extension(zend_string *name, zend_string *source, zval 
 
 	if (jsext->deps) {
 		jsext->deps_ht = (HashTable *) malloc(sizeof(HashTable));
+#if PHP_VERSION_ID < 70300
 		zend_hash_init(jsext->deps_ht, jsext->deps_count, NULL, v8js_persistent_zval_dtor, 1);
+#else
+		zend_hash_init(jsext->deps_ht, jsext->deps_count, NULL, NULL, 1);
+#endif
 		zend_hash_copy(jsext->deps_ht, Z_ARRVAL_P(deps_arr), v8js_persistent_zval_ctor);
 	}
 
