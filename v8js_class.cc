@@ -273,9 +273,14 @@ static void v8js_jsext_free_storage(v8js_jsext *jsext) /* {{{ */
 		v8js_free_ext_strarr(jsext->deps, jsext->deps_count);
 	}
 	delete jsext->extension;
+
 	// Free the persisted non-interned strings we allocated.
-	zend_string_release(jsext->name);
-	zend_string_release(jsext->source);
+	if (jsext->name) {
+		zend_string_release(jsext->name);
+	}
+	if (jsext->source) {
+		zend_string_release(jsext->source);
+	}
 
 	free(jsext);
 }
