@@ -18,5 +18,5 @@ ADD . /app
 WORKDIR /app
 
 RUN phpize
-RUN ./configure CXXFLAGS="-Wall -Wno-write-strings -Werror" LDFLAGS="-lstdc++" --with-v8js=/opt/libv8-$V8VER/
+RUN ./configure CXXFLAGS="-Wall -Wno-write-strings" LDFLAGS="-lstdc++" --with-v8js=/opt/libv8-$V8VER/
 RUN make -j4
