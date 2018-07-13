@@ -1,5 +1,5 @@
 # Configure and build scripts for travis CI system
-V8VER ?= 6.3
+V8VER ?= 6.6
 
 IMAGENAME ?= v8js-test
 
@@ -12,3 +12,5 @@ build:
 
 test: build
 	docker run --rm -t $(IMAGENAME) make test
+
+.PHONY: build test
