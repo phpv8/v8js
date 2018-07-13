@@ -9,12 +9,6 @@ phpinfo(INFO_MODULES);
 $minfo = ob_get_contents();
 ob_end_clean();
 
-if(strtoupper(substr(PHP_OS, 0, 3)) == 'WIN') {
-	// On Windows the "Fatal error" happens to appear before the error
-	// message output by V8 itself.
-	echo "skip Windows";
-}
-
 if(preg_match("/V8 Engine Linked Version => (.*)/", $minfo, $matches)) {
     $version = explode('.', $matches[1]);
     if($version[0] < 5 || ($version[0] == 5 && $version[1] < 7)) {
