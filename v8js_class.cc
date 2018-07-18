@@ -991,7 +991,10 @@ static void v8js_persistent_zval_ctor(zval *p) /* {{{ */
 static void v8js_persistent_zval_dtor(zval *p) /* {{{ */
 {
 	assert(Z_TYPE_P(p) == IS_STRING);
-	free(Z_STR_P(p));
+
+	if (!ZSTR_IS_INTERNED(Z_STR_P(p))) {
+		free(Z_STR_P(p));
+	}
 }
 /* }}} */
 
