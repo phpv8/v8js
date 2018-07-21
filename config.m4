@@ -83,8 +83,7 @@ if test "$PHP_V8JS" != "no"; then
   old_LDFLAGS=$LDFLAGS
   old_CPPFLAGS=$CPPFLAGS
 
-  AC_LANG_SAVE
-  AC_LANG_CPLUSPLUS
+  AC_LANG_PUSH([C++])
 
   CPPFLAGS="$CPPFLAGS -I$V8_DIR/include -std=$ac_cv_v8_cstd"
   LDFLAGS="$LDFLAGS -L$V8_DIR/$PHP_LIBDIR"
@@ -197,7 +196,7 @@ int main ()
               [Define unless v8::ArrayBuffer::Allocator::NewDefaultAllocator is usable.])
   fi
 
-  AC_LANG_RESTORE
+  AC_LANG_POP([C++])
   LIBS=$old_LIBS
   LDFLAGS="$old_LDFLAGS"
   CPPFLAGS=$old_CPPFLAGS
