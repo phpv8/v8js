@@ -648,8 +648,8 @@ static void v8js_compile_script(zval *this_ptr, const zend_string *str, const ze
 	v8::Local<v8::String> sname = identifier
 		? v8::String::NewFromUtf8(isolate, ZSTR_VAL(identifier), v8::String::kNormalString, static_cast<int>(ZSTR_LEN(identifier)))
 		: V8JS_SYM("V8Js::compileString()");
+	v8::ScriptOrigin origin(sname);
 
-	/* Compiles a string context independently. TODO: Add a php function which calls this and returns the result as resource which can be executed later. */
 	if (ZSTR_LEN(str) > std::numeric_limits<int>::max()) {
 		zend_throw_exception(php_ce_v8js_exception,
 			"Script source exceeds maximum supported length", 0);
@@ -657,7 +657,7 @@ static void v8js_compile_script(zval *this_ptr, const zend_string *str, const ze
 	}
 
 	v8::Local<v8::String> source = v8::String::NewFromUtf8(isolate, ZSTR_VAL(str), v8::String::kNormalString, static_cast<int>(ZSTR_LEN(str)));
-	v8::Local<v8::Script> script = v8::Script::Compile(source, sname);
+	v8::MaybeLocal<v8::Script> script = v8::Script::Compile(v8::Local<v8::Context>::New(isolate, c->context), source, &origin);
 
 	/* Compile errors? */
 	if (script.IsEmpty()) {
@@ -665,9 +665,9 @@ static void v8js_compile_script(zval *this_ptr, const zend_string *str, const ze
 		return;
 	}
 	res = (v8js_script *)emalloc(sizeof(v8js_script));
-	res->script = new v8::Persistent<v8::Script, v8::CopyablePersistentTraits<v8::Script>>(c->isolate, script);
+	res->script = new v8::Persistent<v8::Script, v8::CopyablePersistentTraits<v8::Script>>(c->isolate, script.ToLocalChecked());
 
-	v8::String::Utf8Value _sname(sname);
+	v8::String::Utf8Value _sname(isolate, sname);
 	res->name = estrndup(ToCString(_sname), _sname.length());
 	res->ctx = c;
 	*ret = res;
@@ -695,9 +695,9 @@ static void v8js_execute_script(zval *this_ptr, v8js_script *res, long flags, lo
 	/* std::function relies on its dtor to be executed, otherwise it leaks
 	 * some memory on bailout. */
 	{
-		std::function< v8::Local<v8::Value>(v8::Isolate *) > v8_call = [res](v8::Isolate *isolate) {
+		std::function< v8::MaybeLocal<v8::Value>(v8::Isolate *) > v8_call = [c, res](v8::Isolate *isolate) {
 			v8::Local<v8::Script> script = v8::Local<v8::Script>::New(isolate, *res->script);
-			return script->Run();
+			return script->Run(v8::Local<v8::Context>::New(isolate, c->context));
 		};
 
 		v8js_v8_call(c, return_value, flags, time_limit, memory_limit, v8_call);
@@ -1153,6 +1153,31 @@ static PHP_METHOD(V8Js, getExtensions)
 }
 /* }}} */
 
+static v8::StartupData createSnapshotDataBlob(v8::SnapshotCreator *snapshot_creator, zend_string *str) /* {{{ */
+{
+	v8::Isolate *isolate = snapshot_creator->GetIsolate();
+
+	{
+		v8::HandleScope scope(isolate);
+		v8::Local<v8::Context> context = v8::Context::New(isolate);
+
+		v8::Context::Scope context_scope(context);
+		v8::TryCatch try_catch(isolate);
+
+		v8::Local<v8::String> source = v8::String::NewFromUtf8(isolate, ZSTR_VAL(str), v8::String::kNormalString, static_cast<int>(ZSTR_LEN(str)));
+		v8::MaybeLocal<v8::Script> script = v8::Script::Compile(context, source);
+
+		if (script.IsEmpty() || script.ToLocalChecked()->Run(context).IsEmpty())
+		{
+			return {nullptr, 0};
+		}
+
+		snapshot_creator->SetDefaultContext(context);
+	}
+
+	return snapshot_creator->CreateBlob(v8::SnapshotCreator::FunctionCodeHandling::kClear);
+} /* }}} */
+
 
 /* {{{ proto string|bool V8Js::createSnapshot(string embed_source)
  */
@@ -1172,7 +1197,9 @@ static PHP_METHOD(V8Js, createSnapshot)
 	/* Initialize V8, if not already done. */
 	v8js_v8_init();
 
-	v8::StartupData snapshot_blob = v8::V8::CreateSnapshotDataBlob(ZSTR_VAL(script));
+	v8::Isolate *isolate = v8::Isolate::Allocate();
+	v8::SnapshotCreator snapshot_creator(isolate);
+	v8::StartupData snapshot_blob = createSnapshotDataBlob(&snapshot_creator, script);
 
 	if (!snapshot_blob.data) {
 		php_error_docref(NULL, E_WARNING, "Failed to create V8 heap snapshot.  Check $embed_source for errors.");
@@ -1303,7 +1330,7 @@ static void v8js_write_property(zval *object, zval *member, zval *value, void **
 		(property_info->flags & ZEND_ACC_PUBLIC))) {
 		/* Global PHP JS object */
 		v8::Local<v8::String> object_name_js = v8::Local<v8::String>::New(isolate, c->object_name);
-		v8::Local<v8::Object> jsobj = V8JS_GLOBAL(isolate)->Get(object_name_js)->ToObject();
+		v8::Local<v8::Object> jsobj = V8JS_GLOBAL(isolate)->Get(object_name_js)->ToObject(isolate);
 
 		if (Z_STRLEN_P(member) > std::numeric_limits<int>::max()) {
 				zend_throw_exception(php_ce_v8js_exception,
@@ -1327,7 +1354,7 @@ static void v8js_unset_property(zval *object, zval *member, void **cache_slot) /
 
 	/* Global PHP JS object */
 	v8::Local<v8::String> object_name_js = v8::Local<v8::String>::New(isolate, c->object_name);
-	v8::Local<v8::Object> jsobj = V8JS_GLOBAL(isolate)->Get(object_name_js)->ToObject();
+	v8::Local<v8::Object> jsobj = V8JS_GLOBAL(isolate)->Get(object_name_js)->ToObject(isolate);
 
 	if (Z_STRLEN_P(member) > std::numeric_limits<int>::max()) {
 			zend_throw_exception(php_ce_v8js_exception,

@@ -35,7 +35,14 @@ V8JS_METHOD(exit) /* {{{ */
 /* global.sleep - sleep for passed seconds */
 V8JS_METHOD(sleep) /* {{{ */
 {
-	php_sleep(info[0]->Int32Value());
+	v8::Isolate *isolate = info.GetIsolate();
+	v8js_ctx *c = (v8js_ctx *) isolate->GetData(0);
+
+	v8::Maybe<int32_t> t = info[0]->Int32Value(v8::Local<v8::Context>::New(isolate, c->context));
+
+	if (t.IsJust()) {
+		php_sleep(t.FromJust());
+	}
 }
 /* }}} */
 
@@ -46,7 +53,7 @@ V8JS_METHOD(print) /* {{{ */
 	zend_long ret = 0;
 
 	for (int i = 0; i < info.Length(); i++) {
-		v8::String::Utf8Value str(info[i]);
+		v8::String::Utf8Value str(isolate, info[i]);
 		const char *cstr = ToCString(str);
 		ret = PHPWRITE(cstr, strlen(cstr));
 	}
@@ -57,6 +64,9 @@ V8JS_METHOD(print) /* {{{ */
 
 static void v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int level) /* {{{ */
 {
+	v8js_ctx *c = (v8js_ctx *) isolate->GetData(0);
+	v8::Local<v8::Context> context = v8::Local<v8::Context>::New(isolate, c->context);
+
 	if (level > 1) {
 		php_printf("%*c", (level - 1) * 2, ' ');
 	}
@@ -73,22 +83,54 @@ static void v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int leve
 	}
 	if (var->IsInt32())
 	{
-		php_printf("int(%ld)\n", (long) var->IntegerValue());
+		v8::Maybe<int64_t> value = var->IntegerValue(context);
+		if (value.IsNothing())
+		{
+			php_printf("<empty>\n");
+		}
+		else
+		{
+			php_printf("int(%ld)\n", (long) value.FromJust());
+		}
 		return;
 	}
 	if (var->IsUint32())
 	{
-		php_printf("int(%lu)\n", (unsigned long) var->IntegerValue());
+		v8::Maybe<uint32_t> value = var->Uint32Value(context);
+		if (value.IsNothing())
+		{
+			php_printf("<empty>\n");
+		}
+		else
+		{
+			php_printf("int(%lu)\n", (unsigned long) value.FromJust());
+		}
 		return;
 	}
 	if (var->IsNumber())
 	{
-		php_printf("float(%f)\n", var->NumberValue());
+		v8::Maybe<double> value = var->NumberValue(context);
+		if (value.IsNothing())
+		{
+			php_printf("<empty>\n");
+		}
+		else
+		{
+			php_printf("float(%f)\n", value.FromJust());
+		}
 		return;
 	}
 	if (var->IsBoolean())
 	{
-		php_printf("bool(%s)\n", var->BooleanValue() ? "true" : "false");
+		v8::Maybe<bool> value = var->BooleanValue(context);
+		if (value.IsNothing())
+		{
+			php_printf("<empty>\n");
+		}
+		else
+		{
+			php_printf("bool(%s)\n", value.FromJust() ? "true" : "false");
+		}
 		return;
 	}
 
@@ -100,16 +142,16 @@ static void v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int leve
 		details = re->GetSource();
 	}
 	else {
-		details = var->ToDetailString(isolate->GetEnteredContext()).FromMaybe(v8::Local<v8::String>());
+		details = var->ToDetailString(context).FromMaybe(v8::Local<v8::String>());
 
 		if (try_catch.HasCaught()) {
 			details = V8JS_SYM("<toString threw exception>");
 		}
 	}
 
-	v8::String::Utf8Value str(details);
+	v8::String::Utf8Value str(isolate, details);
 	const char *valstr = ToCString(str);
-	size_t valstr_len = details->ToString()->Utf8Length();
+	size_t valstr_len = details->ToString(isolate)->Utf8Length(isolate);
 
 	if (var->IsString())
 	{
@@ -147,12 +189,12 @@ static void v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int leve
 	else if (var->IsObject())
 	{
 		v8::Local<v8::Object> object = v8::Local<v8::Object>::Cast(var);
-		V8JS_GET_CLASS_NAME(cname, object);
+		v8::String::Utf8Value cname(isolate, object->GetConstructorName());
 		int hash = object->GetIdentityHash();
 
 		if (var->IsFunction() && strcmp(ToCString(cname), "Closure") != 0)
 		{
-			v8::String::Utf8Value csource(object->ToString());
+			v8::String::Utf8Value csource(isolate, object->ToString(isolate));
 			php_printf("object(Closure)#%d {\n%*c%s\n", hash, level * 2 + 2, ' ', ToCString(csource));
 		}
 		else
@@ -169,8 +211,8 @@ static void v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int leve
 			php_printf(" (%d) {\n", length);
 
 			for (unsigned i = 0; i < length; i++) {
-				v8::Local<v8::String> key = keys->Get(i)->ToString();
-				v8::String::Utf8Value kname(key);
+				v8::Local<v8::String> key = keys->Get(i)->ToString(isolate);
+				v8::String::Utf8Value kname(isolate, key);
 				php_printf("%*c[\"%s\"] =>\n", level * 2, ' ', ToCString(kname));
 				v8js_dumper(isolate, object->Get(key), level + 1);
 			}
@@ -207,7 +249,7 @@ V8JS_METHOD(require)
 	v8::Isolate *isolate = info.GetIsolate();
 	v8js_ctx *c = (v8js_ctx *) isolate->GetData(0);
 
-	v8::String::Utf8Value module_base(info.Data());
+	v8::String::Utf8Value module_base(isolate, info.Data());
 	const char *module_base_cstr = ToCString(module_base);
 
 	// Check that we have a module loader
@@ -216,7 +258,7 @@ V8JS_METHOD(require)
 		return;
 	}
 
-	v8::String::Utf8Value module_id_v8(info[0]);
+	v8::String::Utf8Value module_id_v8(isolate, info[0]);
 	const char *module_id = ToCString(module_id_v8);
 	char *normalised_path, *module_name;
 
@@ -407,7 +449,7 @@ V8JS_METHOD(require)
 	}
 
 	if(Z_TYPE(module_code) == IS_OBJECT) {
-		v8::Local<v8::Object> newobj = zval_to_v8js(&module_code, isolate)->ToObject();
+		v8::Local<v8::Object> newobj = zval_to_v8js(&module_code, isolate)->ToObject(isolate);
 		c->modules_loaded[normalised_module_id].Reset(isolate, newobj);
 		info.GetReturnValue().Set(newobj);
 
@@ -435,6 +477,7 @@ V8JS_METHOD(require)
 
 	// Set script identifier
 	v8::Local<v8::String> sname = V8JS_STR(normalised_module_id);
+	v8::ScriptOrigin origin(sname);
 
 	if (Z_STRLEN(module_code) > std::numeric_limits<int>::max()) {
 		zend_throw_exception(php_ce_v8js_exception,
@@ -445,11 +488,11 @@ V8JS_METHOD(require)
 	v8::Local<v8::String> source = V8JS_ZSTR(Z_STR(module_code));
 	zval_ptr_dtor(&module_code);
 
-	source = v8::String::Concat(V8JS_SYM("(function (exports, module, require) {"), source);
-	source = v8::String::Concat(source, V8JS_SYM("\n});"));
+	source = v8::String::Concat(isolate, V8JS_SYM("(function (exports, module, require) {"), source);
+	source = v8::String::Concat(isolate, source, V8JS_SYM("\n});"));
 
 	// Create and compile script
-	v8::Local<v8::Script> script = v8::Script::Compile(source, sname);
+	v8::MaybeLocal<v8::Script> script = v8::Script::Compile(context, source, &origin);
 
 	// The script will be empty if there are compile errors
 	if (script.IsEmpty()) {
@@ -474,7 +517,7 @@ V8JS_METHOD(require)
 	c->modules_stack.push_back(normalised_module_id);
 
 	// Run script to evaluate closure
-	v8::Local<v8::Value> module_function = script->Run();
+	v8::MaybeLocal<v8::Value> module_function = script.ToLocalChecked()->Run(context);
 
 	// Prepare exports & module object
 	v8::Local<v8::Object> exports = v8::Object::New(isolate);
@@ -483,7 +526,7 @@ V8JS_METHOD(require)
 	module->Set(V8JS_SYM("id"), V8JS_STR(normalised_module_id));
 	module->Set(V8JS_SYM("exports"), exports);
 
-	if (module_function->IsFunction()) {
+	if (!module_function.IsEmpty() && module_function.ToLocalChecked()->IsFunction()) {
 		v8::Local<v8::Value> *jsArgv = static_cast<v8::Local<v8::Value> *>(alloca(3 * sizeof(v8::Local<v8::Value>)));
 		new(&jsArgv[0]) v8::Local<v8::Value>;
 		jsArgv[0] = exports;
@@ -495,7 +538,7 @@ V8JS_METHOD(require)
 		jsArgv[2] = require_fn.ToLocalChecked();
 
 		// actually call the module
-		v8::Local<v8::Function>::Cast(module_function)->Call(exports, 3, jsArgv);
+		v8::Local<v8::Function>::Cast(module_function.ToLocalChecked())->Call(exports, 3, jsArgv);
 	}
 
 	// Remove this module and path from the stack
@@ -503,7 +546,7 @@ V8JS_METHOD(require)
 
 	efree(normalised_path);
 
-	if (!module_function->IsFunction()) {
+	if (module_function.IsEmpty() || !module_function.ToLocalChecked()->IsFunction()) {
 		info.GetReturnValue().Set(isolate->ThrowException(V8JS_SYM("Wrapped module script failed to return function")));
 		efree(normalised_module_id);
 		return;

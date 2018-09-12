@@ -24,6 +24,9 @@ v8::Local<v8::Value> v8js_wrap_generator(v8::Isolate *isolate, v8::Local<v8::Val
 	assert(!wrapped_object.IsEmpty());
 	assert(wrapped_object->IsObject());
 
+	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
+    v8::Local<v8::Context> context = v8::Local<v8::Context>::New(isolate, ctx->context);
+
 	v8::TryCatch try_catch(isolate);
 	v8::Local<v8::String> source = v8::String::NewFromUtf8(isolate, "(\
 function(wrapped_object) {					\
@@ -37,21 +40,21 @@ function(wrapped_object) {					\
 		}									\
 	})();									\
 })");
-	v8::Local<v8::Script> script = v8::Script::Compile(source);
+	v8::MaybeLocal<v8::Script> script = v8::Script::Compile(context, source);
 
 	if(script.IsEmpty()) {
 		zend_error(E_ERROR, "Failed to compile Generator object wrapper");
 		return result;
 	}
 
-	v8::Local<v8::Value> wrapper_fn_val = script->Run();
+	v8::MaybeLocal<v8::Value> wrapper_fn_val = script.ToLocalChecked()->Run(context);
 
-	if(wrapper_fn_val.IsEmpty() || !wrapper_fn_val->IsFunction()) {
+	if(wrapper_fn_val.IsEmpty() || !wrapper_fn_val.ToLocalChecked()->IsFunction()) {
 		zend_error(E_ERROR, "Failed to create Generator object wrapper function");
 		return result;
 	}
 
-	v8::Local<v8::Function> wrapper_fn = v8::Local<v8::Function>::Cast(wrapper_fn_val);
+	v8::Local<v8::Function> wrapper_fn = v8::Local<v8::Function>::Cast(wrapper_fn_val.ToLocalChecked());
 	v8::Local<v8::Value> *jsArgv = static_cast<v8::Local<v8::Value> *>(alloca(sizeof(v8::Local<v8::Value>)));
 
 	new(&jsArgv[0]) v8::Local<v8::Value>;

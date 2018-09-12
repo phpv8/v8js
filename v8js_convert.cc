@@ -200,27 +200,41 @@ v8::Local<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate) /* {{{ */
 
 int v8js_to_zval(v8::Local<v8::Value> jsValue, zval *return_value, int flags, v8::Isolate *isolate) /* {{{ */
 {
+	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
+
 	if (jsValue->IsString())
 	{
-		v8::String::Utf8Value str(jsValue);
+		v8::String::Utf8Value str(isolate, jsValue);
 		const char *cstr = ToCString(str);
-		RETVAL_STRINGL(cstr, jsValue->ToString()->Utf8Length());
+		RETVAL_STRINGL(cstr, jsValue->ToString(isolate)->Utf8Length(isolate));
 	}
 	else if (jsValue->IsBoolean())
 	{
-		RETVAL_BOOL(jsValue->Uint32Value());
+		v8::Maybe<bool> value = jsValue->BooleanValue(v8::Local<v8::Context>::New(isolate, ctx->context));
+		if (value.IsNothing()) {
+			return FAILURE;
+		}
+		RETVAL_BOOL(value.ToChecked());
 	}
 	else if (jsValue->IsInt32() || jsValue->IsUint32())
 	{
-		RETVAL_LONG((long) jsValue->IntegerValue());
+		v8::Maybe<int64_t> value = jsValue->IntegerValue(v8::Local<v8::Context>::New(isolate, ctx->context));
+		if (value.IsNothing()) {
+			return FAILURE;
+		}
+		RETVAL_LONG((long) value.ToChecked());
 	}
 	else if (jsValue->IsNumber())
 	{
-		RETVAL_DOUBLE(jsValue->NumberValue());
+		v8::Maybe<double> value = jsValue->NumberValue(v8::Local<v8::Context>::New(isolate, ctx->context));
+		if (value.IsNothing()) {
+			return FAILURE;
+		}
+		RETVAL_DOUBLE(value.ToChecked());
 	}
 	else if (jsValue->IsDate())	/* Return as a PHP DateTime object */
 	{
-		v8::String::Utf8Value str(jsValue);
+		v8::String::Utf8Value str(isolate, jsValue);
 		const char *cstr = ToCString(str);
 
 		/* cstr has two timezone specifications:
@@ -253,7 +267,7 @@ int v8js_to_zval(v8::Local<v8::Value> jsValue, zval *return_value, int flags, v8
 	}
 	else if (jsValue->IsObject())
 	{
-		v8::Local<v8::Object> self = jsValue->ToObject();
+		v8::Local<v8::Object> self = jsValue->ToObject(isolate);
 
 		// if this is a wrapped PHP object, then just unwrap it.
 		if (self->InternalFieldCount() == 2) {

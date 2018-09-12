@@ -25,7 +25,7 @@ typedef enum {
 } property_op_t;
 
 template<typename T>
-v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> property,
+v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::Name> property,
 						      const v8::PropertyCallbackInfo<T> &info,
 						      property_op_t callback_type,
 						      v8::Local<v8::Value> set_value = v8::Local<v8::Value>());

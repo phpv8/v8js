@@ -108,7 +108,7 @@ void v8js_v8_init() /* {{{ */
  */
 void v8js_v8_call(v8js_ctx *c, zval **return_value,
 				  long flags, long time_limit, size_t memory_limit,
-				  std::function< v8::Local<v8::Value>(v8::Isolate *) >& v8_call) /* {{{ */
+				  std::function< v8::MaybeLocal<v8::Value>(v8::Isolate *) >& v8_call) /* {{{ */
 {
 	char *tz = NULL;
 
@@ -154,7 +154,7 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 
 	/* Execute script */
 	c->in_execution++;
-	v8::Local<v8::Value> result = v8_call(c->isolate);
+	v8::MaybeLocal<v8::Value> result = v8_call(c->isolate);
 	c->in_execution--;
 
 	/* Pop our context from the stack and read (possibly updated) limits
@@ -238,7 +238,7 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 
 		/* Convert V8 value to PHP value */
 		if (return_value && !result.IsEmpty()) {
-			v8js_to_zval(result, *return_value, flags, c->isolate);
+			v8js_to_zval(result.ToLocalChecked(), *return_value, flags, c->isolate);
 		}
 	}
 }
@@ -262,24 +262,27 @@ void v8js_terminate_execution(v8::Isolate *isolate) /* {{{ */
 	v8::Isolate::Scope isolate_scope(isolate);
 	v8::HandleScope handle_scope(isolate);
 
+	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
+	v8::Local<v8::Context> context = v8::Local<v8::Context>::New(isolate, ctx->context);
+
 	v8::Local<v8::String> source = V8JS_STR("for(;;);");
-	v8::Local<v8::Script> script = v8::Script::Compile(source);
+	v8::Local<v8::Script> script = v8::Script::Compile(context, source).ToLocalChecked();
 	isolate->TerminateExecution();
-	script->Run();
+	script->Run(context);
 }
 /* }}} */
 
 
 int v8js_get_properties_hash(v8::Local<v8::Value> jsValue, HashTable *retval, int flags, v8::Isolate *isolate) /* {{{ */
 {
-	v8::Local<v8::Object> jsObj = jsValue->ToObject();
+	v8::Local<v8::Object> jsObj = jsValue->ToObject(isolate);
 
 	if (!jsObj.IsEmpty()) {
 		v8::Local<v8::Array> jsKeys = jsObj->GetPropertyNames();
 
 		for (unsigned i = 0; i < jsKeys->Length(); i++)
 		{
-			v8::Local<v8::String> jsKey = jsKeys->Get(i)->ToString();
+			v8::Local<v8::String> jsKey = jsKeys->Get(i)->ToString(isolate);
 
 			/* Skip any prototype properties */
 			if (!jsObj->HasOwnProperty(isolate->GetEnteredContext(), jsKey).FromMaybe(false)
@@ -289,15 +292,15 @@ int v8js_get_properties_hash(v8::Local<v8::Value> jsValue, HashTable *retval, in
 			}
 
 			v8::Local<v8::Value> jsVal = jsObj->Get(jsKey);
-			v8::String::Utf8Value cstr(jsKey);
+			v8::String::Utf8Value cstr(isolate, jsKey);
 			const char *c_key = ToCString(cstr);
-			zend_string *key = zend_string_init(c_key, jsKey->ToString()->Utf8Length(), 0);
+			zend_string *key = zend_string_init(c_key, jsKey->ToString(isolate)->Utf8Length(isolate), 0);
 			zval value;
 			ZVAL_UNDEF(&value);
 
-			if (jsVal->IsObject() && jsVal->ToObject()->InternalFieldCount() == 2) {
+			if (jsVal->IsObject() && jsVal->ToObject(isolate)->InternalFieldCount() == 2) {
 				/* This is a PHP object, passed to JS and back. */
-				zend_object *object = reinterpret_cast<zend_object *>(jsVal->ToObject()->GetAlignedPointerFromInternalField(1));
+				zend_object *object = reinterpret_cast<zend_object *>(jsVal->ToObject(isolate)->GetAlignedPointerFromInternalField(1));
 				ZVAL_OBJ(&value, object);
 				Z_ADDREF_P(&value);
 			}

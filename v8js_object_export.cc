@@ -100,9 +100,9 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, v
 	if (argc) {
 		fci.params = (zval *) safe_emalloc(argc, sizeof(zval), 0);
 		for (i = 0; i < argc; i++) {
-			if (info[i]->IsObject() && info[i]->ToObject()->InternalFieldCount() == 2) {
+			if (info[i]->IsObject() && info[i]->ToObject(isolate)->InternalFieldCount() == 2) {
 				/* This is a PHP object, passed to JS and back. */
-				zend_object *object = reinterpret_cast<zend_object *>(info[i]->ToObject()->GetAlignedPointerFromInternalField(1));
+				zend_object *object = reinterpret_cast<zend_object *>(info[i]->ToObject(isolate)->GetAlignedPointerFromInternalField(1));
 				ZVAL_OBJ(&fci.params[i], object);
 				Z_ADDREF_P(&fci.params[i]);
 			} else {
@@ -404,7 +404,7 @@ static void v8js_named_property_enumerator(const v8::PropertyCallbackInfo<v8::Ar
 			efree(prefixed);
 		} else {
 			// even numeric indices are enumerated as strings in JavaScript
-			result->Set(result_len++, V8JS_FLOAT((double) index)->ToString());
+			result->Set(result_len++, V8JS_FLOAT((double) index)->ToString(isolate));
 		}
 	} ZEND_HASH_FOREACH_END();
 
@@ -430,9 +430,9 @@ static void v8js_invoke_callback(const v8::FunctionCallbackInfo<v8::Value>& info
 	if (info.IsConstructCall()) {
 		v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
 
-		v8::Local<v8::String> str = self->GetConstructorName()->ToString();
-		v8::String::Utf8Value str_value(str);
-		zend_string *constructor_name = zend_string_init(ToCString(str_value), str->Utf8Length(), 0);
+		v8::MaybeLocal<v8::String> str = self->GetConstructorName()->ToString(isolate);
+		v8::String::Utf8Value str_value(isolate, str.ToLocalChecked());
+		zend_string *constructor_name = zend_string_init(ToCString(str_value), str.ToLocalChecked()->Utf8Length(isolate), 0);
 		zend_class_entry *ce = zend_lookup_class(constructor_name);
 		zend_string_release(constructor_name);
 
@@ -529,10 +529,30 @@ static void v8js_fake_call_impl(const v8::FunctionCallbackInfo<v8::Value>& info)
 		return;
 	}
 
-	v8::Local<v8::String> str = info[0]->ToString();
-	v8::String::Utf8Value str_value(str);
+	v8::MaybeLocal<v8::String> str = info[0]->ToString(isolate);
+
+	if (str.IsEmpty())
+	{
+		error_len = spprintf(&error, 0,
+			"%s::__call expect 1st parameter to be valid function name, toString() invocation failed.",
+			ce->name);
+
+		if (error_len > std::numeric_limits<int>::max()) {
+			zend_throw_exception(php_ce_v8js_exception,
+				"Generated error message length exceeds maximum supported length", 0);
+		}
+		else {
+			return_value = V8JS_THROW(isolate, TypeError, error, static_cast<int>(error_len));
+		}
+
+		efree(error);
+		info.GetReturnValue().Set(return_value);
+		return;
+	}
+
+	v8::String::Utf8Value str_value(isolate, str.ToLocalChecked());
 	const char *method_c_name = ToCString(str_value);
-	zend_string *method_name = zend_string_init(method_c_name, str->Utf8Length(), 0);
+	zend_string *method_name = zend_string_init(method_c_name, str.ToLocalChecked()->Utf8Length(isolate), 0);
 
 	// okay, look up the method name and manually invoke it.
 	const zend_object_handlers *h = object->handlers;
@@ -577,13 +597,15 @@ static void v8js_fake_call_impl(const v8::FunctionCallbackInfo<v8::Value>& info)
 
 /* This method handles named property and method get/set/query/delete. */
 template<typename T>
-v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<T> &info, property_op_t callback_type, v8::Local<v8::Value> set_value) /* {{{ */
+v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::Name> property_name, const v8::PropertyCallbackInfo<T> &info, property_op_t callback_type, v8::Local<v8::Value> set_value) /* {{{ */
 {
+	v8::Local<v8::String> property = v8::Local<v8::String>::Cast(property_name);
+
 	v8::Isolate *isolate = info.GetIsolate();
 	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
-	v8::String::Utf8Value cstr(property);
+	v8::String::Utf8Value cstr(isolate, property);
 	const char *name = ToCString(cstr);
-	uint name_len = property->Utf8Length();
+	uint name_len = property->Utf8Length(isolate);
 	char *lower = estrndup(name, name_len);
 	zend_string *method_name;
 
@@ -780,32 +802,44 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::String> property
 }
 /* }}} */
 
-static void v8js_named_property_getter(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<v8::Value> &info) /* {{{ */
+static void v8js_named_property_getter(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Value> &info) /* {{{ */
 {
 	info.GetReturnValue().Set(v8js_named_property_callback(property, info, V8JS_PROP_GETTER));
 }
 /* }}} */
 
-static void v8js_named_property_setter(v8::Local<v8::String> property, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<v8::Value> &info) /* {{{ */
+static void v8js_named_property_setter(v8::Local<v8::Name> property, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<v8::Value> &info) /* {{{ */
 {
 	info.GetReturnValue().Set(v8js_named_property_callback(property, info, V8JS_PROP_SETTER, value));
 }
 /* }}} */
 
-static void v8js_named_property_query(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<v8::Integer> &info) /* {{{ */
+static void v8js_named_property_query(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Integer> &info) /* {{{ */
 {
 	v8::Local<v8::Value> r = v8js_named_property_callback(property, info, V8JS_PROP_QUERY);
-	if (!r.IsEmpty()) {
-		info.GetReturnValue().Set(r->ToInteger());
+	if (r.IsEmpty()) {
+		return;
+	}
+
+	v8::Isolate *isolate = info.GetIsolate();
+	v8::MaybeLocal<v8::Integer> value = r->ToInteger(isolate->GetEnteredContext());
+	if (!value.IsEmpty()) {
+		info.GetReturnValue().Set(value.ToLocalChecked());
 	}
 }
 /* }}} */
 
-static void v8js_named_property_deleter(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<v8::Boolean> &info) /* {{{ */
+static void v8js_named_property_deleter(v8::Local<v8::Name> property, const v8::PropertyCallbackInfo<v8::Boolean> &info) /* {{{ */
 {
 	v8::Local<v8::Value> r = v8js_named_property_callback(property, info, V8JS_PROP_DELETER);
-	if (!r.IsEmpty()) {
-		info.GetReturnValue().Set(r->ToBoolean());
+	if (r.IsEmpty()) {
+		return;
+	}
+
+	v8::Isolate *isolate = info.GetIsolate();
+	v8::MaybeLocal<v8::Boolean> value = r->ToBoolean(isolate->GetEnteredContext());
+	if (!value.IsEmpty()) {
+		info.GetReturnValue().Set(value.ToLocalChecked());
 	}
 }
 /* }}} */
@@ -847,8 +881,8 @@ static v8::MaybeLocal<v8::Object> v8js_wrap_object(v8::Isolate *isolate, zend_cl
 			/* We'll free persist_tpl_ when template_cache is destroyed */
 
 			v8::Local<v8::ObjectTemplate> inst_tpl = new_tpl->InstanceTemplate();
-			v8::NamedPropertyGetterCallback getter = v8js_named_property_getter;
-			v8::NamedPropertyEnumeratorCallback enumerator = v8js_named_property_enumerator;
+			v8::GenericNamedPropertyGetterCallback getter = v8js_named_property_getter;
+			v8::GenericNamedPropertyEnumeratorCallback enumerator = v8js_named_property_enumerator;
 
 			/* Check for ArrayAccess object */
 			if (V8JSG(use_array_access) && ce) {
@@ -884,14 +918,14 @@ static v8::MaybeLocal<v8::Object> v8js_wrap_object(v8::Isolate *isolate, zend_cl
 
 
 			// Finish setup of new_tpl
-			inst_tpl->SetNamedPropertyHandler
+			inst_tpl->SetHandler(v8::NamedPropertyHandlerConfiguration
 				(getter, /* getter */
 				 v8js_named_property_setter, /* setter */
 				 v8js_named_property_query, /* query */
 				 v8js_named_property_deleter, /* deleter */
 				 enumerator, /* enumerator */
 				 V8JS_NULL /* data */
-				 );
+				 ));
 			// add __invoke() handler
 			zend_string *invoke_str = zend_string_init
 				(ZEND_INVOKE_FUNC_NAME, sizeof(ZEND_INVOKE_FUNC_NAME) - 1, 0);
