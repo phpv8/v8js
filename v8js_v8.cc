@@ -275,53 +275,67 @@ void v8js_terminate_execution(v8::Isolate *isolate) /* {{{ */
 
 int v8js_get_properties_hash(v8::Local<v8::Value> jsValue, HashTable *retval, int flags, v8::Isolate *isolate) /* {{{ */
 {
-	v8::Local<v8::Object> jsObj = jsValue->ToObject(isolate);
+	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
+	v8::Local<v8::Context> v8_context = v8::Local<v8::Context>::New(isolate, ctx->context);
 
-	if (!jsObj.IsEmpty()) {
-		v8::Local<v8::Array> jsKeys = jsObj->GetPropertyNames();
-
-		for (unsigned i = 0; i < jsKeys->Length(); i++)
-		{
-			v8::Local<v8::String> jsKey = jsKeys->Get(i)->ToString(isolate);
-
-			/* Skip any prototype properties */
-			if (!jsObj->HasOwnProperty(isolate->GetEnteredContext(), jsKey).FromMaybe(false)
-				&& !jsObj->HasRealNamedProperty(jsKey)
-				&& !jsObj->HasRealNamedCallbackProperty(jsKey)) {
-				continue;
-			}
-
-			v8::Local<v8::Value> jsVal = jsObj->Get(jsKey);
-			v8::String::Utf8Value cstr(isolate, jsKey);
-			const char *c_key = ToCString(cstr);
-			zend_string *key = zend_string_init(c_key, jsKey->ToString(isolate)->Utf8Length(isolate), 0);
-			zval value;
-			ZVAL_UNDEF(&value);
-
-			if (jsVal->IsObject() && jsVal->ToObject(isolate)->InternalFieldCount() == 2) {
-				/* This is a PHP object, passed to JS and back. */
-				zend_object *object = reinterpret_cast<zend_object *>(jsVal->ToObject(isolate)->GetAlignedPointerFromInternalField(1));
-				ZVAL_OBJ(&value, object);
-				Z_ADDREF_P(&value);
-			}
-			else {
-				if (v8js_to_zval(jsVal, &value, flags, isolate) == FAILURE) {
-					zval_ptr_dtor(&value);
-					return FAILURE;
-				}
-			}
-
-			if ((flags & V8JS_FLAG_FORCE_ARRAY) || jsValue->IsArray()) {
-				zend_symtable_update(retval, key, &value);
-			} else {
-				zend_hash_update(retval, key, &value);
-			}
-
-			zend_string_release(key);
-		}
-		return SUCCESS;
+	v8::Local<v8::Object> jsObj;
+	v8::Local<v8::Array> jsKeys;
+	if (!jsValue->ToObject(v8_context).ToLocal(&jsObj)
+			|| !jsObj->GetPropertyNames(v8_context).ToLocal(&jsKeys)) {
+		return FAILURE;
 	}
-	return FAILURE;
+
+	for (unsigned i = 0; i < jsKeys->Length(); i++)
+	{
+		v8::Local<v8::Value> jsKeySlot;
+		v8::Local<v8::String> jsKey;
+
+		if (!jsKeys->Get(v8_context, i).ToLocal(&jsKeySlot)
+				|| !jsKeySlot->ToString(v8_context).ToLocal(&jsKey)) {
+			continue;
+		}
+
+		/* Skip any prototype properties */
+		if (!jsObj->HasOwnProperty(isolate->GetEnteredContext(), jsKey).FromMaybe(false)
+			&& !jsObj->HasRealNamedProperty(v8_context, jsKey).FromMaybe(false)
+			&& !jsObj->HasRealNamedCallbackProperty(v8_context, jsKey).FromMaybe(false)) {
+			continue;
+		}
+
+		v8::Local<v8::Value> jsVal;
+
+		if (!jsObj->Get(v8_context, jsKey).ToLocal(&jsVal)) {
+			continue;
+		}
+
+		v8::String::Utf8Value cstr(isolate, jsKey);
+		zend_string *key = zend_string_init(ToCString(cstr), cstr.length(), 0);
+		zval value;
+		ZVAL_UNDEF(&value);
+
+		v8::Local<v8::Object> jsValObject;
+		if (jsVal->IsObject() && jsVal->ToObject(v8_context).ToLocal(&jsValObject) && jsValObject->InternalFieldCount() == 2) {
+			/* This is a PHP object, passed to JS and back. */
+			zend_object *object = reinterpret_cast<zend_object *>(jsValObject->GetAlignedPointerFromInternalField(1));
+			ZVAL_OBJ(&value, object);
+			Z_ADDREF_P(&value);
+		}
+		else {
+			if (v8js_to_zval(jsVal, &value, flags, isolate) == FAILURE) {
+				zval_ptr_dtor(&value);
+				return FAILURE;
+			}
+		}
+
+		if ((flags & V8JS_FLAG_FORCE_ARRAY) || jsValue->IsArray()) {
+			zend_symtable_update(retval, key, &value);
+		} else {
+			zend_hash_update(retval, key, &value);
+		}
+
+		zend_string_release(key);
+	}
+	return SUCCESS;
 }
 /* }}} */
 

@@ -92,8 +92,9 @@ void v8js_create_script_exception(zval *return_value, v8::Isolate *isolate, v8::
 			PHPV8_EXPROP(_string, JsTrace, ToCString(stacktrace));
 		}
 
-		if(try_catch->Exception()->IsObject() && try_catch->Exception()->ToObject(isolate)->InternalFieldCount() == 2) {
-			zend_object *php_exception = reinterpret_cast<zend_object *>(try_catch->Exception()->ToObject(isolate)->GetAlignedPointerFromInternalField(1));
+		v8::Local<v8::Object> error_object;
+		if(try_catch->Exception()->IsObject() && try_catch->Exception()->ToObject(context).ToLocal(&error_object) && error_object->InternalFieldCount() == 2) {
+			zend_object *php_exception = reinterpret_cast<zend_object *>(error_object->GetAlignedPointerFromInternalField(1));
 
 			zend_class_entry *exception_ce = zend_exception_get_default();
 			if (instanceof_function(php_exception->ce, exception_ce)) {

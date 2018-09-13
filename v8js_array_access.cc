@@ -210,11 +210,11 @@ void v8js_array_access_enumerator(const v8::PropertyCallbackInfo<v8::Array>& inf
 
 	for(int j = 0; j < length; j ++) {
 		if(v8js_array_access_isset_p(object, j)) {
-			result->Set(i ++, V8JS_INT(j));
+			result->Set(isolate->GetEnteredContext(), i ++, V8JS_INT(j));
 		}
 	}
 
-	result->Set(V8JS_STR("length"), V8JS_INT(i));
+	result->Set(isolate->GetEnteredContext(), V8JS_SYM("length"), V8JS_INT(i));
 	info.GetReturnValue().Set(result);
 }
 /* }}} */
@@ -244,7 +244,13 @@ void v8js_array_access_named_getter(v8::Local<v8::Name> property_name, const v8:
 			info.GetReturnValue().Set(ret_value);
 		}
 
-		ret_value = prototype->ToObject(isolate)->Get(property);
+		v8::Local<v8::Object> prototype_object;
+		if(!prototype->ToObject(isolate->GetEnteredContext()).ToLocal(&prototype_object)) {
+			/* ehh?  Array.prototype not an object? strange, stop. */
+			info.GetReturnValue().Set(ret_value);
+		}
+
+		prototype_object->Get(isolate->GetEnteredContext(), property).ToLocal(&ret_value);
 	}
 
 	info.GetReturnValue().Set(ret_value);

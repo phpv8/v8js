@@ -17,19 +17,18 @@
 #include <functional>
 
 /* Helper macros */
-#define V8JS_SYM(v)			v8::String::NewFromUtf8(isolate, v, v8::String::kInternalizedString, sizeof(v) - 1)
-#define V8JS_SYML(v, l)		v8::String::NewFromUtf8(isolate, v, v8::String::kInternalizedString, l)
-#define V8JS_ZSYM(v)		v8::String::NewFromUtf8(isolate, ZSTR_VAL(v), v8::String::kInternalizedString, ZSTR_LEN(v))
-#define V8JS_STR(v)			v8::String::NewFromUtf8(isolate, v)
-#define V8JS_STRL(v, l)		v8::String::NewFromUtf8(isolate, v, v8::String::kNormalString, l)
-#define V8JS_ZSTR(v)		v8::String::NewFromUtf8(isolate, ZSTR_VAL(v), v8::String::kNormalString, ZSTR_LEN(v))
+#define V8JS_SYM(v)			(v8::String::NewFromUtf8(isolate, v, v8::NewStringType::kInternalized, sizeof(v) - 1).ToLocalChecked())
+#define V8JS_SYML(v, l)		(v8::String::NewFromUtf8(isolate, v, v8::NewStringType::kInternalized, l).ToLocalChecked())
+#define V8JS_ZSYM(v)		(v8::String::NewFromUtf8(isolate, ZSTR_VAL(v), v8::NewStringType::kInternalized, ZSTR_LEN(v)).ToLocalChecked())
+#define V8JS_STR(v)			(v8::String::NewFromUtf8(isolate, v, v8::NewStringType::kNormal).ToLocalChecked())
+#define V8JS_STRL(v, l)		(v8::String::NewFromUtf8(isolate, v, v8::NewStringType::kNormal, l).ToLocalChecked())
+#define V8JS_ZSTR(v)		(v8::String::NewFromUtf8(isolate, ZSTR_VAL(v), v8::NewStringType::kNormal, ZSTR_LEN(v)).ToLocalChecked())
 #define V8JS_INT(v)			v8::Integer::New(isolate, v)
 #define V8JS_UINT(v)		v8::Integer::NewFromUnsigned(isolate, v)
 #define V8JS_FLOAT(v)		v8::Number::New(isolate, v)
 #define V8JS_BOOL(v)		((v)?v8::True(isolate):v8::False(isolate))
 #define V8JS_TRUE()			v8::True(isolate)
 #define V8JS_FALSE()		v8::False(isolate)
-#define V8JS_DATE(v)		v8::Date::New(isolate, v)
 #define V8JS_NULL			v8::Null(isolate)
 #define V8JS_UNDEFINED		v8::Undefined(isolate)
 #define V8JS_MN(name)		v8js_method_##name

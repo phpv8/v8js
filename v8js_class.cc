@@ -102,7 +102,7 @@ static void v8js_free_storage(zend_object *object) /* {{{ */
 		v8::Local<v8::Context> v8_context = v8::Local<v8::Context>::New(c->isolate, c->context);
 		v8::Context::Scope context_scope(v8_context);
 		v8::Local<v8::String> object_name_js = v8::Local<v8::String>::New(c->isolate, c->object_name);
-		V8JS_GLOBAL(c->isolate)->Delete(object_name_js);
+		V8JS_GLOBAL(c->isolate)->Delete(v8_context, object_name_js);
 	}
 
 	c->object_name.Reset();
@@ -494,8 +494,7 @@ static PHP_METHOD(V8Js, __construct)
 			return;
 		}
 
-		object_name_js = v8::String::NewFromUtf8(isolate, ZSTR_VAL(object_name),
-			v8::String::kInternalizedString, static_cast<int>(ZSTR_LEN(object_name)));
+		object_name_js = V8JS_ZSYM(object_name);
 	}
 	else {
 		object_name_js = V8JS_SYM("PHP");
@@ -505,7 +504,7 @@ static PHP_METHOD(V8Js, __construct)
 
 	/* Add the PHP object into global object */
 	php_obj_t->InstanceTemplate()->SetInternalFieldCount(2);
-	v8::Local<v8::Object> php_obj = php_obj_t->InstanceTemplate()->NewInstance();
+	v8::Local<v8::Object> php_obj = php_obj_t->InstanceTemplate()->NewInstance(context).ToLocalChecked();
 	V8JS_GLOBAL(isolate)->DefineOwnProperty(context, object_name_js, php_obj, v8::ReadOnly);
 
 	/* Export public property values */
@@ -524,8 +523,7 @@ static PHP_METHOD(V8Js, __construct)
 				return;
 			}
 
-			v8::Local<v8::Name> key = v8::String::NewFromUtf8(isolate, ZSTR_VAL(member),
-				v8::String::kInternalizedString, static_cast<int>(ZSTR_LEN(member)));
+			v8::Local<v8::Name> key = V8JS_ZSYM(member);
 
 			/* Write value to PHP JS object */
 			value = OBJ_PROP(Z_OBJ_P(getThis()), property_info->offset);
@@ -587,24 +585,16 @@ static PHP_METHOD(V8Js, __construct)
 			return;
 		}
 
-		v8::Local<v8::String> method_name = v8::String::NewFromUtf8(isolate,
-			ZSTR_VAL(method_ptr->common.function_name), v8::String::kInternalizedString,
-			static_cast<int>(ZSTR_LEN(method_ptr->common.function_name)));
+		v8::Local<v8::String> method_name = V8JS_ZSYM(method_ptr->common.function_name);
 		v8::Local<v8::FunctionTemplate> ft;
 
-		/*try {
-			ft = v8::Local<v8::FunctionTemplate>::New
-				(isolate, c->method_tmpls.at(method_ptr));
-		}
-		catch (const std::out_of_range &) */ {
-			ft = v8::FunctionTemplate::New(isolate, v8js_php_callback,
-					v8::External::New((isolate), method_ptr));
-			// @fixme add/check Signature v8::Signature::New((isolate), tmpl));
-			v8js_function_tmpl_t *persistent_ft = &c->method_tmpls[method_ptr];
-			persistent_ft->Reset(isolate, ft);
-		}
+		ft = v8::FunctionTemplate::New(isolate, v8js_php_callback,
+				v8::External::New((isolate), method_ptr));
+		// @fixme add/check Signature v8::Signature::New((isolate), tmpl));
+		v8js_function_tmpl_t *persistent_ft = &c->method_tmpls[method_ptr];
+		persistent_ft->Reset(isolate, ft);
 
-		php_obj->CreateDataProperty(context, method_name, ft->GetFunction());
+		php_obj->CreateDataProperty(context, method_name, ft->GetFunction(context).ToLocalChecked());
 	} ZEND_HASH_FOREACH_END();
 }
 /* }}} */
@@ -646,7 +636,7 @@ static void v8js_compile_script(zval *this_ptr, const zend_string *str, const ze
 	}
 
 	v8::Local<v8::String> sname = identifier
-		? v8::String::NewFromUtf8(isolate, ZSTR_VAL(identifier), v8::String::kNormalString, static_cast<int>(ZSTR_LEN(identifier)))
+		? V8JS_ZSTR(identifier)
 		: V8JS_SYM("V8Js::compileString()");
 	v8::ScriptOrigin origin(sname);
 
@@ -656,7 +646,7 @@ static void v8js_compile_script(zval *this_ptr, const zend_string *str, const ze
 		return;
 	}
 
-	v8::Local<v8::String> source = v8::String::NewFromUtf8(isolate, ZSTR_VAL(str), v8::String::kNormalString, static_cast<int>(ZSTR_LEN(str)));
+	v8::Local<v8::String> source = V8JS_ZSTR(str);
 	v8::MaybeLocal<v8::Script> script = v8::Script::Compile(v8::Local<v8::Context>::New(isolate, c->context), source, &origin);
 
 	/* Compile errors? */
@@ -1164,7 +1154,7 @@ static v8::StartupData createSnapshotDataBlob(v8::SnapshotCreator *snapshot_crea
 		v8::Context::Scope context_scope(context);
 		v8::TryCatch try_catch(isolate);
 
-		v8::Local<v8::String> source = v8::String::NewFromUtf8(isolate, ZSTR_VAL(str), v8::String::kNormalString, static_cast<int>(ZSTR_LEN(str)));
+		v8::Local<v8::String> source = V8JS_ZSTR(str);
 		v8::MaybeLocal<v8::Script> script = v8::Script::Compile(context, source);
 
 		if (script.IsEmpty() || script.ToLocalChecked()->Run(context).IsEmpty())
@@ -1330,7 +1320,7 @@ static void v8js_write_property(zval *object, zval *member, zval *value, void **
 		(property_info->flags & ZEND_ACC_PUBLIC))) {
 		/* Global PHP JS object */
 		v8::Local<v8::String> object_name_js = v8::Local<v8::String>::New(isolate, c->object_name);
-		v8::Local<v8::Object> jsobj = V8JS_GLOBAL(isolate)->Get(object_name_js)->ToObject(isolate);
+		v8::Local<v8::Object> jsobj = V8JS_GLOBAL(isolate)->Get(v8_context, object_name_js).ToLocalChecked()->ToObject(v8_context).ToLocalChecked();
 
 		if (Z_STRLEN_P(member) > std::numeric_limits<int>::max()) {
 				zend_throw_exception(php_ce_v8js_exception,
@@ -1354,7 +1344,7 @@ static void v8js_unset_property(zval *object, zval *member, void **cache_slot) /
 
 	/* Global PHP JS object */
 	v8::Local<v8::String> object_name_js = v8::Local<v8::String>::New(isolate, c->object_name);
-	v8::Local<v8::Object> jsobj = V8JS_GLOBAL(isolate)->Get(object_name_js)->ToObject(isolate);
+	v8::Local<v8::Object> jsobj = V8JS_GLOBAL(isolate)->Get(v8_context, object_name_js).ToLocalChecked()->ToObject(v8_context).ToLocalChecked();
 
 	if (Z_STRLEN_P(member) > std::numeric_limits<int>::max()) {
 			zend_throw_exception(php_ce_v8js_exception,
@@ -1364,7 +1354,7 @@ static void v8js_unset_property(zval *object, zval *member, void **cache_slot) /
 
 	/* Delete value from PHP JS object */
 	v8::Local<v8::Value> key = V8JS_SYML(Z_STRVAL_P(member), static_cast<int>(Z_STRLEN_P(member)));
-	jsobj->Delete(key);
+	jsobj->Delete(v8_context, key);
 
 	/* Unset from PHP object */
 	std_object_handlers.unset_property(object, member, NULL);

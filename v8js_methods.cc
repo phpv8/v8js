@@ -65,7 +65,7 @@ V8JS_METHOD(print) /* {{{ */
 static void v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int level) /* {{{ */
 {
 	v8js_ctx *c = (v8js_ctx *) isolate->GetData(0);
-	v8::Local<v8::Context> context = v8::Local<v8::Context>::New(isolate, c->context);
+	v8::Local<v8::Context> v8_context = v8::Local<v8::Context>::New(isolate, c->context);
 
 	if (level > 1) {
 		php_printf("%*c", (level - 1) * 2, ' ');
@@ -83,7 +83,7 @@ static void v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int leve
 	}
 	if (var->IsInt32())
 	{
-		v8::Maybe<int64_t> value = var->IntegerValue(context);
+		v8::Maybe<int64_t> value = var->IntegerValue(v8_context);
 		if (value.IsNothing())
 		{
 			php_printf("<empty>\n");
@@ -96,7 +96,7 @@ static void v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int leve
 	}
 	if (var->IsUint32())
 	{
-		v8::Maybe<uint32_t> value = var->Uint32Value(context);
+		v8::Maybe<uint32_t> value = var->Uint32Value(v8_context);
 		if (value.IsNothing())
 		{
 			php_printf("<empty>\n");
@@ -109,7 +109,7 @@ static void v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int leve
 	}
 	if (var->IsNumber())
 	{
-		v8::Maybe<double> value = var->NumberValue(context);
+		v8::Maybe<double> value = var->NumberValue(v8_context);
 		if (value.IsNothing())
 		{
 			php_printf("<empty>\n");
@@ -122,7 +122,7 @@ static void v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int leve
 	}
 	if (var->IsBoolean())
 	{
-		v8::Maybe<bool> value = var->BooleanValue(context);
+		v8::Maybe<bool> value = var->BooleanValue(v8_context);
 		if (value.IsNothing())
 		{
 			php_printf("<empty>\n");
@@ -142,7 +142,7 @@ static void v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int leve
 		details = re->GetSource();
 	}
 	else {
-		details = var->ToDetailString(context).FromMaybe(v8::Local<v8::String>());
+		details = var->ToDetailString(v8_context).FromMaybe(v8::Local<v8::String>());
 
 		if (try_catch.HasCaught()) {
 			details = V8JS_SYM("<toString threw exception>");
@@ -151,7 +151,7 @@ static void v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int leve
 
 	v8::String::Utf8Value str(isolate, details);
 	const char *valstr = ToCString(str);
-	size_t valstr_len = details->ToString(isolate)->Utf8Length(isolate);
+	size_t valstr_len = str.length();
 
 	if (var->IsString())
 	{
@@ -177,7 +177,16 @@ static void v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int leve
 
 		for (unsigned i = 0; i < length; i++) {
 			php_printf("%*c[%d] =>\n", level * 2, ' ', i);
-			v8js_dumper(isolate, array->Get(i), level + 1);
+
+			v8::MaybeLocal<v8::Value> value = array->Get(v8_context, i);
+			if (value.IsEmpty())
+			{
+				php_printf("<empty>\n");
+			}
+			else
+			{
+				v8js_dumper(isolate, value.ToLocalChecked(), level + 1);
+			}
 		}
 
 		if (level > 1) {
@@ -194,13 +203,23 @@ static void v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int leve
 
 		if (var->IsFunction() && strcmp(ToCString(cname), "Closure") != 0)
 		{
-			v8::String::Utf8Value csource(isolate, object->ToString(isolate));
-			php_printf("object(Closure)#%d {\n%*c%s\n", hash, level * 2 + 2, ' ', ToCString(csource));
+			php_printf("object(Closure)#%d {\n%*c", hash, level * 2 + 2, ' ');
+
+			v8::Local<v8::String> source;
+			if (object->ToString(v8_context).ToLocal(&source))
+			{
+				v8::String::Utf8Value csource(isolate, source);
+				php_printf("%s\n",  ToCString(csource));
+			}
+			else
+			{
+				php_printf("<empty>\n");
+			}
 		}
 		else
 		{
-			v8::Local<v8::Array> keys = object->GetOwnPropertyNames();
-			uint32_t length = keys->Length();
+			v8::MaybeLocal<v8::Array> keys = object->GetOwnPropertyNames(v8_context);
+			uint32_t length = keys.IsEmpty() ? 0 : keys.ToLocalChecked()->Length();
 
 			if (strcmp(ToCString(cname), "Array") == 0 ||
 				strcmp(ToCString(cname), "V8Object") == 0) {
@@ -211,10 +230,26 @@ static void v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int leve
 			php_printf(" (%d) {\n", length);
 
 			for (unsigned i = 0; i < length; i++) {
-				v8::Local<v8::String> key = keys->Get(i)->ToString(isolate);
-				v8::String::Utf8Value kname(isolate, key);
-				php_printf("%*c[\"%s\"] =>\n", level * 2, ' ', ToCString(kname));
-				v8js_dumper(isolate, object->Get(key), level + 1);
+				v8::MaybeLocal<v8::Value> key_slot = keys.ToLocalChecked()->Get(v8_context, i);
+				v8::Local<v8::String> key;
+
+				if (key_slot.IsEmpty() || !key_slot.ToLocalChecked()->ToString(v8_context).ToLocal(&key))
+				{
+					key = V8JS_SYM("<empty>");
+				}
+
+				v8::String::Utf8Value key_name(isolate, key);
+				php_printf("%*c[\"%s\"] =>\n", level * 2, ' ', ToCString(key_name));
+
+				v8::MaybeLocal<v8::Value> value = object->Get(v8_context, key);
+				if (value.IsEmpty())
+				{
+					php_printf("<empty>\n");
+				}
+				else
+				{
+					v8js_dumper(isolate, value.ToLocalChecked(), level + 1);
+				}
 			}
 		}
 
@@ -385,7 +420,9 @@ V8JS_METHOD(require)
 	if (c->modules_loaded.count(normalised_module_id) > 0) {
 		v8::Persistent<v8::Value> newobj;
 		newobj.Reset(isolate, c->modules_loaded[normalised_module_id]);
-		info.GetReturnValue().Set(newobj);
+
+		// TODO store v8::Global in c->modules_loaded directly!?
+		info.GetReturnValue().Set(v8::Global<v8::Value>(isolate, newobj));
 
 		efree(normalised_module_id);
 		efree(normalised_path);
@@ -449,7 +486,7 @@ V8JS_METHOD(require)
 	}
 
 	if(Z_TYPE(module_code) == IS_OBJECT) {
-		v8::Local<v8::Object> newobj = zval_to_v8js(&module_code, isolate)->ToObject(isolate);
+		v8::Local<v8::Object> newobj = zval_to_v8js(&module_code, isolate)->ToObject(isolate->GetEnteredContext()).ToLocalChecked();
 		c->modules_loaded[normalised_module_id].Reset(isolate, newobj);
 		info.GetReturnValue().Set(newobj);
 
@@ -503,7 +540,7 @@ V8JS_METHOD(require)
 	}
 
 	v8::Local<v8::String> base_path = V8JS_STR(normalised_path);
-	v8::MaybeLocal<v8::Function> require_fn = v8::FunctionTemplate::New(isolate, V8JS_MN(require), base_path)->GetFunction();
+	v8::MaybeLocal<v8::Function> require_fn = v8::FunctionTemplate::New(isolate, V8JS_MN(require), base_path)->GetFunction(context);
 
 	if (require_fn.IsEmpty()) {
 		efree(normalised_path);
@@ -523,8 +560,8 @@ V8JS_METHOD(require)
 	v8::Local<v8::Object> exports = v8::Object::New(isolate);
 
 	v8::Local<v8::Object> module = v8::Object::New(isolate);
-	module->Set(V8JS_SYM("id"), V8JS_STR(normalised_module_id));
-	module->Set(V8JS_SYM("exports"), exports);
+	module->Set(context, V8JS_SYM("id"), V8JS_STR(normalised_module_id));
+	module->Set(context, V8JS_SYM("exports"), exports);
 
 	if (!module_function.IsEmpty() && module_function.ToLocalChecked()->IsFunction()) {
 		v8::Local<v8::Value> *jsArgv = static_cast<v8::Local<v8::Value> *>(alloca(3 * sizeof(v8::Local<v8::Value>)));
@@ -538,7 +575,7 @@ V8JS_METHOD(require)
 		jsArgv[2] = require_fn.ToLocalChecked();
 
 		// actually call the module
-		v8::Local<v8::Function>::Cast(module_function.ToLocalChecked())->Call(exports, 3, jsArgv);
+		v8::Local<v8::Function>::Cast(module_function.ToLocalChecked())->Call(context, exports, 3, jsArgv);
 	}
 
 	// Remove this module and path from the stack
@@ -571,8 +608,10 @@ V8JS_METHOD(require)
 
 	// Cache the module so it doesn't need to be compiled and run again
 	// Ensure compatibility with CommonJS implementations such as NodeJS by playing nicely with module.exports and exports
-	if (module->Has(V8JS_SYM("exports"))) {
-		newobj = module->Get(V8JS_SYM("exports"));
+	v8::Local<v8::String> sym_exports = V8JS_SYM("exports");
+	if (module->Has(context, sym_exports).FromMaybe(false))
+	{
+		module->Get(context, sym_exports).ToLocal(&newobj);
 	}
 
 	c->modules_loaded[normalised_module_id].Reset(isolate, newobj);
