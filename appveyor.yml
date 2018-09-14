@@ -42,6 +42,10 @@ install:
   - curl -fSL -o %V8_ASSETS% "https://phpdev.toolsforresearch.com/%V8_ASSETS%"
   - 7z.exe x %V8_ASSETS%
   - dir
+  - curl -fSL -o libiconv.zip "https://windows.php.net/downloads/php-sdk/deps/vc15/%Platform%/libiconv-1.15-3-vc15-%Platform%.zip"
+  - 7z.exe x libiconv.zip -y
+  - curl -fSL -o libxml2.zip "https://windows.php.net/downloads/php-sdk/deps/vc15/%Platform%/libxml2-2.9.8-vc15-%Platform%.zip"
+  - 7z.exe x libxml2.zip -y
   - cd ..
   - curl -fSL -o "php-%PHP_VERSION%.tar.gz" "https://github.com/php/php-src/archive/php-%PHP_VERSION%.tar.gz"
   - ren php php-src-php-%PHP_VERSION%
@@ -69,7 +73,7 @@ build_script:
   - echo Building PHP [%PHP_VERSION%]
   - '%PHP_SDK%\bin\phpsdk_setvars'
   - buildconf
-  - configure --disable-all --enable-cli --with-v8js %CONFIGURE_EXTRA%
+  - configure --disable-all --enable-cli --with-iconv=yes --with-libxml=yes --with-dom=yes --enable-json=static --with-v8js %CONFIGURE_EXTRA%
   - nmake
 
 after_build:
