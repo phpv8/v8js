@@ -26,7 +26,7 @@ Minimum requirements
 	V8 is written in C++ and is used in Google Chrome, the open source browser from Google.
 	V8 implements ECMAScript as specified in ECMA-262, 5th edition.
 
-	This extension requires V8 4.6.76 or higher.
+	This extension requires V8 6.9 (6.9.427.18 is known to work) or higher.
 
     V8 releases are published rather quickly and the V8 team usually provides security support
     for the version line shipped with the Chrome browser (stable channel) and newer (only).
@@ -81,7 +81,6 @@ class V8Js
 
     /**
      * Initializes and starts V8 engine and returns new V8Js object with it's own V8 context.
-     * Snapshots are supported by V8 4.3.7 and higher.
      * @param string $object_name
      * @param array $variables
      * @param array $extensions
