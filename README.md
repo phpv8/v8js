@@ -44,7 +44,9 @@ For some very first steps, instead of compiling manually you might want to try o
 image](https://registry.hub.docker.com/u/stesie/v8js/).  It has v8, v8js and php-cli pre-installed
 so you can give it a try with PHP in "interactive mode".  There is no Apache, etc. running however.
 
-For Ubuntu @pinepain has PPAs for [various versions of V8](https://launchpad.net/~pinepain).
+For Ubuntu @stesie has a PPA, based on prior work by @pinepain.
+[See here](https://launchpad.net/~stesie/+archive/ubuntu/libv8/), packaging sources are available
+[from ppa-packaging repository](https://github.com/phpv8/ppa-packaging/tree/stesie/) (*stesie* branch).
 You might want to install these and compile V8Js based on them.
 
 There also is a Heroku extension pack that has recent V8Js versions for PHP 7.x, see
