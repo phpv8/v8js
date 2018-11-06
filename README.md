@@ -26,7 +26,7 @@ Minimum requirements
 	V8 is written in C++ and is used in Google Chrome, the open source browser from Google.
 	V8 implements ECMAScript as specified in ECMA-262, 5th edition.
 
-	This extension requires V8 4.6.76 or higher.
+	This extension requires V8 6.9 (6.9.427.18 is known to work) or higher.
 
     V8 releases are published rather quickly and the V8 team usually provides security support
     for the version line shipped with the Chrome browser (stable channel) and newer (only).
@@ -44,7 +44,9 @@ For some very first steps, instead of compiling manually you might want to try o
 image](https://registry.hub.docker.com/u/stesie/v8js/).  It has v8, v8js and php-cli pre-installed
 so you can give it a try with PHP in "interactive mode".  There is no Apache, etc. running however.
 
-For Ubuntu @pinepain has PPAs for [various versions of V8](https://launchpad.net/~pinepain).
+For Ubuntu @stesie has a PPA, based on prior work by @pinepain.
+[See here](https://launchpad.net/~stesie/+archive/ubuntu/libv8/), packaging sources are available
+[from ppa-packaging repository](https://github.com/phpv8/ppa-packaging/tree/stesie/) (*stesie* branch).
 You might want to install these and compile V8Js based on them.
 
 There also is a Heroku extension pack that has recent V8Js versions for PHP 7.x, see
@@ -81,7 +83,6 @@ class V8Js
 
     /**
      * Initializes and starts V8 engine and returns new V8Js object with it's own V8 context.
-     * Snapshots are supported by V8 4.3.7 and higher.
      * @param string $object_name
      * @param array $variables
      * @param array $extensions

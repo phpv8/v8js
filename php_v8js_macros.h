@@ -65,10 +65,6 @@ extern "C" {
 /* V8Js Version */
 #define PHP_V8JS_VERSION "2.1.0"
 
-/* Helper macros */
-#define V8JS_GET_CLASS_NAME(var, obj) \
-	v8::String::Utf8Value var(obj->GetConstructorName());
-
 /* Options */
 #define V8JS_FLAG_NONE			(1<<0)
 #define V8JS_FLAG_FORCE_ARRAY	(1<<1)

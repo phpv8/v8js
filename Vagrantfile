@@ -19,7 +19,7 @@ Vagrant.configure("2") do |config|
   #
   # mass-define "generic" Ubuntu boxes
   #
-  %w{6.3 6.4 6.5}.each { |version|
+  %w{7.1}.each { |version|
     config.vm.define "v8-#{version}" do |i|
       i.vm.synced_folder ".", "/data/v8js"
 
@@ -31,7 +31,7 @@ Vagrant.configure("2") do |config|
       apt-get install -y software-properties-common gdb tmux git tig curl apache2-utils lcov
 
       add-apt-repository ppa:ondrej/php
-      add-apt-repository ppa:pinepain/libv8-#{version}
+      add-apt-repository ppa:stesie/libv8
       apt-get update
       apt-get install -y php7.1-dev libv8-#{version}-dbg libv8-#{version}-dev
     SHELL

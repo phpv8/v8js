@@ -210,20 +210,22 @@ void v8js_array_access_enumerator(const v8::PropertyCallbackInfo<v8::Array>& inf
 
 	for(int j = 0; j < length; j ++) {
 		if(v8js_array_access_isset_p(object, j)) {
-			result->Set(i ++, V8JS_INT(j));
+			result->Set(isolate->GetEnteredContext(), i ++, V8JS_INT(j));
 		}
 	}
 
-	result->Set(V8JS_STR("length"), V8JS_INT(i));
+	result->Set(isolate->GetEnteredContext(), V8JS_SYM("length"), V8JS_INT(i));
 	info.GetReturnValue().Set(result);
 }
 /* }}} */
 
 
 
-void v8js_array_access_named_getter(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<v8::Value> &info) /* {{{ */
+void v8js_array_access_named_getter(v8::Local<v8::Name> property_name, const v8::PropertyCallbackInfo<v8::Value> &info) /* {{{ */
 {
-	v8::String::Utf8Value cstr(property);
+	v8::Local<v8::String> property = v8::Local<v8::String>::Cast(property_name);
+	v8::Isolate *isolate = info.GetIsolate();
+	v8::String::Utf8Value cstr(isolate, property);
 	const char *name = ToCString(cstr);
 
 	if(strcmp(name, "length") == 0) {
@@ -234,7 +236,6 @@ void v8js_array_access_named_getter(v8::Local<v8::String> property, const v8::Pr
 	v8::Local<v8::Value> ret_value = v8js_named_property_callback(property, info, V8JS_PROP_GETTER);
 
 	if(ret_value.IsEmpty()) {
-		v8::Isolate *isolate = info.GetIsolate();
 		v8::Local<v8::Array> arr = v8::Array::New(isolate);
 		v8::Local<v8::Value> prototype = arr->GetPrototype();
 
@@ -243,7 +244,13 @@ void v8js_array_access_named_getter(v8::Local<v8::String> property, const v8::Pr
 			info.GetReturnValue().Set(ret_value);
 		}
 
-		ret_value = prototype->ToObject()->Get(property);
+		v8::Local<v8::Object> prototype_object;
+		if(!prototype->ToObject(isolate->GetEnteredContext()).ToLocal(&prototype_object)) {
+			/* ehh?  Array.prototype not an object? strange, stop. */
+			info.GetReturnValue().Set(ret_value);
+		}
+
+		prototype_object->Get(isolate->GetEnteredContext(), property).ToLocal(&ret_value);
 	}
 
 	info.GetReturnValue().Set(ret_value);

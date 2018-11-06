@@ -15,10 +15,10 @@ if (PHP_V8JS != "no") {
 		ADD_FLAG("CFLAGS_V8JS", "/D __STDC_LIMIT_MACROS");
 
 		// defaults
-		var v8major = 5;
-		var v8minor = 8;
-		var v8build = 301;
-		var v8patch = 0;
+		var v8major = 7;
+		var v8minor = 0;
+		var v8build = 276;
+		var v8patch = 11;
 		var v8pinc = search_paths("v8-version.h", php_usual_include_suspects, null);
 		if (typeof(v8pinc) == "string") {
 			var v8versionh = file_get_contents(v8pinc + '\\v8-version.h');

@@ -5,11 +5,11 @@ services:
   - docker
 
 env:
-  - V8VER=6.6
+  - V8VER=7.1
     PHPVER=7.0
-  - V8VER=6.6
+  - V8VER=7.1
     PHPVER=7.1
-  - V8VER=6.6
+  - V8VER=7.1
     PHPVER=7.2
 
 script: make -f Makefile.travis test

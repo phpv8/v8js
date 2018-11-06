@@ -59,58 +59,64 @@ static int v8js_v8object_has_property(zval *object, zval *member, int has_set_ex
 	if (!obj->ctx) {
 		zend_throw_exception(php_ce_v8js_exception,
 			"Can't access V8Object after V8Js instance is destroyed!", 0);
-		return retval;
+		return false;
 	}
 
-	V8JS_CTX_PROLOGUE_EX(obj->ctx, retval);
+	V8JS_CTX_PROLOGUE_EX(obj->ctx, false);
 	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
+	v8::Local<v8::Object> jsObj;
 
-	if (Z_TYPE_P(member) == IS_STRING && v8obj->IsObject())
-	{
-		if (Z_STRLEN_P(member) > std::numeric_limits<int>::max()) {
-			zend_throw_exception(php_ce_v8js_exception,
-				"Member name length exceeds maximum supported length", 0);
-			return retval;
-		}
+	if (Z_TYPE_P(member) != IS_STRING || !v8obj->IsObject() || !v8obj->ToObject(v8_context).ToLocal(&jsObj)) {
+		return false;
+	}
 
-		v8::Local<v8::Object> jsObj = v8obj->ToObject();
-		v8::Local<v8::String> jsKey = V8JS_STRL(Z_STRVAL_P(member), static_cast<int>(Z_STRLEN_P(member)));
-		v8::Local<v8::Value> jsVal;
+	if (Z_STRLEN_P(member) > std::numeric_limits<int>::max()) {
+		zend_throw_exception(php_ce_v8js_exception,
+			"Member name length exceeds maximum supported length", 0);
+		return false;
+	}
 
-		/* Skip any prototype properties */
-		if (jsObj->HasRealNamedProperty(jsKey) || jsObj->HasRealNamedCallbackProperty(jsKey)) {
-			if (has_set_exists == 2) {
-				/* property_exists(), that's enough! */
-				retval = true;
-			} else {
-				/* We need to look at the value. */
-				jsVal = jsObj->Get(jsKey);
-				if (has_set_exists == 0 ) {
-					/* isset(): We make 'undefined' equivalent to 'null' */
-					retval = !( jsVal->IsNull() || jsVal->IsUndefined() );
-				} else {
-					/* empty() */
-					retval = jsVal->BooleanValue();
-					/* for PHP compatibility, [] should also be empty */
-					if (jsVal->IsArray() && retval) {
-						v8::Local<v8::Array> array = v8::Local<v8::Array>::Cast(jsVal);
-						retval = (array->Length() != 0);
-					}
-					/* for PHP compatibility, '0' should also be empty */
-					if (jsVal->IsString() && retval) {
-						v8::Local<v8::String> str = jsVal->ToString();
-						if (str->Length() == 1) {
-							uint16_t c = 0;
-							str->Write(&c, 0, 1);
-							if (c == '0') {
-								retval = false;
-							}
-						}
-					}
-				}
-			}
+	v8::Local<v8::String> jsKey = V8JS_ZSYM(Z_STR_P(member));
+
+	/* Skip any prototype properties */
+	if (!jsObj->HasRealNamedProperty(v8_context, jsKey).FromMaybe(false)
+			&& !jsObj->HasRealNamedCallbackProperty(v8_context, jsKey).FromMaybe(false)) {
+		return false;
+	}
+
+	if (has_set_exists == 2) {
+		/* property_exists(), that's enough! */
+		return true;
+	}
+
+	/* We need to look at the value. */
+	v8::Local<v8::Value> jsVal = jsObj->Get(v8_context, jsKey).ToLocalChecked();
+
+	if (has_set_exists == 0 ) {
+		/* isset(): We make 'undefined' equivalent to 'null' */
+		return !( jsVal->IsNull() || jsVal->IsUndefined() );
+	}
+
+	/* empty() */
+	retval = jsVal->BooleanValue(v8_context).FromMaybe(false);
+
+	/* for PHP compatibility, [] should also be empty */
+	if (jsVal->IsArray() && retval) {
+		v8::Local<v8::Array> array = v8::Local<v8::Array>::Cast(jsVal);
+		retval = (array->Length() != 0);
+	}
+
+	/* for PHP compatibility, '0' should also be empty */
+	v8::Local<v8::String> str;
+	if (jsVal->IsString() && retval && jsVal->ToString(v8_context).ToLocal(&str)
+			&& str->Length() == 1) {
+		uint16_t c = 0;
+		str->Write(isolate, &c, 0, 1);
+		if (c == '0') {
+			retval = false;
 		}
 	}
+
 	return retval;
 }
 /* }}} */
@@ -137,15 +143,15 @@ static zval *v8js_v8object_read_property(zval *object, zval *member, int type, v
 			return retval;
 		}
 
-		v8::Local<v8::Object> jsObj = v8obj->ToObject();
-		v8::Local<v8::String> jsKey = V8JS_STRL(Z_STRVAL_P(member), static_cast<int>(Z_STRLEN_P(member)));
-		v8::Local<v8::Value> jsVal;
+		v8::Local<v8::String> jsKey = V8JS_ZSYM(Z_STR_P(member));
+		v8::Local<v8::Object> jsObj = v8obj->ToObject(v8_context).ToLocalChecked();
 
 		/* Skip any prototype properties */
-		if (jsObj->HasRealNamedProperty(jsKey) || jsObj->HasRealNamedCallbackProperty(jsKey)) {
-			jsVal = jsObj->Get(jsKey);
+		if (jsObj->HasRealNamedProperty(v8_context, jsKey).FromMaybe(false)
+				|| jsObj->HasRealNamedCallbackProperty(v8_context, jsKey).FromMaybe(false)) {
+			v8::MaybeLocal<v8::Value> jsVal = jsObj->Get(v8_context, jsKey);
 			
-			if (v8js_to_zval(jsVal, retval, obj->flags, isolate) == SUCCESS) {
+			if (!jsVal.IsEmpty() && v8js_to_zval(jsVal.ToLocalChecked(), retval, obj->flags, isolate) == SUCCESS) {
 				return retval;
 			}
 		}
@@ -166,7 +172,7 @@ static void v8js_v8object_write_property(zval *object, zval *member, zval *value
 	}
 
 	V8JS_CTX_PROLOGUE(obj->ctx);
-	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
+	v8::Local<v8::Value> v8objHandle = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
 	if (Z_STRLEN_P(member) > std::numeric_limits<int>::max()) {
 		zend_throw_exception(php_ce_v8js_exception,
@@ -174,8 +180,9 @@ static void v8js_v8object_write_property(zval *object, zval *member, zval *value
 		return;
 	}
 
-	if (v8obj->IsObject()) {
-		v8obj->ToObject()->CreateDataProperty(v8_context, V8JS_SYML(Z_STRVAL_P(member), static_cast<int>(Z_STRLEN_P(member))), zval_to_v8js(value, isolate));
+	v8::Local<v8::Object> v8obj;
+	if (v8objHandle->IsObject() && v8objHandle->ToObject(v8_context).ToLocal(&v8obj)) {
+		v8obj->CreateDataProperty(v8_context, V8JS_ZSYM(Z_STR_P(member)), zval_to_v8js(value, isolate));
 	}
 }
 /* }}} */
@@ -191,7 +198,7 @@ static void v8js_v8object_unset_property(zval *object, zval *member, void **cach
 	}
 
 	V8JS_CTX_PROLOGUE(obj->ctx);
-	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
+	v8::Local<v8::Value> v8objHandle = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
 	if (Z_STRLEN_P(member) > std::numeric_limits<int>::max()) {
 		zend_throw_exception(php_ce_v8js_exception,
@@ -199,8 +206,9 @@ static void v8js_v8object_unset_property(zval *object, zval *member, void **cach
 		return;
 	}
 
-	if (v8obj->IsObject()) {
-		v8obj->ToObject()->Delete(V8JS_SYML(Z_STRVAL_P(member), static_cast<int>(Z_STRLEN_P(member))));
+	v8::Local<v8::Object> v8obj;
+	if (v8objHandle->IsObject() && v8objHandle->ToObject(v8_context).ToLocal(&v8obj)) {
+		v8obj->Delete(v8_context, V8JS_ZSYM(Z_STR_P(member)));
 	}
 }
 /* }}} */
@@ -276,9 +284,13 @@ static zend_function *v8js_v8object_get_method(zend_object **object_ptr, zend_st
 	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
 	if (!obj->v8obj.IsEmpty() && v8obj->IsObject() && !v8obj->IsFunction()) {
-		v8::Local<v8::Object> jsObj = v8obj->ToObject();
-		
-		if (jsObj->Has(jsKey) && jsObj->Get(jsKey)->IsFunction()) {
+		v8::Local<v8::Object> jsObj;
+		v8::Local<v8::Value> jsObjSlot;
+
+		if (v8obj->ToObject(v8_context).ToLocal(&jsObj)
+				&& jsObj->Has(v8_context, jsKey).FromMaybe(false)
+				&& jsObj->Get(v8_context, jsKey).ToLocal(&jsObjSlot)
+				&& jsObjSlot->IsFunction()) {
 			f = (zend_function *) ecalloc(1, sizeof(*f));
 			f->type = ZEND_OVERLOADED_FUNCTION_TEMPORARY;
 			f->common.function_name = zend_string_copy(method);
@@ -321,18 +333,25 @@ static int v8js_v8object_call_method(zend_string *method, zend_object *object, I
 	/* std::function relies on its dtor to be executed, otherwise it leaks
 	 * some memory on bailout. */
 	{
-		std::function< v8::Local<v8::Value>(v8::Isolate *) > v8_call = [obj, method, argc, argv, object, &return_value](v8::Isolate *isolate) {
+		std::function< v8::MaybeLocal<v8::Value>(v8::Isolate *) > v8_call = [obj, method, argc, argv, object, &return_value](v8::Isolate *isolate) {
 			int i = 0;
 
+			v8::Local<v8::Context> v8_context = isolate->GetEnteredContext();
 			v8::Local<v8::String> method_name = V8JS_SYML(ZSTR_VAL(method), static_cast<int>(ZSTR_LEN(method)));
-			v8::Local<v8::Object> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj)->ToObject();
+			v8::Local<v8::Object> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj)->ToObject(v8_context).ToLocalChecked();
 			v8::Local<v8::Object> thisObj;
 			v8::Local<v8::Function> cb;
 
-			if (method_name->Equals(V8JS_SYM(V8JS_V8_INVOKE_FUNC_NAME))) {
+			if (method_name->Equals(v8_context, V8JS_SYM(V8JS_V8_INVOKE_FUNC_NAME)).FromMaybe(false)) {
 				cb = v8::Local<v8::Function>::Cast(v8obj);
 			} else {
-				cb = v8::Local<v8::Function>::Cast(v8obj->Get(method_name));
+				v8::Local<v8::Value> slot;
+
+				if (!v8obj->Get(v8_context, method_name).ToLocal(&slot)) {
+					return v8::MaybeLocal<v8::Value>();
+				}
+
+				cb = v8::Local<v8::Function>::Cast(slot);
 			}
 
 			// If a method is invoked on V8Object, then set the object itself as
@@ -351,13 +370,13 @@ static int v8js_v8object_call_method(zend_string *method, zend_object *object, I
 				jsArgv[i] = v8::Local<v8::Value>::New(isolate, zval_to_v8js(&argv[i], isolate));
 			}
 
-			v8::Local<v8::Value> result = cb->Call(thisObj, argc, jsArgv);
+			v8::MaybeLocal<v8::Value> result = cb->Call(v8_context, thisObj, argc, jsArgv);
 
-			if (obj->std.ce == php_ce_v8object && result->StrictEquals(thisObj)) {
+			if (obj->std.ce == php_ce_v8object && !result.IsEmpty() && result.ToLocalChecked()->StrictEquals(thisObj)) {
 				/* JS code did "return this", retain object identity */
 				ZVAL_OBJ(return_value, object);
 				zval_copy_ctor(return_value);
-				result.Clear();
+				result = v8::MaybeLocal<v8::Value>();
 			}
 
 			return result;
@@ -545,27 +564,29 @@ static void v8js_v8generator_next(v8js_v8generator *g) /* {{{ */
 	/* std::function relies on its dtor to be executed, otherwise it leaks
 	 * some memory on bailout. */
 	{
-		std::function< v8::Local<v8::Value>(v8::Isolate *) > v8_call = [g](v8::Isolate *isolate) {
-			v8::Local<v8::String> method_name = V8JS_STR("next");
-			v8::Local<v8::Object> v8obj = v8::Local<v8::Value>::New(isolate, g->v8obj.v8obj)->ToObject();
-			v8::Local<v8::Function> cb = v8::Local<v8::Function>::Cast(v8obj->Get(method_name));;
+		std::function< v8::MaybeLocal<v8::Value>(v8::Isolate *) > v8_call = [g](v8::Isolate *isolate) {
+			v8::Local<v8::Context> v8_context = isolate->GetEnteredContext();
+			v8::Local<v8::String> method_name = V8JS_SYM("next");
+			v8::Local<v8::Object> v8obj = v8::Local<v8::Value>::New(isolate, g->v8obj.v8obj)->ToObject(v8_context).ToLocalChecked();
+			v8::Local<v8::Function> cb = v8::Local<v8::Function>::Cast(v8obj->Get(v8_context, method_name).ToLocalChecked());;
 
-			v8::Local<v8::Value> result = cb->Call(v8obj, 0, NULL);
+			v8::MaybeLocal<v8::Value> result = cb->Call(v8_context, v8obj, 0, NULL);
 
 			if(result.IsEmpty()) {
 				/* cb->Call probably threw (and already threw a zend exception), just return */
 				return V8JS_NULL;
 			}
 
-			if(!result->IsObject()) {
+			if(!result.ToLocalChecked()->IsObject()) {
 				zend_throw_exception(php_ce_v8js_exception,
 					"V8Generator returned non-object on next()", 0);
 				return V8JS_NULL;
 			}
 
-			v8::Local<v8::Object> resultObj = result->ToObject();
-			v8::Local<v8::Value> val = resultObj->Get(V8JS_STR("value"));
-			v8::Local<v8::Value> done = resultObj->Get(V8JS_STR("done"));
+
+			v8::Local<v8::Object> resultObj = result.ToLocalChecked()->ToObject(v8_context).ToLocalChecked();
+			v8::Local<v8::Value> val = resultObj->Get(v8_context, V8JS_SYM("value")).ToLocalChecked();
+			v8::Local<v8::Value> done = resultObj->Get(v8_context, V8JS_SYM("done")).ToLocalChecked();
 
 			zval_ptr_dtor(&g->value);
 			v8js_to_zval(val, &g->value, 0, isolate);

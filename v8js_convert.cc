@@ -79,6 +79,7 @@ static v8::Local<v8::Value> v8js_hash_to_jsarr(zval *value, v8::Isolate *isolate
 		return V8JS_NULL;
 	}
 
+	v8::Local<v8::Context> v8_context = isolate->GetEnteredContext();
 	newarr = v8::Array::New(isolate, i);
 
 	if (i > 0)
@@ -96,7 +97,7 @@ static v8::Local<v8::Value> v8js_hash_to_jsarr(zval *value, v8::Isolate *isolate
 		}
 
 		ZEND_HASH_FOREACH_VAL(myht, data) {
-			newarr->Set(index++, zval_to_v8js(data, isolate));
+			newarr->Set(v8_context, index++, zval_to_v8js(data, isolate));
 		} ZEND_HASH_FOREACH_END();
 
 #if PHP_VERSION_ID >= 70300
@@ -114,7 +115,7 @@ static v8::Local<v8::Value> v8js_hash_to_jsarr(zval *value, v8::Isolate *isolate
 
 v8::Local<v8::Value> zend_long_to_v8js(zend_long v, v8::Isolate *isolate) /* {{{ */
 {
-	if (v < - std::numeric_limits<int32_t>::min() || v > std::numeric_limits<int32_t>::max()) {
+	if (v < std::numeric_limits<int32_t>::min() || v > std::numeric_limits<int32_t>::max()) {
 		return V8JS_FLOAT(static_cast<double>(v));
 	} else {
 		return V8JS_INT(static_cast<int32_t>(v));
@@ -148,7 +149,7 @@ v8::Local<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate) /* {{{ */
 				 if (instanceof_function(Z_OBJCE_P(value), ce)) {
 					 zval dtval;
 					 zend_call_method_with_0_params(value, NULL, NULL, "getTimestamp", &dtval);
-					 jsValue = V8JS_DATE(((double)Z_LVAL(dtval) * 1000.0));
+					 v8::Date::New(isolate->GetEnteredContext(), ((double)Z_LVAL(dtval) * 1000.0)).ToLocal(&jsValue);
 					 zval_dtor(&dtval);
 				 } else
 					 jsValue = v8js_hash_to_jsobj(value, isolate);
@@ -164,7 +165,7 @@ v8::Local<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate) /* {{{ */
 				break;
 			}
 
-			jsValue = v8::String::NewFromUtf8(isolate, ZSTR_VAL(value_str), v8::String::kNormalString, static_cast<int>(ZSTR_LEN(value_str)));
+			jsValue = V8JS_ZSTR(value_str);
 			break;
 
 		case IS_LONG:
@@ -200,27 +201,45 @@ v8::Local<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate) /* {{{ */
 
 int v8js_to_zval(v8::Local<v8::Value> jsValue, zval *return_value, int flags, v8::Isolate *isolate) /* {{{ */
 {
+	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
+	v8::Local<v8::Context> v8_context = v8::Local<v8::Context>::New(isolate, ctx->context);
+
 	if (jsValue->IsString())
 	{
-		v8::String::Utf8Value str(jsValue);
+		v8::String::Utf8Value str(isolate, jsValue);
 		const char *cstr = ToCString(str);
-		RETVAL_STRINGL(cstr, jsValue->ToString()->Utf8Length());
+		RETVAL_STRINGL(cstr, str.length());
 	}
 	else if (jsValue->IsBoolean())
 	{
-		RETVAL_BOOL(jsValue->Uint32Value());
+		v8::Maybe<bool> value = jsValue->BooleanValue(v8_context);
+		if (value.IsNothing())
+		{
+			return FAILURE;
+		}
+		RETVAL_BOOL(value.ToChecked());
 	}
 	else if (jsValue->IsInt32() || jsValue->IsUint32())
 	{
-		RETVAL_LONG((long) jsValue->IntegerValue());
+		v8::Maybe<int64_t> value = jsValue->IntegerValue(v8_context);
+		if (value.IsNothing())
+		{
+			return FAILURE;
+		}
+		RETVAL_LONG((long) value.ToChecked());
 	}
 	else if (jsValue->IsNumber())
 	{
-		RETVAL_DOUBLE(jsValue->NumberValue());
+		v8::Maybe<double> value = jsValue->NumberValue(v8_context);
+		if (value.IsNothing())
+		{
+			return FAILURE;
+		}
+		RETVAL_DOUBLE(value.ToChecked());
 	}
 	else if (jsValue->IsDate())	/* Return as a PHP DateTime object */
 	{
-		v8::String::Utf8Value str(jsValue);
+		v8::String::Utf8Value str(isolate, jsValue);
 		const char *cstr = ToCString(str);
 
 		/* cstr has two timezone specifications:
@@ -253,7 +272,11 @@ int v8js_to_zval(v8::Local<v8::Value> jsValue, zval *return_value, int flags, v8
 	}
 	else if (jsValue->IsObject())
 	{
-		v8::Local<v8::Object> self = jsValue->ToObject();
+		v8::Local<v8::Object> self;
+		if (!jsValue->ToObject(v8_context).ToLocal(&self))
+		{
+			return FAILURE;
+		}
 
 		// if this is a wrapped PHP object, then just unwrap it.
 		if (self->InternalFieldCount() == 2) {

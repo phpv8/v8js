@@ -39,12 +39,14 @@ zend_class_entry *php_ce_v8js_memory_limit_exception;
 
 void v8js_create_script_exception(zval *return_value, v8::Isolate *isolate, v8::TryCatch *try_catch) /* {{{ */
 {
-	v8::String::Utf8Value exception(try_catch->Exception());
+	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
+	v8::Local<v8::Context> context = v8::Local<v8::Context>::New(isolate, ctx->context);
+
+	v8::String::Utf8Value exception(isolate, try_catch->Exception());
 	const char *exception_string = ToCString(exception);
 	v8::Local<v8::Message> tc_message = try_catch->Message();
 	const char *filename_string, *sourceline_string;
 	char *message_string;
-	int linenum, start_col;
 
 	object_init_ex(return_value, php_ce_v8js_script_exception);
 
@@ -56,35 +58,43 @@ void v8js_create_script_exception(zval *return_value, v8::Isolate *isolate, v8::
 	}
 	else
 	{
-		v8::String::Utf8Value filename(tc_message->GetScriptResourceName());
+		v8::String::Utf8Value filename(isolate, tc_message->GetScriptResourceName());
 		filename_string = ToCString(filename);
 		PHPV8_EXPROP(_string, JsFileName, filename_string);
 
-		v8::String::Utf8Value sourceline(tc_message->GetSourceLine());
-		sourceline_string = ToCString(sourceline);
-		PHPV8_EXPROP(_string, JsSourceLine, sourceline_string);
+		v8::MaybeLocal<v8::String> maybe_sourceline = tc_message->GetSourceLine(context);
+		if (!maybe_sourceline.IsEmpty()) {
+			v8::String::Utf8Value sourceline(isolate, maybe_sourceline.ToLocalChecked());
+			sourceline_string = ToCString(sourceline);
+			PHPV8_EXPROP(_string, JsSourceLine, sourceline_string);
+		}
 
-		linenum = tc_message->GetLineNumber();
-		PHPV8_EXPROP(_long, JsLineNumber, linenum);
+		v8::Maybe<int> linenum = tc_message->GetLineNumber(context);
+		if (linenum.IsJust()) {
+			PHPV8_EXPROP(_long, JsLineNumber, linenum.FromJust());
+		}
 
-		start_col = tc_message->GetStartColumn();
-		PHPV8_EXPROP(_long, JsStartColumn, start_col);
+		v8::Maybe<int> start_col = tc_message->GetStartColumn(context);
+		if (start_col.IsJust()) {
+			PHPV8_EXPROP(_long, JsStartColumn, start_col.FromJust());
+		}
 
-		v8::Maybe<int> end_col = tc_message->GetEndColumn(isolate->GetEnteredContext());
+		v8::Maybe<int> end_col = tc_message->GetEndColumn(context);
 		if (end_col.IsJust()) {
 			PHPV8_EXPROP(_long, JsEndColumn, end_col.FromJust());
 		}
 
-		spprintf(&message_string, 0, "%s:%d: %s", filename_string, linenum, exception_string);
+		spprintf(&message_string, 0, "%s:%d: %s", filename_string, linenum.FromMaybe(0), exception_string);
 
-		v8::String::Utf8Value stacktrace(try_catch->StackTrace());
-		if (stacktrace.length() > 0) {
-			const char* stacktrace_string = ToCString(stacktrace);
-			PHPV8_EXPROP(_string, JsTrace, stacktrace_string);
+		v8::MaybeLocal<v8::Value> maybe_stacktrace = try_catch->StackTrace(context);
+		if (!maybe_stacktrace.IsEmpty()) {
+			v8::String::Utf8Value stacktrace(isolate, maybe_stacktrace.ToLocalChecked());
+			PHPV8_EXPROP(_string, JsTrace, ToCString(stacktrace));
 		}
 
-		if(try_catch->Exception()->IsObject() && try_catch->Exception()->ToObject()->InternalFieldCount() == 2) {
-			zend_object *php_exception = reinterpret_cast<zend_object *>(try_catch->Exception()->ToObject()->GetAlignedPointerFromInternalField(1));
+		v8::Local<v8::Object> error_object;
+		if(try_catch->Exception()->IsObject() && try_catch->Exception()->ToObject(context).ToLocal(&error_object) && error_object->InternalFieldCount() == 2) {
+			zend_object *php_exception = reinterpret_cast<zend_object *>(error_object->GetAlignedPointerFromInternalField(1));
 
 			zend_class_entry *exception_ce = zend_exception_get_default();
 			if (instanceof_function(php_exception->ce, exception_ce)) {
@@ -106,7 +116,7 @@ void v8js_create_script_exception(zval *return_value, v8::Isolate *isolate, v8::
 
 void v8js_throw_script_exception(v8::Isolate *isolate, v8::TryCatch *try_catch) /* {{{ */
 {
-	v8::String::Utf8Value exception(try_catch->Exception());
+	v8::String::Utf8Value exception(isolate, try_catch->Exception());
 	const char *exception_string = ToCString(exception);
 	zval zexception;
 
