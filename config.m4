@@ -43,7 +43,7 @@ if test "$PHP_V8JS" != "no"; then
     old_CPPFLAGS=$CPPFLAGS
     AC_LANG_PUSH([C++])
     CPPFLAGS="-std="$ac_cv_v8_cstd
-    AC_TRY_RUN([int main() { return 0; }],[],[ac_cv_v8_cstd="c++0x"],[])
+    AC_RUN_IFELSE([AC_LANG_SOURCE([[int main() { return 0; }]])],[],[ac_cv_v8_cstd="c++0x"],[])
     AC_LANG_POP([C++])
     CPPFLAGS=$old_CPPFLAGS
   ]);
@@ -53,27 +53,27 @@ if test "$PHP_V8JS" != "no"; then
     old_CXXFLAGS=$CXXFLAGS
     AC_LANG_PUSH([C++])
     CXXFLAGS="-std="$ac_cv_v8_cstd
-    AC_TRY_RUN([int main() {
+    AC_RUN_IFELSE([AC_LANG_SOURCE([[int main() {
         struct { unsigned int x; } foo = {-1};
         (void) foo;
         return 0;
-    }], [ ac_cv_v8_narrowing="" ], [
+    }]])],[ac_cv_v8_narrowing=""],[
         CXXFLAGS="-Wno-c++11-narrowing -std="$ac_cv_v8_cstd
-        AC_TRY_RUN([int main() {
+        AC_RUN_IFELSE([AC_LANG_SOURCE([[int main() {
             struct { unsigned int x; } foo = {-1};
             (void) foo;
             return 0;
-        }], [ ac_cv_v8_narrowing="-Wno-c++11-narrowing" ], [
+        }]])],[ac_cv_v8_narrowing="-Wno-c++11-narrowing"],[
             CXXFLAGS="-Wno-narrowing -std="$ac_cv_v8_cstd
-            AC_TRY_RUN([int main() {
+            AC_RUN_IFELSE([AC_LANG_SOURCE([[int main() {
                 struct { unsigned int x; } foo = {-1};
                 (void) foo;
                 return 0;
-            }], [ ac_cv_v8_narrowing="-Wno-narrowing" ], [
+            }]])],[ac_cv_v8_narrowing="-Wno-narrowing"],[
                 AC_MSG_ERROR([cannot compile with narrowing])
-            ], [])
-        ], [])
-    ], [])
+            ],[])
+        ],[])
+    ],[])
     AC_LANG_POP([C++])
     CXXFLAGS=$old_CXXFLAGS
   ]);
@@ -117,7 +117,7 @@ if test "$PHP_V8JS" != "no"; then
   dnl
   LIBS="$LIBS $V8JS_SHARED_LIBADD"
   AC_CACHE_CHECK(for V8 version, ac_cv_v8_version, [
-AC_TRY_RUN([#include <v8.h>
+AC_RUN_IFELSE([AC_LANG_SOURCE([[#include <v8.h>
 #include <iostream>
 #include <fstream>
 using namespace std;
@@ -132,7 +132,7 @@ int main ()
 		return 0;
 	}
 	return 1;
-}], [ac_cv_v8_version=`cat ./conftestval|awk '{print $1}'`], [ac_cv_v8_version=NONE], [ac_cv_v8_version=NONE])
+}]])],[ac_cv_v8_version=`cat ./conftestval|awk '{print $1}'`],[ac_cv_v8_version=NONE],[ac_cv_v8_version=NONE])
 ])
 
   if test "$ac_cv_v8_version" != "NONE"; then
