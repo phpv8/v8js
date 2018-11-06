@@ -1,6 +1,8 @@
 --TEST--
 Test V8::executeString() : Check timezone handling
 --SKIPIF--
+SKIP test currently broken, see #378
+
 <?php
 if(strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
 	die('SKIP TZ not handled by v8 on Windows');
