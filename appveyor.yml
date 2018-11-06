@@ -2,22 +2,22 @@ environment:
   matrix:
   - ARTIFACT_NAME: v8js_vc15_php-7.3_%Platform%_ts.zip
     OUTDIR: Release_TS
-    V8_ASSETS: V8-5.8.283.31-%Platform%.zip
-    PHP_VERSION: 7.3.0alpha3
+    V8_ASSETS: V8-7.0.276.11-vc15-%Platform%.zip
+    PHP_VERSION: 7.3.0RC1
   - ARTIFACT_NAME: v8js_vc15_php-7.3_%Platform%_nts.zip
     OUTDIR: Release
     CONFIGURE_EXTRA: --disable-zts
-    V8_ASSETS: V8-5.8.283.31-%Platform%.zip
-    PHP_VERSION: 7.3.0alpha3
+    V8_ASSETS: V8-7.0.276.11-vc15-%Platform%.zip
+    PHP_VERSION: 7.3.0RC1
   - ARTIFACT_NAME: v8js_vc15_php-7.2_%Platform%_ts.zip
     OUTDIR: Release_TS
-    V8_ASSETS: V8-5.8.283.31-%Platform%.zip
-    PHP_VERSION: 7.2.7
+    V8_ASSETS: V8-7.0.276.11-vc15-%Platform%.zip
+    PHP_VERSION: 7.2.10
   - ARTIFACT_NAME: v8js_vc15_php-7.2_%Platform%_nts.zip
     OUTDIR: Release
     CONFIGURE_EXTRA: --disable-zts
-    V8_ASSETS: V8-5.8.283.31-%Platform%.zip
-    PHP_VERSION: 7.2.7
+    V8_ASSETS: V8-7.0.276.11-vc15-%Platform%.zip
+    PHP_VERSION: 7.2.10
 
   PHP_SDK: c:\projects\php-sdk
 
@@ -30,20 +30,21 @@ platform:
 
 install:
   - cd %PHP_SDK%
-  - curl -fSL -o php-sdk-2.1.7beta1.zip "https://github.com/Microsoft/php-sdk-binary-tools/archive/php-sdk-2.1.7beta1.zip"
-  - 7z.exe x php-sdk-2.1.7beta1.zip
-  - move /y php-sdk-binary-tools-php-sdk-2.1.7beta1\* .
-  - for /R /D %%f in (php-sdk-binary-tools-php-sdk-2.1.7beta1\*) do move /y %%f .
+  - curl -fSL -o php-sdk-2.1.9beta1.zip "https://github.com/Microsoft/php-sdk-binary-tools/archive/php-sdk-2.1.9beta1.zip"
+  - 7z.exe x php-sdk-2.1.9beta1.zip
+  - move /y php-sdk-binary-tools-php-sdk-2.1.9beta1\* .
+  - for /R /D %%f in (php-sdk-binary-tools-php-sdk-2.1.9beta1\*) do move /y %%f .
   - call bin\phpsdk_setvars.bat
   - call bin\phpsdk_buildtree.bat v8js-ci
   - cd v8js-ci\vc15\%Platform%
   - md deps
   - cd deps
-  - curl -fSL -o %V8_ASSETS% "https://s3.amazonaws.com/win-phpv8/%V8_ASSETS%"
+  - curl -fSL -o %V8_ASSETS% "https://phpdev.toolsforresearch.com/%V8_ASSETS%"
   - 7z.exe x %V8_ASSETS%
-  - curl -fSL -o libiconv.zip "https://windows.php.net/downloads/php-sdk/deps/vc14/%Platform%/libiconv-1.15-vc14-%Platform%.zip"
+  - dir
+  - curl -fSL -o libiconv.zip "https://windows.php.net/downloads/php-sdk/deps/vc15/%Platform%/libiconv-1.15-3-vc15-%Platform%.zip"
   - 7z.exe x libiconv.zip -y
-  - curl -fSL -o libxml2.zip "https://windows.php.net/downloads/php-sdk/deps/vc14/%Platform%/libxml2-2.9.8-vc14-%Platform%.zip"
+  - curl -fSL -o libxml2.zip "https://windows.php.net/downloads/php-sdk/deps/vc15/%Platform%/libxml2-2.9.8-vc15-%Platform%.zip"
   - 7z.exe x libxml2.zip -y
   - cd ..
   - curl -fSL -o "php-%PHP_VERSION%.tar.gz" "https://github.com/php/php-src/archive/php-%PHP_VERSION%.tar.gz"
