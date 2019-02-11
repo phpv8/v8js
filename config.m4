@@ -94,7 +94,7 @@ if test "$PHP_V8JS" != "no"; then
     LIBS="$LIBS $1 -lv8_libplatform -lv8"
     AC_LINK_IFELSE([AC_LANG_PROGRAM([
       #include <libplatform/libplatform.h>
-    ], [ v8::platform::CreateDefaultPlatform(); ])], [
+    ], [ v8::platform::NewDefaultPlatform(); ])], [
       dnl libv8_libplatform.so found
       AC_MSG_RESULT(found)
       V8JS_SHARED_LIBADD="$1 -lv8_libplatform $V8JS_SHARED_LIBADD"
