@@ -484,6 +484,15 @@ V8JS_METHOD(require)
 
 		return;
 	}
+	
+	if(Z_TYPE(module_code) == IS_ARRAY) {
+		v8::Local<v8::Value> newarray = zval_to_v8js(&module_code, isolate);
+		c->modules_loaded[normalised_module_id].Reset(isolate, newarray);
+		info.GetReturnValue().Set(newarray);
+
+		efree(normalised_path);
+		return;
+        }
 
 	if(Z_TYPE(module_code) == IS_OBJECT) {
 		v8::Local<v8::Object> newobj = zval_to_v8js(&module_code, isolate)->ToObject(isolate->GetEnteredContext()).ToLocalChecked();
