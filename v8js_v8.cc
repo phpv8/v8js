@@ -60,8 +60,8 @@ void v8js_v8_init() /* {{{ */
 	);
 #endif
 
-	v8js_process_globals.v8_platform = v8::platform::CreateDefaultPlatform();
-	v8::V8::InitializePlatform(v8js_process_globals.v8_platform);
+	v8js_process_globals.v8_platform = v8::platform::NewDefaultPlatform();
+	v8::V8::InitializePlatform(v8js_process_globals.v8_platform.get());
 
 	/* Set V8 command line flags (must be done before V8::Initialize()!) */
 	if (v8js_process_globals.v8_flags) {
