@@ -55,7 +55,7 @@ git checkout 6.4.388.18
 gclient sync
 
 # Setup GN
-tools/dev/v8gen.py -vv x64.release -- is_component_build=true
+tools/dev/v8gen.py -vv x64.release -- is_component_build=true use_custom_libcxx=false
 
 # Build
 ninja -C out.gn/x64.release/
