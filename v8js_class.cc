@@ -1069,7 +1069,7 @@ static int v8js_register_extension(zend_string *name, zend_string *source, zval 
 #endif
 
 	jsext->extension->set_auto_enable(auto_enable ? true : false);
-	v8::RegisterExtension(jsext->extension);
+	v8::RegisterExtension(std::unique_ptr<v8::Extension>(jsext->extension));
 
 	return SUCCESS;
 }
