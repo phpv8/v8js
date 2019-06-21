@@ -67,7 +67,6 @@ struct v8js_jsext {
 	int deps_count;
 	zend_string *name;
 	zend_string *source;
-	v8::Extension *extension;
 };
 /* }}} */
 
@@ -272,7 +271,6 @@ static void v8js_jsext_free_storage(v8js_jsext *jsext) /* {{{ */
 	if (jsext->deps) {
 		v8js_free_ext_strarr(jsext->deps, jsext->deps_count);
 	}
-	delete jsext->extension;
 
 	// Free the persisted non-interned strings we allocated.
 	if (jsext->name) {
@@ -1054,7 +1052,7 @@ static int v8js_register_extension(zend_string *name, zend_string *source, zval 
 		zend_hash_copy(jsext->deps_ht, Z_ARRVAL_P(deps_arr), v8js_persistent_zval_ctor);
 	}
 
-	jsext->extension = new v8::Extension(ZSTR_VAL(jsext->name), ZSTR_VAL(jsext->source), jsext->deps_count, jsext->deps);
+	v8::Extension *extension = new v8::Extension(ZSTR_VAL(jsext->name), ZSTR_VAL(jsext->source), jsext->deps_count, jsext->deps);
 
 	if (!zend_hash_add_ptr(v8js_process_globals.extensions, jsext->name, jsext)) {
 		v8js_jsext_free_storage(jsext);
@@ -1068,8 +1066,8 @@ static int v8js_register_extension(zend_string *name, zend_string *source, zval 
 	v8js_process_globals.lock.unlock();
 #endif
 
-	jsext->extension->set_auto_enable(auto_enable ? true : false);
-	v8::RegisterExtension(jsext->extension);
+	extension->set_auto_enable(auto_enable ? true : false);
+	v8::RegisterExtension(std::unique_ptr<v8::Extension>(extension));
 
 	return SUCCESS;
 }
