@@ -1,5 +1,5 @@
 # Configure and build scripts for travis CI system
-V8VER ?= 7.1
+V8VER ?= 7.5
 
 IMAGENAME ?= v8js-test
 
