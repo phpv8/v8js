@@ -2,7 +2,6 @@ V8Js
 ====
 
 [![Build Status](https://travis-ci.org/phpv8/v8js.svg?branch=php7)](https://travis-ci.org/phpv8/v8js)
-[![Windows Build Status](https://ci.appveyor.com/api/projects/status/gr8fkq8c08s06h31/branch/php7?svg=true)](https://ci.appveyor.com/project/stesie/v8js)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/phpv8/v8js/master/LICENSE)
 [![Join the chat at https://gitter.im/phpv8/v8js](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/phpv8/v8js?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -37,6 +36,12 @@ Minimum requirements
   This embedded implementation of the V8 engine uses thread locking so it works with ZTS enabled.
 
 
+Windows is currently *not* officially supported.  Mostly since I don't have the time to
+maintain support for it myself, and don't really have Windows boxes to try things with.
+It would be great if someone could step up and fix things on Windows, provide pre-build V8
+binaries, etc.
+
+
 Pre-built binaries
 ------------------
 
@@ -51,8 +56,6 @@ You might want to install these and compile V8Js based on them.
 
 There also is a Heroku extension pack that has recent V8Js versions for PHP 7.x, see
 [@stesie's blog post](https://stesie.github.io/2016/03/heroku-custom-platform-repo) for details.
-
-64-bit binaries for Windows [are made available by Jan-E here](https://www.apachelounge.com/viewtopic.php?t=6359).
 
 
 Compiling latest version

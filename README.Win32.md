@@ -5,6 +5,11 @@ The V8Js PHP extension is primarily targeted at Unix platforms, especially
 GNU/Linux.  However it is possible (and supported) to build on Windows, using
 Microsoft Visual Studio.
 
+
+**These instructions are pretty dated, and Windows is not currently a officially supported target of php-v8js.**
+If you would like to make it work again, feel free to do so and provide Pull Requests as you see fit.
+
+
 Building with MinGW or Cygwin is not officially supported; mainly since
 Google v8 does not support builds on Cygwin (and building it on Cygwin is
 currently broken).
