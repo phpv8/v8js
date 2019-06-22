@@ -119,7 +119,7 @@ static void v8js_free_storage(zend_object *object) /* {{{ */
 	}
 	c->call_impls.~map();
 
-	for (std::map<zend_function *, v8js_function_tmpl_t>::iterator it = c->method_tmpls.begin();
+	for (std::map<std::pair<zend_class_entry *, zend_function *>, v8js_function_tmpl_t>::iterator it = c->method_tmpls.begin();
 		 it != c->method_tmpls.end(); ++it) {
 		it->second.Reset();
 	}
@@ -232,7 +232,7 @@ static zend_object* v8js_new(zend_class_entry *ce) /* {{{ */
 	new(&c->weak_closures) std::map<v8js_function_tmpl_t *, v8js_persistent_obj_t>();
 	new(&c->weak_objects) std::map<zend_object *, v8js_persistent_obj_t>();
 	new(&c->call_impls) std::map<v8js_function_tmpl_t *, v8js_function_tmpl_t>();
-	new(&c->method_tmpls) std::map<zend_function *, v8js_function_tmpl_t>();
+	new(&c->method_tmpls) std::map<std::pair<zend_class_entry *, zend_function *>, v8js_function_tmpl_t>();
 
 	new(&c->v8js_v8objects) std::list<v8js_v8object *>();
 	new(&c->script_objects) std::vector<v8js_script *>();
@@ -589,7 +589,7 @@ static PHP_METHOD(V8Js, __construct)
 		ft = v8::FunctionTemplate::New(isolate, v8js_php_callback,
 				v8::External::New((isolate), method_ptr));
 		// @fixme add/check Signature v8::Signature::New((isolate), tmpl));
-		v8js_function_tmpl_t *persistent_ft = &c->method_tmpls[method_ptr];
+		v8js_function_tmpl_t *persistent_ft = &c->method_tmpls[std::make_pair(ce, method_ptr)];
 		persistent_ft->Reset(isolate, ft);
 
 		php_obj->CreateDataProperty(context, method_name, ft->GetFunction(context).ToLocalChecked());
