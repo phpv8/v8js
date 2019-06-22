@@ -701,13 +701,13 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::Name> property_n
 					v8::Local<v8::FunctionTemplate> ft;
 					try {
 						ft = v8::Local<v8::FunctionTemplate>::New
-							(isolate, ctx->method_tmpls.at(method_ptr));
+							(isolate, ctx->method_tmpls.at(std::make_pair(ce, method_ptr)));
 					}
 					catch (const std::out_of_range &) {
 						ft = v8::FunctionTemplate::New(isolate, v8js_php_callback,
 								v8::External::New((isolate), method_ptr),
 								v8::Signature::New((isolate), tmpl));
-						v8js_function_tmpl_t *persistent_ft = &ctx->method_tmpls[method_ptr];
+						v8js_function_tmpl_t *persistent_ft = &ctx->method_tmpls[std::make_pair(ce, method_ptr)];
 						persistent_ft->Reset(isolate, ft);
 					}
 					ft->GetFunction(v8_context).ToLocal(&ret_value);
