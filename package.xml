@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<package packagerversion="1.10.5" version="2.0" xmlns="http://pear.php.net/dtd/package-2.0" xmlns:tasks="http://pear.php.net/dtd/tasks-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0 http://pear.php.net/dtd/tasks-1.0.xsd http://pear.php.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
+<package packagerversion="1.10.9" version="2.0" xmlns="http://pear.php.net/dtd/package-2.0" xmlns:tasks="http://pear.php.net/dtd/tasks-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0 http://pear.php.net/dtd/tasks-1.0.xsd http://pear.php.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
  <name>v8js</name>
  <channel>pecl.php.net</channel>
  <summary>V8 Javascript Engine for PHP</summary>
@@ -16,11 +16,11 @@
   <email>stesie@php.net</email>
   <active>yes</active>
  </lead>
- <date>2018-01-07</date>
- <time>13:19:29</time>
+ <date>2019-06-23</date>
+ <time>19:55:40</time>
  <version>
-  <release>2.1.0</release>
-  <api>2.1.0</api>
+  <release>2.1.1</release>
+  <api>2.1.1</api>
  </version>
  <stability>
   <release>stable</release>
@@ -28,8 +28,10 @@
  </stability>
  <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
  <notes>
-- emit warning when compiling against V8 without untrusted code mitigations
-- support native modules (i.e. expose PHP objects via require(&apos;...&apos;))
+- support PHP 7.3
+- support V8 7.x (now V8 &gt; 6.9 is required)
+- fix module path normaliser (issue #349)
+- fix export bug w/ multiple derived classes (issue #410)
  </notes>
  <contents>
   <dir baseinstalldir="/" name="/">
@@ -45,6 +47,7 @@
    <file baseinstalldir="/" md5sum="6b90f89367fa76d19f0c024883780fd4" name="tests/array_access_basic2.phpt" role="test" />
    <file baseinstalldir="/" md5sum="e6c5dc31279265b1f3e29aa5e2f0edf5" name="tests/array_pass.phpt" role="test" />
    <file baseinstalldir="/" md5sum="66a31cc92309d2d06f0c47f9f7f96e5e" name="tests/array_pass_flags.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="6166c88897158e47e22680ae28eebfc0" name="tests/array_recursive.phpt" role="test" />
    <file baseinstalldir="/" md5sum="27460ebad7a97db3588e144b4ed0c2f4" name="tests/basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="715784882ec8b5340448715c845aa8dd" name="tests/callbacks.phpt" role="test" />
    <file baseinstalldir="/" md5sum="b4cb6ab2134d9944f92e7c5e37645d61" name="tests/checkstring.phpt" role="test" />
@@ -99,7 +102,7 @@
    <file baseinstalldir="/" md5sum="b2853876eaf71577361e443f1be1fc7d" name="tests/execute_flags_property_writing.phpt" role="test" />
    <file baseinstalldir="/" md5sum="d59e23e46ac0f37713ea20fca2aea8bf" name="tests/extensions_basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="f4713ea56fc48a308a202b116c580831" name="tests/extensions_circular_dependency.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="862bafd2ca3c41ddb912ad5d4284421b" name="tests/extensions_error.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="c2bc6c77a7878116202d4555ef0100e0" name="tests/extensions_error.phpt" role="test" />
    <file baseinstalldir="/" md5sum="11390b75f900defae70e86fbcb41d4fe" name="tests/fatal_error_ignore_non_fatals.phpt" role="test" />
    <file baseinstalldir="/" md5sum="87417bc1097bba05db7b79bb9a605c06" name="tests/fatal_error_no_uninstall_inner_frame.phpt" role="test" />
    <file baseinstalldir="/" md5sum="9228a7cd3419eb12e84d633fbd89b660" name="tests/fatal_error_recursive.phpt" role="test" />
@@ -149,6 +152,8 @@
    <file baseinstalldir="/" md5sum="e4c61dc32c44baa7ae9345abc1bdbe90" name="tests/issue_250_002.phpt" role="test" />
    <file baseinstalldir="/" md5sum="54ac01bc24486b24aeb9c4205802031e" name="tests/issue_306_basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="cb0b22dce14ad9991cef493ffd661d44" name="tests/issue_316_basic.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="6cc40192e97ba9e29868691773f95296" name="tests/issue_349_basic.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="90abcd5c4907754c97aa1880377f9e0f" name="tests/issue_410_basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="9f1e697d63231a03da06de97c14a5076" name="tests/js-construct-basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="0e951523a9abae08b531ecd3193a2581" name="tests/js-construct-direct-call.phpt" role="test" />
    <file baseinstalldir="/" md5sum="1464fca804db711c6c6881a7e02b8c38" name="tests/js-construct-protected-ctor.phpt" role="test" />
@@ -200,52 +205,52 @@
    <file baseinstalldir="/" md5sum="cb8fe5f7776a58e6f37f7967cc2b3422" name="tests/set_time_limit_004.phpt" role="test" />
    <file baseinstalldir="/" md5sum="c7c54b949f2ba452bf9a6c3085aaf6bc" name="tests/set_time_limit_basic.phpt" role="test" />
    <file baseinstalldir="/" md5sum="4886fac4c06e560fd0fef88c81357870" name="tests/skipif.inc" role="test" />
-   <file baseinstalldir="/" md5sum="bdf52e983e410ace13f78611e2684673" name="tests/timezones.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="bfe486869698f1c33f8e9f33533203a4" name="tests/timezones.phpt" role="test" />
    <file baseinstalldir="/" md5sum="90ccf12ee3ce42b555858aa71623f9c1" name="tests/time_limit.phpt" role="test" />
    <file baseinstalldir="/" md5sum="fe06d2554d308afae6b6772f8edee6e3" name="tests/unicode.phpt" role="test" />
    <file baseinstalldir="/" md5sum="73075b58cfce4db091b7f6f8c480e0a4" name="tests/use_after_dispose.phpt" role="test" />
    <file baseinstalldir="/" md5sum="aabbf8a564c546eef38c1e9e3b02bb14" name="tests/v8_unset_property.phpt" role="test" />
    <file baseinstalldir="/" md5sum="35ce3816ae00e697fca26142c46e0c79" name="tests/v8_write_property.phpt" role="test" />
    <file baseinstalldir="/" md5sum="ae504a63e5ff800e3aa7d529835d0e8e" name="tests/variable_passing.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="1bd7738aeeb5cf80d80561554f59f2ed" name="tests/var_dump.phpt" role="test" />
-   <file baseinstalldir="/" md5sum="94afd107393de7aea2485e9ad5c6277d" name="appveyor.yml" role="data" />
-   <file baseinstalldir="/" md5sum="f921b1588097dee9e4f37c52e9e73750" name="Commandfile" role="data" />
-   <file baseinstalldir="/" md5sum="38eca8812ef0345379930ee8e33d44b2" name="config.m4" role="src" />
-   <file baseinstalldir="/" md5sum="2aaa49288dde02e96c5dce917aaef7a6" name="config.w32" role="src" />
+   <file baseinstalldir="/" md5sum="14c2c43cd7ed8b9fe20ca64ce3010224" name="tests/var_dump.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="4f506cc045e93cf77ee4040e953633fc" name="tests/var_dump_73.phpt" role="test" />
+   <file baseinstalldir="/" md5sum="cef94f76c55842e0d760d7bc1cccceb2" name="Commandfile" role="data" />
+   <file baseinstalldir="/" md5sum="2d9d639a87d434f0c641f7fdc33fff6f" name="config.m4" role="src" />
+   <file baseinstalldir="/" md5sum="36d6d8b65cb8b29a4e114515617fab24" name="config.w32" role="src" />
    <file baseinstalldir="/" md5sum="cea72666538d5b0b80a64ccdbda24919" name="CREDITS" role="doc" />
-   <file baseinstalldir="/" md5sum="35453d76c8f6eb0ae528453b5f89fa35" name="Dockerfile.travis" role="data" />
+   <file baseinstalldir="/" md5sum="b657395e3ace6962fd58884b4eadf6d7" name="Dockerfile.travis" role="data" />
    <file baseinstalldir="/" md5sum="9f5b5f41204bcde55d9df87d5a970b30" name="LICENSE" role="doc" />
    <file baseinstalldir="/" md5sum="752113770061470ad7212d818836bd36" name="Makefile.frag" role="src" />
-   <file baseinstalldir="/" md5sum="36e444ca56aea30f5ac530f24feff463" name="Makefile.travis" role="src" />
+   <file baseinstalldir="/" md5sum="144522e56a54efa36f37e069c35dfe7d" name="Makefile.travis" role="src" />
    <file baseinstalldir="/" md5sum="08ac27d6cd9d86aed4ce292ff15388fd" name="php_v8js.h" role="src" />
-   <file baseinstalldir="/" md5sum="ebe79cc9243e5b86f81e65f2b0f8d682" name="php_v8js_macros.h" role="src" />
-   <file baseinstalldir="/" md5sum="2613fba9ad7cb9a56f80da7b8ffe13df" name="README.Linux.md" role="doc" />
-   <file baseinstalldir="/" md5sum="a20db830e5ce8fddfeb01607fc7c7f67" name="README.MacOS.md" role="doc" />
-   <file baseinstalldir="/" md5sum="314f35296641ea74cadcb4d51052bed0" name="README.md" role="doc" />
-   <file baseinstalldir="/" md5sum="75bfa2f1137a42958dab030e64d79fda" name="README.Win32.md" role="doc" />
-   <file baseinstalldir="/" md5sum="dc40933a6a12c05fb833027dbe56df39" name="v8js_array_access.cc" role="src" />
-   <file baseinstalldir="/" md5sum="51905856eab666cbc19762c6fb83f931" name="v8js_array_access.h" role="src" />
-   <file baseinstalldir="/" md5sum="755e5867f39e82976015cbb2d7da21ab" name="v8js_class.cc" role="src" />
-   <file baseinstalldir="/" md5sum="2b4c8c42124cae012bc288134ab7aa22" name="v8js_class.h" role="src" />
+   <file baseinstalldir="/" md5sum="3ab94b7e8e20a08f13d16a7e0a61b080" name="php_v8js_macros.h" role="src" />
+   <file baseinstalldir="/" md5sum="c805fbb241111ed32287a64916b02a09" name="README.Linux.md" role="doc" />
+   <file baseinstalldir="/" md5sum="c4d76337d8a705021c6acad845fae841" name="README.MacOS.md" role="doc" />
+   <file baseinstalldir="/" md5sum="b1bfb6d6eab1ff2d0f84268a786f113e" name="README.md" role="doc" />
+   <file baseinstalldir="/" md5sum="5dca309cca0d1866a038dc3a4bd04ed5" name="README.Win32.md" role="doc" />
+   <file baseinstalldir="/" md5sum="c4f294d4aa10a019f38a350bb6fdf2e1" name="v8js_array_access.cc" role="src" />
+   <file baseinstalldir="/" md5sum="2282d819bb0555e5cd458f5808c067b3" name="v8js_array_access.h" role="src" />
+   <file baseinstalldir="/" md5sum="bbf9a2a933d8f7eae62fa4d2f7f9192a" name="v8js_class.cc" role="src" />
+   <file baseinstalldir="/" md5sum="7b16f7cd10aee2d21a54b5201b248d75" name="v8js_class.h" role="src" />
    <file baseinstalldir="/" md5sum="c2795183e35b0c8abae2e2a52a1a766a" name="v8js_commonjs.cc" role="src" />
    <file baseinstalldir="/" md5sum="c47ae971a5315dd101e7d2420f4e73b9" name="v8js_commonjs.h" role="src" />
-   <file baseinstalldir="/" md5sum="94d7a79bc397a824908392cdbe69e3e6" name="v8js_convert.cc" role="src" />
-   <file baseinstalldir="/" md5sum="3076482a4c757ba433c800bf5fabab91" name="v8js_exceptions.cc" role="src" />
+   <file baseinstalldir="/" md5sum="82d7a03a89bb9daae6529c40e092ddd1" name="v8js_convert.cc" role="src" />
+   <file baseinstalldir="/" md5sum="19e8ed587b3d9a0693203a488a53967c" name="v8js_exceptions.cc" role="src" />
    <file baseinstalldir="/" md5sum="ddc09aa635ee9e6f2ee2c9d63511cc00" name="v8js_exceptions.h" role="src" />
-   <file baseinstalldir="/" md5sum="32f1be1b9afa19eb6812e2ea7fb1bee6" name="v8js_generator_export.cc" role="src" />
+   <file baseinstalldir="/" md5sum="9b3d087a325db2070340e0ccef3bfdc4" name="v8js_generator_export.cc" role="src" />
    <file baseinstalldir="/" md5sum="0bfa1eb796acf31f8bebc10dfd357a8f" name="v8js_generator_export.h" role="src" />
    <file baseinstalldir="/" md5sum="e056e2a2b8e8e754a3a1e26e10b87e53" name="v8js_main.cc" role="src" />
-   <file baseinstalldir="/" md5sum="8d957b60531ebc123b0e2c7b08f784cc" name="v8js_methods.cc" role="src" />
-   <file baseinstalldir="/" md5sum="8d95c765418f8c30d611475dc7239384" name="v8js_object_export.cc" role="src" />
-   <file baseinstalldir="/" md5sum="a9992de73db40e343bb9f3303c71e460" name="v8js_object_export.h" role="src" />
+   <file baseinstalldir="/" md5sum="e94c64d94cde9a6c9e43d284cc249e94" name="v8js_methods.cc" role="src" />
+   <file baseinstalldir="/" md5sum="4ca40ca9dc50eb3b08e3f78e5fe924b1" name="v8js_object_export.cc" role="src" />
+   <file baseinstalldir="/" md5sum="3d825e8da91c4b7db5f7de1329a47c13" name="v8js_object_export.h" role="src" />
    <file baseinstalldir="/" md5sum="ccd149b929146a4d4fbf5eceb0ed13af" name="v8js_timer.cc" role="src" />
    <file baseinstalldir="/" md5sum="505b5e01105e0edbe06bbbb300539e3e" name="v8js_timer.h" role="src" />
-   <file baseinstalldir="/" md5sum="713c71a2b08dd366d93e33ee5c89707f" name="v8js_v8.cc" role="src" />
-   <file baseinstalldir="/" md5sum="0f2828ea202367677ffc43a43aa6c3eb" name="v8js_v8.h" role="src" />
-   <file baseinstalldir="/" md5sum="58bdb5d53ea4e7ec7ac082f4f99a9c40" name="v8js_v8object_class.cc" role="src" />
+   <file baseinstalldir="/" md5sum="78cada24fed1dbf08957cf6e12fd50f1" name="v8js_v8.cc" role="src" />
+   <file baseinstalldir="/" md5sum="0e2a32755498e2c42213ef3c2bb9c5d7" name="v8js_v8.h" role="src" />
+   <file baseinstalldir="/" md5sum="0847750bd818afbf4d932694fca8862a" name="v8js_v8object_class.cc" role="src" />
    <file baseinstalldir="/" md5sum="7a6e69720230ee9f00e233095409e2ed" name="v8js_v8object_class.h" role="src" />
    <file baseinstalldir="/" md5sum="82b9f8cb2982e3b6d280447e002177de" name="v8js_variables.cc" role="src" />
-   <file baseinstalldir="/" md5sum="a311c14c8fa25a391b0e803d14c82381" name="Vagrantfile" role="data" />
+   <file baseinstalldir="/" md5sum="9fe234d79b637f52f092b86be4741d74" name="Vagrantfile" role="data" />
   </dir>
  </contents>
  <dependencies>
@@ -916,6 +921,24 @@ Bugfixes
    <notes>
 - emit warning when compiling against V8 without untrusted code mitigations
 - support native modules (i.e. expose PHP objects via require(&apos;...&apos;))
+   </notes>
+  </release>
+  <release>
+   <version>
+    <release>2.1.1</release>
+    <api>2.1.1</api>
+   </version>
+   <stability>
+    <release>stable</release>
+    <api>stable</api>
+   </stability>
+   <date>2019-06-23</date>
+   <license uri="https://opensource.org/licenses/mit">The MIT License (MIT)</license>
+   <notes>
+- support PHP 7.3
+- support V8 7.x (now V8 &gt; 6.9 is required)
+- fix module path normaliser (issue #349)
+- fix export bug w/ multiple derived classes (issue #410)
    </notes>
   </release>
  </changelog>
