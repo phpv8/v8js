@@ -54,22 +54,22 @@ try {
 
 ?>
 ===EOF===
---EXPECTF--
-Warning: Creating default object from empty value in %s%eissue_250_001.php on line 9
-object(TestObject)#%d (3) {
-  ["data":"TestObject":private]=>
-  object(V8Object)#%d (0) {
-  }
-  ["meta":"TestObject":private]=>
-  array(0) {
-  }
-  ["a"]=>
-  object(stdClass)#%d (1) {
-    ["b"]=>
-    object(stdClass)#%d (1) {
-      ["title"]=>
-      string(4) "ouch"
-    }
-  }
-}
-===EOF===
+--EXPECTREGEX--
+(?:Warning\: Creating default object from empty value in [^\r\n]+\/issue_250_001\.php on line 9\s*)+
+object\(TestObject\)\#\d+ \(3\) \{
+  \["data"\:"TestObject"\:private\]\=\>
+  object\(V8Object\)\#\d+ \(0\) \{
+  \}
+  \["meta"\:"TestObject"\:private\]\=\>
+  array\(0\) \{
+  \}
+  \["a"\]\=\>
+  object\(stdClass\)\#\d+ \(1\) \{
+    \["b"\]\=\>
+    object\(stdClass\)\#\d+ \(1\) \{
+      \["title"\]\=\>
+      string\(4\) "ouch"
+    \}
+  \}
+\}
+\=\=\=EOF\=\=\=
