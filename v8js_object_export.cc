@@ -117,7 +117,7 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, c
 			{
 				if (v8js_to_zval(info[i], &fci.params[i], ctx->flags, isolate) == FAILURE)
 				{
-					error_len = spprintf(&error, 0, "converting parameter #%d passed to %s() failed", i + 1, method_ptr->common.function_name);
+					error_len = spprintf(&error, 0, "converting parameter #%d passed to %s() failed", i + 1, ZSTR_VAL(method_ptr->common.function_name));
 
 					if (error_len > std::numeric_limits<int>::max()) {
 						zend_throw_exception(php_ce_v8js_exception,
