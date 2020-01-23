@@ -46,7 +46,7 @@ Pre-built binaries
 ------------------
 
 For some very first steps, instead of compiling manually you might want to try out the [V8Js docker
-image](https://registry.hub.docker.com/u/stesie/v8js/).  It has v8, v8js and php-cli pre-installed
+image](https://registry.hub.docker.com/r/stesie/v8js/).  It has v8, v8js and php-cli pre-installed
 so you can give it a try with PHP in "interactive mode".  There is no Apache, etc. running however.
 
 For Ubuntu @stesie has a PPA, based on prior work by @pinepain.
