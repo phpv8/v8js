@@ -863,9 +863,9 @@ static void v8js_named_property_deleter(v8::Local<v8::Name> property, const v8::
 	}
 
 	v8::Isolate *isolate = info.GetIsolate();
-	v8::MaybeLocal<v8::Boolean> value = r->ToBoolean(isolate->GetEnteredContext());
+	v8::Local<v8::Boolean> value = r->ToBoolean(isolate);
 	if (!value.IsEmpty()) {
-		info.GetReturnValue().Set(value.ToLocalChecked());
+		info.GetReturnValue().Set(value);
 	}
 }
 /* }}} */

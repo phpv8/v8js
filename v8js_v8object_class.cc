@@ -98,7 +98,7 @@ static int v8js_v8object_has_property(zval *object, zval *member, int has_set_ex
 	}
 
 	/* empty() */
-	retval = jsVal->BooleanValue(v8_context).FromMaybe(false);
+	retval = jsVal->BooleanValue(isolate);
 
 	/* for PHP compatibility, [] should also be empty */
 	if (jsVal->IsArray() && retval) {
