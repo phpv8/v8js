@@ -122,15 +122,8 @@ static void v8js_dumper(v8::Isolate *isolate, v8::Local<v8::Value> var, int leve
 	}
 	if (var->IsBoolean())
 	{
-		v8::Maybe<bool> value = var->BooleanValue(v8_context);
-		if (value.IsNothing())
-		{
-			php_printf("<empty>\n");
-		}
-		else
-		{
-			php_printf("bool(%s)\n", value.FromJust() ? "true" : "false");
-		}
+		bool value = var->BooleanValue(isolate);
+		php_printf("bool(%s)\n", value ? "true" : "false");
 		return;
 	}
 

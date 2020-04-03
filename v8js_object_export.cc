@@ -117,7 +117,7 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, c
 			{
 				if (v8js_to_zval(info[i], &fci.params[i], ctx->flags, isolate) == FAILURE)
 				{
-					error_len = spprintf(&error, 0, "converting parameter #%d passed to %s() failed", i + 1, method_ptr->common.function_name);
+					error_len = spprintf(&error, 0, "converting parameter #%d passed to %s() failed", i + 1, ZSTR_VAL(method_ptr->common.function_name));
 
 					if (error_len > std::numeric_limits<int>::max()) {
 						zend_throw_exception(php_ce_v8js_exception,
@@ -496,7 +496,7 @@ static void v8js_fake_call_impl(const v8::FunctionCallbackInfo<v8::Value>& info)
 	if (info.Length() < 2) {
 		error_len = spprintf(&error, 0,
 			"%s::__call expects 2 parameters, %d given",
-			ce->name, (int) info.Length());
+			ZSTR_VAL(ce->name), (int) info.Length());
 
 		if (error_len > std::numeric_limits<int>::max()) {
 			zend_throw_exception(php_ce_v8js_exception,
@@ -535,7 +535,7 @@ static void v8js_fake_call_impl(const v8::FunctionCallbackInfo<v8::Value>& info)
 		// in the Function->Call method below is a (signed) int.
 		error_len = spprintf(&error, 0,
 			"%s::__call expects fewer than a million arguments",
-			ce->name);
+			ZSTR_VAL(ce->name));
 
 		if (error_len > std::numeric_limits<int>::max()) {
 			zend_throw_exception(php_ce_v8js_exception,
@@ -555,8 +555,8 @@ static void v8js_fake_call_impl(const v8::FunctionCallbackInfo<v8::Value>& info)
 	if (str.IsEmpty())
 	{
 		error_len = spprintf(&error, 0,
-			"%s::__call expect 1st parameter to be valid function name, toString() invocation failed.",
-			ce->name);
+			"%s::__call expects 1st parameter to be valid function name, toString() invocation failed.",
+			ZSTR_VAL(ce->name));
 
 		if (error_len > std::numeric_limits<int>::max()) {
 			zend_throw_exception(php_ce_v8js_exception,
@@ -584,7 +584,7 @@ static void v8js_fake_call_impl(const v8::FunctionCallbackInfo<v8::Value>& info)
 		(method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) == 0 ||
 		(method_ptr->common.fn_flags & (ZEND_ACC_CTOR|ZEND_ACC_DTOR)) != 0) {
 		error_len = spprintf(&error, 0,
-			"%s::__call to %s method %s", ce->name,
+			"%s::__call to %s method %s", ZSTR_VAL(ce->name),
 			(method_ptr == NULL) ? "undefined" : "non-public", method_name);
 
 		if (error_len > std::numeric_limits<int>::max()) {
@@ -863,9 +863,9 @@ static void v8js_named_property_deleter(v8::Local<v8::Name> property, const v8::
 	}
 
 	v8::Isolate *isolate = info.GetIsolate();
-	v8::MaybeLocal<v8::Boolean> value = r->ToBoolean(isolate->GetEnteredContext());
+	v8::Local<v8::Boolean> value = r->ToBoolean(isolate);
 	if (!value.IsEmpty()) {
-		info.GetReturnValue().Set(value.ToLocalChecked());
+		info.GetReturnValue().Set(value);
 	}
 }
 /* }}} */

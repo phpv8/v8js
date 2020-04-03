@@ -52,12 +52,20 @@ void v8js_v8_init() /* {{{ */
 	}
 #endif
 
-#if defined(PHP_V8_NATIVES_BLOB_PATH) && defined(PHP_V8_SNAPSHOT_BLOB_PATH)
+
+#if defined(PHP_V8_SNAPSHOT_BLOB_PATH)
+#if !defined(PHP_V8_NATIVES_BLOB_PATH)
+	/* Newer V8 version don't have a natives blob anymore. */
+	v8::V8::InitializeExternalStartupDataFromFile(
+		PHP_V8_SNAPSHOT_BLOB_PATH
+	);
+#else
 	/* V8 doesn't work without startup data, load it. */
 	v8::V8::InitializeExternalStartupData(
 		PHP_V8_NATIVES_BLOB_PATH,
 		PHP_V8_SNAPSHOT_BLOB_PATH
 	);
+#endif
 #endif
 
 	v8js_process_globals.v8_platform = v8::platform::NewDefaultPlatform();
@@ -133,7 +141,7 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 			c->tz = strdup(tz);
 		}
 		else if (strcmp(c->tz, tz) != 0) {
-			v8::Date::DateTimeConfigurationChangeNotification(c->isolate);
+			c->isolate->DateTimeConfigurationChangeNotification();
 
 			free(c->tz);
 			c->tz = strdup(tz);
