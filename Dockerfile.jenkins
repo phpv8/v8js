@@ -9,7 +9,7 @@ ENV NO_INTERACTION=1
 ENV REPORT_EXIT_STATUS=1
 
 RUN apt-get update -q
-RUN apt-get install -y wget autoconf build-essential libxml2-dev libreadline-dev pkg-config
+RUN apt-get install -y wget autoconf build-essential libreadline-dev pkg-config
 
 RUN wget https://www.php.net/distributions/php-${PHPVER}.tar.gz && \
     tar xzf php-${PHPVER}.tar.gz
@@ -17,6 +17,6 @@ ADD . /php-${PHPVER}/ext/v8js
 WORKDIR /php-${PHPVER}
 
 RUN ./buildconf --force
-RUN ./configure --disable-all --with-readline --enable-cli --enable-json  --enable-dom --enable-maintainer-zts --with-libxml --with-v8js=/opt/libv8-$V8VER/  CFLAGS="-fsanitize=address -g -O0" CXXFLAGS="-fsanitize=address -g -O0"
+RUN ./configure --disable-all --with-readline --enable-cli --enable-json --enable-maintainer-zts --with-v8js=/opt/libv8-$V8VER/  CFLAGS="-fsanitize=address -g -O0" CXXFLAGS="-fsanitize=address -g -O0"
 RUN sed -e "s/^EXTRA_LIBS.*/& -lv8_libplatform/" -i Makefile
 RUN make -j5
