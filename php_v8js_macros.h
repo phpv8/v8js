@@ -29,7 +29,7 @@
 #include <mutex>
 
 #include <cmath>
-#ifndef isnan
+#if PHP_VERSION_ID < 70400 && !defined(isnan)
 /* php.h requires the isnan() macro, which is removed by c++ <cmath> header,
  * work around: re-define the macro to std::isnan function */
 #define isnan(a) std::isnan(a)
