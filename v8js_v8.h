@@ -83,6 +83,13 @@ int v8js_get_properties_hash(v8::Local<v8::Value> jsValue, HashTable *retval, in
 	V8JS_CTX_PROLOGUE(ctx);
 
 
+#if PHP_VERSION_ID < 70400
+#define SINCE74(x,y) y
+#else
+#define SINCE74(x,y) x
+#endif
+
+
 #endif /* V8JS_V8_H */
 
 /*
