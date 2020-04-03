@@ -29,16 +29,17 @@
 #include <mutex>
 
 #include <cmath>
-#ifndef isnan
-/* php.h requires the isnan() macro, which is removed by c++ <cmath> header,
- * work around: re-define the macro to std::isnan function */
-#define isnan(a) std::isnan(a)
-
-/* likewise isfinite */
-#define isfinite(a) std::isfinite(a)
-#endif
 
 extern "C" {
+#include "php_config.h"
+
+/* work around incompatibilities regarding isnan() and isfinite() macros,
+ * affecting PHP versions before 7.4. */
+#undef HAVE_DECL_ISFINITE
+#undef HAVE_DECL_ISNAN
+#define HAVE_DECL_ISFINITE 0
+#define HAVE_DECL_ISNAN 0
+
 #include "php.h"
 #include "php_v8js.h"
 }

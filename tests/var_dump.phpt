@@ -1,10 +1,7 @@
 --TEST--
 Test V8::executeString() : var_dump
 --SKIPIF--
-<?php
-require_once(dirname(__FILE__) . '/skipif.inc');
-if (PHP_VERSION_ID >= 70300) die('skip Only for php version < 7.3');
-?>
+<?php require_once(dirname(__FILE__) . '/skipif.inc'); ?>
 --INI--
 date.timezone=UTC
 --FILE--
@@ -73,246 +70,250 @@ try {
 }
 ?>
 ===EOF===
---EXPECTF--
----- PHP var_dump of PHP object ----
-array(11) {
-  ["null"]=>
+--EXPECTREGEX--
+\-\-\-\- PHP var_dump of PHP object \-\-\-\-
+array\(11\) \{
+  \["null"\]\=\>
   NULL
-  ["bool"]=>
-  bool(true)
-  ["string"]=>
-  string(6) "string"
-  ["uint"]=>
-  int(1)
-  ["int"]=>
-  int(-1)
-  ["number"]=>
-  float(3.141592654)
-  ["date"]=>
-  object(DateTime)#%d (3) {
-    ["date"]=>
-    string(%d) "1976-09-27 09:00:00%r(\.0+)?%r"
-    ["timezone_type"]=>
-    int(3)
-    ["timezone"]=>
-    string(3) "UTC"
-  }
-  ["array"]=>
-  array(3) {
-    [0]=>
-    int(1)
-    [1]=>
-    int(2)
-    [2]=>
-    int(3)
-  }
-  ["object"]=>
-  array(1) {
-    ["field"]=>
-    string(3) "foo"
-  }
-  ["function"]=>
-  object(Closure)#%d (1) {
-    ["parameter"]=>
-    array(1) {
-      ["$x"]=>
-      string(10) "<required>"
-    }
-  }
-  ["phpobject"]=>
-  object(Foo)#%d (1) {
-    ["field"]=>
-    string(3) "php"
-  }
-}
---- JS var_dump of PHP object ----
-array (11) {
-  ["null"] =>
+  \["bool"\]\=\>
+  bool\(true\)
+  \["string"\]\=\>
+  string\(6\) "string"
+  \["uint"\]\=\>
+  int\(1\)
+  \["int"\]\=\>
+  int\(\-1\)
+  \["number"\]\=\>
+  float\(3\.141592654\)
+  \["date"\]\=\>
+  object\(DateTime\)\#\d+ \(3\) \{
+    \["date"\]\=\>
+    string\(\d+\) "1976\-09\-27 09\:00\:00((\.0+)?)"
+    \["timezone_type"\]\=\>
+    int\(3\)
+    \["timezone"\]\=\>
+    string\(3\) "UTC"
+  \}
+  \["array"\]\=\>
+  array\(3\) \{
+    \[0\]\=\>
+    int\(1\)
+    \[1\]\=\>
+    int\(2\)
+    \[2\]\=\>
+    int\(3\)
+  \}
+  \["object"\]\=\>
+  array\(1\) \{
+    \["field"\]\=\>
+    string\(3\) "foo"
+  \}
+  \["function"\]\=\>
+  object\(Closure\)\#\d+ \(1\) \{
+    \["parameter"\]\=\>
+    array\(1\) \{
+      \["\$x"\]\=\>
+      string\(10\) "\<required\>"
+    \}
+  \}
+  \["phpobject"\]\=\>
+  object\(Foo\)\#\d+ \(1\) \{
+    \["field"\]\=\>
+    string\(3\) "php"
+  \}
+\}
+\-\-\- JS var_dump of PHP object \-\-\-\-
+array \(11\) \{
+  \["null"\] \=\>
   NULL
-  ["bool"] =>
-  bool(true)
-  ["string"] =>
-  string(6) "string"
-  ["uint"] =>
-  int(1)
-  ["int"] =>
-  int(-1)
-  ["number"] =>
-  float(3.141593)
-  ["date"] =>
-  object(DateTime)#%d (18) {
-    ["createFromFormat"] =>
-    object(Closure)#%d {
-        function () { [native code] }
-    }
-    ["getLastErrors"] =>
-    object(Closure)#%d {
-        function () { [native code] }
-    }
-    ["format"] =>
-    object(Closure)#%d {
-        function () { [native code] }
-    }
-    ["modify"] =>
-    object(Closure)#%d {
-        function () { [native code] }
-    }
-    ["add"] =>
-    object(Closure)#%d {
-        function () { [native code] }
-    }
-    ["sub"] =>
-    object(Closure)#%d {
-        function () { [native code] }
-    }
-    ["getTimezone"] =>
-    object(Closure)#%d {
-        function () { [native code] }
-    }
-    ["setTimezone"] =>
-    object(Closure)#%d {
-        function () { [native code] }
-    }
-    ["getOffset"] =>
-    object(Closure)#%d {
-        function () { [native code] }
-    }
-    ["setTime"] =>
-    object(Closure)#%d {
-        function () { [native code] }
-    }
-    ["setDate"] =>
-    object(Closure)#%d {
-        function () { [native code] }
-    }
-    ["setISODate"] =>
-    object(Closure)#%d {
-        function () { [native code] }
-    }
-    ["setTimestamp"] =>
-    object(Closure)#%d {
-        function () { [native code] }
-    }
-    ["getTimestamp"] =>
-    object(Closure)#%d {
-        function () { [native code] }
-    }
-    ["diff"] =>
-    object(Closure)#%d {
-        function () { [native code] }
-    }
-    ["$date"] =>
-    string(%d) "1976-09-27 09:00:00%r(\.0+)?%r"
-    ["$timezone_type"] =>
-    int(3)
-    ["$timezone"] =>
-    string(3) "UTC"
-  }
-  ["array"] =>
-  array(3) {
-    [0] =>
-    int(1)
-    [1] =>
-    int(2)
-    [2] =>
-    int(3)
-  }
-  ["object"] =>
-  array (1) {
-    ["field"] =>
-    string(3) "foo"
-  }
-  ["function"] =>
-  object(Closure)#%d (0) {
-  }
-  ["phpobject"] =>
-  object(Foo)#%d (1) {
-    ["$field"] =>
-    string(3) "php"
-  }
-}
---- JS var_dump of JS object ----
-object(Object)#%d (12) {
-  ["undefined"] =>
+  \["bool"\] \=\>
+  bool\(true\)
+  \["string"\] \=\>
+  string\(6\) "string"
+  \["uint"\] \=\>
+  int\(1\)
+  \["int"\] \=\>
+  int\(\-1\)
+  \["number"\] \=\>
+  float\(3\.141593\)
+  \["date"\] \=\>
+  object\(DateTime\)\#\d+ \(\d+\) \{(?:
+    \["createFromImmutable"\] \=\>
+    object\(Closure\)\#\d+ \{
+        function \(\) \{ \[native code\] \}
+    \})?
+    \["createFromFormat"\] \=\>
+    object\(Closure\)\#\d+ \{
+        function \(\) \{ \[native code\] \}
+    \}
+    \["getLastErrors"\] \=\>
+    object\(Closure\)\#\d+ \{
+        function \(\) \{ \[native code\] \}
+    \}
+    \["format"\] \=\>
+    object\(Closure\)\#\d+ \{
+        function \(\) \{ \[native code\] \}
+    \}
+    \["modify"\] \=\>
+    object\(Closure\)\#\d+ \{
+        function \(\) \{ \[native code\] \}
+    \}
+    \["add"\] \=\>
+    object\(Closure\)\#\d+ \{
+        function \(\) \{ \[native code\] \}
+    \}
+    \["sub"\] \=\>
+    object\(Closure\)\#\d+ \{
+        function \(\) \{ \[native code\] \}
+    \}
+    \["getTimezone"\] \=\>
+    object\(Closure\)\#\d+ \{
+        function \(\) \{ \[native code\] \}
+    \}
+    \["setTimezone"\] \=\>
+    object\(Closure\)\#\d+ \{
+        function \(\) \{ \[native code\] \}
+    \}
+    \["getOffset"\] \=\>
+    object\(Closure\)\#\d+ \{
+        function \(\) \{ \[native code\] \}
+    \}
+    \["setTime"\] \=\>
+    object\(Closure\)\#\d+ \{
+        function \(\) \{ \[native code\] \}
+    \}
+    \["setDate"\] \=\>
+    object\(Closure\)\#\d+ \{
+        function \(\) \{ \[native code\] \}
+    \}
+    \["setISODate"\] \=\>
+    object\(Closure\)\#\d+ \{
+        function \(\) \{ \[native code\] \}
+    \}
+    \["setTimestamp"\] \=\>
+    object\(Closure\)\#\d+ \{
+        function \(\) \{ \[native code\] \}
+    \}
+    \["getTimestamp"\] \=\>
+    object\(Closure\)\#\d+ \{
+        function \(\) \{ \[native code\] \}
+    \}
+    \["diff"\] \=\>
+    object\(Closure\)\#\d+ \{
+        function \(\) \{ \[native code\] \}
+    \}(?:(?:the following block is missing from PHP 7.4 on){0}
+    \["\$date"\] \=\>
+    string\(\d+\) "1976\-09\-27 09\:00\:00((\.0+)?)"
+    \["\$timezone_type"\] \=\>
+    int\(3\)
+    \["\$timezone"\] \=\>
+    string\(3\) "UTC"
+ )?\s*\}
+  \["array"\] \=\>
+  array\(3\) \{
+    \[0\] \=\>
+    int\(1\)
+    \[1\] \=\>
+    int\(2\)
+    \[2\] \=\>
+    int\(3\)
+  \}
+  \["object"\] \=\>
+  array \(1\) \{
+    \["field"\] \=\>
+    string\(3\) "foo"
+  \}
+  \["function"\] \=\>
+  object\(Closure\)\#\d+ \(0\) \{
+  \}
+  \["phpobject"\] \=\>
+  object\(Foo\)\#\d+ \(1\) \{
+    \["\$field"\] \=\>
+    string\(3\) "php"
+  \}
+\}
+\-\-\- JS var_dump of JS object \-\-\-\-
+object\(Object\)\#\d+ \(12\) \{
+  \["undefined"\] \=\>
   NULL
-  ["null"] =>
+  \["null"\] \=\>
   NULL
-  ["bool"] =>
-  bool(true)
-  ["string"] =>
-  string(6) "string"
-  ["uint"] =>
-  int(1)
-  ["int"] =>
-  int(-1)
-  ["number"] =>
-  float(3.141593)
-  ["regexp"] =>
-  regexp(/regexp/)
-  ["array"] =>
-  array(3) {
-    [0] =>
-    int(1)
-    [1] =>
-    int(2)
-    [2] =>
-    int(3)
-  }
-  ["object"] =>
-  object(Object)#%d (1) {
-    ["field"] =>
-    string(3) "foo"
-  }
-  ["function"] =>
-  object(Closure)#%d {
-      function id(x) { return x; }
-  }
-  ["phpobject"] =>
-  object(Foo)#%d (1) {
-    ["$field"] =>
-    string(3) "php"
-  }
-}
---- PHP var_dump of JS object ----
-object(V8Object)#%d (12) {
-  ["undefined"]=>
+  \["bool"\] \=\>
+  bool\(true\)
+  \["string"\] \=\>
+  string\(6\) "string"
+  \["uint"\] \=\>
+  int\(1\)
+  \["int"\] \=\>
+  int\(\-1\)
+  \["number"\] \=\>
+  float\(3\.141593\)
+  \["regexp"\] \=\>
+  regexp\(\/regexp\/\)
+  \["array"\] \=\>
+  array\(3\) \{
+    \[0\] \=\>
+    int\(1\)
+    \[1\] \=\>
+    int\(2\)
+    \[2\] \=\>
+    int\(3\)
+  \}
+  \["object"\] \=\>
+  object\(Object\)\#\d+ \(1\) \{
+    \["field"\] \=\>
+    string\(3\) "foo"
+  \}
+  \["function"\] \=\>
+  object\(Closure\)\#\d+ \{
+      function id\(x\) \{ return x; \}
+  \}
+  \["phpobject"\] \=\>
+  object\(Foo\)\#\d+ \(1\) \{
+    \["\$field"\] \=\>
+    string\(3\) "php"
+  \}
+\}
+\-\-\- PHP var_dump of JS object \-\-\-\-
+object\(V8Object\)\#\d+ \(12\) \{
+  \["undefined"\]\=\>
   NULL
-  ["null"]=>
+  \["null"\]\=\>
   NULL
-  ["bool"]=>
-  bool(true)
-  ["string"]=>
-  string(6) "string"
-  ["uint"]=>
-  int(1)
-  ["int"]=>
-  int(-1)
-  ["number"]=>
-  float(3.141592654)
-  ["regexp"]=>
-  object(V8Object)#%d (0) {
-  }
-  ["array"]=>
-  array(3) {
-    [0]=>
-    int(1)
-    [1]=>
-    int(2)
-    [2]=>
-    int(3)
-  }
-  ["object"]=>
-  object(V8Object)#%d (1) {
-    ["field"]=>
-    string(3) "foo"
-  }
-  ["function"]=>
-  object(V8Function)#%d (0) {
-  }
-  ["phpobject"]=>
-  object(Foo)#%d (1) {
-    ["field"]=>
-    string(3) "php"
-  }
-}
-===EOF===
+  \["bool"\]\=\>
+  bool\(true\)
+  \["string"\]\=\>
+  string\(6\) "string"
+  \["uint"\]\=\>
+  int\(1\)
+  \["int"\]\=\>
+  int\(\-1\)
+  \["number"\]\=\>
+  float\(3\.141592654\)
+  \["regexp"\]\=\>
+  object\(V8Object\)\#\d+ \(0\) \{
+  \}
+  \["array"\]\=\>
+  array\(3\) \{
+    \[0\]\=\>
+    int\(1\)
+    \[1\]\=\>
+    int\(2\)
+    \[2\]\=\>
+    int\(3\)
+  \}
+  \["object"\]\=\>
+  object\(V8Object\)\#\d+ \(1\) \{
+    \["field"\]\=\>
+    string\(3\) "foo"
+  \}
+  \["function"\]\=\>
+  object\(V8Function\)\#\d+ \(0\) \{
+  \}
+  \["phpobject"\]\=\>
+  object\(Foo\)\#\d+ \(1\) \{
+    \["field"\]\=\>
+    string\(3\) "php"
+  \}
+\}
+\=\=\=EOF\=\=\=

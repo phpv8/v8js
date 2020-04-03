@@ -77,6 +77,30 @@ Vagrant.configure("2") do |config|
     end
   }
 
+  config.vm.define "php-7.4" do |i|
+    i.vm.synced_folder ".", "/data/v8js"
+
+    i.vm.provision "shell", inline: <<-SHELL
+    gpg --keyserver keys.gnupg.net --recv 7F438280EF8D349F
+    gpg --armor --export 7F438280EF8D349F | apt-key add -
+
+    apt-get update
+    apt-get install -y software-properties-common gdb tmux git tig curl apache2-utils lcov
+
+    add-apt-repository ppa:stesie/libv8
+    apt-get update
+    apt-get install -y libv8-7.5-dbg libv8-7.5-dev
+
+    test -x /tmp/php-src || git clone https://github.com/php/php-src.git /tmp/php-src -b PHP-7.4 --depth 1
+    cd /tmp/php-src
+    apt-get install -y build-essential bison re2c libreadline-dev
+    ./buildconf
+    ./configure --disable-all --with-readline
+    make -j4
+    make install
+  SHELL
+  end
+
   config.vm.provision "shell", privileged: false, inline: <<-SHELL
     sudo mkdir -p /data/build && sudo chown $USER:$USER /data/build
   SHELL

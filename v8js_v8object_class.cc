@@ -161,29 +161,37 @@ static zval *v8js_v8object_read_property(zval *object, zval *member, int type, v
 }
 /* }}} */
 
-static void v8js_v8object_write_property(zval *object, zval *member, zval *value, void **cache_slot ) /* {{{ */
+static zval *v8js_v8object_get_property_ptr_ptr(zval *object, zval *member, int type, void **cache_slot) /* {{{ */
+{
+	return NULL;
+}
+/* }}} */
+
+static SINCE74(zval*, void) v8js_v8object_write_property(zval *object, zval *member, zval *value, void **cache_slot ) /* {{{ */
 {
 	v8js_v8object *obj = Z_V8JS_V8OBJECT_OBJ_P(object);
 
 	if (!obj->ctx) {
 		zend_throw_exception(php_ce_v8js_exception,
 			"Can't access V8Object after V8Js instance is destroyed!", 0);
-		return;
+		return SINCE74(value,);
 	}
 
-	V8JS_CTX_PROLOGUE(obj->ctx);
+	V8JS_CTX_PROLOGUE_EX(obj->ctx, SINCE74(value,));
 	v8::Local<v8::Value> v8objHandle = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
 	if (Z_STRLEN_P(member) > std::numeric_limits<int>::max()) {
 		zend_throw_exception(php_ce_v8js_exception,
 			"Member name length exceeds maximum supported length", 0);
-		return;
+		return SINCE74(value,);
 	}
 
 	v8::Local<v8::Object> v8obj;
 	if (v8objHandle->IsObject() && v8objHandle->ToObject(v8_context).ToLocal(&v8obj)) {
 		v8obj->CreateDataProperty(v8_context, V8JS_ZSYM(Z_STR_P(member)), zval_to_v8js(value, isolate));
 	}
+
+	return SINCE74(value,);
 }
 /* }}} */
 
@@ -812,7 +820,7 @@ PHP_MINIT_FUNCTION(v8js_v8object_class) /* {{{ */
 	memcpy(&v8js_v8object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
 	v8js_v8object_handlers.clone_obj = NULL;
 	v8js_v8object_handlers.cast_object = NULL;
-	v8js_v8object_handlers.get_property_ptr_ptr = NULL;
+	v8js_v8object_handlers.get_property_ptr_ptr = v8js_v8object_get_property_ptr_ptr;
 	v8js_v8object_handlers.has_property = v8js_v8object_has_property;
 	v8js_v8object_handlers.read_property = v8js_v8object_read_property;
 	v8js_v8object_handlers.write_property = v8js_v8object_write_property;

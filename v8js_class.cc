@@ -1307,9 +1307,10 @@ const zend_function_entry v8js_methods[] = { /* {{{ */
 
 /* V8Js object handlers */
 
-static void v8js_write_property(zval *object, zval *member, zval *value, void **cache_slot) /* {{{ */
+static SINCE74(zval*, void) v8js_write_property(zval *object, zval *member, zval *value, void **cache_slot) /* {{{ */
 {
-	V8JS_BEGIN_CTX(c, object)
+	v8js_ctx *c = Z_V8JS_CTX_OBJ_P(object);
+	V8JS_CTX_PROLOGUE_EX(c, SINCE74(value,));
 
 	/* Check whether member is public, if so, export to V8. */
 	zend_property_info *property_info = zend_get_property_info(c->std.ce, Z_STR_P(member), 1);
@@ -1323,7 +1324,7 @@ static void v8js_write_property(zval *object, zval *member, zval *value, void **
 		if (Z_STRLEN_P(member) > std::numeric_limits<int>::max()) {
 				zend_throw_exception(php_ce_v8js_exception,
 						"Property name exceeds maximum supported length", 0);
-				return;
+				return SINCE74(value,);
 		}
 
 		/* Write value to PHP JS object */
@@ -1332,7 +1333,7 @@ static void v8js_write_property(zval *object, zval *member, zval *value, void **
 	}
 
 	/* Write value to PHP object */
-	std_object_handlers.write_property(object, member, value, NULL);
+	SINCE74(return,) std_object_handlers.write_property(object, member, value, NULL);
 }
 /* }}} */
 
