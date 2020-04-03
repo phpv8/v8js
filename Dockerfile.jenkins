@@ -18,5 +18,5 @@ WORKDIR /php-${PHPVER}
 
 RUN ./buildconf --force
 RUN ./configure --disable-all --with-readline --enable-cli --enable-json --enable-maintainer-zts --with-v8js=/opt/libv8-$V8VER/  CFLAGS="-fsanitize=address -g -O0" CXXFLAGS="-fsanitize=address -g -O0"
-RUN sed -e "s/^EXTRA_LIBS.*/& -lv8_libplatform/" -i Makefile
+RUN sed -e "s/^EXTRA_LIBS.*/& -lv8_libplatform -ldl/" -i Makefile
 RUN make -j5
