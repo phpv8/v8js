@@ -31,7 +31,9 @@
 #include <cmath>
 
 extern "C" {
+#ifndef _WIN32
 #include "php_config.h"
+#endif
 
 /* work around incompatibilities regarding isnan() and isfinite() macros,
  * affecting PHP versions before 7.4. */

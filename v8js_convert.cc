@@ -85,7 +85,7 @@ static v8::Local<v8::Value> v8js_hash_to_jsarr(zval *value, v8::Isolate *isolate
 	if (i > 0)
 	{
 		zval *data;
-		ulong index = 0;
+		zend_ulong index = 0;
 
 #if PHP_VERSION_ID >= 70300
 		if (myht && !(GC_FLAGS(myht) & GC_IMMUTABLE))

@@ -627,7 +627,7 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::Name> property_n
 	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
 	v8::String::Utf8Value cstr(isolate, property);
 	const char *name = ToCString(cstr);
-	uint name_len = cstr.length();
+	uint32_t name_len = cstr.length();
 	char *lower = estrndup(name, name_len);
 	zend_string *method_name;
 
