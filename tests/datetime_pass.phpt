@@ -23,7 +23,7 @@ $a->executeString('print(PHP.var.toString()); print("\n");');
 
 ?>
 ===EOF===
---EXPECT--
+--EXPECTF--
 Wed, 19 Mar 2014 14:37:11 GMT
-[object DateTime]
+[object %s]
 ===EOF===

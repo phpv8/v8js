@@ -35,6 +35,6 @@ catch(V8JsScriptException $e) {
 --EXPECTF--
 after getNonExceptionObject
 Got V8JsScriptException
-string(34) "php_exceptions_006:3: [object Foo]"
+string(%d) "php_exceptions_006:3: [object %s]"
 NULL
 ===EOF===

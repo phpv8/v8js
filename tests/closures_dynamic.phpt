@@ -24,7 +24,7 @@ try {
 }
 ?>
 ===EOF===
---EXPECT--
-[object Closure]
+--EXPECTF--
+[object %s]
 Hello world
 ===EOF===

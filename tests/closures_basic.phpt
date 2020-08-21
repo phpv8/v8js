@@ -15,7 +15,7 @@ try {
 }
 ?>
 ===EOF===
---EXPECT--
-[object Closure]
+--EXPECTF--
+[object %s]
 Hello foobar, I'm Closure!
 ===EOF===
