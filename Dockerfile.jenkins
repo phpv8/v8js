@@ -17,6 +17,6 @@ ADD . /php-${PHPVER}/ext/v8js
 WORKDIR /php-${PHPVER}
 
 RUN ./buildconf --force
-RUN ./configure --disable-all --with-readline --enable-cli --enable-json --enable-maintainer-zts --with-v8js=/opt/libv8-$V8VER/  CFLAGS="-fsanitize=address -g -O0" CXXFLAGS="-fsanitize=address -g -O0"
+RUN ./configure --disable-all --with-readline --enable-cli --enable-json --enable-maintainer-zts --with-v8js=/opt/libv8-$V8VER/  CFLAGS="-fsanitize=address -g -O0" CXXFLAGS="-fsanitize=address -g -O0" CPPFLAGS="$([ $( echo "$V8VER" | cut -c 1-1 ) -ge 8 ] && echo "-DV8_COMPRESS_POINTERS" || echo "")"
 RUN sed -e "s/^EXTRA_LIBS.*/& -lv8_libplatform -ldl/" -i Makefile
 RUN make -j5
