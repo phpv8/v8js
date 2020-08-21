@@ -7,11 +7,11 @@ pipeline {
                 axes {
                     axis {
                         name 'PHPVER'
-                        values '7.3.16', '7.4.4'
+                        values '7.3.21', '7.4.9'
                     }
                     axis {
                         name 'V8VER'
-                        values '7.9'
+                        values '7.9', '8.4', '8.6'
                     }
                 }
                 stages {
