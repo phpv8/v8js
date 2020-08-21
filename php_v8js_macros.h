@@ -67,7 +67,7 @@ extern "C" {
 #endif
 
 /* V8Js Version */
-#define PHP_V8JS_VERSION "2.1.1"
+#define PHP_V8JS_VERSION "2.1.2"
 
 /* Options */
 #define V8JS_FLAG_NONE			(1<<0)
