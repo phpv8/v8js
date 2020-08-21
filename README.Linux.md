@@ -33,6 +33,24 @@ In that case copy those two files to the same directory `libv8.so` was
 installed to.
 
 
+Pointer Compression
+-------------------
+
+V8 versions 8.0 and higher enable pointer compression by default.
+See [the design document](https://docs.google.com/document/d/10qh2-b4C5OtSg-xLwyZpEI5ZihVBPtn1xwKBbQC26yI/edit)
+for details.
+
+Hence if you use one of the recent version (which you really should),
+then you
+
+ a) either need to manually disable pointer compression during
+    the build of the library by passing the
+    `v8_enable_pointer_compression=false` flag to `v8gen.py`
+
+ b) or compile php-v8js with pointer compression as well, by adding
+    `CPPFLAGS="-DV8_COMPRESS_POINTERS"` to the `./configure` call.
+
+
 Compile V8 5.6 and newer (using GN)
 -----------------------------------
 
@@ -51,7 +69,7 @@ fetch v8
 cd v8
 
 # (optional) If you'd like to build a certain version:
-git checkout 6.4.388.18
+git checkout 8.0.426.30
 gclient sync
 
 # Setup GN
@@ -83,7 +101,7 @@ cd /tmp
 git clone https://github.com/phpv8/v8js.git
 cd v8js
 phpize
-./configure --with-v8js=/opt/v8 LDFLAGS="-lstdc++"
+./configure --with-v8js=/opt/v8 LDFLAGS="-lstdc++" CPPFLAGS="-DV8_COMPRESS_POINTERS"
 make
 make test
 sudo make install
