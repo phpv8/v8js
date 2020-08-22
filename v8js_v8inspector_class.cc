@@ -43,8 +43,6 @@ static zend_object_handlers v8js_v8inspector_handlers;
 
 
 
-#define kInspectorClientIndex 2
-
 class InspectorFrontend final : public v8_inspector::V8Inspector::Channel {
 	public:
 		explicit InspectorFrontend(v8::Local<v8::Context> context) {
@@ -100,26 +98,13 @@ class InspectorClient : public v8_inspector::V8InspectorClient {
 			isolate_ = context->GetIsolate();
 			channel_.reset(new InspectorFrontend(context));
 			inspector_ = v8_inspector::V8Inspector::create(isolate_, this);
-			session_ =
-				inspector_->connect(1, channel_.get(), v8_inspector::StringView());
-			context->SetAlignedPointerInEmbedderData(kInspectorClientIndex, this);
+			session_ = inspector_->connect(1, channel_.get(), v8_inspector::StringView());
 			inspector_->contextCreated(v8_inspector::V8ContextInfo(
 						context, kContextGroupId, v8_inspector::StringView()));
-
-			/* Local<Value> function =
-				FunctionTemplate::New(isolate_, SendInspectorMessage)
-				->GetFunction(context)
-				.ToLocalChecked();
-			Local<String> function_name = String::NewFromUtf8Literal(
-					isolate_, "send", NewStringType::kInternalized);
-			CHECK(context->Global()->Set(context, function_name, function).FromJust()); */
-
 			context_.Reset(isolate_, context);
 		}
 
 		void send(const zend_string *message) {
-			std::cout << "Send message: " << message << std::endl;
-
 			v8::Locker locker(isolate_);
 			v8::HandleScope handle_scope(isolate_);
 			v8_inspector::StringView message_view((const uint8_t*) ZSTR_VAL(message), ZSTR_LEN(message));
@@ -155,38 +140,6 @@ class InspectorClient : public v8_inspector::V8InspectorClient {
 		void quitMessageLoopOnPause() override { is_paused = false; } */
 
 	private:
-		static v8_inspector::V8InspectorSession* GetSession(v8::Local<v8::Context> context) {
-			InspectorClient* inspector_client = static_cast<InspectorClient*>(
-					context->GetAlignedPointerFromEmbedderData(kInspectorClientIndex));
-			return inspector_client->session_.get();
-		}
-
-		/* Local<Context> ensureDefaultContextInGroup(int group_id) override {
-			DCHECK(isolate_);
-			DCHECK_EQ(kContextGroupId, group_id);
-			return context_.Get(isolate_);
-		} */
-
-		/* static void SendInspectorMessage(
-				const v8::FunctionCallbackInfo<v8::Value>& args) {
-			Isolate* isolate = args.GetIsolate();
-			v8::HandleScope handle_scope(isolate);
-			Local<Context> context = isolate->GetCurrentContext();
-			args.GetReturnValue().Set(Undefined(isolate));
-			Local<String> message = args[0]->ToString(context).ToLocalChecked();
-			v8_inspector::V8InspectorSession* session =
-				InspectorClient::GetSession(context);
-			int length = message->Length();
-			std::unique_ptr<uint16_t[]> buffer(new uint16_t[length]);
-			message->Write(isolate, buffer.get(), 0, length);
-			v8_inspector::StringView message_view(buffer.get(), length);
-			{
-				v8::SealHandleScope seal_handle_scope(isolate);
-				session->dispatchProtocolMessage(message_view);
-			}
-			args.GetReturnValue().Set(True(isolate));
-		} */
-
 		static const int kContextGroupId = 1;
 
 		std::unique_ptr<v8_inspector::V8Inspector> inspector_;
