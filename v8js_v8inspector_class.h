@@ -18,6 +18,8 @@ class InspectorClient;
 /* {{{ Object container */
 struct v8js_v8inspector {
 	InspectorClient *client;
+	zval response_handler;
+	zval notification_handler;
 	zend_object std;
 };
 /* }}} */

@@ -18,17 +18,9 @@
 #include "v8js_exceptions.h"
 #include "v8js_v8inspector_class.h"
 
-#include <iostream>
-
 #include <v8-inspector.h>
 
-
 extern "C" {
-// #include "ext/date/php_date.h"
-// #include "ext/standard/php_string.h"
-// #include "zend_interfaces.h"
-// #include "zend_closures.h"
-// #include "ext/spl/spl_exceptions.h"
 #include "zend_exceptions.h"
 }
 
@@ -45,9 +37,10 @@ static zend_object_handlers v8js_v8inspector_handlers;
 
 class InspectorFrontend final : public v8_inspector::V8Inspector::Channel {
 	public:
-		explicit InspectorFrontend(v8::Local<v8::Context> context) {
+		explicit InspectorFrontend(v8::Local<v8::Context> context, zval *response_handler, zval *notification_handler) {
 			isolate_ = context->GetIsolate();
-			// context_.Reset(isolate_, context);
+			response_handler_ = response_handler;
+			notification_handler_ = notification_handler;
 		}
 		~InspectorFrontend() override = default;
 
@@ -55,20 +48,22 @@ class InspectorFrontend final : public v8_inspector::V8Inspector::Channel {
 		void sendResponse(
 				int callId,
 				std::unique_ptr<v8_inspector::StringBuffer> message) override {
-			Send(message->string());
+			invokeHandler(message->string(), response_handler_);
 		}
 		void sendNotification(
 				std::unique_ptr<v8_inspector::StringBuffer> message) override {
-			Send(message->string());
+			invokeHandler(message->string(), notification_handler_);
 		}
 		void flushProtocolNotifications() override {}
 
 
-		void Send(const v8_inspector::StringView& string) {
-			v8::Isolate::AllowJavascriptExecutionScope allow_script(isolate_);
+		void invokeHandler(const v8_inspector::StringView& string, zval *handler) {
+			if (Z_TYPE_P(handler) == IS_NULL) {
+				return;
+			}
+
 			v8::HandleScope handle_scope(isolate_);
 			int length = static_cast<int>(string.length());
-			// DCHECK_LT(length, v8::String::kMaxLength);
 			v8::Local<v8::String> message =
 				(string.is8Bit()
 				 ? v8::String::NewFromOneByte(
@@ -83,20 +78,24 @@ class InspectorFrontend final : public v8_inspector::V8Inspector::Channel {
 
 			v8::String::Utf8Value str(isolate_, message);
 			const char *cstr = ToCString(str);
-			// RETVAL_STRINGL(cstr, str.length());
-			std::cout << cstr << std::endl;
+
+			zval handler_result;
+			zval params[1];
+			ZVAL_STRINGL(&params[0], cstr, str.length());
+			call_user_function_ex(EG(function_table), NULL, handler, &handler_result, 1, params, 0, NULL);
 		}
 
 		v8::Isolate* isolate_;
-		// Global<Context> context_;
+		zval *response_handler_;
+		zval *notification_handler_;
 };
 
 
 class InspectorClient : public v8_inspector::V8InspectorClient {
 	public:
-		InspectorClient(v8::Local<v8::Context> context) {
+		InspectorClient(v8::Local<v8::Context> context, zval *response_handler, zval *notification_handler) {
 			isolate_ = context->GetIsolate();
-			channel_.reset(new InspectorFrontend(context));
+			channel_.reset(new InspectorFrontend(context, response_handler, notification_handler));
 			inspector_ = v8_inspector::V8Inspector::create(isolate_, this);
 			session_ = inspector_->connect(1, channel_.get(), v8_inspector::StringView());
 			inspector_->contextCreated(v8_inspector::V8ContextInfo(
@@ -114,38 +113,12 @@ class InspectorClient : public v8_inspector::V8InspectorClient {
 			}
 		}
 
-		/* void runMessageLoopOnPause(int contextGroupId) override {
-			v8::Isolate::AllowJavascriptExecutionScope allow_script(isolate_);
-			v8::HandleScope handle_scope(isolate_);
-			Local<String> callback_name = v8::String::NewFromUtf8Literal(
-					isolate_, "handleInspectorMessage", NewStringType::kInternalized);
-			Local<Context> context = context_.Get(isolate_);
-			Local<Value> callback =
-				context->Global()->Get(context, callback_name).ToLocalChecked();
-			if (!callback->IsFunction()) return;
-
-			v8::TryCatch try_catch(isolate_);
-			try_catch.SetVerbose(true);
-			is_paused = true;
-
-			while (is_paused) {
-				USE(Local<Function>::Cast(callback)->Call(context, Undefined(isolate_), 0,
-							{}));
-				if (try_catch.HasCaught()) {
-					is_paused = false;
-				}
-			}
-		}
-
-		void quitMessageLoopOnPause() override { is_paused = false; } */
-
 	private:
 		static const int kContextGroupId = 1;
 
 		std::unique_ptr<v8_inspector::V8Inspector> inspector_;
 		std::unique_ptr<v8_inspector::V8InspectorSession> session_;
 		std::unique_ptr<v8_inspector::V8Inspector::Channel> channel_;
-		// bool is_paused = false;
 		v8::Global<v8::Context> context_;
 		v8::Isolate* isolate_;
 };
@@ -157,6 +130,8 @@ static void v8js_v8inspector_free_storage(zend_object *object) /* {{{ */
 	v8js_v8inspector *c = v8js_v8inspector_fetch_object(object);
 
 	delete c->client;
+	zval_ptr_dtor(&c->response_handler);
+	zval_ptr_dtor(&c->notification_handler);
 
 	zend_object_std_dtor(&c->std);
 }
@@ -171,7 +146,9 @@ static zend_object *v8js_v8inspector_new(zend_class_entry *ce) /* {{{ */
 	object_properties_init(&c->std, ce);
 
 	c->std.handlers = &v8js_v8inspector_handlers;
-	// new(&c->v8obj) v8::Persistent<v8::Value>();
+
+	ZVAL_NULL(&c->response_handler);
+	ZVAL_NULL(&c->notification_handler);
 
 	return &c->std;
 }
@@ -224,13 +201,47 @@ static PHP_METHOD(V8Inspector, send)
 }
 /* }}} */
 
+/* {{{ proto void V8Inspector::setResponseHandler(callable)
+ */
+static PHP_METHOD(V8Inspector, setResponseHandler)
+{
+	v8js_ctx *c;
+	zval *callable;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "z", &callable) == FAILURE) {
+		return;
+	}
+
+	v8js_v8inspector *inspector = Z_V8JS_V8INSPECTOR_OBJ_P(getThis());
+	ZVAL_COPY(&inspector->response_handler, callable);
+}
+/* }}} */
+
+/* {{{ proto void V8Inspector::setNotificationHandler(callable)
+ */
+static PHP_METHOD(V8Inspector, setNotificationHandler)
+{
+	v8js_ctx *c;
+	zval *callable;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "z", &callable) == FAILURE) {
+		return;
+	}
+
+	v8js_v8inspector *inspector = Z_V8JS_V8INSPECTOR_OBJ_P(getThis());
+	ZVAL_COPY(&inspector->notification_handler, callable);
+}
+/* }}} */
+
+
 void v8js_v8inspector_create(zval *res, v8js_ctx *ctx) /* {{{ */
 {
     object_init_ex(res, php_ce_v8inspector);
 	v8js_v8inspector *inspector = Z_V8JS_V8INSPECTOR_OBJ_P(res);
 
 	V8JS_CTX_PROLOGUE(ctx);
-	inspector->client = new InspectorClient(v8_context);
+	inspector->client = new InspectorClient(v8_context,
+			&inspector->response_handler, &inspector->notification_handler);
 
 }
 /* }}} */
@@ -239,11 +250,17 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_v8inspector_send, 0, 0, 1)
 	ZEND_ARG_INFO(0, message)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_v8inspector_set_handler, 0, 0, 1)
+	ZEND_ARG_INFO(0, callable)
+ZEND_END_ARG_INFO()
+
 static const zend_function_entry v8js_v8inspector_methods[] = { /* {{{ */
-	PHP_ME(V8Inspector,	__construct,	NULL,						ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
-	PHP_ME(V8Inspector,	__sleep,		NULL,						ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
-	PHP_ME(V8Inspector,	__wakeup,		NULL,						ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
-	PHP_ME(V8Inspector,	send,			arginfo_v8inspector_send, 	ZEND_ACC_PUBLIC)
+	PHP_ME(V8Inspector,	__construct,			NULL,								ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+	PHP_ME(V8Inspector,	__sleep,				NULL,								ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
+	PHP_ME(V8Inspector,	__wakeup,				NULL,								ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
+	PHP_ME(V8Inspector,	send,					arginfo_v8inspector_send, 			ZEND_ACC_PUBLIC)
+	PHP_ME(V8Inspector, setResponseHandler,		arginfo_v8inspector_set_handler,	ZEND_ACC_PUBLIC)
+	PHP_ME(V8Inspector, setNotificationHandler,	arginfo_v8inspector_set_handler,	ZEND_ACC_PUBLIC)
 	{NULL, NULL, NULL}
 };
 /* }}} */
