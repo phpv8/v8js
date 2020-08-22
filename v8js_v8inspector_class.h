@@ -13,10 +13,11 @@
 #ifndef V8JS_V8INSPECTOR_CLASS_H
 #define V8JS_V8INSPECTOR_CLASS_H
 
+class InspectorClient;
+
 /* {{{ Object container */
 struct v8js_v8inspector {
-    // TODO add inspector class handle
-	// v8::Persistent<v8::Value> v8obj;
+	InspectorClient *client;
 	zend_object std;
 };
 /* }}} */
