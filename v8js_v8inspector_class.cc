@@ -117,6 +117,18 @@ class InspectorClient : public v8_inspector::V8InspectorClient {
 			context_.Reset(isolate_, context);
 		}
 
+		void send(const zend_string *message) {
+			std::cout << "Send message: " << message << std::endl;
+
+			v8::Locker locker(isolate_);
+			v8::HandleScope handle_scope(isolate_);
+			v8_inspector::StringView message_view((const uint8_t*) ZSTR_VAL(message), ZSTR_LEN(message));
+			{
+				v8::SealHandleScope seal_handle_scope(isolate_);
+				session_->dispatchProtocolMessage(message_view);
+			}
+		}
+
 		/* void runMessageLoopOnPause(int contextGroupId) override {
 			v8::Isolate::AllowJavascriptExecutionScope allow_script(isolate_);
 			v8::HandleScope handle_scope(isolate_);
@@ -243,6 +255,22 @@ PHP_METHOD(V8Inspector, __wakeup)
 }
 /* }}} */
 
+/* {{{ proto void V8Inspector::send(string message)
+ */
+static PHP_METHOD(V8Inspector, send)
+{
+	zend_string *message;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "S", &message) == FAILURE) {
+		return;
+	}
+
+	v8js_v8inspector *inspector = Z_V8JS_V8INSPECTOR_OBJ_P(getThis());
+	inspector->client->send(message);
+
+}
+/* }}} */
+
 void v8js_v8inspector_create(zval *res, v8js_ctx *ctx) /* {{{ */
 {
     object_init_ex(res, php_ce_v8inspector);
@@ -254,10 +282,15 @@ void v8js_v8inspector_create(zval *res, v8js_ctx *ctx) /* {{{ */
 }
 /* }}} */
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_v8inspector_send, 0, 0, 1)
+	ZEND_ARG_INFO(0, message)
+ZEND_END_ARG_INFO()
+
 static const zend_function_entry v8js_v8inspector_methods[] = { /* {{{ */
-	PHP_ME(V8Inspector,	__construct,			NULL,				ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
-	PHP_ME(V8Inspector,	__sleep,				NULL,				ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
-	PHP_ME(V8Inspector,	__wakeup,				NULL,				ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
+	PHP_ME(V8Inspector,	__construct,	NULL,						ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+	PHP_ME(V8Inspector,	__sleep,		NULL,						ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
+	PHP_ME(V8Inspector,	__wakeup,		NULL,						ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
+	PHP_ME(V8Inspector,	send,			arginfo_v8inspector_send, 	ZEND_ACC_PUBLIC)
 	{NULL, NULL, NULL}
 };
 /* }}} */
