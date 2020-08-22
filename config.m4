@@ -217,6 +217,7 @@ int main ()
 	v8js_timer.cc			\
 	v8js_v8.cc				\
     v8js_v8object_class.cc	\
+    v8js_v8inspector_class.cc	\
     v8js_variables.cc		\
   ], $ext_shared, , "$ac_cv_v8_narrowing -std="$ac_cv_v8_cstd)
 
