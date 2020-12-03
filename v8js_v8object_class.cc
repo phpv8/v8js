@@ -129,7 +129,7 @@ static zval *v8js_v8object_read_property(zval *object, zval *member, int type, v
 	if (!obj->ctx) {
 		zend_throw_exception(php_ce_v8js_exception,
 			"Can't access V8Object after V8Js instance is destroyed!", 0);
-		return retval;
+		return SINCE74(object, retval);
 	}
 
 	V8JS_CTX_PROLOGUE_EX(obj->ctx, retval);
