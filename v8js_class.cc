@@ -1306,7 +1306,6 @@ const zend_function_entry v8js_methods[] = { /* {{{ */
 
 
 /* V8Js object handlers */
-//static SINCE74(zval*, void) v8js_write_property(zval *object, zval *member, zval *value, void **cache_slot) /* {{{ */
 static SINCE74(zval*, void) v8js_write_property(zend_object *object, zend_string *member, zval *value, void **cache_slot) /* {{{ */
 {
 	v8js_ctx *c = Z_V8JS_CTX(object);
