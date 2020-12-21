@@ -148,7 +148,7 @@ v8::Local<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate) /* {{{ */
 				 ce = php_date_get_date_ce();
 				 if (instanceof_function(Z_OBJCE_P(value), ce)) {
 					 zval dtval;
-					 zend_call_method_with_0_params(value, NULL, NULL, "getTimestamp", &dtval);
+					 zend_call_method_with_0_params(Z_OBJ_P(value), NULL, NULL, "getTimestamp", &dtval);
 					 v8::Date::New(isolate->GetEnteredContext(), ((double)Z_LVAL(dtval) * 1000.0)).ToLocal(&jsValue);
 					 zval_dtor(&dtval);
 				 } else
