@@ -50,7 +50,6 @@ static zval v8js_array_access_dispatch(zend_object *object, const char *method_n
 	fci.params = params;
 
 	fci.object = object;
-	fci.no_separation = 0;
 
 	zend_call_function(&fci, NULL);
 	zval_dtor(&fci.function_name);
