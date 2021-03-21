@@ -48,7 +48,7 @@ if test "$PHP_V8JS" != "no"; then
     CPPFLAGS=$old_CPPFLAGS
   ]);
 
-  AC_CACHE_CHECK(how to allow c++11 narrowing, ac_cv_v8_narrowing, [
+  AC_CACHE_CHECK(how to allow c++14 narrowing, ac_cv_v8_narrowing, [
     ac_cv_v8_narrowing=""
     old_CXXFLAGS=$CXXFLAGS
     AC_LANG_PUSH([C++])
@@ -58,12 +58,12 @@ if test "$PHP_V8JS" != "no"; then
         (void) foo;
         return 0;
     }]])],[ac_cv_v8_narrowing=""],[
-        CXXFLAGS="-Wno-c++11-narrowing -std="$ac_cv_v8_cstd
+        CXXFLAGS="-Wno-c++14-narrowing -std="$ac_cv_v8_cstd
         AC_RUN_IFELSE([AC_LANG_SOURCE([[int main() {
             struct { unsigned int x; } foo = {-1};
             (void) foo;
             return 0;
-        }]])],[ac_cv_v8_narrowing="-Wno-c++11-narrowing"],[
+        }]])],[ac_cv_v8_narrowing="-Wno-c++14-narrowing"],[
             CXXFLAGS="-Wno-narrowing -std="$ac_cv_v8_cstd
             AC_RUN_IFELSE([AC_LANG_SOURCE([[int main() {
                 struct { unsigned int x; } foo = {-1};

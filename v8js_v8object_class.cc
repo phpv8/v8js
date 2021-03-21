@@ -344,7 +344,7 @@ static int v8js_v8object_call_method(zend_string *method, zend_object *object, I
 		std::function< v8::MaybeLocal<v8::Value>(v8::Isolate *) > v8_call = [obj, method, argc, argv, object, &return_value](v8::Isolate *isolate) {
 			int i = 0;
 
-			v8::Local<v8::Context> v8_context = isolate->GetEnteredContext();
+			v8::Local<v8::Context> v8_context = isolate->GetEnteredOrMicrotaskContext();
 			v8::Local<v8::String> method_name = V8JS_SYML(ZSTR_VAL(method), static_cast<int>(ZSTR_LEN(method)));
 			v8::Local<v8::Object> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj)->ToObject(v8_context).ToLocalChecked();
 			v8::Local<v8::Object> thisObj;
@@ -573,7 +573,7 @@ static void v8js_v8generator_next(v8js_v8generator *g) /* {{{ */
 	 * some memory on bailout. */
 	{
 		std::function< v8::MaybeLocal<v8::Value>(v8::Isolate *) > v8_call = [g](v8::Isolate *isolate) {
-			v8::Local<v8::Context> v8_context = isolate->GetEnteredContext();
+			v8::Local<v8::Context> v8_context = isolate->GetEnteredOrMicrotaskContext();
 			v8::Local<v8::String> method_name = V8JS_SYM("next");
 			v8::Local<v8::Object> v8obj = v8::Local<v8::Value>::New(isolate, g->v8obj.v8obj)->ToObject(v8_context).ToLocalChecked();
 			v8::Local<v8::Function> cb = v8::Local<v8::Function>::Cast(v8obj->Get(v8_context, method_name).ToLocalChecked());;

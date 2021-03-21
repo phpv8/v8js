@@ -38,7 +38,7 @@ static void v8js_weak_object_callback(const v8::WeakCallbackInfo<zend_object> &d
 static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, const v8::FunctionCallbackInfo<v8::Value>& info) /* {{{ */
 {
 	v8::Isolate *isolate = info.GetIsolate();
-	v8::Local<v8::Context> v8_context = isolate->GetEnteredContext();
+	v8::Local<v8::Context> v8_context = isolate->GetEnteredOrMicrotaskContext();
 	v8::Local<v8::Value> return_value = V8JS_NULL;
 	zend_fcall_info fci;
 	zend_fcall_info_cache fcc;
@@ -231,8 +231,8 @@ static void v8js_construct_callback(const v8::FunctionCallbackInfo<v8::Value>& i
 	v8::Local<v8::Array> cons_data = v8::Local<v8::Array>::Cast(info.Data());
 	v8::Local<v8::Value> cons_tmpl, cons_ce;
 
-	if (!cons_data->Get(isolate->GetEnteredContext(), 0).ToLocal(&cons_tmpl)
-			||!cons_data->Get(isolate->GetEnteredContext(), 1).ToLocal(&cons_ce))
+	if (!cons_data->Get(isolate->GetEnteredOrMicrotaskContext(), 0).ToLocal(&cons_tmpl)
+			||!cons_data->Get(isolate->GetEnteredOrMicrotaskContext(), 1).ToLocal(&cons_ce))
 	{
 		return;
 	}
@@ -328,14 +328,14 @@ static void v8js_weak_closure_callback(const v8::WeakCallbackInfo<v8js_function_
 	 !strncasecmp(ZSTR_VAL(key), mname, ZSTR_LEN(key)))
 
 #define PHP_V8JS_CALLBACK(isolate, mptr, tmpl)										\
-	(v8::FunctionTemplate::New((isolate), v8js_php_callback, v8::External::New((isolate), mptr), v8::Signature::New((isolate), tmpl))->GetFunction(isolate->GetEnteredContext()).ToLocalChecked())
+	(v8::FunctionTemplate::New((isolate), v8js_php_callback, v8::External::New((isolate), mptr), v8::Signature::New((isolate), tmpl))->GetFunction(isolate->GetEnteredOrMicrotaskContext()).ToLocalChecked())
 
 
 static void v8js_named_property_enumerator(const v8::PropertyCallbackInfo<v8::Array> &info) /* {{{ */
 {
 	// note: 'special' properties like 'constructor' are not enumerated.
 	v8::Isolate *isolate = info.GetIsolate();
-	v8::Local<v8::Context> v8_context = isolate->GetEnteredContext();
+	v8::Local<v8::Context> v8_context = isolate->GetEnteredOrMicrotaskContext();
 
 	v8::Local<v8::Object> self = info.Holder();
 	v8::Local<v8::Array> result = v8::Array::New(isolate, 0);
@@ -435,7 +435,7 @@ static void v8js_named_property_enumerator(const v8::PropertyCallbackInfo<v8::Ar
 static void v8js_invoke_callback(const v8::FunctionCallbackInfo<v8::Value>& info) /* {{{ */
 {
 	v8::Isolate *isolate = info.GetIsolate();
-	v8::Local<v8::Context> v8_context = isolate->GetEnteredContext();
+	v8::Local<v8::Context> v8_context = isolate->GetEnteredOrMicrotaskContext();
 
 	v8::Local<v8::Object> self = info.Holder();
 	v8::Local<v8::Function> cb = v8::Local<v8::Function>::Cast(info.Data());
@@ -480,7 +480,7 @@ static void v8js_invoke_callback(const v8::FunctionCallbackInfo<v8::Value>& info
 static void v8js_fake_call_impl(const v8::FunctionCallbackInfo<v8::Value>& info) /* {{{ */
 {
 	v8::Isolate *isolate = info.GetIsolate();
-	v8::Local<v8::Context> v8_context = isolate->GetEnteredContext();
+	v8::Local<v8::Context> v8_context = isolate->GetEnteredOrMicrotaskContext();
 
 	v8::Local<v8::Object> self = info.Holder();
 	v8::Local<v8::Value> return_value = V8JS_NULL;
@@ -623,7 +623,7 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::Name> property_n
 	v8::Local<v8::String> property = v8::Local<v8::String>::Cast(property_name);
 
 	v8::Isolate *isolate = info.GetIsolate();
-	v8::Local<v8::Context> v8_context = isolate->GetEnteredContext();
+	v8::Local<v8::Context> v8_context = isolate->GetEnteredOrMicrotaskContext();
 	v8js_ctx *ctx = (v8js_ctx *) isolate->GetData(0);
 	v8::String::Utf8Value cstr(isolate, property);
 	const char *name = ToCString(cstr);
@@ -848,7 +848,7 @@ static void v8js_named_property_query(v8::Local<v8::Name> property, const v8::Pr
 	}
 
 	v8::Isolate *isolate = info.GetIsolate();
-	v8::MaybeLocal<v8::Integer> value = r->ToInteger(isolate->GetEnteredContext());
+	v8::MaybeLocal<v8::Integer> value = r->ToInteger(isolate->GetEnteredOrMicrotaskContext());
 	if (!value.IsEmpty()) {
 		info.GetReturnValue().Set(value.ToLocalChecked());
 	}

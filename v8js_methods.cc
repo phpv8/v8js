@@ -488,7 +488,7 @@ V8JS_METHOD(require)
         }
 
 	if(Z_TYPE(module_code) == IS_OBJECT) {
-		v8::Local<v8::Object> newobj = zval_to_v8js(&module_code, isolate)->ToObject(isolate->GetEnteredContext()).ToLocalChecked();
+		v8::Local<v8::Object> newobj = zval_to_v8js(&module_code, isolate)->ToObject(isolate->GetEnteredOrMicrotaskContext()).ToLocalChecked();
 		c->modules_loaded[normalised_module_id].Reset(isolate, newobj);
 		info.GetReturnValue().Set(newobj);
 
