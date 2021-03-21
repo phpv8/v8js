@@ -210,11 +210,11 @@ void v8js_array_access_enumerator(const v8::PropertyCallbackInfo<v8::Array>& inf
 
 	for(int j = 0; j < length; j ++) {
 		if(v8js_array_access_isset_p(object, j)) {
-			result->Set(isolate->GetEnteredContext(), i ++, V8JS_INT(j));
+			result->Set(isolate->GetEnteredOrMicrotaskContext(), i ++, V8JS_INT(j));
 		}
 	}
 
-	result->Set(isolate->GetEnteredContext(), V8JS_SYM("length"), V8JS_INT(i));
+	result->Set(isolate->GetEnteredOrMicrotaskContext(), V8JS_SYM("length"), V8JS_INT(i));
 	info.GetReturnValue().Set(result);
 }
 /* }}} */
@@ -245,12 +245,12 @@ void v8js_array_access_named_getter(v8::Local<v8::Name> property_name, const v8:
 		}
 
 		v8::Local<v8::Object> prototype_object;
-		if(!prototype->ToObject(isolate->GetEnteredContext()).ToLocal(&prototype_object)) {
+		if(!prototype->ToObject(isolate->GetEnteredOrMicrotaskContext()).ToLocal(&prototype_object)) {
 			/* ehh?  Array.prototype not an object? strange, stop. */
 			info.GetReturnValue().Set(ret_value);
 		}
 
-		prototype_object->Get(isolate->GetEnteredContext(), property).ToLocal(&ret_value);
+		prototype_object->Get(isolate->GetEnteredOrMicrotaskContext(), property).ToLocal(&ret_value);
 	}
 
 	info.GetReturnValue().Set(ret_value);

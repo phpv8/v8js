@@ -304,7 +304,7 @@ int v8js_get_properties_hash(v8::Local<v8::Value> jsValue, HashTable *retval, in
 		}
 
 		/* Skip any prototype properties */
-		if (!jsObj->HasOwnProperty(isolate->GetEnteredContext(), jsKey).FromMaybe(false)
+		if (!jsObj->HasOwnProperty(isolate->GetEnteredOrMicrotaskContext(), jsKey).FromMaybe(false)
 			&& !jsObj->HasRealNamedProperty(v8_context, jsKey).FromMaybe(false)
 			&& !jsObj->HasRealNamedCallbackProperty(v8_context, jsKey).FromMaybe(false)) {
 			continue;

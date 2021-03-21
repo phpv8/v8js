@@ -39,16 +39,16 @@ if test "$PHP_V8JS" != "no"; then
 
 
   AC_CACHE_CHECK(for C standard version, ac_cv_v8_cstd, [
-    ac_cv_v8_cstd="c++11"
+    ac_cv_v8_cstd="c++14"
     old_CPPFLAGS=$CPPFLAGS
     AC_LANG_PUSH([C++])
     CPPFLAGS="-std="$ac_cv_v8_cstd
-    AC_RUN_IFELSE([AC_LANG_SOURCE([[int main() { return 0; }]])],[],[ac_cv_v8_cstd="c++0x"],[])
+    AC_RUN_IFELSE([AC_LANG_SOURCE([[int main() { return 0; }]])],[],[ac_cv_v8_cstd="c++14"],[])
     AC_LANG_POP([C++])
     CPPFLAGS=$old_CPPFLAGS
   ]);
 
-  AC_CACHE_CHECK(how to allow c++11 narrowing, ac_cv_v8_narrowing, [
+  AC_CACHE_CHECK(how to allow c++14 narrowing, ac_cv_v8_narrowing, [
     ac_cv_v8_narrowing=""
     old_CXXFLAGS=$CXXFLAGS
     AC_LANG_PUSH([C++])
@@ -58,12 +58,12 @@ if test "$PHP_V8JS" != "no"; then
         (void) foo;
         return 0;
     }]])],[ac_cv_v8_narrowing=""],[
-        CXXFLAGS="-Wno-c++11-narrowing -std="$ac_cv_v8_cstd
+        CXXFLAGS="-Wno-c++14-narrowing -std="$ac_cv_v8_cstd
         AC_RUN_IFELSE([AC_LANG_SOURCE([[int main() {
             struct { unsigned int x; } foo = {-1};
             (void) foo;
             return 0;
-        }]])],[ac_cv_v8_narrowing="-Wno-c++11-narrowing"],[
+        }]])],[ac_cv_v8_narrowing="-Wno-c++14-narrowing"],[
             CXXFLAGS="-Wno-narrowing -std="$ac_cv_v8_cstd
             AC_RUN_IFELSE([AC_LANG_SOURCE([[int main() {
                 struct { unsigned int x; } foo = {-1};

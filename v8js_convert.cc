@@ -79,7 +79,7 @@ static v8::Local<v8::Value> v8js_hash_to_jsarr(zval *value, v8::Isolate *isolate
 		return V8JS_NULL;
 	}
 
-	v8::Local<v8::Context> v8_context = isolate->GetEnteredContext();
+	v8::Local<v8::Context> v8_context = isolate->GetEnteredOrMicrotaskContext();
 	newarr = v8::Array::New(isolate, i);
 
 	if (i > 0)
@@ -149,7 +149,7 @@ v8::Local<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate) /* {{{ */
 				 if (instanceof_function(Z_OBJCE_P(value), ce)) {
 					 zval dtval;
 					 zend_call_method_with_0_params(value, NULL, NULL, "getTimestamp", &dtval);
-					 v8::Date::New(isolate->GetEnteredContext(), ((double)Z_LVAL(dtval) * 1000.0)).ToLocal(&jsValue);
+					 v8::Date::New(isolate->GetEnteredOrMicrotaskContext(), ((double)Z_LVAL(dtval) * 1000.0)).ToLocal(&jsValue);
 					 zval_dtor(&dtval);
 				 } else
 					 jsValue = v8js_hash_to_jsobj(value, isolate);
