@@ -23,15 +23,15 @@ var_dump($v8->getPendingException());
 --EXPECTF--
 Deprecated: V8Js::__construct(): Disabling exception reporting is deprecated, $report_uncaught_exceptions != true in %s%eexception_clearing.php on line 3
 
-Deprecated: Function V8Js::getPendingException() is deprecated in %s%eexception_clearing.php on line 5
+Deprecated: %s V8Js::getPendingException() is deprecated in %s%eexception_clearing.php on line 5
 NULL
 
-Deprecated: Function V8Js::clearPendingException() is deprecated in %s%eexception_clearing.php on line 7
+Deprecated: %s V8Js::clearPendingException() is deprecated in %s%eexception_clearing.php on line 7
 
-Deprecated: Function V8Js::getPendingException() is deprecated in %s%eexception_clearing.php on line 8
+Deprecated: %s V8Js::getPendingException() is deprecated in %s%eexception_clearing.php on line 8
 NULL
 
-Deprecated: Function V8Js::getPendingException() is deprecated in %s%eexception_clearing.php on line 11
+Deprecated: %s V8Js::getPendingException() is deprecated in %s%eexception_clearing.php on line 11
 object(V8JsScriptException)#%d (13) {
   ["message":protected]=>
   string(49) "throw_0:1: ReferenceError: fooobar is not defined"
@@ -83,8 +83,8 @@ object(V8JsScriptException)#%d (13) {
     at throw_0:1:1"
 }
 
-Deprecated: Function V8Js::clearPendingException() is deprecated in %s%eexception_clearing.php on line 13
+Deprecated: %s V8Js::clearPendingException() is deprecated in %s%eexception_clearing.php on line 13
 
-Deprecated: Function V8Js::getPendingException() is deprecated in %s%eexception_clearing.php on line 14
+Deprecated: %s V8Js::getPendingException() is deprecated in %s%eexception_clearing.php on line 14
 NULL
 ===EOF===

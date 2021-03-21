@@ -138,7 +138,9 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, c
 		fci.params = NULL;
 	}
 
-	fci.no_separation = 1;
+	#if (PHP_MAJOR_VERSION <= 7 )
+		fci.no_separation = 1;
+	#endif
 	info.GetReturnValue().Set(V8JS_NULL);
 
 	{
@@ -147,8 +149,10 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, c
 
 		zend_try {
 			/* zend_fcall_info_cache */
-#if PHP_VERSION_ID < 70300
-			fcc.initialized = 1;
+#if PHP_VERSION_ID >= 80000
+                fci.named_params = NULL;
+#else
+                fci.no_separation = 1;
 #endif
 			fcc.function_handler = method_ptr;
 			fcc.calling_scope = object->ce;
@@ -357,10 +361,13 @@ static void v8js_named_property_enumerator(const v8::PropertyCallbackInfo<v8::Ar
 			/* Allow only public methods */
 			continue;
 		}
-		if ((method_ptr->common.fn_flags & (ZEND_ACC_CTOR|ZEND_ACC_DTOR)) != 0) {
-			/* no __construct, __destruct(), or __clone() functions */
-			continue;
-		}
+#if (PHP_MAJOR_VERSION <= 7 )
+				if ((method_ptr->common.fn_flags & (ZEND_ACC_CTOR|ZEND_ACC_DTOR)) != 0) {
+				/* no __construct, __destruct(), or __clone() functions */
+				continue;
+			}
+#endif
+
 		// hide (do not enumerate) other PHP magic functions
 		if (IS_MAGIC_FUNC(ZEND_CALLSTATIC_FUNC_NAME) ||
 			IS_MAGIC_FUNC(ZEND_SLEEP_FUNC_NAME) ||
@@ -581,8 +588,13 @@ static void v8js_fake_call_impl(const v8::FunctionCallbackInfo<v8::Value>& info)
 	zend_string_release(method_name);
 
 	if (method_ptr == NULL ||
-		(method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) == 0 ||
-		(method_ptr->common.fn_flags & (ZEND_ACC_CTOR|ZEND_ACC_DTOR)) != 0) {
+		(method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) == 0 
+	#if (PHP_MAJOR_VERSION <= 7 )
+		|| (method_ptr->common.fn_flags & (ZEND_ACC_CTOR|ZEND_ACC_DTOR)) != 0
+	#endif		
+		
+		
+		) {
 		error_len = spprintf(&error, 0,
 			"%s::__call to %s method %s", ZSTR_VAL(ce->name),
 			(method_ptr == NULL) ? "undefined" : "non-public", method_name);
@@ -664,8 +676,10 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::Name> property_n
 		(name[0] != '$' /* leading '$' means property, not method */ &&
 		 (method_ptr = reinterpret_cast<zend_function *>
 		  (zend_hash_find_ptr(&ce->function_table, method_name))) &&
-		 ((method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) != 0) && /* Allow only public methods */
-		 ((method_ptr->common.fn_flags & (ZEND_ACC_CTOR|ZEND_ACC_DTOR)) == 0) /* no __construct, __destruct(), or __clone() functions */
+		 ((method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) != 0)  
+#if (PHP_MAJOR_VERSION <= 7 )
+		&& ((method_ptr->common.fn_flags & (ZEND_ACC_CTOR|ZEND_ACC_DTOR)) == 0) /* no __construct, __destruct(), or __clone() functions */
+#endif		
 		 ) || (method_ptr=NULL, is_magic_call)
 	) {
 		if (callback_type == V8JS_PROP_GETTER) {
@@ -739,7 +753,7 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::Name> property_n
 			if(!property_info ||
 			   (property_info != ZEND_WRONG_PROPERTY_INFO &&
 				property_info->flags & ZEND_ACC_PUBLIC)) {
-				zval *property_val = zend_read_property(NULL, &zobject, name, name_len, true, &php_value);
+				zval *property_val = zend_read_property(NULL, Z_OBJ_P(&zobject), name, name_len, true, &php_value);
 				// special case uninitialized_zval_ptr and return an empty value
 				// (indicating that we don't intercept this property) if the
 				// property doesn't exist.
@@ -759,7 +773,7 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::Name> property_n
 					 /* Allow only public methods */
 					 && ((ce->__get->common.fn_flags & ZEND_ACC_PUBLIC) != 0)) {
 				/* Okay, let's call __get. */
-				zend_call_method_with_1_params(&zobject, ce, &ce->__get, ZEND_GET_FUNC_NAME, &php_value, &zname);
+				zend_call_method_with_1_params(Z_OBJ_P(&zobject), ce, &ce->__get, ZEND_GET_FUNC_NAME, &php_value, &zname);
 				ret_value = zval_to_v8js(&php_value, isolate);
 				zval_ptr_dtor(&php_value);
 			}
@@ -774,7 +788,7 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::Name> property_n
 				if(!property_info ||
 				   (property_info != ZEND_WRONG_PROPERTY_INFO &&
 					property_info->flags & ZEND_ACC_PUBLIC)) {
-					zend_update_property(scope, &zobject, name, name_len, &php_value);
+					zend_update_property(scope, Z_OBJ_P(&zobject), name, name_len, &php_value);
 					ret_value = set_value;
 				}
 				else if (ce->__set
@@ -782,7 +796,7 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::Name> property_n
 						 && ((ce->__set->common.fn_flags & ZEND_ACC_PUBLIC) != 0)) {
 					/* Okay, let's call __set. */
 					zval php_ret_value;
-					zend_call_method_with_2_params(&zobject, ce, &ce->__set, ZEND_SET_FUNC_NAME, &php_ret_value, &zname, &php_value);
+					zend_call_method_with_2_params(Z_OBJ_P(&zobject), ce, &ce->__set, ZEND_SET_FUNC_NAME, &php_ret_value, &zname, &php_value);
 					ret_value = zval_to_v8js(&php_ret_value, isolate);
 					zval_ptr_dtor(&php_ret_value);
 				}
@@ -796,7 +810,7 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::Name> property_n
 			const zend_object_handlers *h = object->handlers;
 
 			if (callback_type == V8JS_PROP_QUERY) {
-				if (h->has_property(&zobject, &zname, 0, NULL)) {
+				if (h->has_property(Z_OBJ_P(&zobject), Z_STR_P(&zname), 0, NULL)) {
 					ret_value = V8JS_UINT(v8::None);
 				} else {
 					ret_value = v8::Local<v8::Value>(); // empty handle
@@ -807,7 +821,7 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::Name> property_n
 				if(!property_info ||
 				   (property_info != ZEND_WRONG_PROPERTY_INFO &&
 					property_info->flags & ZEND_ACC_PUBLIC)) {
-					h->unset_property(&zobject, &zname, NULL);
+					h->unset_property(Z_OBJ_P(&zobject), Z_STR_P(&zname), NULL);
 					ret_value = V8JS_TRUE();
 				}
 				else {

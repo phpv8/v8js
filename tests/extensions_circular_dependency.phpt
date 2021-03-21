@@ -13,11 +13,11 @@ var_dump(V8JS::getExtensions());
 $a = new V8Js('myobj', array(), array('a'));
 ?>
 --EXPECTF--
-Deprecated: Function V8Js::registerExtension() is deprecated in %s%eextensions_circular_dependency.php on line 3
+Deprecated: %s V8Js::registerExtension() is deprecated in %s%eextensions_circular_dependency.php on line 3
 
-Deprecated: Function V8Js::registerExtension() is deprecated in %s%eextensions_circular_dependency.php on line 4
+Deprecated: %s V8Js::registerExtension() is deprecated in %s%eextensions_circular_dependency.php on line 4
 
-Deprecated: Function V8Js::getExtensions() is deprecated in %s%eextensions_circular_dependency.php on line 6
+Deprecated: %s V8Js::getExtensions() is deprecated in %s%eextensions_circular_dependency.php on line 6
 array(2) {
   ["a"]=>
   array(2) {

@@ -84,7 +84,7 @@ static inline struct v8js_ctx *v8js_ctx_fetch_object(zend_object *obj) {
 }
 
 #define Z_V8JS_CTX_OBJ_P(zv) v8js_ctx_fetch_object(Z_OBJ_P(zv));
-
+#define Z_V8JS_CTX(zv) v8js_ctx_fetch_object(zv);
 
 PHP_MINIT_FUNCTION(v8js_class);
 

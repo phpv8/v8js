@@ -33,7 +33,7 @@ var_dump($v8);
 --EXPECTF--
 -- registerExtension --
 
-Deprecated: Function V8Js::registerExtension() is deprecated in %s%eextensions_error.php on line 5
+Deprecated: %s V8Js::registerExtension() is deprecated in %s%eextensions_error.php on line 5
 -- creating V8Js object --
 Error installing extension 'handlebars'.
 

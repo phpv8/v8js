@@ -46,7 +46,7 @@ static zend_object_handlers v8js_v8generator_handlers;
 
 /* V8 Object handlers */
 
-static int v8js_v8object_has_property(zval *object, zval *member, int has_set_exists, void **cache_slot) /* {{{ */
+static int v8js_v8object_has_property(_zend_object *object, _zend_string *member, int has_set_exists, void **cache_slot) /* {{{ */
 {
 	/* param has_set_exists:
 	 * 0 (has) whether property exists and is not NULL  - isset()
@@ -54,7 +54,8 @@ static int v8js_v8object_has_property(zval *object, zval *member, int has_set_ex
 	 * 2 (exists) whether property exists               - property_exists()
 	 */
 	int retval = false;
-	v8js_v8object *obj = Z_V8JS_V8OBJECT_OBJ_P(object);
+
+	v8js_v8object *obj = Z_V8JS_V8OBJECT(object);
 
 	if (!obj->ctx) {
 		zend_throw_exception(php_ce_v8js_exception,
@@ -66,47 +67,47 @@ static int v8js_v8object_has_property(zval *object, zval *member, int has_set_ex
 	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 	v8::Local<v8::Object> jsObj;
 
-	if (Z_TYPE_P(member) != IS_STRING || !v8obj->IsObject() || !v8obj->ToObject(v8_context).ToLocal(&jsObj)) {
-		return false;
-	}
+	//if (Z_TYPE_P(member) != IS_STRING || !v8obj->IsObject() || !v8obj->ToObject(v8_context).ToLocal(&jsObj)) {
+	//	return false;
+	//} TODO
 
-	if (Z_STRLEN_P(member) > std::numeric_limits<int>::max()) {
+	if (ZSTR_LEN(member) > std::numeric_limits<int>::max()) {
 		zend_throw_exception(php_ce_v8js_exception,
 			"Member name length exceeds maximum supported length", 0);
 		return false;
 	}
 
-	v8::Local<v8::String> jsKey = V8JS_ZSYM(Z_STR_P(member));
+	v8::Local<v8::String> jsKey = V8JS_ZSYM(member);
 
-	/* Skip any prototype properties */
+	//Skip any prototype properties  
 	if (!jsObj->HasRealNamedProperty(v8_context, jsKey).FromMaybe(false)
 			&& !jsObj->HasRealNamedCallbackProperty(v8_context, jsKey).FromMaybe(false)) {
 		return false;
 	}
 
 	if (has_set_exists == 2) {
-		/* property_exists(), that's enough! */
+		// property_exists(), that's enough! 
 		return true;
 	}
 
-	/* We need to look at the value. */
+	// We need to look at the value.  
 	v8::Local<v8::Value> jsVal = jsObj->Get(v8_context, jsKey).ToLocalChecked();
 
 	if (has_set_exists == 0 ) {
-		/* isset(): We make 'undefined' equivalent to 'null' */
+		// isset(): We make 'undefined' equivalent to 'null' 
 		return !( jsVal->IsNull() || jsVal->IsUndefined() );
 	}
 
-	/* empty() */
+	//
 	retval = jsVal->BooleanValue(isolate);
 
-	/* for PHP compatibility, [] should also be empty */
+	// for PHP compatibility, [] should also be empty  
 	if (jsVal->IsArray() && retval) {
 		v8::Local<v8::Array> array = v8::Local<v8::Array>::Cast(jsVal);
 		retval = (array->Length() != 0);
 	}
 
-	/* for PHP compatibility, '0' should also be empty */
+	// for PHP compatibility, '0' should also be empty  
 	v8::Local<v8::String> str;
 	if (jsVal->IsString() && retval && jsVal->ToString(v8_context).ToLocal(&str)
 			&& str->Length() == 1) {
@@ -121,32 +122,33 @@ static int v8js_v8object_has_property(zval *object, zval *member, int has_set_ex
 }
 /* }}} */
 
-static zval *v8js_v8object_read_property(zval *object, zval *member, int type, void **cache_slot, zval *rv) /* {{{ */
+static _zval_struct *v8js_v8object_read_property(_zend_object *object, _zend_string *member, int type, void **cache_slot, _zval_struct *rv) /* {{{ */
 {
-	zval *retval = rv;
-	v8js_v8object *obj = Z_V8JS_V8OBJECT_OBJ_P(object);
+	_zval_struct *retval = rv;
+
+	v8js_v8object *obj = Z_V8JS_V8OBJECT(object);
 
 	if (!obj->ctx) {
 		zend_throw_exception(php_ce_v8js_exception,
 			"Can't access V8Object after V8Js instance is destroyed!", 0);
-		return retval;
+		return  retval;
 	}
 
 	V8JS_CTX_PROLOGUE_EX(obj->ctx, retval);
 	v8::Local<v8::Value> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
-	if (Z_TYPE_P(member) == IS_STRING && v8obj->IsObject())
+	if (/*Z_TYPE_P(member) == IS_STRING &&*/ v8obj->IsObject())//TODO
 	{
-		if (Z_STRLEN_P(member) > std::numeric_limits<int>::max()) {
+		if (ZSTR_LEN(member) > std::numeric_limits<int>::max()) {
 			zend_throw_exception(php_ce_v8js_exception,
 				"Member name length exceeds maximum supported length", 0);
 			return retval;
 		}
 
-		v8::Local<v8::String> jsKey = V8JS_ZSYM(Z_STR_P(member));
+		v8::Local<v8::String> jsKey = V8JS_ZSYM(member);
 		v8::Local<v8::Object> jsObj = v8obj->ToObject(v8_context).ToLocalChecked();
 
-		/* Skip any prototype properties */
+		// Skip any prototype properties 
 		if (jsObj->HasRealNamedProperty(v8_context, jsKey).FromMaybe(false)
 				|| jsObj->HasRealNamedCallbackProperty(v8_context, jsKey).FromMaybe(false)) {
 			v8::MaybeLocal<v8::Value> jsVal = jsObj->Get(v8_context, jsKey);
@@ -161,15 +163,16 @@ static zval *v8js_v8object_read_property(zval *object, zval *member, int type, v
 }
 /* }}} */
 
-static zval *v8js_v8object_get_property_ptr_ptr(zval *object, zval *member, int type, void **cache_slot) /* {{{ */
+static _zval_struct *v8js_v8object_get_property_ptr_ptr(_zend_object *object, _zend_string *member, int type, void **cache_slot) /* {{{ */
 {
 	return NULL;
 }
 /* }}} */
 
-static SINCE74(zval*, void) v8js_v8object_write_property(zval *object, zval *member, zval *value, void **cache_slot ) /* {{{ */
+static SINCE74(_zval_struct*, void) v8js_v8object_write_property(_zend_object *object, _zend_string *member, _zval_struct *value, void **cache_slot ) /* {{{ */
 {
-	v8js_v8object *obj = Z_V8JS_V8OBJECT_OBJ_P(object);
+
+	v8js_v8object *obj = Z_V8JS_V8OBJECT(object);
 
 	if (!obj->ctx) {
 		zend_throw_exception(php_ce_v8js_exception,
@@ -180,7 +183,7 @@ static SINCE74(zval*, void) v8js_v8object_write_property(zval *object, zval *mem
 	V8JS_CTX_PROLOGUE_EX(obj->ctx, SINCE74(value,));
 	v8::Local<v8::Value> v8objHandle = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
-	if (Z_STRLEN_P(member) > std::numeric_limits<int>::max()) {
+	if (ZSTR_LEN(member) > std::numeric_limits<int>::max()) {//TODO
 		zend_throw_exception(php_ce_v8js_exception,
 			"Member name length exceeds maximum supported length", 0);
 		return SINCE74(value,);
@@ -188,16 +191,17 @@ static SINCE74(zval*, void) v8js_v8object_write_property(zval *object, zval *mem
 
 	v8::Local<v8::Object> v8obj;
 	if (v8objHandle->IsObject() && v8objHandle->ToObject(v8_context).ToLocal(&v8obj)) {
-		v8obj->CreateDataProperty(v8_context, V8JS_ZSYM(Z_STR_P(member)), zval_to_v8js(value, isolate));
+		v8obj->CreateDataProperty(v8_context, V8JS_ZSYM((member)), zval_to_v8js(value, isolate));
 	}
 
 	return SINCE74(value,);
 }
 /* }}} */
 
-static void v8js_v8object_unset_property(zval *object, zval *member, void **cache_slot) /* {{{ */
+static void v8js_v8object_unset_property(_zend_object *object, _zend_string *member, void **cache_slot) /* {{{ */
 {
-	v8js_v8object *obj = Z_V8JS_V8OBJECT_OBJ_P(object);
+
+	v8js_v8object *obj = Z_V8JS_V8OBJECT(object);
 
 	if (!obj->ctx) {
 		zend_throw_exception(php_ce_v8js_exception,
@@ -208,7 +212,7 @@ static void v8js_v8object_unset_property(zval *object, zval *member, void **cach
 	V8JS_CTX_PROLOGUE(obj->ctx);
 	v8::Local<v8::Value> v8objHandle = v8::Local<v8::Value>::New(isolate, obj->v8obj);
 
-	if (Z_STRLEN_P(member) > std::numeric_limits<int>::max()) {
+	if (ZSTR_LEN(member) > std::numeric_limits<int>::max()) {
 		zend_throw_exception(php_ce_v8js_exception,
 			"Member name length exceeds maximum supported length", 0);
 		return;
@@ -216,19 +220,21 @@ static void v8js_v8object_unset_property(zval *object, zval *member, void **cach
 
 	v8::Local<v8::Object> v8obj;
 	if (v8objHandle->IsObject() && v8objHandle->ToObject(v8_context).ToLocal(&v8obj)) {
-		v8obj->Delete(v8_context, V8JS_ZSYM(Z_STR_P(member)));
+		v8obj->Delete(v8_context, V8JS_ZSYM( (member)));
 	}
+
 }
 /* }}} */
 
-static HashTable *v8js_v8object_get_properties(zval *object) /* {{{ */
+static HashTable *v8js_v8object_get_properties(_zend_object *object) /* {{{ */
 {
-	v8js_v8object *obj = Z_V8JS_V8OBJECT_OBJ_P(object);
+
+	v8js_v8object *obj = Z_V8JS_V8OBJECT(object);
 
 	if (obj->properties == NULL) {
 #if PHP_VERSION_ID < 70300
 		if (GC_G(gc_active)) {
-			/* the garbage collector is running, don't create more zvals */
+			// the garbage collector is running, don't create more zvals 
 			return NULL;
 		}
 #endif
@@ -237,9 +243,9 @@ static HashTable *v8js_v8object_get_properties(zval *object) /* {{{ */
 		zend_hash_init(obj->properties, 0, NULL, ZVAL_PTR_DTOR, 0);
 
 		if (!obj->ctx) {
-			/* Half-constructed object, probably due to unserialize call.
-			 * Just pass back properties hash so unserialize can write to
-			 * it (instead of crashing the engine). */
+			// Half-constructed object, probably due to unserialize call.
+			// Just pass back properties hash so unserialize can write to
+			// it (instead of crashing the engine). 
 			return obj->properties;
 		}
 	} else if (!obj->properties->u.v.nIteratorsCount) {
@@ -263,7 +269,7 @@ static HashTable *v8js_v8object_get_properties(zval *object) /* {{{ */
 }
 /* }}} */
 
-static HashTable *v8js_v8object_get_debug_info(zval *object, int *is_temp) /* {{{ */
+static HashTable *v8js_v8object_get_debug_info(_zend_object *object, int *is_temp) /* {{{ */
 {
 	*is_temp = 0;
 	return v8js_v8object_get_properties(object);
@@ -300,7 +306,7 @@ static zend_function *v8js_v8object_get_method(zend_object **object_ptr, zend_st
 				&& jsObj->Get(v8_context, jsKey).ToLocal(&jsObjSlot)
 				&& jsObjSlot->IsFunction()) {
 			f = (zend_function *) ecalloc(1, sizeof(*f));
-			f->type = ZEND_OVERLOADED_FUNCTION_TEMPORARY;
+			//f->type = ZEND_OVERLOADED_FUNCTION_TEMPORARY; TODO
 			f->common.function_name = zend_string_copy(method);
 			return f;
 		}
@@ -407,10 +413,10 @@ static int v8js_v8object_call_method(zend_string *method, zend_object *object, I
 }
 /* }}} */
 
-static int v8js_v8object_get_closure(zval *object, zend_class_entry **ce_ptr, zend_function **fptr_ptr, zend_object **zobj_ptr) /* {{{ */
+static int v8js_v8object_get_closure(_zend_object *object, zend_class_entry **ce_ptr, zend_function **fptr_ptr, zend_object **zobj_ptr, bool book) /* {{{ */
 {
 	zend_function *invoke;
-	v8js_v8object *obj = Z_V8JS_V8OBJECT_OBJ_P(object);
+	v8js_v8object *obj = Z_V8JS_V8OBJECT(object);
 
 	if (!obj->ctx) {
 		zend_throw_exception(php_ce_v8js_exception,
@@ -426,13 +432,13 @@ static int v8js_v8object_get_closure(zval *object, zend_class_entry **ce_ptr, ze
 	}
 
 	invoke = (zend_function *) ecalloc(1, sizeof(*invoke));
-	invoke->type = ZEND_OVERLOADED_FUNCTION_TEMPORARY;
+	//invoke->type = ZEND_OVERLOADED_FUNCTION_TEMPORARY;TODO
 	invoke->common.function_name = zend_string_init(V8JS_V8_INVOKE_FUNC_NAME, sizeof(V8JS_V8_INVOKE_FUNC_NAME) - 1, 0);
 
 	*fptr_ptr = invoke;
 
 	if (zobj_ptr) {
-		*zobj_ptr = Z_OBJ_P(object);
+		*zobj_ptr = (object);
 	}
 
 	*ce_ptr = NULL;
@@ -742,20 +748,21 @@ void v8js_v8object_create(zval *res, v8::Local<v8::Value> value, int flags, v8::
 	ctx->v8js_v8objects.push_front(c);
 }
 /* }}} */
-
+ZEND_BEGIN_ARG_INFO(arginfo_void, 0)
+ZEND_END_ARG_INFO()
 
 static const zend_function_entry v8js_v8object_methods[] = { /* {{{ */
-	PHP_ME(V8Object,	__construct,			NULL,				ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
-	PHP_ME(V8Object,	__sleep,				NULL,				ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
-	PHP_ME(V8Object,	__wakeup,				NULL,				ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
+	PHP_ME(V8Object,	__construct,			arginfo_void,				ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+	PHP_ME(V8Object,	__sleep,				arginfo_void,				ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
+	PHP_ME(V8Object,	__wakeup,				arginfo_void,				ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
 	{NULL, NULL, NULL}
 };
 /* }}} */
 
 static const zend_function_entry v8js_v8function_methods[] = { /* {{{ */
-	PHP_ME(V8Function,	__construct,			NULL,				ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
-	PHP_ME(V8Function,	__sleep,				NULL,				ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
-	PHP_ME(V8Function,	__wakeup,				NULL,				ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
+	PHP_ME(V8Function,	__construct,			arginfo_void,				ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+	PHP_ME(V8Function,	__sleep,				arginfo_void,				ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
+	PHP_ME(V8Function,	__wakeup,				arginfo_void,				ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
 	{NULL, NULL, NULL}
 };
 /* }}} */
@@ -776,9 +783,9 @@ ZEND_BEGIN_ARG_INFO(arginfo_v8generator_valid, 0)
 ZEND_END_ARG_INFO()
 
 static const zend_function_entry v8js_v8generator_methods[] = { /* {{{ */
-	PHP_ME(V8Generator,	__construct,			NULL,							ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
-	PHP_ME(V8Generator,	__sleep,				NULL,							ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
-	PHP_ME(V8Generator,	__wakeup,				NULL,							ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
+	PHP_ME(V8Generator,	__construct,			arginfo_void,							ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+	PHP_ME(V8Generator,	__sleep,				arginfo_void,							ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
+	PHP_ME(V8Generator,	__wakeup,				arginfo_void,							ZEND_ACC_PUBLIC|ZEND_ACC_FINAL)
 
 	PHP_ME(V8Generator,	current,				arginfo_v8generator_current,	ZEND_ACC_PUBLIC)
 	PHP_ME(V8Generator,	key,					arginfo_v8generator_key,		ZEND_ACC_PUBLIC)
@@ -827,7 +834,7 @@ PHP_MINIT_FUNCTION(v8js_v8object_class) /* {{{ */
 	v8js_v8object_handlers.unset_property = v8js_v8object_unset_property;
 	v8js_v8object_handlers.get_properties = v8js_v8object_get_properties;
 	v8js_v8object_handlers.get_method = v8js_v8object_get_method;
-	v8js_v8object_handlers.call_method = v8js_v8object_call_method;
+	//v8js_v8object_handlers.call_method = v8js_v8object_call_method;
 	v8js_v8object_handlers.get_debug_info = v8js_v8object_get_debug_info;
 	v8js_v8object_handlers.get_closure = v8js_v8object_get_closure;
 	v8js_v8object_handlers.offset = XtOffsetOf(struct v8js_v8object, std);

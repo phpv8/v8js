@@ -29,7 +29,7 @@ class Foo {
 		$this->v8->executeString('throw new Error();', 'throw_1');
 	}
 }
-    
+
 try {
 	$foo = new Foo();
 } catch (V8JsScriptException $e) {
@@ -40,7 +40,7 @@ try {
 --EXPECTF--
 Deprecated: V8Js::__construct(): Disabling exception reporting is deprecated, $report_uncaught_exceptions != true in %s%eexception_propagation_2.php on line 8
 
-Deprecated: Function V8Js::getPendingException() is deprecated in %s%eexception_propagation_2.php on line 11
+Deprecated: %s V8Js::getPendingException() is deprecated in %s%eexception_propagation_2.php on line 11
 object(V8JsScriptException)#%d (13) {
   ["message":protected]=>
   string(49) "throw_0:1: ReferenceError: fooobar is not defined"
