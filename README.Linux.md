@@ -51,7 +51,7 @@ then you
     `CPPFLAGS="-DV8_COMPRESS_POINTERS"` to the `./configure` call.
 
 
-Compile V8 5.6 and newer (using GN)
+Compile V8 8.9 and newer (using GN)
 -----------------------------------
 
 ```
@@ -69,11 +69,11 @@ fetch v8
 cd v8
 
 # (optional) If you'd like to build a certain version:
-git checkout 8.0.426.30
+git checkout 8.9.255.20
 gclient sync
 
 # Setup GN
-tools/dev/v8gen.py -vv x64.release -- is_component_build=true use_custom_libcxx=false
+tools/dev/v8gen.py -vv x64.release -- is_component_build=true use_custom_libcxx=false v8_enable_pointer_compression=false
 
 # Build
 ninja -C out.gn/x64.release/
@@ -101,7 +101,7 @@ cd /tmp
 git clone https://github.com/phpv8/v8js.git
 cd v8js
 phpize
-./configure --with-v8js=/opt/v8 LDFLAGS="-lstdc++" CPPFLAGS="-DV8_COMPRESS_POINTERS"
+./configure --with-v8js=/opt/v8 LDFLAGS="-lstdc++"
 make
 make test
 sudo make install
