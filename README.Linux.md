@@ -98,7 +98,7 @@ Compile php-v8js itself
 
 ```
 cd /tmp
-git clone https://github.com/phpv8/v8js.git
+git clone https://github.com/waqasbelushi/v8js.git
 cd v8js
 phpize
 ./configure --with-v8js=/opt/v8 LDFLAGS="-lstdc++"
