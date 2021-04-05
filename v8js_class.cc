@@ -25,6 +25,7 @@
 #include "v8js_v8object_class.h"
 #include "v8js_object_export.h"
 #include "v8js_timer.h"
+#include "v8js_v8inspector_class.h"
 
 extern "C" {
 #include "php.h"
@@ -848,6 +849,22 @@ static PHP_METHOD(V8Js, clearPendingException)
 }
 /* }}} */
 
+/* {{{ proto void V8Js::connectInspector()
+ */
+static PHP_METHOD(V8Js, connectInspector)
+{
+	v8js_ctx *c;
+
+	if (zend_parse_parameters_none() == FAILURE) {
+		return;
+	}
+
+	c = Z_V8JS_CTX_OBJ_P(getThis());
+	v8js_v8inspector_create(return_value, c);
+}
+/* }}} */
+
+
 /* {{{ proto void V8Js::setModuleNormaliser(string base, string module_id)
  */
 static PHP_METHOD(V8Js, setModuleNormaliser)
@@ -1245,6 +1262,9 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO(arginfo_v8js_clearpendingexception, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO(arginfo_v8js_connectinspector, 0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_setmodulenormaliser, 0, 0, 2)
 	ZEND_ARG_INFO(0, base)
 	ZEND_ARG_INFO(0, module_id)
@@ -1291,6 +1311,7 @@ const zend_function_entry v8js_methods[] = { /* {{{ */
 	PHP_ME(V8Js,    checkString,			arginfo_v8js_checkstring,			ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED)
 	PHP_ME(V8Js,	getPendingException,	arginfo_v8js_getpendingexception,	ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED)
 	PHP_ME(V8Js,	clearPendingException,	arginfo_v8js_clearpendingexception,	ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED)
+	PHP_ME(V8Js,	connectInspector,		arginfo_v8js_connectinspector,		ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	setModuleNormaliser,	arginfo_v8js_setmodulenormaliser,	ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	setModuleLoader,		arginfo_v8js_setmoduleloader,		ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	setTimeLimit,			arginfo_v8js_settimelimit,			ZEND_ACC_PUBLIC)

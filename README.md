@@ -161,6 +161,13 @@ class V8Js
     {}
 
     /**
+     * Install a V8 inspector (client) on this V8Js object.
+     * This is an experimental feature.
+     * @return V8Inspector
+     */
+    public function connectInspector();
+
+    /**
      * Returns uncaught pending exception or null if there is no pending exception.
      * @return V8JsScriptException|null
      */
@@ -204,6 +211,30 @@ class V8Js
      */
     public static function createSnapshot($embed_source)
     {}
+}
+
+final class V8Inspector
+{
+    /**
+     * Send a message to V8's inspector backend.
+     * @param string $message
+     */
+     public function send($message)
+     {}
+
+    /**
+     * Register a callback handler for responses from V8's inspector backend.
+     * @param callable $handler
+     */
+     public function setResponseHandler($handler)
+     {}
+
+    /**
+     * Register a callback handler for notifications from V8's inspector backend.
+     * @param callable $handler
+     */
+     public function setNotificationHandler($handler)
+     {}
 }
 
 final class V8JsScriptException extends Exception
@@ -401,3 +432,56 @@ objects obeying the above rules and re-thrown in JavaScript context.  If they
 are not caught by JavaScript code the execution stops and a
 `V8JsScriptException` is thrown, which has the original PHP exception accessible
 via `getPrevious` method.
+
+Inspector Client
+================
+
+Keep in mind that this is an experimental feature of php-v8js.
+
+The inspector client API, i.e. calling `V8Js::connectInspector()`, provides
+low-level access to [V8's Inspector Protocol](https://v8.dev/docs/inspector).
+This may be used to access V8's profiler.
+
+Theoretically this also provides access to V8's debugger.  Yet keep in mind
+that setting a breakpoint in the JavaScript code will also block PHP code
+execution (due to php-v8js' call model).
+
+See [Chrome DevTool Protocol API documentation](https://chromedevtools.github.io/devtools-protocol/1-3/Profiler/)
+for details on how to use the profiler.
+
+Usage example to collect call count information on function level:
+
+```php
+<?php
+
+$v8 = new V8Js;
+$i = $v8->connectInspector();
+
+$i->setResponseHandler(function($res) {
+        $res = \json_decode($res);
+
+        if ($res->id === 3) {
+                foreach($res->result->result[0]->functions as $info) {
+                        printf("function '%s' was called %d times.\n", $info->functionName ?: '<root scope>', $info->ranges[0]->count);
+                }
+        }
+});
+
+$i->send(json_encode([ 'id' => 1, 'method' => "Profiler.enable" ]));
+$i->send(json_encode([ 'id' => 2, 'method' => "Profiler.startPreciseCoverage", 'params' => [ 'callCount' => true ] ]));
+
+$fn = $v8->executeString('(function foo() { const blarg = 42; })', 'multi-call-lambda');
+
+$fn();
+$fn();
+$fn();
+
+$i->send(json_encode([ 'id' => 3, 'method' => "Profiler.takePreciseCoverage" ]));
+```
+
+yields
+
+```
+function '<root scope>' was called 1 times.
+function 'foo' was called 3 times.
+```
