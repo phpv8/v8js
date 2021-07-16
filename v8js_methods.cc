@@ -311,8 +311,13 @@ V8JS_METHOD(require)
 				ZVAL_STRING(&params[0], module_base_cstr);
 				ZVAL_STRING(&params[1], module_id);
 
+				#if (PHP_MAJOR_VERSION < 8)
 				call_result = call_user_function_ex(EG(function_table), NULL, &c->module_normaliser,
 													&normaliser_result, 2, params, 0, NULL);
+				#else
+				call_result = call_user_function(EG(function_table), NULL, &c->module_normaliser,
+													&normaliser_result, 2, params);
+				#endif
 			}
 
 			isolate->Enter();
@@ -435,7 +440,11 @@ V8JS_METHOD(require)
 
 		zend_try {
 			ZVAL_STRING(&params[0], normalised_module_id);
+			#if (PHP_MAJOR_VERSION < 8)
 			call_result = call_user_function_ex(EG(function_table), NULL, &c->module_loader, &module_code, 1, params, 0, NULL);
+			#else
+			call_result = call_user_function(EG(function_table), NULL, &c->module_loader, &module_code, 1, params);
+			#endif
 		}
 		zend_catch {
 			v8js_terminate_execution(isolate);

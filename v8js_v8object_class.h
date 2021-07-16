@@ -35,7 +35,7 @@ static inline v8js_v8object *v8js_v8object_fetch_object(zend_object *obj) {
 }
 
 #define Z_V8JS_V8OBJECT_OBJ_P(zv) v8js_v8object_fetch_object(Z_OBJ_P(zv));
-
+#define Z_V8JS_V8OBJECT_OBJ(zv) v8js_v8object_fetch_object(zv);
 
 /* {{{ Generator container */
 struct v8js_v8generator {
