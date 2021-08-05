@@ -94,6 +94,12 @@ int v8js_get_properties_hash(v8::Local<v8::Value> jsValue, HashTable *retval, in
 #define SINCE74(x,y) x
 #endif
 
+#if PHP_VERSION_ID < 80000
+#define SINCE80(x,y) y
+#else
+#define SINCE80(x,y) x
+#endif
+
 
 #endif /* V8JS_V8_H */
 

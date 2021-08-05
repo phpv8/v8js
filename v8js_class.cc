@@ -1309,9 +1309,11 @@ const zend_function_entry v8js_methods[] = { /* {{{ */
 
 
 /* V8Js object handlers */
-#if PHP_VERSION_ID >= 80000
-static SINCE74(zval*, void) v8js_write_property(zend_object *object, zend_string *member, zval *value, void **cache_slot) /* {{{ */
+static SINCE74(zval*, void) v8js_write_property(SINCE80(zend_object, zval) *_object, SINCE80(zend_string, zval) *_member, zval *value, void **cache_slot) /* {{{ */
 {
+	zend_object *object = SINCE80(_object, Z_OBJ_P(_object));
+	zend_string *member = SINCE80(_member, Z_STR_P(_member));
+
 	v8js_ctx *c = Z_V8JS_CTX_OBJ(object);
 	V8JS_CTX_PROLOGUE_EX(c, SINCE74(value,));
 
@@ -1335,33 +1337,6 @@ static SINCE74(zval*, void) v8js_write_property(zend_object *object, zend_string
 		v8::Local<v8::Name> key = V8JS_SYML(ZSTR_VAL(member), static_cast<int>(ZSTR_LEN(member)));
 		jsobj->DefineOwnProperty(v8_context, key, zval_to_v8js(value, isolate), v8::ReadOnly);
 	}
-#else
-static SINCE74(zval*, void) v8js_write_property(zval *object, zval *member, zval *value, void **cache_slot) /* {{{ */
-{
-	v8js_ctx *c = Z_V8JS_CTX_OBJ_P(object);
-	V8JS_CTX_PROLOGUE_EX(c, SINCE74(value,));
-
-	/* Check whether member is public, if so, export to V8. */
-	zend_property_info *property_info = zend_get_property_info(c->std.ce, Z_STR_P(member), 1);
-
-	if(!property_info ||
-	   (property_info != ZEND_WRONG_PROPERTY_INFO &&
-		(property_info->flags & ZEND_ACC_PUBLIC))) {
-		/* Global PHP JS object */
-		v8::Local<v8::String> object_name_js = v8::Local<v8::String>::New(isolate, c->object_name);
-		v8::Local<v8::Object> jsobj = V8JS_GLOBAL(isolate)->Get(v8_context, object_name_js).ToLocalChecked()->ToObject(v8_context).ToLocalChecked();
-
-		if (Z_STRLEN_P(member) > std::numeric_limits<int>::max()) {
-				zend_throw_exception(php_ce_v8js_exception,
-						"Property name exceeds maximum supported length", 0);
-				return SINCE74(value,);
-		}
-
-		/* Write value to PHP JS object */
-		v8::Local<v8::Name> key = V8JS_SYML(Z_STRVAL_P(member), static_cast<int>(Z_STRLEN_P(member)));
-		jsobj->DefineOwnProperty(v8_context, key, zval_to_v8js(value, isolate), v8::ReadOnly);
-	}
-#endif
 
 	/* Write value to PHP object */
 	SINCE74(return,) std_object_handlers.write_property(object, member, value, NULL);
