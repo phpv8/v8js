@@ -506,11 +506,7 @@ static PHP_METHOD(V8Js, __construct)
 	V8JS_GLOBAL(isolate)->DefineOwnProperty(context, object_name_js, php_obj, v8::ReadOnly);
 
 	/* Export public property values */
-	#if (PHP_MAJOR_VERSION < 8)
-	HashTable *properties = zend_std_get_properties(getThis());
-	#else
-	HashTable *properties = zend_std_get_properties(Z_OBJ_P(getThis()));
-	#endif
+	HashTable *properties = zend_std_get_properties(SINCE80(Z_OBJ_P(getThis()), getThis()));
 	zval *value;
 	zend_string *member;
 
@@ -1339,15 +1335,16 @@ static SINCE74(zval*, void) v8js_write_property(SINCE80(zend_object, zval) *_obj
 	}
 
 	/* Write value to PHP object */
-	SINCE74(return,) std_object_handlers.write_property(object, member, value, NULL);
+	SINCE74(return,) std_object_handlers.write_property(SINCE80(object, _object), SINCE80(member, _member), value, NULL);
 }
 /* }}} */
 
-#if PHP_VERSION_ID >= 80000
-static void v8js_unset_property(zend_object *object, zend_string *member, void **cache_slot) /* {{{ */
+static void v8js_unset_property(SINCE80(zend_object, zval) *_object, SINCE80(zend_string, zval) *_member, void **cache_slot) /* {{{ */
 {
-	V8JS_BEGIN_CTX_OBJ(c, object)
+	zend_object *object = SINCE80(_object, Z_OBJ_P(_object));
+	zend_string *member = SINCE80(_member, Z_STR_P(_member));
 
+	V8JS_BEGIN_CTX_OBJ(c, object);
 	/* Global PHP JS object */
 	v8::Local<v8::String> object_name_js = v8::Local<v8::String>::New(isolate, c->object_name);
 	v8::Local<v8::Object> jsobj = V8JS_GLOBAL(isolate)->Get(v8_context, object_name_js).ToLocalChecked()->ToObject(v8_context).ToLocalChecked();
@@ -1360,29 +1357,11 @@ static void v8js_unset_property(zend_object *object, zend_string *member, void *
 
 	/* Delete value from PHP JS object */
 	v8::Local<v8::Value> key = V8JS_SYML(ZSTR_VAL(member), static_cast<int>(ZSTR_LEN(member)));
-#else
-static void v8js_unset_property(zval *object, zval *member, void **cache_slot) /* {{{ */
-{
-	V8JS_BEGIN_CTX(c, object)
-
-	/* Global PHP JS object */
-	v8::Local<v8::String> object_name_js = v8::Local<v8::String>::New(isolate, c->object_name);
-	v8::Local<v8::Object> jsobj = V8JS_GLOBAL(isolate)->Get(v8_context, object_name_js).ToLocalChecked()->ToObject(v8_context).ToLocalChecked();
-
-	if (Z_STRLEN_P(member) > std::numeric_limits<int>::max()) {
-					zend_throw_exception(php_ce_v8js_exception,
-					"Property name exceeds maximum supported length", 0);
-			return;
-	}
-
-	/* Delete value from PHP JS object */
-	v8::Local<v8::Value> key = V8JS_SYML(Z_STRVAL_P(member), static_cast<int>(Z_STRLEN_P(member)));
-#endif
 
 	jsobj->Delete(v8_context, key);
 
 	/* Unset from PHP object */
-	std_object_handlers.unset_property(object, member, NULL);
+	std_object_handlers.unset_property(SINCE80(object, _object), SINCE80(member, _member), NULL);
 }
 /* }}} */
 

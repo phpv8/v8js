@@ -643,11 +643,11 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::Name> property_n
 	zval php_value;
 
 	zend_object *object = reinterpret_cast<zend_object *>(self->GetAlignedPointerFromInternalField(1));
-	#if PHP_VERSION_ID >= 80000
-	zend_object &zobject = *object;
-	#else
+	#if PHP_VERSION_ID < 80000
 	zval zobject;
 	ZVAL_OBJ(&zobject, object);
+	#else
+	zend_object &zobject = *object;
 	#endif
 
 	v8js_function_tmpl_t *tmpl_ptr = reinterpret_cast<v8js_function_tmpl_t *>(self->GetAlignedPointerFromInternalField(0));
@@ -803,11 +803,7 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::Name> property_n
 			const zend_object_handlers *h = object->handlers;
 
 			if (callback_type == V8JS_PROP_QUERY) {
-				#if PHP_VERSION_ID >= 80000
-				if (h->has_property(&zobject, Z_STR_P(&zname), 0, NULL)) {
-				#else
-				if (h->has_property(&zobject, &zname, 0, NULL)) {
-				#endif
+				if (h->has_property(&zobject, SINCE80(Z_STR_P(&zname), &zname), 0, NULL)) {
 					ret_value = V8JS_UINT(v8::None);
 				} else {
 					ret_value = v8::Local<v8::Value>(); // empty handle
@@ -818,11 +814,7 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::Name> property_n
 				if(!property_info ||
 				   (property_info != ZEND_WRONG_PROPERTY_INFO &&
 					property_info->flags & ZEND_ACC_PUBLIC)) {
-					#if PHP_VERSION_ID >= 80000
-					h->unset_property(&zobject, Z_STR_P(&zname), NULL);
-					#else
-					h->unset_property(&zobject, &zname, NULL);
-					#endif
+					h->unset_property(&zobject, SINCE80(Z_STR_P(&zname), &zname), NULL);
 					ret_value = V8JS_TRUE();
 				}
 				else {

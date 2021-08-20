@@ -16,9 +16,9 @@ try {
 ?>
 ===EOF===
 --EXPECTF--
-Deprecated: Function V8Js::checkString() is deprecated in %s on line %d
+Deprecated: %s V8Js::checkString() is deprecated in %s on line %d
 bool(true)
 
-Deprecated: Function V8Js::checkString() is deprecated in %s on line %d
+Deprecated: %s V8Js::checkString() is deprecated in %s on line %d
 string(%d) "V8Js::checkString():1: SyntaxError: %s"
 ===EOF===

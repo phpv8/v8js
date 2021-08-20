@@ -148,11 +148,7 @@ v8::Local<v8::Value> zval_to_v8js(zval *value, v8::Isolate *isolate) /* {{{ */
 				 ce = php_date_get_date_ce();
 				 if (instanceof_function(Z_OBJCE_P(value), ce)) {
 					 zval dtval;
-					 #if PHP_VERSION_ID >= 80000
-					 zend_call_method_with_0_params(Z_OBJ_P(value), NULL, NULL, "getTimestamp", &dtval);
-					 #else
-					 zend_call_method_with_0_params(value, NULL, NULL, "getTimestamp", &dtval);
-					 #endif
+					 zend_call_method_with_0_params(SINCE80(Z_OBJ_P(value), value), NULL, NULL, "getTimestamp", &dtval);
 					 v8::Date::New(isolate->GetEnteredOrMicrotaskContext(), ((double)Z_LVAL(dtval) * 1000.0)).ToLocal(&jsValue);
 					 zval_dtor(&dtval);
 				 } else

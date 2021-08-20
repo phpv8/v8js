@@ -24,7 +24,7 @@ $js->executeString($script);
 ?>
 ===EOF===
 --EXPECTF--
-Notice: Undefined variable: bar in %s%efatal_error_ignore_non_fatals.php on line 6
+%s: Undefined variable%sbar in %s%efatal_error_ignore_non_fatals.php on line 6
 
 Warning: Foo Bar! in %s%efatal_error_ignore_non_fatals.php on line 7
 blar foo

@@ -50,13 +50,8 @@ void v8js_create_script_exception(zval *return_value, v8::Isolate *isolate, v8::
 
 	object_init_ex(return_value, php_ce_v8js_script_exception);
 
-#if PHP_VERSION_ID >= 80000
 #define PHPV8_EXPROP(type, name, value) \
-	zend_update_property##type(php_ce_v8js_script_exception, Z_OBJ_P(return_value), #name, sizeof(#name) - 1, value);
-#else
-#define PHPV8_EXPROP(type, name, value) \
-	zend_update_property##type(php_ce_v8js_script_exception, return_value, #name, sizeof(#name) - 1, value);
-#endif
+	zend_update_property##type(php_ce_v8js_script_exception, SINCE80(Z_OBJ_P(return_value), return_value), #name, sizeof(#name) - 1, value);
 
 
 	if (tc_message.IsEmpty()) {
@@ -134,7 +129,6 @@ void v8js_throw_script_exception(v8::Isolate *isolate, v8::TryCatch *try_catch) 
 	}
 }
 /* }}} */
-#if PHP_VERSION_ID >= 80000
 #define V8JS_EXCEPTION_METHOD(property) \
 	static PHP_METHOD(V8JsScriptException, get##property) \
 	{ \
@@ -143,22 +137,9 @@ void v8js_throw_script_exception(v8::Isolate *isolate, v8::TryCatch *try_catch) 
 		if (zend_parse_parameters_none() == FAILURE) { \
 			return; \
 		} \
-		value = zend_read_property(php_ce_v8js_script_exception, Z_OBJ_P(getThis()), #property, sizeof(#property) - 1, 0, &rv); \
+		value = zend_read_property(php_ce_v8js_script_exception, SINCE80(Z_OBJ_P(getThis()), getThis()), #property, sizeof(#property) - 1, 0, &rv); \
 		RETURN_ZVAL(value, 1, 0); \
 	}
-#else
-#define V8JS_EXCEPTION_METHOD(property) \
-	static PHP_METHOD(V8JsScriptException, get##property) \
-	{ \
-		zval *value, rv;							\
-		\
-		if (zend_parse_parameters_none() == FAILURE) { \
-			return; \
-		} \
-		value = zend_read_property(php_ce_v8js_script_exception, getThis(), #property, sizeof(#property) - 1, 0, &rv); \
-		RETURN_ZVAL(value, 1, 0); \
-	}
-#endif
 
 
 /* {{{ proto string V8JsEScriptxception::getJsFileName()
