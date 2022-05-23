@@ -8,23 +8,23 @@ v8js.use_array_access = 1
 <?php
 
 class MyArray implements ArrayAccess, Countable {
-    public function offsetExists($offset) {
+    public function offsetExists($offset): bool {
         return $offset >= 0 && $offset <= 20;
     }
 
-    public function offsetGet($offset) {
+    public function offsetGet($offset): mixed {
         return 19 - $offset;
     }
 
-    public function offsetSet($offset, $value) {
+    public function offsetSet($offset, $value): void {
         throw new Exception('Not implemented');
     }
 
-    public function offsetUnset($offset) {
+    public function offsetUnset($offset): void {
         throw new Exception('Not implemented');
     }
 
-    public function count() {
+    public function count(): int {
         return 20;
     }
 }

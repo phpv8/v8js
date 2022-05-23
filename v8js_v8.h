@@ -100,6 +100,45 @@ int v8js_get_properties_hash(v8::Local<v8::Value> jsValue, HashTable *retval, in
 #define SINCE80(x,y) x
 #endif
 
+#if PHP_VERSION_ID < 70200
+#define ZEND_BEGIN_ARG_WITH_RETURN_OBJ_INFO_EX(name, return_reference, required_num_args, class_name, allow_null) \
+        ZEND_BEGIN_ARG_INFO_EX(name, return_reference, required_num_args, allow_null)
+#endif
+
+// polyfill for ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX, which changes between 7.1 and 7.2
+#if PHP_VERSION_ID < 70200
+#define V8_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(name, return_reference, required_num_args, type, allow_null) \
+        ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(name, return_reference, required_num_args, type, /*class_name*/ 0, allow_null)
+#else
+#define V8_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(name, return_reference, required_num_args, type, allow_null) \
+        ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(name, return_reference, required_num_args, type, allow_null)
+#endif
+
+// In PHP 8.1, mismatched tentative return types emit a deprecation notice.
+// https://wiki.php.net/rfc/internal_method_return_types
+//
+// When compiling for earlier php versions, the return type is dropped.
+#if PHP_VERSION_ID < 80100
+#define ZEND_BEGIN_ARG_WITH_TENTATIVE_RETURN_TYPE_INFO_EX(name, return_reference, required_num_args, type, allow_null) \
+        ZEND_BEGIN_ARG_INFO_EX(name, return_reference, required_num_args, allow_null)
+#endif
+
+#ifndef IS_VOID
+#define IS_VOID 99
+#endif
+
+#ifndef IS_MIXED
+#define IS_MIXED 99
+#endif
+
+#ifndef _IS_BOOL
+#define _IS_BOOL 99
+#endif
+
+#ifndef IS_LONG
+#define IS_LONG 99
+#endif
+
 
 #endif /* V8JS_V8_H */
 

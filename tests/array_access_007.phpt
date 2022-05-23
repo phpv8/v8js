@@ -10,26 +10,26 @@ v8js.use_array_access = 1
 class MyArray implements ArrayAccess, Countable {
     private $data = Array('one', 'two', 'three');
 
-    public function offsetExists($offset) {
+    public function offsetExists($offset): bool {
 	return isset($this->data[$offset]);
     }
 
-    public function offsetGet($offset) {
+    public function offsetGet($offset): mixed {
 	if(!$this->offsetExists($offset)) {
 	    return null;
 	}
 	return $this->data[$offset];
     }
 
-    public function offsetSet($offset, $value) {
+    public function offsetSet($offset, $value): void {
 	$this->data[$offset] = $value;
     }
 
-    public function offsetUnset($offset) {
+    public function offsetUnset($offset): void {
 	unset($this->data[$offset]);
     }
 
-    public function count() {
+    public function count(): int {
         return max(array_keys($this->data)) + 1;
     }
 }

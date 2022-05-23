@@ -5,7 +5,7 @@ Test V8::executeString() : Exception clearing test
 --FILE--
 <?php
 
-$v8 = new V8Js(null, array(), array(), false);
+$v8 = new V8Js('', array(), array(), false);
 
 var_dump($v8->getPendingException());
 

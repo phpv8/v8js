@@ -853,7 +853,7 @@ PHP_METHOD(V8Generator, __wakeup)
 }
 /* }}} */
 
-/* {{{ mixed V8Generator::current()
+/* {{{ mixed V8Generator::current(): mixed
  */
 PHP_METHOD(V8Generator, current)
 {
@@ -868,7 +868,7 @@ PHP_METHOD(V8Generator, current)
 }
 /* }}} */
 
-/* {{{ scalar V8Generator::key()
+/* {{{ scalar V8Generator::key(): mixed
  */
 PHP_METHOD(V8Generator, key)
 {
@@ -876,7 +876,7 @@ PHP_METHOD(V8Generator, key)
 }
 /* }}} */
 
-/* {{{ void V8Generator::next()
+/* {{{ void V8Generator::next(): void
  */
 PHP_METHOD(V8Generator, next)
 {
@@ -885,7 +885,7 @@ PHP_METHOD(V8Generator, next)
 }
 /* }}} */
 
-/* {{{ void V8Generator::rewind()
+/* {{{ void V8Generator::rewind(): void
  */
 PHP_METHOD(V8Generator, rewind)
 {
@@ -901,7 +901,7 @@ PHP_METHOD(V8Generator, rewind)
 }
 /* }}} */
 
-/* {{{ boolean V8Generator::valid()
+/* {{{ boolean V8Generator::valid(): bool
  */
 PHP_METHOD(V8Generator, valid)
 {
@@ -982,19 +982,19 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO(arginfo_v8generator_wakeup, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO(arginfo_v8generator_current, 0)
+V8_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_v8generator_current, 0, 0, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO(arginfo_v8generator_key, 0)
+V8_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_v8generator_key, 0, 0, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO(arginfo_v8generator_next, 0)
+V8_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_v8generator_next, 0, 0, IS_VOID, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO(arginfo_v8generator_rewind, 0)
+V8_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_v8generator_rewind, 0, 0, IS_VOID, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO(arginfo_v8generator_valid, 0)
+V8_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_v8generator_valid, 0, 0, _IS_BOOL, 0)
 ZEND_END_ARG_INFO()
 
 static const zend_function_entry v8js_v8generator_methods[] = {/* {{{ */

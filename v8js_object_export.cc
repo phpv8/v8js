@@ -158,6 +158,10 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, c
 			fcc.called_scope = object->ce;
 			fcc.object = object;
 
+			if (!EG(current_execute_data) || !EG(current_execute_data)->func) {
+				EG(current_execute_data) = NULL;
+			}
+
 			zend_call_function(&fci, &fcc);
 		}
 		zend_catch {
