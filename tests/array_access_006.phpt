@@ -6,29 +6,55 @@ Test V8::executeString() : Enumerate ArrayAccess keys
 v8js.use_array_access = 1
 --FILE--
 <?php
+if (PHP_VERSION_ID < 80000) {
+    class MyArray implements ArrayAccess, Countable {
+        private $data = Array('one', 'two', 'three', null, 'five');
 
-class MyArray implements ArrayAccess, Countable {
-    private $data = Array('one', 'two', 'three', null, 'five');
+        public function offsetExists($offset) {
+            return isset($this->data[$offset]);
+        }
 
-    public function offsetExists($offset): bool {
-	return isset($this->data[$offset]);
+        public function offsetGet($offset) {
+            return $this->data[$offset];
+        }
+
+        public function offsetSet($offset, $value) {
+            echo "set[$offset] = $value\n";
+            $this->data[$offset] = $value;
+        }
+
+        public function offsetUnset($offset) {
+            throw new Exception('Not implemented');
+        }
+
+        public function count() {
+            return count($this->data);
+        }
     }
-
-    public function offsetGet($offset): mixed {
-	return $this->data[$offset];
-    }
-
-    public function offsetSet($offset, $value): void {
-	echo "set[$offset] = $value\n";
-	$this->data[$offset] = $value;
-    }
-
-    public function offsetUnset($offset): void {
-        throw new Exception('Not implemented');
-    }
-
-    public function count(): int {
-        return count($this->data);
+} else {
+    class MyArray implements ArrayAccess, Countable {
+        private $data = Array('one', 'two', 'three', null, 'five');
+    
+        public function offsetExists($offset): bool {
+            return isset($this->data[$offset]);
+        }
+    
+        public function offsetGet(mixed $offset): mixed {
+            return $this->data[$offset];
+        }
+    
+        public function offsetSet(mixed $offset, mixed $value): void {
+            echo "set[$offset] = $value\n";
+            $this->data[$offset] = $value;
+        }
+    
+        public function offsetUnset(mixed $offset): void {
+            throw new Exception('Not implemented');
+        }
+    
+        public function count(): int {
+            return count($this->data);
+        }
     }
 }
 

@@ -346,7 +346,7 @@ static PHP_METHOD(V8Js, __construct)
 		return;
 	}
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "|Saabz", &object_name, &vars_arr, &exts_arr, &report_uncaught, &snapshot_blob) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "|S!aabz", &object_name, &vars_arr, &exts_arr, &report_uncaught, &snapshot_blob) == FAILURE) {
 		return;
 	}
 
@@ -705,7 +705,7 @@ static PHP_METHOD(V8Js, executeString)
 	long flags = V8JS_FLAG_NONE, time_limit = 0, memory_limit = 0;
 	v8js_script *res = NULL;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "S|Slll", &str, &identifier, &flags, &time_limit, &memory_limit) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "S|S!lll", &str, &identifier, &flags, &time_limit, &memory_limit) == FAILURE) {
 		return;
 	}
 

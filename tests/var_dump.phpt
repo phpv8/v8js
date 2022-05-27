@@ -141,6 +141,10 @@ array \(11\) \{
     \["createFromImmutable"\] \=\>
     object\(Closure\)\#\d+ \{
         function \(\) \{ \[native code\] \}
+    \})?(?:
+    \["createFromInterface"\] \=\>
+    object\(Closure\)\#\d+ \{
+        function \(\) \{ \[native code\] \}
     \})?
     \["createFromFormat"\] \=\>
     object\(Closure\)\#\d+ \{

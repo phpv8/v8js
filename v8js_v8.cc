@@ -178,10 +178,6 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 	efree(timer_ctx);
 
 	if(!V8JSG(fatal_error_abort)) {
-		if (!EG(current_execute_data) || !EG(current_execute_data)->func) {
-			EG(current_execute_data) = NULL;
-		}
-
 		char exception_string[64];
 
 		if (c->time_limit_hit) {

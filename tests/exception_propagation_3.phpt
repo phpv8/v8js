@@ -10,7 +10,7 @@ class Foo {
 
 	public function __construct()
 	{
-		$this->v8 = new V8Js('', array(), array(), false);
+		$this->v8 = new V8Js(null, array(), array(), false);
 		$this->v8->foo = $this;
 		$this->v8->executeString('function foobar() { throw new SyntaxError(); }', 'throw_1');
 		$this->v8->executeString('try { foobar(); } catch (e) { print(e + " caught in JS!\n"); }', 'trycatch1');

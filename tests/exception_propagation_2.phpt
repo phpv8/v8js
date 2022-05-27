@@ -10,7 +10,7 @@ class Foo {
 
 	public function __construct()
 	{
-		$this->v8 = new V8Js('', array(), array(), false);
+		$this->v8 = new V8Js(null, array(), array(), false);
 		$this->v8->foo = $this;
 		$this->v8->executeString('fooobar', 'throw_0');
 		var_dump($this->v8->getPendingException());

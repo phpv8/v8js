@@ -140,7 +140,7 @@ static zval *v8js_v8object_read_property(SINCE80(zend_object, zval) *_object, SI
 	{
 		zend_throw_exception(php_ce_v8js_exception,
 							 "Can't access V8Object after V8Js instance is destroyed!", 0);
-		return retval;
+		return SINCE80(&EG(uninitialized_zval), retval);
 	}
 
 	V8JS_CTX_PROLOGUE_EX(obj->ctx, retval);
@@ -152,7 +152,7 @@ static zval *v8js_v8object_read_property(SINCE80(zend_object, zval) *_object, SI
 		{
 			zend_throw_exception(php_ce_v8js_exception,
 								 "Member name length exceeds maximum supported length", 0);
-			return retval;
+			return SINCE80(&EG(uninitialized_zval), retval);
 		}
 
 		v8::Local<v8::String> jsKey = V8JS_ZSYM(member);
@@ -313,9 +313,8 @@ static ZEND_FUNCTION(zend_v8object_func)
 
 	/* Cleanup trampoline */
 	ZEND_ASSERT(EX(func)->common.fn_flags & ZEND_ACC_CALL_VIA_TRAMPOLINE);
-	zend_string_release(EX(func)->common.function_name);
-	zend_free_trampoline(EX(func));
-	EX(func) = NULL;
+
+	bool bail = false;
 
 	v8js_v8object *obj = v8js_v8object_fetch_object(object);
 
@@ -323,18 +322,25 @@ static ZEND_FUNCTION(zend_v8object_func)
 	{
 		zend_throw_exception(php_ce_v8js_exception,
 							 "Can't access V8Object after V8Js instance is destroyed!", 0);
-		return;
+		bail = true;
 	}
 
 	if (obj->v8obj.IsEmpty())
 	{
-		return;
+		bail = true;
 	}
 
 	if (ZSTR_LEN(method) > std::numeric_limits<int>::max())
 	{
 		zend_throw_exception(php_ce_v8js_exception,
 							 "Method name length exceeds maximum supported length", 0);
+		bail = true;
+	}
+	
+	if (bail) {
+		zend_string_release(EX(func)->common.function_name);
+		zend_free_trampoline(EX(func));
+		EX(func) = NULL;
 		return;
 	}
 
@@ -413,6 +419,10 @@ static ZEND_FUNCTION(zend_v8object_func)
 		efree(argv);
 	}
 
+	zend_string_release(EX(func)->common.function_name);
+	zend_free_trampoline(EX(func));
+	EX(func) = NULL;
+
 	if (V8JSG(fatal_error_abort))
 	{
 		/* Check for fatal error marker possibly set by v8js_error_handler; just
@@ -458,7 +468,9 @@ static zend_function *v8js_v8object_get_method(zend_object **object_ptr, zend_st
 			return f;
 #else
 			f = (zend_internal_function *)ecalloc(1, sizeof(*f));
-			f->type = ZEND_ACC_CALL_VIA_HANDLER;
+			f->type = ZEND_INTERNAL_FUNCTION;
+			f->scope = (*object_ptr)->ce;
+			f->fn_flags = ZEND_ACC_CALL_VIA_HANDLER;
 			f->handler = ZEND_FN(zend_v8object_func);
 			f->function_name = zend_string_copy(method);
 			return (zend_function *)f;
@@ -613,7 +625,9 @@ static int v8js_v8object_get_closure(zval *object, zend_class_entry **ce_ptr, ze
 	*fptr_ptr = invoke;
 #else
 	invoke = (zend_internal_function *)ecalloc(1, sizeof(*invoke));
-	invoke->type = ZEND_ACC_CALL_VIA_HANDLER;
+	invoke->type = ZEND_INTERNAL_FUNCTION;
+	invoke->fn_flags = ZEND_ACC_CALL_VIA_HANDLER;
+	invoke->scope = object->ce;
 	invoke->handler = ZEND_FN(zend_v8object_func);
 	invoke->function_name = zend_string_init(V8JS_V8_INVOKE_FUNC_NAME, sizeof(V8JS_V8_INVOKE_FUNC_NAME) - 1, 0);
 	*fptr_ptr = (zend_function *)invoke;

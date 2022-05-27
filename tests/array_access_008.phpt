@@ -6,28 +6,53 @@ Test V8::executeString() : in array (isset) behaviour of ArrayAccess
 v8js.use_array_access = 1
 --FILE--
 <?php
+if (PHP_VERSION_ID < 80000) {
+    class MyArray implements ArrayAccess, Countable {
+        private $data = Array('one', null, 'three');
 
-class MyArray implements ArrayAccess, Countable {
-    private $data = Array('one', null, 'three');
+        public function offsetExists($offset) {
+            return isset($this->data[$offset]);
+        }
 
-    public function offsetExists($offset): bool {
-	return isset($this->data[$offset]);
+        public function offsetGet($offset) {
+            return $this->data[$offset];
+        }
+
+        public function offsetSet($offset, $value) {
+            $this->data[$offset] = $value;
+        }
+
+        public function offsetUnset($offset) {
+            unset($this->data[$offset]);
+        }
+
+        public function count() {
+            return max(array_keys($this->data)) + 1;
+        }
     }
-
-    public function offsetGet($offset): mixed {
-	return $this->data[$offset];
-    }
-
-    public function offsetSet($offset, $value): void {
-	$this->data[$offset] = $value;
-    }
-
-    public function offsetUnset($offset): void {
-	unset($this->data[$offset]);
-    }
-
-    public function count(): int {
-        return max(array_keys($this->data)) + 1;
+} else {
+    class MyArray implements ArrayAccess, Countable {
+        private $data = Array('one', null, 'three');
+    
+        public function offsetExists($offset): bool {
+            return isset($this->data[$offset]);
+        }
+    
+        public function offsetGet(mixed $offset): mixed {
+            return $this->data[$offset];
+        }
+    
+        public function offsetSet(mixed $offset, mixed $value): void {
+            $this->data[$offset] = $value;
+        }
+    
+        public function offsetUnset(mixed $offset): void {
+            unset($this->data[$offset]);
+        }
+    
+        public function count(): int {
+            return max(array_keys($this->data)) + 1;
+        }
     }
 }
 

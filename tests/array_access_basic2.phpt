@@ -6,28 +6,53 @@ Test V8::executeString() : Check array access setter behaviour
 v8js.use_array_access = 1
 --FILE--
 <?php
-
-class MyArray implements ArrayAccess, Countable {
-    private $data = array('one', 'two', 'three');
-
-    public function offsetExists($offset): bool {
-        return isset($this->data[$offset]);
+if (PHP_VERSION_ID < 80000) {
+    class MyArray implements ArrayAccess, Countable {
+        private $data = array('one', 'two', 'three');
+    
+        public function offsetExists($offset) {
+            return isset($this->data[$offset]);
+        }
+    
+        public function offsetGet($offset) {
+            return $this->data[$offset];
+        }
+    
+        public function offsetSet($offset, $value) {
+            $this->data[$offset] = $value;
+        }
+    
+        public function offsetUnset($offset) {
+            throw new Exception('Not implemented');
+        }
+    
+        public function count() {
+            return count($this->data);
+        }
     }
+} else {
+    class MyArray implements ArrayAccess, Countable {
+        private $data = array('one', 'two', 'three');
 
-    public function offsetGet($offset): mixed {
-        return $this->data[$offset];
-    }
+        public function offsetExists($offset): bool {
+            return isset($this->data[$offset]);
+        }
 
-    public function offsetSet($offset, $value): void {
-        $this->data[$offset] = $value;
-    }
+        public function offsetGet(mixed $offset): mixed {
+            return $this->data[$offset];
+        }
 
-    public function offsetUnset($offset): void {
-        throw new Exception('Not implemented');
-    }
+        public function offsetSet(mixed $offset, mixed $value): void {
+            $this->data[$offset] = $value;
+        }
 
-    public function count(): int {
-        return count($this->data);
+        public function offsetUnset(mixed $offset): void {
+            throw new Exception('Not implemented');
+        }
+
+        public function count(): int {
+            return count($this->data);
+        }
     }
 }
 

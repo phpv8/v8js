@@ -54,22 +54,10 @@ try {
 
 ?>
 ===EOF===
---EXPECTREGEX--
-(?:Warning\: Creating default object from empty value in [^\r\n]+\/issue_250_001\.php on line 9\s*)+
-object\(TestObject\)\#\d+ \(3\) \{
-  \["data"\:"TestObject"\:private\]\=\>
-  object\(V8Object\)\#\d+ \(0\) \{
-  \}
-  \["meta"\:"TestObject"\:private\]\=\>
-  array\(0\) \{
-  \}
-  \["a"\]\=\>
-  object\(stdClass\)\#\d+ \(1\) \{
-    \["b"\]\=\>
-    object\(stdClass\)\#\d+ \(1\) \{
-      \["title"\]\=\>
-      string\(4\) "ouch"
-    \}
-  \}
-\}
-\=\=\=EOF\=\=\=
+--EXPECTF--
+Fatal error: Uncaught Error: Attempt to modify property "b" on null in %s%eissue_250_001.php:9
+Stack trace:
+#0 [internal function]: TestObject->setTitle('ouch')
+#1 %s%eissue_250_001.php(44): V8Js->executeString('    var v1 = se...')
+#2 {main}
+  thrown in %s%eissue_250_001.php on line 9
