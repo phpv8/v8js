@@ -120,135 +120,151 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 {
 	char *tz = NULL;
 
-	V8JS_CTX_PROLOGUE(c);
+	// hold extra reference on v8 instance as long as we call into V8 (issue #472)
+	zend_object *obj = v8js_ctx_to_zend_object(c);
+	zval zv_v8inst;
+	ZVAL_OBJ(&zv_v8inst, obj);
+	Z_ADDREF_P(&zv_v8inst);
 
-	V8JSG(timer_mutex).lock();
-	c->time_limit_hit = false;
-	c->memory_limit_hit = false;
-	V8JSG(timer_mutex).unlock();
+	{
+		V8JS_CTX_PROLOGUE(c);
 
-	/* Catch JS exceptions */
-	v8::TryCatch try_catch(isolate);
+		V8JSG(timer_mutex).lock();
+		c->time_limit_hit = false;
+		c->memory_limit_hit = false;
+		V8JSG(timer_mutex).unlock();
 
-	/* Set flags for runtime use */
-	c->flags = flags;
+		/* Catch JS exceptions */
+		v8::TryCatch try_catch(isolate);
 
-	/* Check if timezone has been changed and notify V8 */
-	tz = getenv("TZ");
+		/* Set flags for runtime use */
+		c->flags = flags;
 
-	if (tz != NULL) {
-		if (c->tz == NULL) {
-			c->tz = strdup(tz);
-		}
-		else if (strcmp(c->tz, tz) != 0) {
-			c->isolate->DateTimeConfigurationChangeNotification();
+		/* Check if timezone has been changed and notify V8 */
+		tz = getenv("TZ");
 
-			free(c->tz);
-			c->tz = strdup(tz);
-		}
-	}
+		if (tz != NULL) {
+			if (c->tz == NULL) {
+				c->tz = strdup(tz);
+			}
+			else if (strcmp(c->tz, tz) != 0) {
+				c->isolate->DateTimeConfigurationChangeNotification();
 
-	if (time_limit > 0 || memory_limit > 0) {
-		// If timer thread is not running then start it
-		if (!V8JSG(timer_thread)) {
-			// If not, start timer thread
-			V8JSG(timer_thread) = new std::thread(v8js_timer_thread, ZEND_MODULE_GLOBALS_BULK(v8js));
-		}
-	}
-
-	/* Always pass the timer to the stack so there can be follow-up changes to
-	 * the time & memory limit. */
-	v8js_timer_push(time_limit, memory_limit, c);
-
-	/* Execute script */
-	c->in_execution++;
-	v8::MaybeLocal<v8::Value> result = v8_call(c->isolate);
-	c->in_execution--;
-
-	/* Pop our context from the stack and read (possibly updated) limits
-	 * into local variables. */
-	V8JSG(timer_mutex).lock();
-	v8js_timer_ctx *timer_ctx = V8JSG(timer_stack).front();
-	V8JSG(timer_stack).pop_front();
-	V8JSG(timer_mutex).unlock();
-
-	time_limit = timer_ctx->time_limit;
-	memory_limit = timer_ctx->memory_limit;
-
-	efree(timer_ctx);
-
-	if(!V8JSG(fatal_error_abort)) {
-		char exception_string[64];
-
-		if (c->time_limit_hit) {
-			// Execution has been terminated due to time limit
-			sprintf(exception_string, "Script time limit of %lu milliseconds exceeded", time_limit);
-			zend_throw_exception(php_ce_v8js_time_limit_exception, exception_string, 0);
-			return;
+				free(c->tz);
+				c->tz = strdup(tz);
+			}
 		}
 
-		if (memory_limit && !c->memory_limit_hit) {
-			// Re-check memory limit (very short executions might never be hit by timer thread)
-			v8::HeapStatistics hs;
-			isolate->GetHeapStatistics(&hs);
+		if (time_limit > 0 || memory_limit > 0) {
+			// If timer thread is not running then start it
+			if (!V8JSG(timer_thread)) {
+				// If not, start timer thread
+				V8JSG(timer_thread) = new std::thread(v8js_timer_thread, ZEND_MODULE_GLOBALS_BULK(v8js));
+			}
+		}
 
-			if (hs.used_heap_size() > memory_limit) {
-				isolate->LowMemoryNotification();
+		/* Always pass the timer to the stack so there can be follow-up changes to
+		 * the time & memory limit. */
+		v8js_timer_push(time_limit, memory_limit, c);
+
+		/* Execute script */
+		c->in_execution++;
+		v8::MaybeLocal<v8::Value> result = v8_call(c->isolate);
+		c->in_execution--;
+
+		/* Pop our context from the stack and read (possibly updated) limits
+		 * into local variables. */
+		V8JSG(timer_mutex).lock();
+		v8js_timer_ctx *timer_ctx = V8JSG(timer_stack).front();
+		V8JSG(timer_stack).pop_front();
+		V8JSG(timer_mutex).unlock();
+
+		time_limit = timer_ctx->time_limit;
+		memory_limit = timer_ctx->memory_limit;
+
+		efree(timer_ctx);
+
+		if(!V8JSG(fatal_error_abort)) {
+			char exception_string[64];
+
+			if (c->time_limit_hit) {
+				// Execution has been terminated due to time limit
+				sprintf(exception_string, "Script time limit of %lu milliseconds exceeded", time_limit);
+				zend_throw_exception(php_ce_v8js_time_limit_exception, exception_string, 0);
+				zval_ptr_dtor(&zv_v8inst);
+				return;
+			}
+
+			if (memory_limit && !c->memory_limit_hit) {
+				// Re-check memory limit (very short executions might never be hit by timer thread)
+				v8::HeapStatistics hs;
 				isolate->GetHeapStatistics(&hs);
 
 				if (hs.used_heap_size() > memory_limit) {
-					c->memory_limit_hit = true;
-				}
-			}
-		}
+					isolate->LowMemoryNotification();
+					isolate->GetHeapStatistics(&hs);
 
-		if (c->memory_limit_hit) {
-			// Execution has been terminated due to memory limit
-			sprintf(exception_string, "Script memory limit of %lu bytes exceeded", memory_limit);
-			zend_throw_exception(php_ce_v8js_memory_limit_exception, exception_string, 0);
-			return;
-		}
-
-		if (!try_catch.CanContinue()) {
-			// At this point we can't re-throw the exception
-			return;
-		}
-
-		/* There was pending exception left from earlier executions -> throw to PHP */
-		if (Z_TYPE(c->pending_exception) == IS_OBJECT) {
-			zend_throw_exception_object(&c->pending_exception);
-			ZVAL_NULL(&c->pending_exception);
-		}
-
-		/* Handle runtime JS exceptions */
-		if (try_catch.HasCaught()) {
-
-			/* Pending exceptions are set only in outer caller, inner caller exceptions are always rethrown */
-			if (c->in_execution < 1) {
-
-				/* Report immediately if report_uncaught is true */
-				if (c->report_uncaught) {
-					v8js_throw_script_exception(c->isolate, &try_catch);
-					return;
-				}
-
-				/* Exception thrown from JS, preserve it for future execution */
-				if (result.IsEmpty()) {
-					v8js_create_script_exception(&c->pending_exception, c->isolate, &try_catch);
-					return;
+					if (hs.used_heap_size() > memory_limit) {
+						c->memory_limit_hit = true;
+					}
 				}
 			}
 
-			/* Rethrow back to JS */
-			try_catch.ReThrow();
-			return;
-		}
+			if (c->memory_limit_hit) {
+				// Execution has been terminated due to memory limit
+				sprintf(exception_string, "Script memory limit of %lu bytes exceeded", memory_limit);
+				zend_throw_exception(php_ce_v8js_memory_limit_exception, exception_string, 0);
+				zval_ptr_dtor(&zv_v8inst);
+				return;
+			}
 
-		/* Convert V8 value to PHP value */
-		if (return_value && !result.IsEmpty()) {
-			v8js_to_zval(result.ToLocalChecked(), *return_value, flags, c->isolate);
+			if (!try_catch.CanContinue()) {
+				// At this point we can't re-throw the exception
+				zval_ptr_dtor(&zv_v8inst);
+				return;
+			}
+
+			/* There was pending exception left from earlier executions -> throw to PHP */
+			if (Z_TYPE(c->pending_exception) == IS_OBJECT) {
+				zend_throw_exception_object(&c->pending_exception);
+				ZVAL_NULL(&c->pending_exception);
+			}
+
+			/* Handle runtime JS exceptions */
+			if (try_catch.HasCaught()) {
+
+				/* Pending exceptions are set only in outer caller, inner caller exceptions are always rethrown */
+				if (c->in_execution < 1) {
+
+					/* Report immediately if report_uncaught is true */
+					if (c->report_uncaught) {
+						v8js_throw_script_exception(c->isolate, &try_catch);
+						zval_ptr_dtor(&zv_v8inst);
+						return;
+					}
+
+					/* Exception thrown from JS, preserve it for future execution */
+					if (result.IsEmpty()) {
+						v8js_create_script_exception(&c->pending_exception, c->isolate, &try_catch);
+						zval_ptr_dtor(&zv_v8inst);
+						return;
+					}
+				}
+
+				/* Rethrow back to JS */
+				try_catch.ReThrow();
+				zval_ptr_dtor(&zv_v8inst);
+				return;
+			}
+
+			/* Convert V8 value to PHP value */
+			if (return_value && !result.IsEmpty()) {
+				v8js_to_zval(result.ToLocalChecked(), *return_value, flags, c->isolate);
+			}
 		}
 	}
+
+	zval_ptr_dtor(&zv_v8inst);
 }
 /* }}} */
 
