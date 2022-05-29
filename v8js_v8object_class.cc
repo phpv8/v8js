@@ -263,6 +263,14 @@ static HashTable *v8js_v8object_get_properties(zval *object) /* {{{ */
 }
 /* }}} */
 
+static HashTable *v8js_v8object_get_gc(zval *object, zval **table, int *n) /* {{{ */
+{
+	*table = NULL;
+	*n = 0;
+	return NULL;
+}
+/* }}} */
+
 static HashTable *v8js_v8object_get_debug_info(zval *object, int *is_temp) /* {{{ */
 {
 	*is_temp = 0;
@@ -828,6 +836,7 @@ PHP_MINIT_FUNCTION(v8js_v8object_class) /* {{{ */
 	v8js_v8object_handlers.get_properties = v8js_v8object_get_properties;
 	v8js_v8object_handlers.get_method = v8js_v8object_get_method;
 	v8js_v8object_handlers.call_method = v8js_v8object_call_method;
+	v8js_v8object_handlers.get_gc = v8js_v8object_get_gc;
 	v8js_v8object_handlers.get_debug_info = v8js_v8object_get_debug_info;
 	v8js_v8object_handlers.get_closure = v8js_v8object_get_closure;
 	v8js_v8object_handlers.offset = XtOffsetOf(struct v8js_v8object, std);
