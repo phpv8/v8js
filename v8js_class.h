@@ -83,6 +83,10 @@ static inline struct v8js_ctx *v8js_ctx_fetch_object(zend_object *obj) {
 	return (struct v8js_ctx *)((char *)obj - XtOffsetOf(struct v8js_ctx, std));
 }
 
+static inline zend_object *v8js_ctx_to_zend_object(struct v8js_ctx *ctx) {
+	return (zend_object *)((char *)ctx + XtOffsetOf(struct v8js_ctx, std));
+}
+
 #define Z_V8JS_CTX_OBJ_P(zv) v8js_ctx_fetch_object(Z_OBJ_P(zv));
 
 
