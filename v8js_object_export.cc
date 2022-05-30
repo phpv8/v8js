@@ -787,7 +787,7 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::Name> property_n
 			const zend_object_handlers *h = object->handlers;
 
 			if (callback_type == V8JS_PROP_QUERY) {
-				if (h->has_property(&zobject, SINCE80(Z_STR_P(&zname), &zname), 0, NULL)) {
+				if (h->has_property(&zobject, Z_STR_P(&zname), 0, NULL)) {
 					ret_value = V8JS_UINT(v8::None);
 				} else {
 					ret_value = v8::Local<v8::Value>(); // empty handle
@@ -798,7 +798,7 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::Name> property_n
 				if(!property_info ||
 				   (property_info != ZEND_WRONG_PROPERTY_INFO &&
 					property_info->flags & ZEND_ACC_PUBLIC)) {
-					h->unset_property(&zobject, SINCE80(Z_STR_P(&zname), &zname), NULL);
+					h->unset_property(&zobject, Z_STR_P(&zname), NULL);
 					ret_value = V8JS_TRUE();
 				}
 				else {
