@@ -276,6 +276,14 @@ static HashTable *v8js_v8object_get_properties(zend_object *object) /* {{{ */
 }
 /* }}} */
 
+static HashTable *v8js_v8object_get_gc(zend_object *object, zval **table, int *n) /* {{{ */
+{
+	*table = NULL;
+	*n = 0;
+	return NULL;
+}
+/* }}} */
+
 static HashTable *v8js_v8object_get_debug_info(zend_object *object, int *is_temp) /* {{{ */
 {
 	*is_temp = 0;
@@ -453,118 +461,6 @@ static zend_function *v8js_v8object_get_method(zend_object **object_ptr, zend_st
 	}
 
 	return NULL;
-}
-/* }}} */
-
-static int v8js_v8object_call_method(zend_string *method, zend_object *object, INTERNAL_FUNCTION_PARAMETERS) /* {{{ */
-{
-	zval *argv = NULL;
-	int argc = ZEND_NUM_ARGS();
-
-	v8js_v8object *obj = v8js_v8object_fetch_object(object);
-
-	if (!obj->ctx)
-	{
-		zend_throw_exception(php_ce_v8js_exception,
-							 "Can't access V8Object after V8Js instance is destroyed!", 0);
-		return FAILURE;
-	}
-
-	if (obj->v8obj.IsEmpty())
-	{
-		return FAILURE;
-	}
-
-	if (ZSTR_LEN(method) > std::numeric_limits<int>::max())
-	{
-		zend_throw_exception(php_ce_v8js_exception,
-							 "Method name length exceeds maximum supported length", 0);
-		return FAILURE;
-	}
-
-	if (argc > 0)
-	{
-		argv = (zval *)safe_emalloc(sizeof(zval), argc, 0);
-		zend_get_parameters_array_ex(argc, argv);
-	}
-
-	/* std::function relies on its dtor to be executed, otherwise it leaks
-	 * some memory on bailout. */
-	{
-		std::function<v8::MaybeLocal<v8::Value>(v8::Isolate *)> v8_call = [obj, method, argc, argv, object, &return_value](v8::Isolate *isolate)
-		{
-			int i = 0;
-
-			v8::Local<v8::Context> v8_context = isolate->GetEnteredOrMicrotaskContext();
-			v8::Local<v8::String> method_name = V8JS_SYML(ZSTR_VAL(method), static_cast<int>(ZSTR_LEN(method)));
-			v8::Local<v8::Object> v8obj = v8::Local<v8::Value>::New(isolate, obj->v8obj)->ToObject(v8_context).ToLocalChecked();
-			v8::Local<v8::Object> thisObj;
-			v8::Local<v8::Function> cb;
-
-			if (method_name->Equals(v8_context, V8JS_SYM(V8JS_V8_INVOKE_FUNC_NAME)).FromMaybe(false))
-			{
-				cb = v8::Local<v8::Function>::Cast(v8obj);
-			}
-			else
-			{
-				v8::Local<v8::Value> slot;
-
-				if (!v8obj->Get(v8_context, method_name).ToLocal(&slot))
-				{
-					return v8::MaybeLocal<v8::Value>();
-				}
-
-				cb = v8::Local<v8::Function>::Cast(slot);
-			}
-
-			// If a method is invoked on V8Object, then set the object itself as
-			// "this" on JS side.  Otherwise fall back to global object.
-			if (obj->std.ce == php_ce_v8object)
-			{
-				thisObj = v8obj;
-			}
-			else
-			{
-				thisObj = V8JS_GLOBAL(isolate);
-			}
-
-			v8::Local<v8::Value> *jsArgv = static_cast<v8::Local<v8::Value> *>(alloca(sizeof(v8::Local<v8::Value>) * argc));
-
-			for (i = 0; i < argc; i++)
-			{
-				new (&jsArgv[i]) v8::Local<v8::Value>;
-				jsArgv[i] = v8::Local<v8::Value>::New(isolate, zval_to_v8js(&argv[i], isolate));
-			}
-
-			v8::MaybeLocal<v8::Value> result = cb->Call(v8_context, thisObj, argc, jsArgv);
-
-			if (obj->std.ce == php_ce_v8object && !result.IsEmpty() && result.ToLocalChecked()->StrictEquals(thisObj))
-			{
-				/* JS code did "return this", retain object identity */
-				ZVAL_OBJ(return_value, object);
-				zval_copy_ctor(return_value);
-				result = v8::MaybeLocal<v8::Value>();
-			}
-
-			return result;
-		};
-
-		v8js_v8_call(obj->ctx, &return_value, obj->flags, obj->ctx->time_limit, obj->ctx->memory_limit, v8_call);
-	}
-
-	if (argc > 0)
-	{
-		efree(argv);
-	}
-
-	if (V8JSG(fatal_error_abort))
-	{
-		/* Check for fatal error marker possibly set by v8js_error_handler; just
-		 * rethrow the error since we're now out of V8. */
-		zend_bailout();
-	}
-
-	return SUCCESS;
 }
 /* }}} */
 
@@ -1023,6 +919,7 @@ PHP_MINIT_FUNCTION(v8js_v8object_class) /* {{{ */
 	v8js_v8object_handlers.unset_property = v8js_v8object_unset_property;
 	v8js_v8object_handlers.get_properties = v8js_v8object_get_properties;
 	v8js_v8object_handlers.get_method = v8js_v8object_get_method;
+	v8js_v8object_handlers.get_gc = v8js_v8object_get_gc;
 	v8js_v8object_handlers.get_debug_info = v8js_v8object_get_debug_info;
 	v8js_v8object_handlers.get_closure = v8js_v8object_get_closure;
 	v8js_v8object_handlers.offset = XtOffsetOf(struct v8js_v8object, std);
