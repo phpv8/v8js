@@ -59,10 +59,6 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, c
 
 	/* zend_fcall_info */
 	fci.size = sizeof(fci);
-#if (PHP_MAJOR_VERSION == 7 && PHP_MINOR_VERSION == 0)
-	fci.function_table = &object->ce->function_table;
-	fci.symbol_table = NULL;
-#endif
 	fci.function_name = fname;
 	fci.object = object;
 	fci.retval = &retval;
@@ -137,11 +133,7 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, c
 	} else {
 		fci.params = NULL;
 	}
-#if (PHP_MAJOR_VERSION < 8)
-	fci.no_separation = 1;
-#else
 	fci.named_params = NULL;
-#endif
 	info.GetReturnValue().Set(V8JS_NULL);
 
 	{
