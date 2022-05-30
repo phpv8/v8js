@@ -87,9 +87,7 @@ static inline struct v8js_ctx *v8js_ctx_fetch_object(zend_object *obj) {
 #define Z_V8JS_CTX_OBJ(zv) v8js_ctx_fetch_object(zv);
 
 
-#if PHP_VERSION_ID >= 80000
 #define ZEND_ACC_DTOR 0
-#endif
 
 PHP_MINIT_FUNCTION(v8js_class);
 

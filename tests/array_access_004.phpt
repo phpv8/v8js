@@ -6,73 +6,37 @@ Test V8::executeString() : Export PHP properties on ArrayAccess objects
 v8js.use_array_access = 1
 --FILE--
 <?php
-if (PHP_VERSION_ID < 80000) {
-    class MyArray implements ArrayAccess, Countable {
-        private $data = Array('one', 'two', 'three');
+class MyArray implements ArrayAccess, Countable {
+    private $data = Array('one', 'two', 'three');
 
-        private $privFoo = 23;
-        protected $protFoo = 23;
-        public $pubFoo = 42;
+    private $privFoo = 23;
+    protected $protFoo = 23;
+    public $pubFoo = 42;
 
-        /* We can have a length property on the PHP object, but the length property
-        * of the JS object will still call count() method.  Anyways it should be
-        * accessibly as $length. */
-        public $length = 42;
+    /* We can have a length property on the PHP object, but the length property
+    * of the JS object will still call count() method.  Anyways it should be
+    * accessibly as $length. */
+    public $length = 42;
 
-        public function offsetExists($offset) {
-            return isset($this->data[$offset]);
-        }
-
-        public function offsetGet($offset) {
-            return $this->data[$offset];
-        }
-
-        public function offsetSet($offset, $value) {
-            echo "set[$offset] = $value\n";
-            $this->data[$offset] = $value;
-        }
-
-        public function offsetUnset($offset) {
-            throw new Exception('Not implemented');
-        }
-
-        public function count() {
-            return count($this->data);
-        }
+    public function offsetExists($offset): bool {
+        return isset($this->data[$offset]);
     }
-} else {
-    class MyArray implements ArrayAccess, Countable {
-        private $data = Array('one', 'two', 'three');
 
-        private $privFoo = 23;
-        protected $protFoo = 23;
-        public $pubFoo = 42;
+    public function offsetGet(mixed $offset): mixed {
+        return $this->data[$offset];
+    }
 
-        /* We can have a length property on the PHP object, but the length property
-        * of the JS object will still call count() method.  Anyways it should be
-        * accessibly as $length. */
-        public $length = 42;
+    public function offsetSet(mixed $offset, mixed $value): void {
+        echo "set[$offset] = $value\n";
+        $this->data[$offset] = $value;
+    }
 
-        public function offsetExists($offset): bool {
-            return isset($this->data[$offset]);
-        }
+    public function offsetUnset(mixed $offset): void {
+        throw new Exception('Not implemented');
+    }
 
-        public function offsetGet(mixed $offset): mixed {
-            return $this->data[$offset];
-        }
-
-        public function offsetSet(mixed $offset, mixed $value): void {
-            echo "set[$offset] = $value\n";
-            $this->data[$offset] = $value;
-        }
-
-        public function offsetUnset(mixed $offset): void {
-            throw new Exception('Not implemented');
-        }
-
-        public function count(): int {
-            return count($this->data);
-        }
+    public function count(): int {
+        return count($this->data);
     }
 }
 

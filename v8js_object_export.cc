@@ -150,9 +150,6 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, c
 
 		zend_try {
 			/* zend_fcall_info_cache */
-#if PHP_VERSION_ID < 70300
-			fcc.initialized = 1;
-#endif
 			fcc.function_handler = method_ptr;
 			fcc.calling_scope = object->ce;
 			fcc.called_scope = object->ce;
@@ -643,12 +640,7 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::Name> property_n
 	zval php_value;
 
 	zend_object *object = reinterpret_cast<zend_object *>(self->GetAlignedPointerFromInternalField(1));
-	#if PHP_VERSION_ID < 80000
-	zval zobject;
-	ZVAL_OBJ(&zobject, object);
-	#else
 	zend_object &zobject = *object;
-	#endif
 
 	v8js_function_tmpl_t *tmpl_ptr = reinterpret_cast<v8js_function_tmpl_t *>(self->GetAlignedPointerFromInternalField(0));
 	v8::Local<v8::FunctionTemplate> tmpl = v8::Local<v8::FunctionTemplate>::New(isolate, *tmpl_ptr);
@@ -1031,11 +1023,7 @@ static v8::Local<v8::Object> v8js_wrap_array_to_object(v8::Isolate *isolate, zva
 	{
 		zval *data;
 
-#if PHP_VERSION_ID >= 70300
 		if (myht && !(GC_FLAGS(myht) & GC_IMMUTABLE)) {
-#else
-		if (myht) {
-#endif
 			GC_PROTECT_RECURSION(myht);
 		}
 
@@ -1067,11 +1055,7 @@ static v8::Local<v8::Object> v8js_wrap_array_to_object(v8::Isolate *isolate, zva
 
 		} ZEND_HASH_FOREACH_END();
 
-#if PHP_VERSION_ID >= 70300
 		if (myht && !(GC_FLAGS(myht) & GC_IMMUTABLE)) {
-#else
-		if (myht) {
-#endif
 			GC_UNPROTECT_RECURSION(myht);
 		}
 
@@ -1095,11 +1079,7 @@ v8::Local<v8::Value> v8js_hash_to_jsobj(zval *value, v8::Isolate *isolate) /* {{
 	}
 
 	/* Prevent recursion */
-#if PHP_VERSION_ID >= 70300
 	if (myht && GC_IS_RECURSIVE(myht)) {
-#else
-	if (myht && ZEND_HASH_GET_APPLY_COUNT(myht) > 1) {
-#endif
 		return V8JS_NULL;
 	}
 

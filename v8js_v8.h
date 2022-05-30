@@ -88,31 +88,12 @@ int v8js_get_properties_hash(v8::Local<v8::Value> jsValue, HashTable *retval, in
 	V8JS_CTX_PROLOGUE(ctx);
 
 
-#if PHP_VERSION_ID < 70400
-#define SINCE74(x,y) y
-#else
 #define SINCE74(x,y) x
-#endif
-
-#if PHP_VERSION_ID < 80000
-#define SINCE80(x,y) y
-#else
 #define SINCE80(x,y) x
-#endif
-
-#if PHP_VERSION_ID < 70200
-#define ZEND_BEGIN_ARG_WITH_RETURN_OBJ_INFO_EX(name, return_reference, required_num_args, class_name, allow_null) \
-        ZEND_BEGIN_ARG_INFO_EX(name, return_reference, required_num_args, allow_null)
-#endif
 
 // polyfill for ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX, which changes between 7.1 and 7.2
-#if PHP_VERSION_ID < 70200
-#define V8_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(name, return_reference, required_num_args, type, allow_null) \
-        ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(name, return_reference, required_num_args, type, /*class_name*/ 0, allow_null)
-#else
 #define V8_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(name, return_reference, required_num_args, type, allow_null) \
         ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(name, return_reference, required_num_args, type, allow_null)
-#endif
 
 // In PHP 8.1, mismatched tentative return types emit a deprecation notice.
 // https://wiki.php.net/rfc/internal_method_return_types

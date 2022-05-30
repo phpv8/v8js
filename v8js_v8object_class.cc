@@ -252,14 +252,6 @@ static HashTable *v8js_v8object_get_properties(SINCE80(zend_object, zval) *objec
 
 	if (obj->properties == NULL)
 	{
-#if PHP_VERSION_ID < 70300
-		if (GC_G(gc_active))
-		{
-			/* the garbage collector is running, don't create more zvals */
-			return NULL;
-		}
-#endif
-
 		ALLOC_HASHTABLE(obj->properties);
 		zend_hash_init(obj->properties, 0, NULL, ZVAL_PTR_DTOR, 0);
 
@@ -461,12 +453,6 @@ static zend_function *v8js_v8object_get_method(zend_object **object_ptr, zend_st
 
 		if (v8obj->ToObject(v8_context).ToLocal(&jsObj) && jsObj->Has(v8_context, jsKey).FromMaybe(false) && jsObj->Get(v8_context, jsKey).ToLocal(&jsObjSlot) && jsObjSlot->IsFunction())
 		{
-#if PHP_VERSION_ID < 80000
-			f = (zend_function *)ecalloc(1, sizeof(*f));
-			f->type = ZEND_OVERLOADED_FUNCTION_TEMPORARY;
-			f->common.function_name = zend_string_copy(method);
-			return f;
-#else
 			f = (zend_internal_function *)ecalloc(1, sizeof(*f));
 			f->type = ZEND_INTERNAL_FUNCTION;
 			f->scope = (*object_ptr)->ce;
@@ -474,7 +460,6 @@ static zend_function *v8js_v8object_get_method(zend_object **object_ptr, zend_st
 			f->handler = ZEND_FN(zend_v8object_func);
 			f->function_name = zend_string_copy(method);
 			return (zend_function *)f;
-#endif
 		}
 	}
 
@@ -594,11 +579,7 @@ static int v8js_v8object_call_method(zend_string *method, zend_object *object, I
 }
 /* }}} */
 
-#if PHP_VERSION_ID >= 80000
 static int v8js_v8object_get_closure(zend_object *object, zend_class_entry **ce_ptr, zend_function **fptr_ptr, zend_object **zobj_ptr, bool call) /* {{{ */
-#else
-static int v8js_v8object_get_closure(zval *object, zend_class_entry **ce_ptr, zend_function **fptr_ptr, zend_object **zobj_ptr) /* {{{ */
-#endif
 {
 	SINCE80(zend_internal_function, zend_function) *invoke;
 	v8js_v8object *obj = SINCE80(Z_V8JS_V8OBJECT_OBJ, Z_V8JS_V8OBJECT_OBJ_P)(object);
@@ -618,12 +599,6 @@ static int v8js_v8object_get_closure(zval *object, zend_class_entry **ce_ptr, ze
 		return FAILURE;
 	}
 
-#if PHP_VERSION_ID < 80000
-	invoke = (zend_function *)ecalloc(1, sizeof(*invoke));
-	invoke->type = ZEND_OVERLOADED_FUNCTION_TEMPORARY;
-	invoke->common.function_name = zend_string_init(V8JS_V8_INVOKE_FUNC_NAME, sizeof(V8JS_V8_INVOKE_FUNC_NAME) - 1, 0);
-	*fptr_ptr = invoke;
-#else
 	invoke = (zend_internal_function *)ecalloc(1, sizeof(*invoke));
 	invoke->type = ZEND_INTERNAL_FUNCTION;
 	invoke->fn_flags = ZEND_ACC_CALL_VIA_HANDLER;
@@ -631,7 +606,6 @@ static int v8js_v8object_get_closure(zval *object, zend_class_entry **ce_ptr, ze
 	invoke->handler = ZEND_FN(zend_v8object_func);
 	invoke->function_name = zend_string_init(V8JS_V8_INVOKE_FUNC_NAME, sizeof(V8JS_V8_INVOKE_FUNC_NAME) - 1, 0);
 	*fptr_ptr = (zend_function *)invoke;
-#endif
 
 	if (zobj_ptr)
 	{

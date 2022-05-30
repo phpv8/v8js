@@ -7,49 +7,25 @@ v8js.use_array_access = 1
 --FILE--
 <?php
 
-if (PHP_VERSION_ID < 80000) {
-    class MyArray implements ArrayAccess, Countable {
-        public function offsetExists($offset) {
-            return $offset >= 0 && $offset <= 20;
-        }
-
-        public function offsetGet($offset) {
-            return 19 - $offset;
-        }
-
-        public function offsetSet($offset, $value) {
-            throw new Exception('Not implemented');
-        }
-
-        public function offsetUnset($offset) {
-            throw new Exception('Not implemented');
-        }
-
-        public function count() {
-            return 20;
-        }
+class MyArray implements ArrayAccess, Countable {
+    public function offsetExists($offset): bool {
+        return $offset >= 0 && $offset <= 20;
     }
-} else {
-    class MyArray implements ArrayAccess, Countable {
-        public function offsetExists($offset): bool {
-            return $offset >= 0 && $offset <= 20;
-        }
-    
-        public function offsetGet(mixed $offset): mixed {
-            return 19 - $offset;
-        }
-    
-        public function offsetSet(mixed $offset, mixed $value): void {
-            throw new Exception('Not implemented');
-        }
-    
-        public function offsetUnset(mixed $offset): void {
-            throw new Exception('Not implemented');
-        }
-    
-        public function count(): int {
-            return 20;
-        }
+
+    public function offsetGet(mixed $offset): mixed {
+        return 19 - $offset;
+    }
+
+    public function offsetSet(mixed $offset, mixed $value): void {
+        throw new Exception('Not implemented');
+    }
+
+    public function offsetUnset(mixed $offset): void {
+        throw new Exception('Not implemented');
+    }
+
+    public function count(): int {
+        return 20;
     }
 }
 

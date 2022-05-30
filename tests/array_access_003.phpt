@@ -6,77 +6,39 @@ Test V8::executeString() : Export PHP methods on ArrayAccess objects
 v8js.use_array_access = 1
 --FILE--
 <?php
-if (PHP_VERSION_ID < 80000) {
-    class MyArray implements ArrayAccess, Countable {
-        private $data = Array('one', 'two', 'three');
+class MyArray implements ArrayAccess, Countable {
+    private $data = Array('one', 'two', 'three');
 
-        public function offsetExists($offset) {
-            return isset($this->data[$offset]);
-        }
-
-        public function offsetGet($offset) {
-            return $this->data[$offset];
-        }
-
-        public function offsetSet($offset, $value) {
-            echo "set[$offset] = $value\n";
-            $this->data[$offset] = $value;
-        }
-
-        public function offsetUnset($offset) {
-            throw new Exception('Not implemented');
-        }
-
-        public function count() {
-            echo 'count() = ', count($this->data), "\n";
-            return count($this->data);
-        }
-
-        public function phpSidePush($value) {
-        echo "push << $value\n";
-        $this->data[] = $value;
-        }
-
-        public function push($value) {
-        echo "php-side-push << $value\n";
-        $this->data[] = $value;
-        }
+    public function offsetExists($offset): bool {
+        return isset($this->data[$offset]);
     }
-} else {
-    class MyArray implements ArrayAccess, Countable {
-        private $data = Array('one', 'two', 'three');
-    
-        public function offsetExists($offset): bool {
-            return isset($this->data[$offset]);
-        }
-    
-        public function offsetGet(mixed $offset): mixed {
-            return $this->data[$offset];
-        }
-    
-        public function offsetSet(mixed $offset, mixed $value): void {
-            echo "set[$offset] = $value\n";
-            $this->data[$offset] = $value;
-        }
-    
-        public function offsetUnset(mixed $offset): void {
-            throw new Exception('Not implemented');
-        }
-    
-        public function count(): int {
-            echo 'count() = ', count($this->data), "\n";
-            return count($this->data);
-        }
 
-        public function phpSidePush($value) {
-        echo "push << $value\n";
-        $this->data[] = $value;
-        }
+    public function offsetGet(mixed $offset): mixed {
+        return $this->data[$offset];
+    }
 
-        public function push($value) {
-        echo "php-side-push << $value\n";
-        $this->data[] = $value;
-        }
+    public function offsetSet(mixed $offset, mixed $value): void {
+        echo "set[$offset] = $value\n";
+        $this->data[$offset] = $value;
+    }
+
+    public function offsetUnset(mixed $offset): void {
+        throw new Exception('Not implemented');
+    }
+
+    public function count(): int {
+        echo 'count() = ', count($this->data), "\n";
+        return count($this->data);
+    }
+
+    public function phpSidePush($value) {
+    echo "push << $value\n";
+    $this->data[] = $value;
+    }
+
+    public function push($value) {
+    echo "php-side-push << $value\n";
+    $this->data[] = $value;
     }
 }
 
