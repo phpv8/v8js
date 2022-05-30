@@ -27,7 +27,7 @@ Minimum requirements
     for the version line shipped with the Chrome browser (stable channel) and newer (only).
     For a version overview see https://omahaproxy.appspot.com/.
 
-- PHP 7.0.0+
+- PHP 8.0.0+
 
   This embedded implementation of the V8 engine uses thread locking so it works with ZTS enabled.
 
@@ -36,6 +36,8 @@ Windows is currently *not* officially supported.  Mostly since I don't have the 
 maintain support for it myself, and don't really have Windows boxes to try things with.
 It would be great if someone could step up and fix things on Windows, provide pre-build V8
 binaries, etc.
+
+There is a branch named `php7` which targets PHP 7.0.0+
 
 
 Pre-built binaries
