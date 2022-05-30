@@ -959,19 +959,19 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO(arginfo_v8generator_wakeup, 0)
 ZEND_END_ARG_INFO()
 
-V8_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_v8generator_current, 0, 0, IS_MIXED, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_v8generator_current, 0, 0, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
-V8_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_v8generator_key, 0, 0, IS_MIXED, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_v8generator_key, 0, 0, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
-V8_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_v8generator_next, 0, 0, IS_VOID, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_v8generator_next, 0, 0, IS_VOID, 0)
 ZEND_END_ARG_INFO()
 
-V8_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_v8generator_rewind, 0, 0, IS_VOID, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_v8generator_rewind, 0, 0, IS_VOID, 0)
 ZEND_END_ARG_INFO()
 
-V8_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_v8generator_valid, 0, 0, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_v8generator_valid, 0, 0, _IS_BOOL, 0)
 ZEND_END_ARG_INFO()
 
 static const zend_function_entry v8js_v8generator_methods[] = {/* {{{ */
