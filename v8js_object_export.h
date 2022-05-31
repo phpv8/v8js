@@ -15,6 +15,7 @@
 #define V8JS_OBJECT_EXPORT_H
 
 v8::Local<v8::Value> v8js_hash_to_jsobj(zval *value, v8::Isolate *isolate);
+v8::Local<v8::Value> v8js_propagate_exception(v8js_ctx *ctx);
 
 
 typedef enum {
