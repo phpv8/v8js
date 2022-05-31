@@ -636,7 +636,7 @@ static void v8js_compile_script(zval *this_ptr, const zend_string *str, const ze
 	v8::Local<v8::String> sname = identifier
 		? V8JS_ZSTR(identifier)
 		: V8JS_SYM("V8Js::compileString()");
-	v8::ScriptOrigin origin(sname);
+	v8::ScriptOrigin origin(isolate, sname);
 
 	if (ZSTR_LEN(str) > std::numeric_limits<int>::max()) {
 		zend_throw_exception(php_ce_v8js_exception,
