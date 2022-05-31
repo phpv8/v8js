@@ -140,8 +140,8 @@ int main ()
     set $ac_cv_v8_version
     IFS=$ac_IFS
     V8_API_VERSION=`expr [$]1 \* 1000000 + [$]2 \* 1000 + [$]3`
-    if test "$V8_API_VERSION" -lt 6009000 ; then
-       AC_MSG_ERROR([libv8 must be version 6.9 or greater])
+    if test "$V8_API_VERSION" -lt 7005000 ; then
+       AC_MSG_ERROR([libv8 must be version 7.5 or greater])
     fi
     AC_DEFINE_UNQUOTED([PHP_V8_API_VERSION], $V8_API_VERSION, [ ])
     AC_DEFINE_UNQUOTED([PHP_V8_VERSION], "$ac_cv_v8_version", [ ])

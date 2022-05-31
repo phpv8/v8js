@@ -1,8 +1,6 @@
 --TEST--
 Test V8::executeString() : Check timezone handling
 --SKIPIF--
-SKIP test currently broken, see #378
-
 <?php
 if(strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
 	die('SKIP TZ not handled by v8 on Windows');
@@ -39,7 +37,7 @@ try {
 ?>
 ===EOF===
 --EXPECT--
-Thu Mar 20 2014 11:03:24 GMT+0200 (EET)
-Thu Mar 20 2014 05:03:24 GMT-0400 (EDT)
-Thu Mar 20 2014 11:03:24 GMT+0200 (EET)
+Thu Mar 20 2014 11:03:24 GMT+0200 (Eastern European Standard Time)
+Thu Mar 20 2014 05:03:24 GMT-0400 (Eastern Daylight Time)
+Thu Mar 20 2014 11:03:24 GMT+0200 (Eastern European Standard Time)
 ===EOF===
