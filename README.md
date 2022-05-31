@@ -21,7 +21,7 @@ Minimum requirements
 	V8 is written in C++ and is used in Google Chrome, the open source browser from Google.
 	V8 implements ECMAScript as specified in ECMA-262, 5th edition.
 
-	This extension requires V8 6.9 (6.9.427.18 is known to work) or higher.
+	This extension requires V8 7.5 or higher.
 
     V8 releases are published rather quickly and the V8 team usually provides security support
     for the version line shipped with the Chrome browser (stable channel) and newer (only).
