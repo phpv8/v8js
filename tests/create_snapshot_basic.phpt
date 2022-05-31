@@ -22,7 +22,7 @@ if (strlen($snap) > 0) {
     var_dump("snapshot successfully created");
 }
 
-$v8 = new V8Js('PHP', array(), array(), true, $snap);
+$v8 = new V8Js('PHP', array(), true, $snap);
 $v8->executeString('var_dump(doublify(23));');
 ?>
 ===EOF===

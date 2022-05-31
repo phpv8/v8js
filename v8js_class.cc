@@ -59,17 +59,6 @@ static void v8js_script_free(v8js_script *res);
 
 int le_v8js_script;
 
-/* {{{ Extension container */
-struct v8js_jsext {
-	zend_bool auto_enable;
-	HashTable *deps_ht;
-	const char **deps;
-	int deps_count;
-	zend_string *name;
-	zend_string *source;
-};
-/* }}} */
-
 #ifdef USE_INTERNAL_ALLOCATOR
 class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
 public:
@@ -247,73 +236,6 @@ static zend_object* v8js_new(zend_class_entry *ce) /* {{{ */
 }
 /* }}} */
 
-static void v8js_free_ext_strarr(const char **arr, int count) /* {{{ */
-{
-	int i;
-
-	if (arr) {
-		for (i = 0; i < count; i++) {
-			if (arr[i]) {
-				free((void *) arr[i]);
-			}
-		}
-		free(arr);
-	}
-}
-/* }}} */
-
-static void v8js_jsext_free_storage(v8js_jsext *jsext) /* {{{ */
-{
-	if (jsext->deps_ht) {
-		zend_hash_destroy(jsext->deps_ht);
-		free(jsext->deps_ht);
-	}
-	if (jsext->deps) {
-		v8js_free_ext_strarr(jsext->deps, jsext->deps_count);
-	}
-
-	// Free the persisted non-interned strings we allocated.
-	if (jsext->name) {
-		zend_string_release(jsext->name);
-	}
-	if (jsext->source) {
-		zend_string_release(jsext->source);
-	}
-
-	free(jsext);
-}
-/* }}} */
-
-static void v8js_jsext_dtor(zval *zv) /* {{{ */
-{
-	v8js_jsext_free_storage(reinterpret_cast<v8js_jsext *>(Z_PTR_P(zv)));
-}
-/* }}} */
-
-static int v8js_create_ext_strarr(const char ***retval, int count, HashTable *ht) /* {{{ */
-{
-	const char **exts = NULL;
-	HashPosition pos;
-	zval *tmp;
-	int i = 0;
-
-	exts = (const char **) calloc(1, count * sizeof(char *));
-	zend_hash_internal_pointer_reset_ex(ht, &pos);
-	while ((tmp = zend_hash_get_current_data_ex(ht, &pos))) {
-		if (Z_TYPE_P(tmp) == IS_STRING) {
-			exts[i++] = zend_strndup(Z_STRVAL_P(tmp), Z_STRLEN_P(tmp));
-		} else {
-			v8js_free_ext_strarr(exts, i);
-			return FAILURE;
-		}
-		zend_hash_move_forward_ex(ht, &pos);
-	}
-	*retval = exts;
-
-	return SUCCESS;
-}
-/* }}} */
-
 static void v8js_fatal_error_handler(const char *location, const char *message) /* {{{ */
 {
 	if (location) {
@@ -328,15 +250,13 @@ static void v8js_fatal_error_handler(const char *location, const char *message) 
 	((ZSTR_LEN(key) == sizeof(mname) - 1) &&		\
 	 !strncasecmp(ZSTR_VAL(key), mname, ZSTR_LEN(key)))
 
-/* {{{ proto void V8Js::__construct([string object_name [, array variables [, array extensions [, bool report_uncaught_exceptions [, string snapshot_blob]]]]])
+/* {{{ proto void V8Js::__construct([string object_name [, array variables [, bool report_uncaught_exceptions [, string snapshot_blob]]]])
    __construct for V8Js */
 static PHP_METHOD(V8Js, __construct)
 {
 	zend_string *object_name = NULL;
 	zend_bool report_uncaught = 1;
-	zval *vars_arr = NULL, *exts_arr = NULL;
-	const char **exts = NULL;
-	int exts_count = 0;
+	zval *vars_arr = NULL;
 	zval *snapshot_blob = NULL;
 
 	v8js_ctx *c = Z_V8JS_CTX_OBJ_P(getThis())
@@ -346,7 +266,7 @@ static PHP_METHOD(V8Js, __construct)
 		return;
 	}
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "|S!aabz", &object_name, &vars_arr, &exts_arr, &report_uncaught, &snapshot_blob) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "|S!abz", &object_name, &vars_arr, &report_uncaught, &snapshot_blob) == FAILURE) {
 		return;
 	}
 
@@ -401,26 +321,6 @@ static PHP_METHOD(V8Js, __construct)
 	ZVAL_NULL(&c->module_normaliser);
 	ZVAL_NULL(&c->module_loader);
 
-	/* Include extensions used by this context */
-	/* Note: Extensions registered with auto_enable do not need to be added separately like this. */
-	if (exts_arr)
-	{
-		exts_count = zend_hash_num_elements(Z_ARRVAL_P(exts_arr));
-
-		if (exts_count != 0) {
-			php_error_docref(NULL, E_DEPRECATED, "Use of extensions is deprecated, $extensions array passed");
-		}
-
-		if (v8js_create_ext_strarr(&exts, exts_count, Z_ARRVAL_P(exts_arr)) == FAILURE) {
-			zend_throw_exception(php_ce_v8js_exception,
-				"Invalid extensions array passed", 0);
-			return;
-		}
-	}
-
-	/* Declare configuration for extensions */
-	v8::ExtensionConfiguration extension_conf(exts_count, exts);
-
 	// Isolate execution
 	v8::Isolate *isolate = c->isolate;
 	v8::Locker locker(isolate);
@@ -442,17 +342,10 @@ static PHP_METHOD(V8Js, __construct)
 	v8js_register_methods(global_template, c);
 
 	/* Create context */
-	v8::Local<v8::Context> context = v8::Context::New(isolate, &extension_conf, global_template);
+	v8::Local<v8::Context> context = v8::Context::New(isolate, nullptr, global_template);
 
-	if (exts) {
-		v8js_free_ext_strarr(exts, exts_count);
-	}
-
-	/* If extensions have errors, context will be empty. (NOTE: This is V8 stuff, they expect the passed sources to compile :) */
 	if (context.IsEmpty()) {
-		zend_throw_exception(php_ce_v8js_exception,
-			"Failed to create V8 context. "
-			"Check that registered extensions do not have errors.", 0);
+		zend_throw_exception(php_ce_v8js_exception, "Failed to create V8 context.", 0);
 		return;
 	}
 
@@ -1006,139 +899,9 @@ static void v8js_script_dtor(zend_resource *rsrc) /* {{{ */
 }
 /* }}} */
 
-static int v8js_register_extension(zend_string *name, zend_string *source, zval *deps_arr, zend_bool auto_enable) /* {{{ */
-{
-	v8js_jsext *jsext = NULL;
-
-#ifdef ZTS
-	v8js_process_globals.lock.lock();
-#endif
-
-	if (!v8js_process_globals.extensions) {
-		v8js_process_globals.extensions = (HashTable *) malloc(sizeof(HashTable));
-		zend_hash_init(v8js_process_globals.extensions, 1, NULL, v8js_jsext_dtor, 1);
-	} else if (zend_hash_exists(v8js_process_globals.extensions, name)) {
-#ifdef ZTS
-		v8js_process_globals.lock.unlock();
-#endif
-		return FAILURE;
-	}
-
-	jsext = (v8js_jsext *) calloc(1, sizeof(v8js_jsext));
-
-	if (deps_arr) {
-		jsext->deps_count = zend_hash_num_elements(Z_ARRVAL_P(deps_arr));
-
-		if (v8js_create_ext_strarr(&jsext->deps, jsext->deps_count, Z_ARRVAL_P(deps_arr)) == FAILURE) {
-			php_error_docref(NULL, E_WARNING, "Invalid dependency array passed");
-			v8js_jsext_free_storage(jsext);
-#ifdef ZTS
-			v8js_process_globals.lock.unlock();
-#endif
-			return FAILURE;
-		}
-	}
-
-	jsext->auto_enable = auto_enable;
-	// Allocate a persistent string which will survive until module shutdown on both ZTS(Persistent) and NTS(Not interned, those would be cleaned up)
-	// (zend_string_dup would return the original interned string, if interned, so we don't use that)
-	jsext->name = zend_string_init(ZSTR_VAL(name), ZSTR_LEN(name), 1);
-	jsext->source = zend_string_init(ZSTR_VAL(source), ZSTR_LEN(source), 1);
-
-	if (jsext->deps) {
-		jsext->deps_ht = (HashTable *) malloc(sizeof(HashTable));
-		zend_hash_init(jsext->deps_ht, jsext->deps_count, NULL, v8js_persistent_zval_dtor, 1);
-		zend_hash_copy(jsext->deps_ht, Z_ARRVAL_P(deps_arr), v8js_persistent_zval_ctor);
-	}
-
-	v8::Extension *extension = new v8::Extension(ZSTR_VAL(jsext->name), ZSTR_VAL(jsext->source), jsext->deps_count, jsext->deps);
-
-	if (!zend_hash_add_ptr(v8js_process_globals.extensions, jsext->name, jsext)) {
-		v8js_jsext_free_storage(jsext);
-#ifdef ZTS
-		v8js_process_globals.lock.unlock();
-#endif
-		return FAILURE;
-	}
-
-#ifdef ZTS
-	v8js_process_globals.lock.unlock();
-#endif
-
-	extension->set_auto_enable(auto_enable ? true : false);
-	v8::RegisterExtension(std::unique_ptr<v8::Extension>(extension));
-
-	return SUCCESS;
-}
-/* }}} */
-
 
 
 /* ## Static methods ## */
-
-/* {{{ proto bool V8Js::registerExtension(string ext_name, string script [, array deps [, bool auto_enable]])
- */
-static PHP_METHOD(V8Js, registerExtension)
-{
-	zend_string *ext_name, *script;
-	zval *deps_arr = NULL;
-	zend_bool auto_enable = 0;
-
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "SS|ab", &ext_name, &script, &deps_arr, &auto_enable) == FAILURE) {
-		return;
-	}
-
-	if (!ZSTR_LEN(ext_name)) {
-		php_error_docref(NULL, E_WARNING, "Extension name cannot be empty");
-	} else if (!ZSTR_LEN(script)) {
-		php_error_docref(NULL, E_WARNING, "Script cannot be empty");
-	} else if (v8js_register_extension(ext_name, script, deps_arr, auto_enable) == SUCCESS) {
-		RETURN_TRUE;
-	}
-	RETURN_FALSE;
-}
-/* }}} */
-
-/* {{{ proto array V8Js::getExtensions()
- */
-static PHP_METHOD(V8Js, getExtensions)
-{
-	v8js_jsext *jsext;
-	zend_string *key;
-	zval *val, ext;
-
-	if (zend_parse_parameters_none() == FAILURE) {
-		return;
-	}
-
-	array_init(return_value);
-
-#ifdef ZTS
-	v8js_process_globals.lock.lock();
-#endif
-
-	if (v8js_process_globals.extensions) {
-		ZEND_HASH_FOREACH_STR_KEY_VAL(v8js_process_globals.extensions, key, val) {
-			if (key) {
-				jsext = (v8js_jsext *) Z_PTR_P(val);
-				array_init(&ext);
-				add_assoc_bool_ex(&ext, ZEND_STRL("auto_enable"), jsext->auto_enable);
-				if (jsext->deps_ht) {
-					zval deps_arr;
-					array_init(&deps_arr);
-					zend_hash_copy(Z_ARRVAL_P(&deps_arr), jsext->deps_ht, (copy_ctor_func_t) zval_add_ref);
-					add_assoc_zval_ex(&ext, ZEND_STRL("deps"), &deps_arr);
-				}
-				add_assoc_zval_ex(return_value, ZSTR_VAL(key), ZSTR_LEN(key), &ext);
-			}
-		} ZEND_HASH_FOREACH_END();
-	}
-
-#ifdef ZTS
-	v8js_process_globals.lock.unlock();
-#endif
-}
-/* }}} */
 
 static v8::StartupData createSnapshotDataBlob(v8::SnapshotCreator *snapshot_creator, zend_string *str) /* {{{ */
 {
@@ -1203,7 +966,6 @@ static PHP_METHOD(V8Js, createSnapshot)
 ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, object_name)
 	ZEND_ARG_INFO(0, variables)
-	ZEND_ARG_INFO(0, extensions)
 	ZEND_ARG_INFO(0, report_uncaught_exceptions)
 	ZEND_ARG_INFO(0, snapshot_blob)
 ZEND_END_ARG_INFO()
@@ -1257,16 +1019,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_setaverageobjectsize, 0, 0, 1)
 	ZEND_ARG_INFO(0, average_object_size)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_registerextension, 0, 0, 2)
-	ZEND_ARG_INFO(0, extension_name)
-	ZEND_ARG_INFO(0, script)
-	ZEND_ARG_INFO(0, dependencies)
-	ZEND_ARG_INFO(0, auto_enable)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO(arginfo_v8js_getextensions, 0)
-ZEND_END_ARG_INFO()
-
 ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_createsnapshot, 0, 0, 1)
 	ZEND_ARG_INFO(0, script)
 ZEND_END_ARG_INFO()
@@ -1295,8 +1047,6 @@ const zend_function_entry v8js_methods[] = { /* {{{ */
 	PHP_ME(V8Js,	setTimeLimit,			arginfo_v8js_settimelimit,			ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	setMemoryLimit,			arginfo_v8js_setmemorylimit,		ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	setAverageObjectSize,	arginfo_v8js_setaverageobjectsize,	ZEND_ACC_PUBLIC)
-	PHP_ME(V8Js,	registerExtension,		arginfo_v8js_registerextension,		ZEND_ACC_PUBLIC|ZEND_ACC_STATIC|ZEND_ACC_DEPRECATED)
-	PHP_ME(V8Js,	getExtensions,			arginfo_v8js_getextensions,			ZEND_ACC_PUBLIC|ZEND_ACC_STATIC|ZEND_ACC_DEPRECATED)
 	PHP_ME(V8Js,	createSnapshot,			arginfo_v8js_createsnapshot,		ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
 	{NULL, NULL, NULL}
 };

@@ -12,7 +12,7 @@ $unicode = 'äöüßÜÄÖÜß€áàâÁÀÂµ²³▁▂▃▄▅▆▇█ �
 $snapshot = V8Js::createSnapshot("var snapshot = {unicode: '" . $unicode . "'}");
 
 # start V8Js
-$jscript = new V8Js('php', array(), array(), true, $snapshot);
+$jscript = new V8Js('php', array(), true, $snapshot);
 
 # insert unicode via php var
 $jscript->unicode = $unicode;

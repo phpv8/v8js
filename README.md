@@ -78,11 +78,10 @@ class V8Js
      * Initializes and starts V8 engine and returns new V8Js object with it's own V8 context.
      * @param string $object_name
      * @param array $variables
-     * @param array $extensions
      * @param bool $report_uncaught_exceptions
      * @param string $snapshot_blob
      */
-    public function __construct($object_name = "PHP", array $variables = [], array $extensions = [], $report_uncaught_exceptions = TRUE, $snapshot_blob = NULL)
+    public function __construct($object_name = "PHP", array $variables = [], $report_uncaught_exceptions = TRUE, $snapshot_blob = NULL)
     {}
 
     /**
@@ -178,29 +177,7 @@ class V8Js
     /** Static methods **/
 
     /**
-     * Registers persistent context independent global Javascript extension.
-     * NOTE! These extensions exist until PHP is shutdown and they need to be registered before V8 is initialized.
-     * For best performance V8 is initialized only once per process thus this call has to be done before any V8Js objects are created!
-     * @param string $extension_name
-     * @param string $code
-     * @param array $dependencies
-     * @param bool $auto_enable
-     * @return bool
-     */
-    public static function registerExtension($extension_name, $code, array $dependencies, $auto_enable = FALSE)
-    {}
-
-    /**
-     * Returns extensions successfully registered with V8Js::registerExtension().
-     * @return array|string[]
-     */
-    public static function getExtensions()
-    {}
-
-    /**
      * Creates a custom V8 heap snapshot with the provided JavaScript source embedded.
-     * Snapshots are supported by V8 4.3.7 and higher.  For older versions of V8 this
-     * extension doesn't provide this method.
      * @param string $embed_source
      * @return string|false
      */
@@ -352,15 +329,6 @@ This behaviour can be changed by enabling the php.ini flag `v8js.use_array_acces
 
 Snapshots
 =========
-
-First of all snapshots are incompatible with extensions. So when you see
-
-    #
-    # Fatal error in ../src/snapshot/startup-serializer.cc, line 122
-    # Check failed: !isolate->has_installed_extensions().
-    #
-
-you need to remove all extension registrations.
 
 First of all [custom startup snapshots](https://v8project.blogspot.de/2015/09/custom-startup-snapshots.html)
 is a feature provided by V8 itself, built on top of it's general heap snapshots feature.  The idea is that, since
