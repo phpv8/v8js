@@ -34,6 +34,36 @@ extern "C" {
 
 static void v8js_weak_object_callback(const v8::WeakCallbackInfo<zend_object> &data);
 
+v8::Local<v8::Value> v8js_propagate_exception(v8js_ctx *ctx) /* {{{ */
+{
+	v8::Local<v8::Value> return_value = v8::Null(ctx->isolate);
+
+	if (!(ctx->flags & V8JS_FLAG_PROPAGATE_PHP_EXCEPTIONS)) {
+		v8js_terminate_execution(ctx->isolate);
+		return return_value;
+	}
+
+	zval tmp_zv;
+
+	if (Z_TYPE(ctx->exception_proxy_factory) != IS_NULL) {
+		zval params[1];
+		ZVAL_OBJ(&params[0], EG(exception));
+		Z_ADDREF_P(&params[0]);
+		zend_clear_exception();
+		call_user_function(EG(function_table), NULL, &ctx->exception_proxy_factory, &tmp_zv, 1, params);
+		zval_ptr_dtor(&params[0]);
+
+		return_value = ctx->isolate->ThrowException(zval_to_v8js(&tmp_zv, ctx->isolate));
+	} else {
+		ZVAL_OBJ(&tmp_zv, EG(exception));
+		return_value = ctx->isolate->ThrowException(zval_to_v8js(&tmp_zv, ctx->isolate));
+		zend_clear_exception();
+	}
+
+	return return_value;
+}
+/* }}} */
+
 /* Callback for PHP methods and functions */
 static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, const v8::FunctionCallbackInfo<v8::Value>& info) /* {{{ */
 {
@@ -175,14 +205,7 @@ failure:
 	}
 
 	if(EG(exception)) {
-		if(ctx->flags & V8JS_FLAG_PROPAGATE_PHP_EXCEPTIONS) {
-			zval tmp_zv;
-			ZVAL_OBJ(&tmp_zv, EG(exception));
-			return_value = isolate->ThrowException(zval_to_v8js(&tmp_zv, isolate));
-			zend_clear_exception();
-		} else {
-			v8js_terminate_execution(isolate);
-		}
+		return_value = v8js_propagate_exception(ctx);
 	} else if (Z_TYPE(retval) == IS_OBJECT && Z_OBJ(retval) == object) {
 		// special case: "return $this"
 		return_value = info.Holder();
