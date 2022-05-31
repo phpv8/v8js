@@ -669,32 +669,6 @@ static PHP_METHOD(V8Js, executeScript)
 }
 /* }}} */
 
-/* {{{ proto mixed V8Js::checkString(string script)
- */
-static PHP_METHOD(V8Js, checkString)
-{
-	zend_string *str = NULL;
-	zend_string *identifier = zend_string_init("V8Js::checkString()", 19, 0);
-
-	v8js_script *res = NULL;
-
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "S", &str) == FAILURE) {
-		return;
-	}
-
-	v8js_compile_script(getThis(), str, identifier, &res);
-	zend_string_release(identifier);
-
-	if (!res) {
-		RETURN_FALSE;
-	}
-
-	v8js_script_free(res);
-	efree(res);
-	RETURN_TRUE;
-}
-/* }}} */
-
 /* {{{ proto void V8Js::setModuleNormaliser(string base, string module_id)
  */
 static PHP_METHOD(V8Js, setModuleNormaliser)
@@ -987,7 +961,6 @@ const zend_function_entry v8js_methods[] = { /* {{{ */
 	PHP_ME(V8Js,	executeString,			arginfo_v8js_executestring,			ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	compileString,			arginfo_v8js_compilestring,			ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,    executeScript,			arginfo_v8js_executescript,			ZEND_ACC_PUBLIC)
-	PHP_ME(V8Js,    checkString,			arginfo_v8js_checkstring,			ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED)
 	PHP_ME(V8Js,	setModuleNormaliser,	arginfo_v8js_setmodulenormaliser,	ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	setModuleLoader,		arginfo_v8js_setmoduleloader,		ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	setTimeLimit,			arginfo_v8js_settimelimit,			ZEND_ACC_PUBLIC)
