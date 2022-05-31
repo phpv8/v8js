@@ -78,10 +78,9 @@ class V8Js
      * Initializes and starts V8 engine and returns new V8Js object with it's own V8 context.
      * @param string $object_name
      * @param array $variables
-     * @param bool $report_uncaught_exceptions
      * @param string $snapshot_blob
      */
-    public function __construct($object_name = "PHP", array $variables = [], $report_uncaught_exceptions = TRUE, $snapshot_blob = NULL)
+    public function __construct($object_name = "PHP", array $variables = [], $snapshot_blob = NULL)
     {}
 
     /**
@@ -358,8 +357,7 @@ Exceptions
 ==========
 
 If the JavaScript code throws (without catching), causes errors or doesn't
-compile, `V8JsScriptException` exceptions are thrown unless the `V8Js` object
-is constructed with `report_uncaught_exceptions` set `FALSE`.
+compile, `V8JsScriptException` exceptions are thrown.
 
 PHP exceptions that occur due to calls from JavaScript code by default are
 *not* re-thrown into JavaScript context but cause the JavaScript execution to

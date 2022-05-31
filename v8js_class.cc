@@ -78,7 +78,6 @@ static void v8js_free_storage(zend_object *object) /* {{{ */
 
 	zend_object_std_dtor(&c->std);
 
-	zval_ptr_dtor(&c->pending_exception);
 	zval_ptr_dtor(&c->module_normaliser);
 	zval_ptr_dtor(&c->module_loader);
 
@@ -250,12 +249,11 @@ static void v8js_fatal_error_handler(const char *location, const char *message) 
 	((ZSTR_LEN(key) == sizeof(mname) - 1) &&		\
 	 !strncasecmp(ZSTR_VAL(key), mname, ZSTR_LEN(key)))
 
-/* {{{ proto void V8Js::__construct([string object_name [, array variables [, bool report_uncaught_exceptions [, string snapshot_blob]]]])
+/* {{{ proto void V8Js::__construct([string object_name [, array variables [, string snapshot_blob]]])
    __construct for V8Js */
 static PHP_METHOD(V8Js, __construct)
 {
 	zend_string *object_name = NULL;
-	zend_bool report_uncaught = 1;
 	zval *vars_arr = NULL;
 	zval *snapshot_blob = NULL;
 
@@ -266,7 +264,7 @@ static PHP_METHOD(V8Js, __construct)
 		return;
 	}
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "|S!abz", &object_name, &vars_arr, &report_uncaught, &snapshot_blob) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "|S!az", &object_name, &vars_arr, &snapshot_blob) == FAILURE) {
 		return;
 	}
 
@@ -274,13 +272,7 @@ static PHP_METHOD(V8Js, __construct)
 	v8js_v8_init();
 
 	/* Throw PHP exception if uncaught exceptions exist */
-	c->report_uncaught = report_uncaught;
-	ZVAL_NULL(&c->pending_exception);
 	c->in_execution = 0;
-
-	if (report_uncaught != 1) {
-		php_error_docref(NULL, E_DEPRECATED, "Disabling exception reporting is deprecated, $report_uncaught_exceptions != true");
-	}
 
 	new (&c->create_params) v8::Isolate::CreateParams();
 
@@ -703,43 +695,6 @@ static PHP_METHOD(V8Js, checkString)
 }
 /* }}} */
 
-/* {{{ proto mixed V8Js::getPendingException()
- */
-static PHP_METHOD(V8Js, getPendingException)
-{
-	v8js_ctx *c;
-
-	if (zend_parse_parameters_none() == FAILURE) {
-		return;
-	}
-
-	c = Z_V8JS_CTX_OBJ_P(getThis());
-
-	if (Z_TYPE(c->pending_exception) == IS_OBJECT) {
-		RETURN_ZVAL(&c->pending_exception, 1, 0);
-	}
-}
-/* }}} */
-
-/* {{{ proto void V8Js::clearPendingException()
- */
-static PHP_METHOD(V8Js, clearPendingException)
-{
-	v8js_ctx *c;
-
-	if (zend_parse_parameters_none() == FAILURE) {
-		return;
-	}
-
-	c = Z_V8JS_CTX_OBJ_P(getThis());
-
-	if (Z_TYPE(c->pending_exception) == IS_OBJECT) {
-		zval_ptr_dtor(&c->pending_exception);
-		ZVAL_NULL(&c->pending_exception);
-	}
-}
-/* }}} */
-
 /* {{{ proto void V8Js::setModuleNormaliser(string base, string module_id)
  */
 static PHP_METHOD(V8Js, setModuleNormaliser)
@@ -966,7 +921,6 @@ static PHP_METHOD(V8Js, createSnapshot)
 ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, object_name)
 	ZEND_ARG_INFO(0, variables)
-	ZEND_ARG_INFO(0, report_uncaught_exceptions)
 	ZEND_ARG_INFO(0, snapshot_blob)
 ZEND_END_ARG_INFO()
 
@@ -998,12 +952,6 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_checkstring, 0, 0, 1)
 	ZEND_ARG_INFO(0, script)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO(arginfo_v8js_getpendingexception, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO(arginfo_v8js_clearpendingexception, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_setmodulenormaliser, 0, 0, 2)
@@ -1040,8 +988,6 @@ const zend_function_entry v8js_methods[] = { /* {{{ */
 	PHP_ME(V8Js,	compileString,			arginfo_v8js_compilestring,			ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,    executeScript,			arginfo_v8js_executescript,			ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,    checkString,			arginfo_v8js_checkstring,			ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED)
-	PHP_ME(V8Js,	getPendingException,	arginfo_v8js_getpendingexception,	ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED)
-	PHP_ME(V8Js,	clearPendingException,	arginfo_v8js_clearpendingexception,	ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED)
 	PHP_ME(V8Js,	setModuleNormaliser,	arginfo_v8js_setmodulenormaliser,	ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	setModuleLoader,		arginfo_v8js_setmoduleloader,		ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	setTimeLimit,			arginfo_v8js_settimelimit,			ZEND_ACC_PUBLIC)

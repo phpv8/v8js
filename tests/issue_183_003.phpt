@@ -19,7 +19,6 @@ var_dump(typeof PHP.executeString);
 var_dump(typeof PHP.compileString);
 var_dump(typeof PHP.executeScript);
 var_dump(typeof PHP.checkString);
-var_dump(typeof PHP.getPendingException);
 var_dump(typeof PHP.setModuleNormaliser);
 var_dump(typeof PHP.setModuleLoader);
 var_dump(typeof PHP.registerExtension);
@@ -42,7 +41,6 @@ $v8->executeString($JS);
 ===EOF===
 --EXPECTF--
 string(8) "function"
-string(9) "undefined"
 string(9) "undefined"
 string(9) "undefined"
 string(9) "undefined"

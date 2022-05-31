@@ -224,31 +224,14 @@ void v8js_v8_call(v8js_ctx *c, zval **return_value,
 				return;
 			}
 
-			/* There was pending exception left from earlier executions -> throw to PHP */
-			if (Z_TYPE(c->pending_exception) == IS_OBJECT) {
-				zend_throw_exception_object(&c->pending_exception);
-				ZVAL_NULL(&c->pending_exception);
-			}
-
 			/* Handle runtime JS exceptions */
 			if (try_catch.HasCaught()) {
 
 				/* Pending exceptions are set only in outer caller, inner caller exceptions are always rethrown */
 				if (c->in_execution < 1) {
-
-					/* Report immediately if report_uncaught is true */
-					if (c->report_uncaught) {
-						v8js_throw_script_exception(c->isolate, &try_catch);
-						zval_ptr_dtor(&zv_v8inst);
-						return;
-					}
-
-					/* Exception thrown from JS, preserve it for future execution */
-					if (result.IsEmpty()) {
-						v8js_create_script_exception(&c->pending_exception, c->isolate, &try_catch);
-						zval_ptr_dtor(&zv_v8inst);
-						return;
-					}
+					v8js_throw_script_exception(c->isolate, &try_catch);
+					zval_ptr_dtor(&zv_v8inst);
+					return;
 				}
 
 				/* Rethrow back to JS */

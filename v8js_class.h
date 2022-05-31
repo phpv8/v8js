@@ -37,8 +37,6 @@ struct cmp_str {
 struct v8js_ctx {
   v8::Persistent<v8::String> object_name;
   v8::Persistent<v8::Context> context;
-  zend_bool report_uncaught;
-  zval pending_exception;
   int in_execution;
   v8::Isolate *isolate;
 
