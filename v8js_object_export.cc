@@ -53,7 +53,12 @@ v8::Local<v8::Value> v8js_propagate_exception(v8js_ctx *ctx) /* {{{ */
 		call_user_function(EG(function_table), NULL, &ctx->exception_proxy_factory, &tmp_zv, 1, params);
 		zval_ptr_dtor(&params[0]);
 
-		return_value = ctx->isolate->ThrowException(zval_to_v8js(&tmp_zv, ctx->isolate));
+		if(EG(exception)) {
+			// exception proxy threw exception itself, don't forward, just stop execution.
+			v8js_terminate_execution(ctx->isolate);
+		} else {
+			return_value = ctx->isolate->ThrowException(zval_to_v8js(&tmp_zv, ctx->isolate));
+		}
 	} else {
 		ZVAL_OBJ(&tmp_zv, EG(exception));
 		return_value = ctx->isolate->ThrowException(zval_to_v8js(&tmp_zv, ctx->isolate));
