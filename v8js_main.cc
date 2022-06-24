@@ -162,7 +162,11 @@ static PHP_MSHUTDOWN_FUNCTION(v8js)
 
 	if(v8_initialized) {
 		v8::V8::Dispose();
+#if PHP_V8_API_VERSION >= 10000000
 		v8::V8::DisposePlatform();
+#else
+		v8::V8::ShutdownPlatform();
+#endif
 		// @fixme call virtual destructor somehow
 		//delete v8js_process_globals.v8_platform;
 	}
