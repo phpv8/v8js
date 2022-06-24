@@ -107,10 +107,10 @@ class V8Js
     /**
      * Provate a function or method to be used to convert/proxy PHP exceptions to JS.
      * This can be any valid PHP callable.
-     * The factory function will receive the PHP Exception instance that has not been caught and is
-     * due to be forwarded to JS.
+     * The converter function will receive the PHP Exception instance that has not been caught and
+     * is due to be forwarded to JS.  Pass NULL as $filter to uninstall an existing filter.
      */
-    public function setExceptionFilter(callable $factory)
+    public function setExceptionFilter(callable $filter)
     {}
 
     /**
