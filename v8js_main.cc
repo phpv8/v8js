@@ -162,7 +162,7 @@ static PHP_MSHUTDOWN_FUNCTION(v8js)
 
 	if(v8_initialized) {
 		v8::V8::Dispose();
-		v8::V8::ShutdownPlatform();
+		v8::V8::DisposePlatform();
 		// @fixme call virtual destructor somehow
 		//delete v8js_process_globals.v8_platform;
 	}
