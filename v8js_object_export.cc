@@ -45,12 +45,12 @@ v8::Local<v8::Value> v8js_propagate_exception(v8js_ctx *ctx) /* {{{ */
 
 	zval tmp_zv;
 
-	if (Z_TYPE(ctx->exception_proxy_factory) != IS_NULL) {
+	if (Z_TYPE(ctx->exception_filter) != IS_NULL) {
 		zval params[1];
 		ZVAL_OBJ(&params[0], EG(exception));
 		Z_ADDREF_P(&params[0]);
 		zend_clear_exception();
-		call_user_function(EG(function_table), NULL, &ctx->exception_proxy_factory, &tmp_zv, 1, params);
+		call_user_function(EG(function_table), NULL, &ctx->exception_filter, &tmp_zv, 1, params);
 		zval_ptr_dtor(&params[0]);
 
 		if(EG(exception)) {

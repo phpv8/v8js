@@ -1,5 +1,5 @@
 --TEST--
-Test V8::setExceptionProxyFactory() : Simple test
+Test V8::setExceptionFilter() : Simple test
 --SKIPIF--
 <?php require_once(dirname(__FILE__) . '/skipif.inc'); ?>
 --FILE--
@@ -11,11 +11,11 @@ class myv8 extends V8Js
 	}
 }
 
-class ExceptionProxy {
+class ExceptionFilter {
 	private $ex;
 
 	public function __construct(Throwable $ex) {
-		echo "ExceptionProxy::__construct called!\n";
+		echo "ExceptionFilter::__construct called!\n";
 		var_dump($ex->getMessage());
 
 		$this->ex = $ex;
@@ -28,9 +28,9 @@ class ExceptionProxy {
 }
 
 $v8 = new myv8();
-$v8->setExceptionProxyFactory(function (Throwable $ex) {
-	echo "exception proxy factory called.\n";
-	return new ExceptionProxy($ex);
+$v8->setExceptionFilter(function (Throwable $ex) {
+	echo "exception filter called.\n";
+	return new ExceptionFilter($ex);
 });
 
 $v8->executeString('
@@ -38,15 +38,15 @@ $v8->executeString('
 		PHP.throwException("Oops");
 	}
 	catch (e) {
-		var_dump(e.getMessage()); // calls ExceptionProxy::getMessage
+		var_dump(e.getMessage()); // calls ExceptionFilter::getMessage
 		var_dump(typeof e.getTrace);
 	}
 ', null, V8Js::FLAG_PROPAGATE_PHP_EXCEPTIONS);
 ?>
 ===EOF===
 --EXPECT--
-exception proxy factory called.
-ExceptionProxy::__construct called!
+exception filter called.
+ExceptionFilter::__construct called!
 string(4) "Oops"
 getMessage called
 string(4) "Oops"

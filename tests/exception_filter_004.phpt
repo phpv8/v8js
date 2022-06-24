@@ -1,5 +1,5 @@
 --TEST--
-Test V8::setExceptionProxyFactory() : Proxy handling on exception in factory
+Test V8::setExceptionFilter() : Filter handling on exception in factory
 --SKIPIF--
 <?php require_once(dirname(__FILE__) . '/skipif.inc'); ?>
 --FILE--
@@ -12,7 +12,7 @@ class myv8 extends V8Js
 }
 
 $v8 = new myv8();
-$v8->setExceptionProxyFactory(function (Throwable $ex) {
+$v8->setExceptionFilter(function (Throwable $ex) {
         throw new Exception('moep');
 });
 

@@ -110,7 +110,7 @@ class V8Js
      * The factory function will receive the PHP Exception instance that has not been caught and is
      * due to be forwarded to JS.
      */
-    public function setExceptionProxyFactory(callable $factory)
+    public function setExceptionFilter(callable $factory)
     {}
 
     /**
@@ -413,5 +413,5 @@ via `getPrevious` method.
 
 Consider that the JS code has access to methods like `getTrace` on the exception
 object.  This might be unwanted behaviour, if you execute untrusted code.
-Using `setExceptionProxyFactory` method a callable can be provided, that converts
+Using `setExceptionFilter` method a callable can be provided, that converts
 the PHP exception to not expose unwanted information.

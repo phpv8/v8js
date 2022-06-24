@@ -92,7 +92,7 @@ static void v8js_free_storage(zend_object *object) /* {{{ */
 	zval_ptr_dtor(&c->pending_exception);
 	zval_ptr_dtor(&c->module_normaliser);
 	zval_ptr_dtor(&c->module_loader);
-	zval_ptr_dtor(&c->exception_proxy_factory);
+	zval_ptr_dtor(&c->exception_filter);
 
 	/* Delete PHP global object from JavaScript */
 	if (!c->context.IsEmpty()) {
@@ -401,7 +401,7 @@ static PHP_METHOD(V8Js, __construct)
 
 	ZVAL_NULL(&c->module_normaliser);
 	ZVAL_NULL(&c->module_loader);
-	ZVAL_NULL(&c->exception_proxy_factory);
+	ZVAL_NULL(&c->exception_filter);
 
 	/* Include extensions used by this context */
 	/* Note: Extensions registered with auto_enable do not need to be added separately like this. */
@@ -882,9 +882,9 @@ static PHP_METHOD(V8Js, setModuleLoader)
 }
 /* }}} */
 
-/* {{{ proto void V8Js::setExceptionProxyFactory(callable factory)
+/* {{{ proto void V8Js::setExceptionFilter(callable factory)
  */
-static PHP_METHOD(V8Js, setExceptionProxyFactory)
+static PHP_METHOD(V8Js, setExceptionFilter)
 {
 	zval *callable;
 
@@ -893,7 +893,7 @@ static PHP_METHOD(V8Js, setExceptionProxyFactory)
 	}
 
 	v8js_ctx *c = Z_V8JS_CTX_OBJ_P(getThis());
-	ZVAL_COPY(&c->exception_proxy_factory, callable);
+	ZVAL_COPY(&c->exception_filter, callable);
 }
 /* }}} */
 
@@ -1271,7 +1271,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_setmoduleloader, 0, 0, 1)
 	ZEND_ARG_INFO(0, callable)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_setexceptionproxyfactory, 0, 0, 1)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_v8js_setexceptionfilter, 0, 0, 1)
 	ZEND_ARG_INFO(0, callable)
 ZEND_END_ARG_INFO()
 
@@ -1314,7 +1314,7 @@ const zend_function_entry v8js_methods[] = { /* {{{ */
 	PHP_ME(V8Js,	clearPendingException,	arginfo_v8js_clearpendingexception,	ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED)
 	PHP_ME(V8Js,	setModuleNormaliser,	arginfo_v8js_setmodulenormaliser,	ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	setModuleLoader,		arginfo_v8js_setmoduleloader,		ZEND_ACC_PUBLIC)
-	PHP_ME(V8Js,	setExceptionProxyFactory,		arginfo_v8js_setexceptionproxyfactory,		ZEND_ACC_PUBLIC)
+	PHP_ME(V8Js,	setExceptionFilter,		arginfo_v8js_setexceptionfilter,		ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	setTimeLimit,			arginfo_v8js_settimelimit,			ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	setMemoryLimit,			arginfo_v8js_setmemorylimit,		ZEND_ACC_PUBLIC)
 	PHP_ME(V8Js,	setAverageObjectSize,	arginfo_v8js_setaverageobjectsize,	ZEND_ACC_PUBLIC)

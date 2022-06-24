@@ -1,5 +1,5 @@
 --TEST--
-Test V8::setExceptionProxyFactory() : String conversion
+Test V8::setExceptionFilter() : String conversion
 --SKIPIF--
 <?php require_once(dirname(__FILE__) . '/skipif.inc'); ?>
 --FILE--
@@ -12,8 +12,8 @@ class myv8 extends V8Js
 }
 
 $v8 = new myv8();
-$v8->setExceptionProxyFactory(function (Throwable $ex) {
-	echo "exception proxy factory called.\n";
+$v8->setExceptionFilter(function (Throwable $ex) {
+	echo "exception filter called.\n";
 	return $ex->getMessage();
 });
 
@@ -29,7 +29,7 @@ $v8->executeString('
 ?>
 ===EOF===
 --EXPECT--
-exception proxy factory called.
+exception filter called.
 string(6) "string"
 string(4) "Oops"
 ===EOF===
