@@ -1,5 +1,5 @@
 --TEST--
-Test V8::setExceptionFilter() : Filter handling on exception in converter
+Test V8::setExceptionFilter() : re-throw exception in exception filter
 --SKIPIF--
 <?php require_once(dirname(__FILE__) . '/skipif.inc'); ?>
 --FILE--
@@ -13,7 +13,8 @@ class myv8 extends V8Js
 
 $v8 = new myv8();
 $v8->setExceptionFilter(function (Throwable $ex) {
-        throw new Exception('moep');
+	// re-throw exception so it is not forwarded
+        throw $ex;
 });
 
 try {
@@ -33,5 +34,5 @@ try {
 ?>
 ===EOF===
 --EXPECT--
-caught in php: moep
+caught in php: Oops
 ===EOF===

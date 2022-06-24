@@ -413,5 +413,7 @@ via `getPrevious` method.
 
 Consider that the JS code has access to methods like `getTrace` on the exception
 object.  This might be unwanted behaviour, if you execute untrusted code.
-Using `setExceptionFilter` method a callable can be provided, that converts
-the PHP exception to not expose unwanted information.
+Using `setExceptionFilter` method a callable can be provided, that may convert
+the PHP exception to some other value that is safe to expose.  The filter may
+also decide not to propagate the exception to JS at all by either re-throwing
+the passed exception or throwing another exception.
