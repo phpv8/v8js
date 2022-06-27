@@ -178,6 +178,24 @@ int main ()
 
 
   dnl
+  dnl  Check for v8::V8::InitializeSandbox
+  dnl
+  AC_CACHE_CHECK([for v8::V8::InitializeSandbox], ac_cv_has_initialize_sandbox, [
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([
+      #define V8_ENABLE_SANDBOX 1
+      #include <v8.h>
+    ], [ v8::V8::InitializeSandbox(); ])], [
+      ac_cv_has_initialize_sandbox=yes
+    ], [
+      ac_cv_has_initialize_sandbox=no
+    ])
+  ])
+  if test "x$ac_cv_has_initialize_sandbox" = "xyes"; then
+    AC_DEFINE([V8_HAS_INITIALIZE_SANDBOX], [1],
+              [Define if V8::InitializeSandbox must be called.])
+  fi
+
+  dnl
   dnl  Check for v8::ArrayBuffer::Allocator::NewDefaultAllocator
   dnl
   AC_CACHE_CHECK([for v8::ArrayBuffer::Allocator::NewDefaultAllocator], ac_cv_has_default_allocator, [

@@ -71,7 +71,7 @@ void v8js_v8_init() /* {{{ */
 	v8js_process_globals.v8_platform = v8::platform::NewDefaultPlatform();
 	v8::V8::InitializePlatform(v8js_process_globals.v8_platform.get());
 
-#ifdef V8_ENABLE_SANDBOX
+#ifdef V8_HAS_INITIALIZE_SANDBOX
 	v8::V8::InitializeSandbox();
 #endif
 
