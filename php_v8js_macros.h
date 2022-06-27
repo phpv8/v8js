@@ -138,7 +138,6 @@ ZEND_EXTERN_MODULE_GLOBALS(v8js)
  *
  *  - whether V8 has been initialized at all
  *  - the V8 backend platform
- *  - loaded extensions
  *  - V8 "command line" flags
  *
  * In a ZTS-enabled environment access to all of these variables must happen
@@ -149,8 +148,6 @@ struct _v8js_process_globals {
 	bool v8_initialized;
 	std::mutex lock;
 #endif
-
-	HashTable *extensions;
 
 	/* V8 command line flags */
 	char *v8_flags;
