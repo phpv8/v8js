@@ -105,6 +105,15 @@ class V8Js
     {}
 
     /**
+     * Provate a function or method to be used to convert/proxy PHP exceptions to JS.
+     * This can be any valid PHP callable.
+     * The converter function will receive the PHP Exception instance that has not been caught and
+     * is due to be forwarded to JS.  Pass NULL as $filter to uninstall an existing filter.
+     */
+    public function setExceptionFilter(callable $filter)
+    {}
+
+    /**
      * Compiles and executes script in object's context with optional identifier string.
      * A time limit (milliseconds) and/or memory limit (bytes) can be provided to restrict execution. These options will throw a V8JsTimeLimitException or V8JsMemoryLimitException.
      * @param string $script
@@ -401,3 +410,10 @@ objects obeying the above rules and re-thrown in JavaScript context.  If they
 are not caught by JavaScript code the execution stops and a
 `V8JsScriptException` is thrown, which has the original PHP exception accessible
 via `getPrevious` method.
+
+Consider that the JS code has access to methods like `getTrace` on the exception
+object.  This might be unwanted behaviour, if you execute untrusted code.
+Using `setExceptionFilter` method a callable can be provided, that may convert
+the PHP exception to some other value that is safe to expose.  The filter may
+also decide not to propagate the exception to JS at all by either re-throwing
+the passed exception or throwing another exception.

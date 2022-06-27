@@ -19,6 +19,7 @@
 #include "php_v8js_macros.h"
 #include "v8js_commonjs.h"
 #include "v8js_exceptions.h"
+#include "v8js_object_export.h"
 
 extern "C" {
 #include "zend_exceptions.h"
@@ -337,14 +338,7 @@ V8JS_METHOD(require)
 
 		// Check if an exception was thrown
 		if (EG(exception)) {
-			if (c->flags & V8JS_FLAG_PROPAGATE_PHP_EXCEPTIONS) {
-				zval tmp_zv;
-				ZVAL_OBJ(&tmp_zv, EG(exception));
-				info.GetReturnValue().Set(isolate->ThrowException(zval_to_v8js(&tmp_zv, isolate)));
-				zend_clear_exception();
-			} else {
-				v8js_terminate_execution(isolate);
-			}
+			info.GetReturnValue().Set(v8js_propagate_exception(c));
 			return;
 		}
 
@@ -466,15 +460,7 @@ V8JS_METHOD(require)
 		efree(normalised_module_id);
 		efree(normalised_path);
 
-		if (c->flags & V8JS_FLAG_PROPAGATE_PHP_EXCEPTIONS) {
-			zval tmp_zv;
-			ZVAL_OBJ(&tmp_zv, EG(exception));
-			info.GetReturnValue().Set(isolate->ThrowException(zval_to_v8js(&tmp_zv, isolate)));
-			zend_clear_exception();
-		} else {
-			v8js_terminate_execution(isolate);
-		}
-
+		info.GetReturnValue().Set(v8js_propagate_exception(c));
 		return;
 	}
 	
@@ -485,7 +471,7 @@ V8JS_METHOD(require)
 
 		efree(normalised_path);
 		return;
-        }
+	}
 
 	if(Z_TYPE(module_code) == IS_OBJECT) {
 		v8::Local<v8::Object> newobj = zval_to_v8js(&module_code, isolate)->ToObject(isolate->GetEnteredOrMicrotaskContext()).ToLocalChecked();
