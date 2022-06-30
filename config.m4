@@ -39,11 +39,15 @@ if test "$PHP_V8JS" != "no"; then
 
 
   AC_CACHE_CHECK(for C standard version, ac_cv_v8_cstd, [
-    ac_cv_v8_cstd="c++14"
+    ac_cv_v8_cstd="c++17"
     old_CPPFLAGS=$CPPFLAGS
     AC_LANG_PUSH([C++])
     CPPFLAGS="-std="$ac_cv_v8_cstd
-    AC_RUN_IFELSE([AC_LANG_SOURCE([[int main() { return 0; }]])],[],[ac_cv_v8_cstd="c++1y"],[])
+    AC_RUN_IFELSE([AC_LANG_SOURCE([[int main() { return 0; }]])],[],[
+      ac_cv_v8_cstd="c++14"
+      CPPFLAGS="-std="$ac_cv_v8_cstd
+      AC_RUN_IFELSE([AC_LANG_SOURCE([[int main() { return 0; }]])],[],[ ac_cv_v8_cstd="c++1y" ],[])
+    ],[])
     AC_LANG_POP([C++])
     CPPFLAGS=$old_CPPFLAGS
   ]);
@@ -172,6 +176,24 @@ int main ()
   V8_SEARCH_BLOB([natives_blob.bin], [PHP_V8_NATIVES_BLOB_PATH])
   V8_SEARCH_BLOB([snapshot_blob.bin], [PHP_V8_SNAPSHOT_BLOB_PATH])
 
+
+  dnl
+  dnl  Check for v8::V8::InitializeSandbox
+  dnl
+  AC_CACHE_CHECK([for v8::V8::InitializeSandbox], ac_cv_has_initialize_sandbox, [
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([
+      #define V8_ENABLE_SANDBOX 1
+      #include <v8.h>
+    ], [ v8::V8::InitializeSandbox(); ])], [
+      ac_cv_has_initialize_sandbox=yes
+    ], [
+      ac_cv_has_initialize_sandbox=no
+    ])
+  ])
+  if test "x$ac_cv_has_initialize_sandbox" = "xyes"; then
+    AC_DEFINE([V8_HAS_INITIALIZE_SANDBOX], [1],
+              [Define if V8::InitializeSandbox must be called.])
+  fi
 
   dnl
   dnl  Check for v8::ArrayBuffer::Allocator::NewDefaultAllocator
