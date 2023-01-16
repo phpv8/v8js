@@ -167,7 +167,7 @@ failure:
 	}
 
 	if(EG(exception)) {
-		if(ctx->flags & V8JS_FLAG_PROPAGATE_PHP_EXCEPTIONS) {
+		if((ctx->flags & V8JS_FLAG_PROPAGATE_PHP_EXCEPTIONS) && !zend_is_graceful_exit(EG(exception)) && !zend_is_unwind_exit(EG(exception))) {
 			zval tmp_zv;
 			ZVAL_OBJ(&tmp_zv, EG(exception));
 			return_value = isolate->ThrowException(zval_to_v8js(&tmp_zv, isolate));
