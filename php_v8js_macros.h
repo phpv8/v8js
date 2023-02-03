@@ -52,6 +52,10 @@ extern "C" {
 #undef COMPILER
 #endif
 
+#ifdef V8_HAS_INITIALIZE_SANDBOX
+#define V8_ENABLE_SANDBOX 1
+#endif
+
 #include <v8.h>
 #include <v8-platform.h>
 
