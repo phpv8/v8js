@@ -464,7 +464,12 @@ static zend_function *v8js_v8object_get_method(zend_object **object_ptr, zend_st
 }
 /* }}} */
 
-static zend_result v8js_v8object_get_closure(zend_object *object, zend_class_entry **ce_ptr, zend_function **fptr_ptr, zend_object **zobj_ptr, bool call) /* {{{ */
+#if PHP_VERSION_ID < 80200
+static int v8js_v8object_get_closure
+#else
+static zend_result v8js_v8object_get_closure
+#endif
+(zend_object *object, zend_class_entry **ce_ptr, zend_function **fptr_ptr, zend_object **zobj_ptr, bool call) /* {{{ */
 {
 	zend_internal_function *invoke;
 	v8js_v8object *obj = Z_V8JS_V8OBJECT_OBJ(object);
