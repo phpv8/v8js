@@ -53,6 +53,7 @@ struct v8js_ctx {
 
   zval module_normaliser;
   zval module_loader;
+  zval exception_filter;
 
   std::vector<char *> modules_stack;
   std::map<char *, v8js_persistent_value_t, cmp_str> modules_loaded;

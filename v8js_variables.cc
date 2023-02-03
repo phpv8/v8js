@@ -80,7 +80,7 @@ void v8js_register_accessors(std::vector<v8js_accessor_ctx*> *accessor_list, v8:
         ctx->isolate = isolate;
 
 		/* Set the variable fetch callback for given symbol on named property */
-		php_obj->SetAccessor(V8JS_STRL(ZSTR_VAL(property_name), static_cast<int>(ZSTR_LEN(property_name))), v8js_fetch_php_variable, NULL, v8::External::New(isolate, ctx), v8::PROHIBITS_OVERWRITING, v8::ReadOnly, v8::AccessorSignature::New(isolate, php_obj_t));
+		php_obj->SetAccessor(V8JS_STRL(ZSTR_VAL(property_name), static_cast<int>(ZSTR_LEN(property_name))), v8js_fetch_php_variable, NULL, v8::External::New(isolate, ctx), v8::PROHIBITS_OVERWRITING, v8::ReadOnly);
 
 		/* record the context so we can free it later */
 		accessor_list->push_back(ctx);

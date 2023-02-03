@@ -71,6 +71,10 @@ void v8js_v8_init() /* {{{ */
 	v8js_process_globals.v8_platform = v8::platform::NewDefaultPlatform();
 	v8::V8::InitializePlatform(v8js_process_globals.v8_platform.get());
 
+#ifdef V8_HAS_INITIALIZE_SANDBOX
+	v8::V8::InitializeSandbox();
+#endif
+
 	/* Set V8 command line flags (must be done before V8::Initialize()!) */
 	if (v8js_process_globals.v8_flags) {
 		size_t flags_len = strlen(v8js_process_globals.v8_flags);
