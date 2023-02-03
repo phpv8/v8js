@@ -38,7 +38,7 @@ v8::Local<v8::Value> v8js_propagate_exception(v8js_ctx *ctx) /* {{{ */
 {
 	v8::Local<v8::Value> return_value = v8::Null(ctx->isolate);
 
-	if (!(ctx->flags & V8JS_FLAG_PROPAGATE_PHP_EXCEPTIONS)) {
+	if (!(ctx->flags & V8JS_FLAG_PROPAGATE_PHP_EXCEPTIONS) || zend_is_graceful_exit(EG(exception)) || zend_is_unwind_exit(EG(exception))) {
 		v8js_terminate_execution(ctx->isolate);
 		return return_value;
 	}
