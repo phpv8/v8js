@@ -5,6 +5,7 @@ Test V8::executeString() : Issue #250 (early free of array)
 --FILE--
 <?php
 
+#[AllowDynamicProperties]
 class TestObject {
 
     private $data = [];
@@ -55,9 +56,9 @@ try {
 ?>
 ===EOF===
 --EXPECTF--
-Fatal error: Uncaught Error: Attempt to modify property "b" on null in %s%eissue_250_001.php:9
+Fatal error: Uncaught Error: Attempt to modify property "b" on null in %s%eissue_250_001.php:10
 Stack trace:
 #0 [internal function]: TestObject->setTitle('ouch')
-#1 %s%eissue_250_001.php(44): V8Js->executeString('    var v1 = se...')
+#1 %s%eissue_250_001.php(45): V8Js->executeString('    var v1 = se...')
 #2 {main}
-  thrown in %s%eissue_250_001.php on line 9
+  thrown in %s%eissue_250_001.php on line 10

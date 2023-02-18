@@ -29,6 +29,7 @@ extern "C"
 #include "zend_closures.h"
 #include "ext/spl/spl_exceptions.h"
 #include "zend_exceptions.h"
+#include "zend_attributes.h"
 }
 
 /* {{{ Class Entries */
@@ -899,11 +900,27 @@ PHP_MINIT_FUNCTION(v8js_v8object_class) /* {{{ */
 	php_ce_v8object->ce_flags |= ZEND_ACC_FINAL;
 	php_ce_v8object->create_object = v8js_v8object_new;
 
+#if PHP_VERSION_ID >= 80200
+	php_ce_v8object->ce_flags |= ZEND_ACC_ALLOW_DYNAMIC_PROPERTIES;
+
+	zend_string *attribute_name_AllowDynamicProperties_class_v8object = zend_string_init_interned("AllowDynamicProperties", sizeof("AllowDynamicProperties") - 1, 1);
+	zend_add_class_attribute(php_ce_v8object, attribute_name_AllowDynamicProperties_class_v8object, 0);
+	zend_string_release(attribute_name_AllowDynamicProperties_class_v8object);
+#endif
+
 	/* V8Function Class */
 	INIT_CLASS_ENTRY(ce, "V8Function", v8js_v8function_methods);
 	php_ce_v8function = zend_register_internal_class(&ce);
 	php_ce_v8function->ce_flags |= ZEND_ACC_FINAL;
 	php_ce_v8function->create_object = v8js_v8object_new;
+	
+#if PHP_VERSION_ID >= 80200
+	php_ce_v8function->ce_flags |= ZEND_ACC_ALLOW_DYNAMIC_PROPERTIES;
+
+	zend_string *attribute_name_AllowDynamicProperties_class_v8function = zend_string_init_interned("AllowDynamicProperties", sizeof("AllowDynamicProperties") - 1, 1);
+	zend_add_class_attribute(php_ce_v8function, attribute_name_AllowDynamicProperties_class_v8function, 0);
+	zend_string_release(attribute_name_AllowDynamicProperties_class_v8function);
+#endif
 
 	/* V8Generator Class */
 	INIT_CLASS_ENTRY(ce, "V8Generator", v8js_v8generator_methods);

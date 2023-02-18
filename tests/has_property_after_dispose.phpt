@@ -5,6 +5,7 @@ Test V8::executeString() : has_property after dispose
 --FILE--
 <?php
 
+#[AllowDynamicProperties]
 class Foo {
 	function callMe($x) {
 		var_dump(property_exists($x, 'bla'));

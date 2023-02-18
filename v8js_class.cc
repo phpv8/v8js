@@ -34,6 +34,7 @@ extern "C" {
 #include "zend_closures.h"
 #include "ext/spl/spl_exceptions.h"
 #include "zend_exceptions.h"
+#include "zend_attributes.h"
 }
 
 #define PHP_V8JS_SCRIPT_RES_NAME "V8Js script"
@@ -1058,6 +1059,14 @@ PHP_MINIT_FUNCTION(v8js_class) /* {{{ */
 	INIT_CLASS_ENTRY(ce, "V8Js", v8js_methods);
 	php_ce_v8js = zend_register_internal_class(&ce);
 	php_ce_v8js->create_object = v8js_new;
+
+#if PHP_VERSION_ID >= 80200
+	php_ce_v8js->ce_flags |= ZEND_ACC_ALLOW_DYNAMIC_PROPERTIES;
+
+	zend_string *attribute_name_AllowDynamicProperties_class_V8Js = zend_string_init_interned("AllowDynamicProperties", sizeof("AllowDynamicProperties") - 1, 1);
+	zend_add_class_attribute(php_ce_v8js, attribute_name_AllowDynamicProperties_class_V8Js, 0);
+	zend_string_release(attribute_name_AllowDynamicProperties_class_V8Js);
+#endif
 
 	/* V8Js handlers */
 	memcpy(&v8js_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
