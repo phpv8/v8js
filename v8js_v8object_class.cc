@@ -916,7 +916,6 @@ PHP_MINIT_FUNCTION(v8js_v8object_class) /* {{{ */
 	/* V8<Object|Function> handlers */
 	memcpy(&v8js_v8object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
 	v8js_v8object_handlers.clone_obj = NULL;
-	v8js_v8object_handlers.cast_object = NULL;
 	v8js_v8object_handlers.get_property_ptr_ptr = v8js_v8object_get_property_ptr_ptr;
 	v8js_v8object_handlers.has_property = v8js_v8object_has_property;
 	v8js_v8object_handlers.read_property = v8js_v8object_read_property;
