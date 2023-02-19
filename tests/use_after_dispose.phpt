@@ -5,6 +5,7 @@ Test V8::executeString() : Use after dispose
 --FILE--
 <?php
 
+#[AllowDynamicProperties]
 class Foo {
 	function callMe($x) {
 		var_dump($x);

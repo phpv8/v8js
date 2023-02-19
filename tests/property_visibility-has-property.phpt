@@ -5,6 +5,7 @@ Test V8::executeString() : Property visibility - has property
 --FILE--
 <?php
 
+#[AllowDynamicProperties]
 class Foo {
 	private $privBar = "privBar";
 	protected $protBar = "protBar";
