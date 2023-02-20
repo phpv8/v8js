@@ -765,10 +765,12 @@ v8::Local<v8::Value> v8js_named_property_callback(v8::Local<v8::Name> property_n
 			   (property_info != ZEND_WRONG_PROPERTY_INFO &&
 				property_info->flags & ZEND_ACC_PUBLIC)) {
 				zval *property_val = zend_read_property(NULL, &zobject, name, name_len, true, &php_value);
-				// special case uninitialized_zval_ptr and return an empty value
-				// (indicating that we don't intercept this property) if the
-				// property doesn't exist.
-				if (property_val == &EG(uninitialized_zval)) {
+				if(EG(exception)) {
+					ret_value = v8js_propagate_exception(ctx);
+				} else if (property_val == &EG(uninitialized_zval)) {
+					// special case uninitialized_zval_ptr and return an empty value
+					// (indicating that we don't intercept this property) if the
+					// property doesn't exist.
 					ret_value = v8::Local<v8::Value>();
 				} else {
 					// wrap it
