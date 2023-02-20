@@ -9,6 +9,7 @@ require_once(dirname(__FILE__) . '/skipif.inc');
 ?>
 --FILE--
 <?php
+putenv('LC_ALL=C');
 
 $v8 = new V8Js();
 try {
