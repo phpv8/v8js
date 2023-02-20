@@ -395,7 +395,9 @@ static void v8js_named_property_enumerator(const v8::PropertyCallbackInfo<v8::Ar
 			IS_MAGIC_FUNC(ZEND_UNSET_FUNC_NAME) ||
 			IS_MAGIC_FUNC(ZEND_CALL_FUNC_NAME) ||
 			IS_MAGIC_FUNC(ZEND_INVOKE_FUNC_NAME) ||
-			IS_MAGIC_FUNC(ZEND_ISSET_FUNC_NAME)) {
+			IS_MAGIC_FUNC(ZEND_ISSET_FUNC_NAME) ||
+			IS_MAGIC_FUNC("__serialize") ||
+			IS_MAGIC_FUNC("__unserialize")) {
 			continue;
 		}
 

@@ -52,7 +52,7 @@ object(V8JsScriptException)#%d (13) {
   ["file":protected]=>
   string(%d) "%s"
   ["line":protected]=>
-  int(29)
+  int(%d)
   ["trace":"Exception":private]=>
   array(1) {
     [0]=>
@@ -60,7 +60,7 @@ object(V8JsScriptException)#%d (13) {
       ["file"]=>
       string(%d) "%s"
       ["line"]=>
-      int(29)
+      int(%d)
       ["function"]=>
       string(13) "executeString"
       ["class"]=>

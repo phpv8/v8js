@@ -6,6 +6,7 @@ Test V8::executeString() : Use ArrayAccess with JavaScript native push method
 v8js.use_array_access = 1
 --FILE--
 <?php
+#[AllowDynamicProperties]
 class MyArray implements ArrayAccess, Countable {
     private $data = Array('one', 'two', 'three');
 
