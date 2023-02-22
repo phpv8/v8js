@@ -1008,14 +1008,14 @@ static v8::MaybeLocal<v8::Object> v8js_wrap_object(v8::Isolate *isolate, zend_cl
 	v8::MaybeLocal<v8::Object> newobj = constr->NewInstance(v8_context, 1, &external);
 
 	bool has_json_serializable = false;
-    for (unsigned int i = 0; i < ce->num_interfaces; i ++) {
-        if (strcmp (ZSTR_VAL(ce->interfaces[i]->name), "JsonSerializable") == 0) {
-            has_json_serializable = true;
-            break;
-        }
-    }
+	for (unsigned int i = 0; i < ce->num_interfaces; i ++) {
+		if (strcmp (ZSTR_VAL(ce->interfaces[i]->name), "JsonSerializable") == 0) {
+			has_json_serializable = true;
+			break;
+		}
+	}
 
-    if (has_json_serializable) {
+	if (has_json_serializable) {
 		zend_string *jsonserialize_str = zend_string_init
 			("jsonSerialize", sizeof("jsonSerialize") - 1, 0);
 		zend_function *jsonserialize_method_ptr = reinterpret_cast<zend_function *>
@@ -1033,7 +1033,7 @@ static v8::MaybeLocal<v8::Object> v8js_wrap_object(v8::Isolate *isolate, zend_cl
 
 			newobj.ToLocalChecked()->CreateDataProperty(v8_context, method_name, ft->GetFunction(v8_context).ToLocalChecked());
 		}
-    }
+	}
 
 	if (ce == zend_ce_closure && !newobj.IsEmpty()) {
 		// free uncached function template when object is freed
