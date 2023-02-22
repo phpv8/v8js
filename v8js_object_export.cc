@@ -1007,6 +1007,34 @@ static v8::MaybeLocal<v8::Object> v8js_wrap_object(v8::Isolate *isolate, zend_cl
 
 	v8::MaybeLocal<v8::Object> newobj = constr->NewInstance(v8_context, 1, &external);
 
+	bool has_json_serializable = false;
+	for (unsigned int i = 0; i < ce->num_interfaces; i ++) {
+		if (strcmp (ZSTR_VAL(ce->interfaces[i]->name), "JsonSerializable") == 0) {
+			has_json_serializable = true;
+			break;
+		}
+	}
+
+	if (has_json_serializable) {
+		zend_string *jsonserialize_str = zend_string_init
+			("jsonSerialize", sizeof("jsonSerialize") - 1, 0);
+		zend_function *jsonserialize_method_ptr = reinterpret_cast<zend_function *>
+			(zend_hash_find_ptr_lc(&ce->function_table, jsonserialize_str));
+		if (jsonserialize_method_ptr &&
+			jsonserialize_method_ptr->common.fn_flags & ZEND_ACC_PUBLIC) {
+			v8::Local<v8::String> method_name = V8JS_SYM("toJSON");
+			v8::Local<v8::FunctionTemplate> ft;
+
+			ft = v8::FunctionTemplate::New(isolate, v8js_php_callback,
+					v8::External::New((isolate), jsonserialize_method_ptr));
+
+			v8js_function_tmpl_t *persistent_ft = &ctx->method_tmpls[std::make_pair(ce, jsonserialize_method_ptr)];
+			persistent_ft->Reset(isolate, ft);
+
+			newobj.ToLocalChecked()->CreateDataProperty(v8_context, method_name, ft->GetFunction(v8_context).ToLocalChecked());
+		}
+	}
+
 	if (ce == zend_ce_closure && !newobj.IsEmpty()) {
 		// free uncached function template when object is freed
 		ctx->weak_closures[persist_tpl_].Reset(isolate, newobj.ToLocalChecked());
