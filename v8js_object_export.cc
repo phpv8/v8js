@@ -141,7 +141,8 @@ static void v8js_call_php_func(zend_object *object, zend_function *method_ptr, c
 		{
 			v8::Local<v8::Object> param_object;
 
-			if (info[i]->IsObject() && info[i]->ToObject(v8_context).ToLocal(&param_object) && param_object->InternalFieldCount() == 2)
+			if (info[i]->IsObject() && info[i]->ToObject(v8_context).ToLocal(&param_object) && param_object->InternalFieldCount() == 2
+					&& !param_object->IsArrayBufferView() && !param_object->IsArrayBuffer())
 			{
 				/* This is a PHP object, passed to JS and back. */
 				zend_object *object = reinterpret_cast<zend_object *>(param_object->GetAlignedPointerFromInternalField(1));
