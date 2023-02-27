@@ -325,7 +325,8 @@ int v8js_get_properties_hash(v8::Local<v8::Value> jsValue, HashTable *retval, in
 		ZVAL_UNDEF(&value);
 
 		v8::Local<v8::Object> jsValObject;
-		if (jsVal->IsObject() && jsVal->ToObject(v8_context).ToLocal(&jsValObject) && jsValObject->InternalFieldCount() == 2) {
+		if (jsVal->IsObject() && !jsVal->IsArrayBufferView() && !jsVal->IsArrayBuffer()
+			&& jsVal->ToObject(v8_context).ToLocal(&jsValObject) && (jsValObject->InternalFieldCount() == 2)) {
 			/* This is a PHP object, passed to JS and back. */
 			zend_object *object = reinterpret_cast<zend_object *>(jsValObject->GetAlignedPointerFromInternalField(1));
 			ZVAL_OBJ(&value, object);

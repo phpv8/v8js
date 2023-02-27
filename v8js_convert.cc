@@ -260,7 +260,7 @@ int v8js_to_zval(v8::Local<v8::Value> jsValue, zval *return_value, int flags, v8
 		}
 
 		// if this is a wrapped PHP object, then just unwrap it.
-		if (self->InternalFieldCount() == 2) {
+		if ((self->InternalFieldCount() == 2) && !jsValue->IsArrayBufferView() && !jsValue->IsArrayBuffer()) {
 			zend_object *object = reinterpret_cast<zend_object *>(self->GetAlignedPointerFromInternalField(1));
 			zval zval_object;
 			ZVAL_OBJ(&zval_object, object);
