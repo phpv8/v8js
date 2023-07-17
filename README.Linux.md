@@ -101,7 +101,7 @@ cd /tmp
 git clone https://github.com/phpv8/v8js.git
 cd v8js
 phpize
-./configure --with-v8js=/opt/v8 LDFLAGS="-lstdc++" CPPFLAGS="-DV8_COMPRESS_POINTERS"
+./configure --with-v8js=/opt/v8 LDFLAGS="-lstdc++" CPPFLAGS="-DV8_COMPRESS_POINTERS -DV8_ENABLE_SANDBOX"
 make
 make test
 sudo make install
