@@ -13,7 +13,7 @@ if (getenv("SKIP_SLOW_TESTS")) {
 
 $JS = <<< EOT
 var text = "abcdefghijklmnopqrstuvwyxz0123456789";
-for (var i = 0; i < 10000000; ++i) {
+for (var i = 0; i < 100000000; ++i) {
     var encoded = encodeURI(text);
 }
 EOT;
