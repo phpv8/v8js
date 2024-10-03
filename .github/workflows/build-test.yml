@@ -12,22 +12,17 @@ permissions:
     contents: read
 
 jobs:
-    build:
+    self-built-v8-cache-warmup:
         strategy:
             # set in accordance with number of v8-versions, so caching can kick in properly
             max-parallel: 2
 
             matrix:
-                operating-system:
+                operating-system: # &self-built-v8-operating-systems
                     - ubuntu-latest
 #                    - windows-latest
-#                    - macos-latest
-                php-versions:
-#                    - '8.1'
-#                    - '8.2'
-                    - '8.3'
-                    - '8.4'
-                v8-versions:
+                    - macos-latest
+                v8-versions: # &self-built-v8-v8-versions
                     - 10.9.194
 #                    - 11.9.172
                     - 12.9.203
@@ -36,14 +31,10 @@ jobs:
         runs-on: ${{ matrix.operating-system }}
 
         steps:
-            -   name: Checkout code
-                uses: actions/checkout@v2
-
-            -   name: Setup PHP
-                uses: shivammathur/setup-php@v2
-                with:
-                    php-version: ${{ matrix.php-versions }}
-                    coverage: none
+            -   name: Prepare cache folder v8 ${{ matrix.v8-versions }}
+                run: |
+                    sudo mkdir -p /opt/v8/self-built/{lib,include}
+                    sudo chown -R $(id -u):$(id -g) /opt/v8/self-built
 
             -   name: Restore cache v8 ${{ matrix.v8-versions }} build
                 id: v8-build-cache
@@ -61,25 +52,45 @@ jobs:
                 if: steps.v8-build-cache.outputs.cache-hit != 'true'
                 run: |
                     # Store extra tools somewhere undisturbing
+                    set -x
                     cd "$(mktemp -d)"
 
-                    fetch v8
+                    ARCH=$(uname -m)
+                    if [[ "$ARCH" == "x86_64" ]]; then
+                        V8CONFIG="x64.release"
+                        ARCH_SHORT="x64"
+                    elif [[ "$ARCH" == "arm64" ]]; then
+                        V8CONFIG="arm64.release"
+                        ARCH_SHORT="arm64"
+                    else
+                        echo "Unknown architecture: $ARCH" >&2
+                        exit 1
+                    fi
+                    fetch --nohooks --no-history v8
                     cd v8
-
-                    git checkout ${{ matrix.v8-versions }}
-                    gclient sync -D
+                    git fetch --tag origin refs/tags/${{ matrix.v8-versions }} > /dev/null 2>&1
+                    git checkout ${{ matrix.v8-versions }} > /dev/null 2>&1
+                    gclient sync -D > /dev/null 2>&1
 
                     # Setup GN
                     # Warnings are no errors - @see https://issues.chromium.org/issues/42203398#comment9
-                    tools/dev/v8gen.py -vv x64.release -- is_component_build=true use_custom_libcxx=false treat_warnings_as_errors=false
+                    if [[ "${{ runner.os }}" == "macOS" ]]; then
+                        # Run gn gen with args as v8gen does not override target_cpu properly
+                        gn gen out.gn/$V8CONFIG --args='target_cpu="'$ARCH_SHORT'" v8_target_cpu="'$ARCH_SHORT'" is_component_build=true use_custom_libcxx=true treat_warnings_as_errors=false'
+                    else
+                        tools/dev/v8gen.py -vv $V8CONFIG -- is_component_build=true use_custom_libcxx=true treat_warnings_as_errors=false
+                    fi
 
                     # Build
-                    ninja -C out.gn/x64.release/
+                    ninja -C out.gn/$V8CONFIG/
 
-                    # Install to /opt/v8/self-built
-                    sudo mkdir -p /opt/v8/self-built/{lib,include}
-                    sudo cp out.gn/x64.release/lib*.so out.gn/x64.release/*_blob.bin out.gn/x64.release/icudtl.dat /opt/v8/self-built/lib/
-                    sudo cp -R include/* /opt/v8/self-built/include/
+                    if [[ "${{ runner.os }}" == "macOS" ]]; then
+                        LIB_EXT=dylib
+                    else
+                        LIB_EXT=so
+                    fi
+                    cp out.gn/$V8CONFIG/lib*.${LIB_EXT} out.gn/$V8CONFIG/*_blob.bin out.gn/$V8CONFIG/icudtl.dat /opt/v8/self-built/lib/
+                    cp -R include/* /opt/v8/self-built/include/
 
                     # Go back to origin
                     cd "${GITHUB_WORKSPACE}"
@@ -90,6 +101,44 @@ jobs:
                 with:
                     path: /opt/v8/self-built
                     key: ${{ steps.v8-build-cache.outputs.cache-primary-key }}
+
+    self-built-v8:
+        needs: self-built-v8-cache-warmup
+
+        strategy:
+            matrix:
+                operating-system: # *self-built-v8-operating-systems
+                    - ubuntu-latest
+#                    - windows-latest
+                    - macos-latest
+                v8-versions: # *self-built-v8-v8-versions
+                    - 10.9.194
+#                    - 11.9.172
+                    - 12.9.203
+#                    - 13.1.104
+                php-versions:
+#                    - '8.1'
+                    - '8.2'
+                    - '8.3'
+                    - '8.4'
+
+        runs-on: ${{ matrix.operating-system }}
+
+        steps:
+            -   name: Checkout code
+                uses: actions/checkout@v2
+
+            -   name: Setup PHP
+                uses: shivammathur/setup-php@v2
+                with:
+                    php-version: ${{ matrix.php-versions }}
+                    coverage: none
+
+            -   name: Download cache v8 ${{ matrix.v8-versions }} build
+                uses: actions/cache/restore@v4
+                with:
+                    path: /opt/v8/self-built
+                    key: ${{ runner.os }}-${{ matrix.v8-versions }}-v8-build
 
             -   name: Build extension
                 run: |
@@ -102,12 +151,12 @@ jobs:
                 if: failure()
                 uses: actions/upload-artifact@v4
                 with:
-                    name: phpt-test-results
+                    name: phpt-test-results-on-${{ runner.os }}-${{ matrix.v8-versions }}-${{ matrix.php-versions }}
                     path: |
                         php_test_results*.txt
                         tests/*.out
 
-    alpine:
+    alpine-package-manager-apk:
         runs-on: ubuntu-latest
 
         steps:
@@ -135,7 +184,50 @@ jobs:
                 if: failure()
                 uses: actions/upload-artifact@v4
                 with:
-                    name: phpt-test-results
+                    name: phpt-test-results-on-alpine
+                    path: |
+                        php_test_results*.txt
+                        tests/*.out
+
+    macos-package-manager-brew:
+        strategy:
+            matrix:
+                php-versions:
+                    - '8.2'
+                    - '8.3'
+                    - '8.4'
+
+        runs-on: macos-latest
+
+        steps:
+            -   name: Checkout code
+                uses: actions/checkout@v2
+
+            -   name: Setup PHP
+                uses: shivammathur/setup-php@v2
+                with:
+                    php-version: ${{ matrix.php-versions }}
+                    coverage: none
+
+            -   name: Set up Homebrew
+                uses: Homebrew/actions/setup-homebrew@master
+
+            -   name: Install dependencies
+                run: |
+                    brew install v8
+
+            -   name: Build extension
+                run: |
+                    phpize
+                    ./configure --with-v8js=/opt/homebrew CPPFLAGS="-DV8_COMPRESS_POINTERS -DV8_ENABLE_SANDBOX"
+                    make
+                    make test
+
+            -   name: Archive test results
+                if: failure()
+                uses: actions/upload-artifact@v4
+                with:
+                    name: phpt-test-results-on-macos-brew-${{ matrix.php-versions }}
                     path: |
                         php_test_results*.txt
                         tests/*.out
