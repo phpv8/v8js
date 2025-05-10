@@ -12,8 +12,12 @@ if (getenv("SKIP_SLOW_TESTS")) {
 <?php
 
 $JS = <<< EOT
+var start = Date.now();
 var text = "abcdefghijklmnopqrstuvwyxz0123456789";
-for (var i = 0; i < 20000000; ++i) {
+while (true) {
+    if (Date.now() - start > 2000) { // 2 seconds safety valve
+        break;
+    }
     var encoded = encodeURI(text);
 }
 EOT;
