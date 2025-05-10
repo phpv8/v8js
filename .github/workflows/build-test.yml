@@ -215,6 +215,8 @@ jobs:
             -   name: Install dependencies
                 run: |
                     brew install v8
+                    # Symlink icudtl.dat to the default location
+                    ln -sf /opt/homebrew/Cellar/v8/$(brew list --versions v8 | awk '{print $2}')/libexec/icudtl.dat /opt/homebrew/lib/icudtl.dat
 
             -   name: Build extension
                 run: |
