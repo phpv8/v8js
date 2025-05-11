@@ -118,6 +118,7 @@ if test "$PHP_V8JS" != "no"; then
 
   CPPFLAGS="$CPPFLAGS -I$V8_INCLUDE_DIR -std=$ac_cv_v8_cstd"
   LDFLAGS="$LDFLAGS -L$V8_LIBRARY_DIR"
+  LIBS="-L$V8_LIBRARY_DIR $LIBS"
 
   if test "$libname" = "v8"; then
     AC_MSG_CHECKING([for libv8_libplatform])
