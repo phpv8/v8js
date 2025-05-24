@@ -169,7 +169,7 @@ jobs:
             -   name: Install dependencies
                 run: |
                     cat /etc/alpine-release
-                    apk add php83-dev nodejs-dev g++ make
+                    apk add php83-dev nodejs-dev nodejs g++ make file
                 shell: alpine.sh --root {0}
 
             -   name: Build extension
