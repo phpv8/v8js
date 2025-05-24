@@ -59,7 +59,12 @@ static zval v8js_array_access_dispatch(zend_object *object, const char *method_n
 V8JS_INTERCEPTED v8js_array_access_getter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& info) /* {{{ */
 {
 	v8::Isolate *isolate = info.GetIsolate();
-	v8::Local<v8::Object> self = info.Holder();
+	v8::Local<v8::Object> self;
+	#if PHP_V8_API_VERSION >= 13000000
+    self = info.This();
+	#else
+    self = info.Holder();
+	#endif
 
 	zend_object *object = reinterpret_cast<zend_object *>(self->GetAlignedPointerFromInternalField(1));
 
@@ -83,7 +88,12 @@ V8JS_INTERCEPTED v8js_array_access_setter(uint32_t index, v8::Local<v8::Value> v
 								  const V8JS_SETTER_PROPERTY_CALLBACK_INFO &info) /* {{{ */
 {
 	v8::Isolate *isolate = info.GetIsolate();
-	v8::Local<v8::Object> self = info.Holder();
+	v8::Local<v8::Object> self;
+	#if PHP_V8_API_VERSION >= 13000000
+    self = info.This();
+	#else
+    self = info.Holder();
+	#endif
 
 	zend_object *object = reinterpret_cast<zend_object *>(self->GetAlignedPointerFromInternalField(1));
 
@@ -157,7 +167,12 @@ static bool v8js_array_access_isset_p(zend_object *object, int index) /* {{{ */
 static void v8js_array_access_length(v8::Local<v8::String> property, const v8::PropertyCallbackInfo<v8::Value>& info) /* {{{ */
 {
 	v8::Isolate *isolate = info.GetIsolate();
-	v8::Local<v8::Object> self = info.Holder();
+	v8::Local<v8::Object> self;
+	#if PHP_V8_API_VERSION >= 13000000
+    self = info.This();
+	#else
+    self = info.Holder();
+	#endif
 
 	zend_object *object = reinterpret_cast<zend_object *>(self->GetAlignedPointerFromInternalField(1));
 
@@ -169,7 +184,12 @@ static void v8js_array_access_length(v8::Local<v8::String> property, const v8::P
 V8JS_INTERCEPTED v8js_array_access_deleter(uint32_t index, const v8::PropertyCallbackInfo<v8::Boolean>& info) /* {{{ */
 {
 	v8::Isolate *isolate = info.GetIsolate();
-	v8::Local<v8::Object> self = info.Holder();
+	v8::Local<v8::Object> self;
+	#if PHP_V8_API_VERSION >= 13000000
+    self = info.This();
+	#else
+    self = info.Holder();
+	#endif
 
 	zend_object *object = reinterpret_cast<zend_object *>(self->GetAlignedPointerFromInternalField(1));
 
@@ -187,7 +207,12 @@ V8JS_INTERCEPTED v8js_array_access_deleter(uint32_t index, const v8::PropertyCal
 V8JS_INTERCEPTED v8js_array_access_query(uint32_t index, const v8::PropertyCallbackInfo<v8::Integer>& info) /* {{{ */
 {
 	v8::Isolate *isolate = info.GetIsolate();
-	v8::Local<v8::Object> self = info.Holder();
+	v8::Local<v8::Object> self;
+	#if PHP_V8_API_VERSION >= 13000000
+    self = info.This();
+	#else
+    self = info.Holder();
+	#endif
 
 	zend_object *object = reinterpret_cast<zend_object *>(self->GetAlignedPointerFromInternalField(1));
 
@@ -206,7 +231,13 @@ V8JS_INTERCEPTED v8js_array_access_query(uint32_t index, const v8::PropertyCallb
 void v8js_array_access_enumerator(const v8::PropertyCallbackInfo<v8::Array>& info) /* {{{ */
 {
 	v8::Isolate *isolate = info.GetIsolate();
-	v8::Local<v8::Object> self = info.Holder();
+	v8::Local<v8::Object> self;
+
+	#if PHP_V8_API_VERSION >= 13000000
+    self = info.This();
+	#else
+    self = info.Holder();
+	#endif
 
 	zend_object *object = reinterpret_cast<zend_object *>(self->GetAlignedPointerFromInternalField(1));
 
@@ -240,7 +271,14 @@ V8JS_INTERCEPTED v8js_array_access_named_getter(v8::Local<v8::Name> property_nam
 		return V8JS_INTERCEPTED_YES;
 	}
 
-	v8::Local<v8::Value> ret_value = v8js_named_property_callback(info.GetIsolate(), info.Holder(), property, V8JS_PROP_GETTER);
+	v8::Local<v8::Object> holder;
+	#if PHP_V8_API_VERSION >= 13000000
+    holder = info.This();
+	#else
+    holder = info.Holder();
+	#endif
+
+	v8::Local<v8::Value> ret_value = v8js_named_property_callback(info.GetIsolate(), holder, property, V8JS_PROP_GETTER);
 
 	if(ret_value.IsEmpty()) {
 		v8::Local<v8::Array> arr = v8::Array::New(isolate);

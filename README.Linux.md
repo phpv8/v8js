@@ -89,23 +89,27 @@ git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
 export PATH=`pwd`/depot_tools:"$PATH"
 
 # Download v8
-fetch v8
+fetch --nohooks --no-history v8
+gclient sync -D --no-history
 cd v8
 
 # (optional) If you'd like to build a certain version:
+git fetch --tag origin refs/tags/12.0.267.36
 git checkout 12.0.267.36
 gclient sync -D
 
+ARCH=$(uname -m)
+
 # Setup GN
-tools/dev/v8gen.py -vv x64.release -- is_component_build=true use_custom_libcxx=false
+tools/dev/v8gen.py -vv ${ARCH}.release -- is_component_build=true use_custom_libcxx=false
 
 # Build
-ninja -C out.gn/x64.release/
+ninja -C out.gn/${ARCH}.release/
 
 # Install to /opt/v8/
 sudo mkdir -p /opt/v8/{lib,include}
-sudo cp out.gn/x64.release/lib*.so out.gn/x64.release/*_blob.bin \
-  out.gn/x64.release/icudtl.dat /opt/v8/lib/
+sudo cp out.gn/${ARCH}.release/lib*.so out.gn/${ARCH}.release/*_blob.bin \
+  out.gn/${ARCH}.release/icudtl.dat /opt/v8/lib/
 sudo cp -R include/* /opt/v8/include/
 ```
 
