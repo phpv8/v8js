@@ -76,7 +76,7 @@ void v8js_register_accessors(std::vector<v8js_accessor_ctx*> *accessor_list, v8:
 
         // Create context to store accessor data
         v8js_accessor_ctx *ctx = (v8js_accessor_ctx *)emalloc(sizeof(v8js_accessor_ctx));
-        ctx->variable_name = zend_string_copy(Z_STR_P(item));
+        ctx->variable_name = zend_string_init(ZSTR_VAL(Z_STR_P(item)), ZSTR_LEN(Z_STR_P(item)), 1);
         ctx->isolate = isolate;
 
 		/* Set the variable fetch callback for given symbol on named property */
