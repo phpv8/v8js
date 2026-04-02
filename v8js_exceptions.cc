@@ -97,7 +97,7 @@ void v8js_create_script_exception(zval *return_value, v8::Isolate *isolate, v8::
 		if(try_catch->Exception()->IsObject() && try_catch->Exception()->ToObject(context).ToLocal(&error_object) && error_object->InternalFieldCount() == 2) {
 			zend_object *php_exception = reinterpret_cast<zend_object *>(error_object->GetAlignedPointerFromInternalField(1));
 
-			zend_class_entry *exception_ce = zend_exception_get_default();
+			zend_class_entry *exception_ce = zend_ce_exception;
 			if (instanceof_function(php_exception->ce, exception_ce)) {
 #ifdef GC_ADDREF
 				GC_ADDREF(php_exception);
