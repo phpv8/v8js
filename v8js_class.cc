@@ -73,11 +73,43 @@ public:
 #endif  /** USE_INTERNAL_ALLOCATOR */
 
 
+static HashTable *v8js_get_gc(zend_object *object, zval **table, int *n) /* {{{ */
+{
+	v8js_ctx *c = v8js_ctx_fetch_object(object);
+
+	int count = 3 + (int)c->weak_objects.size();
+
+	if (c->gc_buffer_size < count) {
+		if (c->gc_buffer) efree(c->gc_buffer);
+		c->gc_buffer = (zval *)safe_emalloc(count, sizeof(zval), 0);
+		c->gc_buffer_size = count;
+	}
+
+	int i = 0;
+	ZVAL_COPY_VALUE(&c->gc_buffer[i++], &c->module_normaliser);
+	ZVAL_COPY_VALUE(&c->gc_buffer[i++], &c->module_loader);
+	ZVAL_COPY_VALUE(&c->gc_buffer[i++], &c->exception_filter);
+
+	for (auto &pair : c->weak_objects) {
+		ZVAL_OBJ(&c->gc_buffer[i++], pair.first);
+	}
+
+	*table = c->gc_buffer;
+	*n = i;
+	return NULL;
+}
+/* }}} */
+
+
 static void v8js_free_storage(zend_object *object) /* {{{ */
 {
 	v8js_ctx *c = v8js_ctx_fetch_object(object);
 
 	zend_object_std_dtor(&c->std);
+
+	if (c->gc_buffer) {
+		efree(c->gc_buffer);
+	}
 
 	zval_ptr_dtor(&c->module_normaliser);
 	zval_ptr_dtor(&c->module_loader);
@@ -315,6 +347,9 @@ static PHP_METHOD(V8Js, __construct)
 	ZVAL_NULL(&c->module_normaliser);
 	ZVAL_NULL(&c->module_loader);
 	ZVAL_NULL(&c->exception_filter);
+
+	c->gc_buffer = NULL;
+	c->gc_buffer_size = 0;
 
 	// Isolate execution
 	v8::Isolate *isolate = c->isolate;
@@ -688,7 +723,9 @@ static PHP_METHOD(V8Js, setModuleNormaliser)
 	}
 
 	c = Z_V8JS_CTX_OBJ_P(getThis());
+	zval tmp = c->module_normaliser;
 	ZVAL_COPY(&c->module_normaliser, callable);
+	zval_ptr_dtor(&tmp);
 }
 /* }}} */
 
@@ -704,7 +741,9 @@ static PHP_METHOD(V8Js, setModuleLoader)
 	}
 
 	c = Z_V8JS_CTX_OBJ_P(getThis());
+	zval tmp = c->module_loader;
 	ZVAL_COPY(&c->module_loader, callable);
+	zval_ptr_dtor(&tmp);
 }
 /* }}} */
 
@@ -719,7 +758,9 @@ static PHP_METHOD(V8Js, setExceptionFilter)
 	}
 
 	v8js_ctx *c = Z_V8JS_CTX_OBJ_P(getThis());
+	zval tmp = c->exception_filter;
 	ZVAL_COPY(&c->exception_filter, callable);
+	zval_ptr_dtor(&tmp);
 }
 /* }}} */
 
@@ -815,7 +856,7 @@ static PHP_METHOD(V8Js, setAverageObjectSize)
 static void v8js_persistent_zval_ctor(zval *p) /* {{{ */
 {
 	assert(Z_TYPE_P(p) == IS_STRING);
-	Z_STR_P(p) = zend_string_dup(Z_STR_P(p), 1);
+	Z_STR_P(p) = zend_string_init(ZSTR_VAL(Z_STR_P(p)), ZSTR_LEN(Z_STR_P(p)), 1);
 }
 /* }}} */
 
@@ -1077,6 +1118,7 @@ PHP_MINIT_FUNCTION(v8js_class) /* {{{ */
 	v8js_object_handlers.clone_obj = NULL;
 	v8js_object_handlers.write_property = v8js_write_property;
 	v8js_object_handlers.unset_property = v8js_unset_property;
+	v8js_object_handlers.get_gc = v8js_get_gc;
 
 	/* V8Js Class Constants */
 	zend_declare_class_constant_string(php_ce_v8js, ZEND_STRL("V8_VERSION"),		PHP_V8_VERSION);

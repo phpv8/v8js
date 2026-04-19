@@ -37,7 +37,7 @@ jobs:
 
         steps:
             -   name: Checkout code
-                uses: actions/checkout@v2
+                uses: actions/checkout@v4
 
             -   name: Setup PHP
                 uses: shivammathur/setup-php@v2
@@ -112,7 +112,7 @@ jobs:
 
         steps:
             -   name: Checkout code
-                uses: actions/checkout@v2
+                uses: actions/checkout@v4
 
             -   name: Setup latest Alpine Linux
                 uses: jirutka/setup-alpine@v1
@@ -120,7 +120,13 @@ jobs:
             -   name: Install dependencies
                 run: |
                     cat /etc/alpine-release
-                    apk add php83-dev nodejs-dev g++ make
+                    apk update
+                    PHP_DEV=$(apk search -q 'php[0-9]*-dev' | grep -E '^php[0-9]+-dev$' | sort -V | tail -1)
+                    echo "Installing $PHP_DEV"
+                    apk add $PHP_DEV nodejs-dev g++ make
+                    PHP_VER=$(echo $PHP_DEV | grep -oE '[0-9]+')                                                                        
+                    [ ! -e /usr/bin/phpize ] && ln -s /usr/bin/phpize$PHP_VER /usr/bin/phpize                                                               
+                    [ ! -e /usr/bin/php-config ] && ln -s /usr/bin/php-config$PHP_VER /usr/bin/php-config
                 shell: alpine.sh --root {0}
 
             -   name: Build extension

@@ -74,6 +74,9 @@ struct v8js_ctx {
   zval zval_snapshot_blob;
   v8::StartupData snapshot_blob;
 
+  zval *gc_buffer;
+  int gc_buffer_size;
+
   zend_object std;
 };
 /* }}} */
