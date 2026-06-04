@@ -1,0 +1,19 @@
+# Strip development-only and PECL-era paths from the archive that Composer
+# downloads (and that PIE uses for `composer-default` source builds).
+/.github               export-ignore
+/.gitattributes        export-ignore
+/.gitignore            export-ignore
+/.dockerignore         export-ignore
+/README.Linux.md       export-ignore
+/README.MacOS.md       export-ignore
+/README.Win32.md       export-ignore
+/package.xml           export-ignore
+
+# Force LF on shell / autoconf / workflow inputs so Windows checkouts don't
+# break the build.
+*.sh   text eol=lf
+*.m4   text eol=lf
+*.w32  text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf

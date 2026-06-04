@@ -1,0 +1,207 @@
+name: Build and release PIE binaries
+
+on:
+  push:
+    tags: ['*']
+
+permissions:
+  contents: read
+
+jobs:
+  create-draft-release:
+    runs-on: ubuntu-latest
+    permissions:
+      # contents:write is required to create the draft release.
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-tags: 'true'
+          ref: ${{ github.ref }}
+      - name: Create draft release from tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "${{ github.ref_name }}" >/dev/null 2>&1 \
+            || gh release create "${{ github.ref_name }}" --title "${{ github.ref_name }}" --draft --generate-notes
+
+  add-pie-binaries-linux:
+    needs: [create-draft-release]
+    runs-on: ${{ matrix.runner }}
+    # Build inside the official PHP Docker image so the .so links against the
+    # SOVERSION that ships with that base image:
+    #   php:X.Y-cli/zts        -> Debian trixie, libnode.so.115
+    #   php:X.Y-cli/zts-alpine -> Alpine 3.22ish, libnode.so.137
+    # Building on the bare ubuntu-24.04 runner would link against
+    # libnode.so.109 (Node 18) instead — missing on the more popular php:X.Y
+    # images and causing dynamic-link failures at PHP startup. Building in
+    # the matching image aligns the link target with the most likely host.
+    # The Alpine image is needed separately because Alpine uses musl libc,
+    # which is ABI-incompatible with glibc; PIE encodes this in the asset
+    # name as `glibc` vs `musl` and matches based on the user's libc.
+    container:
+      image: php:${{ matrix.php-version }}-${{ matrix.zts-mode == 'ts' && 'zts' || 'cli' }}${{ matrix.distro == 'alpine' && '-alpine' || '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # ubuntu-24.04     = x86_64 native runner
+        # ubuntu-24.04-arm = arm64 native runner (no QEMU)
+        # The container on each runner inherits the host arch, so each cell
+        # produces a single-arch binary.
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+        php-version: ['8.1', '8.2', '8.3', '8.4', '8.5']
+        # `php:X.Y-cli`/`-cli-alpine` are NTS; `-zts`/`-zts-alpine` are ZTS.
+        zts-mode: [nts, ts]
+        # debian = Debian trixie (libnode.so.115, glibc)
+        # alpine = Alpine 3.22 (libnode.so.137, musl)
+        distro: [debian, alpine]
+        exclude:
+          # GitHub Actions doesn't currently support running JS actions
+          # (e.g., actions/checkout) inside arm64+musl containers — the node
+          # runtime it injects into the container fails to execute. All 10
+          # arm64+alpine cells dead at `actions/checkout` step. Skip until
+          # this is fixed upstream in actions/runner.
+          - runner: ubuntu-24.04-arm
+            distro: alpine
+    permissions:
+      # contents:write is required to upload to the draft release.
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # The slim php:X.Y-* images don't include build tooling or libnode-dev.
+      # pie-ext-binary-builder needs jq + zip + a C++ toolchain (it shells out
+      # to `phpize / ./configure / make / zip`). libv8/libnode headers come
+      # from libnode-dev (Debian) or nodejs-dev (Alpine); config.m4 searches
+      # both libv8.so and libnode.so, finding libnode at /usr/include/node.
+      - name: Install build tooling and libnode (Debian)
+        if: matrix.distro == 'debian'
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential autoconf libtool pkg-config \
+            libnode-dev jq zip ca-certificates curl git
+
+      - name: Install build tooling and nodejs (Alpine)
+        if: matrix.distro == 'alpine'
+        run: |
+          apk add --no-cache \
+            build-base autoconf libtool m4 pkgconfig \
+            nodejs-dev jq zip ca-certificates curl git
+
+      # Inline replacement for php/pie-ext-binary-builder@0.0.2 with two fixes:
+      #
+      #   1. Correct libc detection on Alpine. The upstream action reads only
+      #      `stdout` from `ldd --version`, but Alpine's musl ldd writes the
+      #      "musl" marker to stderr. Alpine cells were silently being labeled
+      #      `glibc`, producing assets named like Debian's and colliding in
+      #      the release with "asset already exists" errors. Merging stderr
+      #      via `2>&1` fixes the detection.
+      #
+      #   2. Idempotent upload. The upstream action uses Octokit which
+      #      auto-retries on transient 5xx. If the first request succeeded
+      #      but the response was dropped, the retry hits 422 (already_exists)
+      #      and the cell is reported as failed even though the asset was
+      #      uploaded. Here we explicitly delete an asset with the same name
+      #      before uploading, so a re-run is safe.
+      - name: Build, package, upload .so
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          # Platform detection
+          EXT_NAME=$(jq -r '."php-ext"."extension-name" // (.name | split("/")[1])' composer.json)
+          PHP_VER=$(php -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;')
+          case "$(uname -m)" in
+            x86_64)  ARCH=x86_64 ;;
+            aarch64) ARCH=arm64 ;;
+            *)       ARCH=$(uname -m) ;;
+          esac
+          # NB: Alpine's musl ldd exits 1 (prints usage) — `set -o pipefail` would
+          # propagate that and the `if` would see false, falling through to glibc.
+          # Capture stdout+stderr with `|| true` first, then grep the string.
+          LDD_OUT=$(ldd --version 2>&1 || true)
+          if printf "%s" "$LDD_OUT" | grep -qi musl; then LIBC=musl; else LIBC=glibc; fi
+          ZTS_SUFFIX=$(php -r 'echo PHP_ZTS ? "-zts" : "";')
+          DEBUG_SUFFIX=$(php -r 'echo PHP_DEBUG ? "-debug" : "";')
+          ASSET="php_${EXT_NAME}-${TAG}_php${PHP_VER}-${ARCH}-linux-${LIBC}${DEBUG_SUFFIX}${ZTS_SUFFIX}.zip"
+          echo "Target asset: $ASSET"
+
+          # Build
+          phpize
+          ./configure --with-v8js=/usr
+          make -j"$(nproc)"
+
+          # Package
+          (cd modules && zip -j "/tmp/$ASSET" "${EXT_NAME}.so")
+
+          # Resolve release ID (drafts visible because we're authenticated)
+          RELEASE_ID=$(curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$REPO/releases" \
+            | jq -r --arg tag "$TAG" '.[] | select(.tag_name==$tag) | .id' | head -1)
+          if [ -z "$RELEASE_ID" ]; then echo "ERROR: no release for tag $TAG" >&2; exit 1; fi
+          echo "Release ID: $RELEASE_ID"
+
+          # Idempotent upload: delete existing same-named asset, then POST
+          EXISTING=$(curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$REPO/releases/$RELEASE_ID/assets?per_page=100" \
+            | jq -r --arg name "$ASSET" '.[] | select(.name==$name) | .id')
+          if [ -n "$EXISTING" ]; then
+            echo "Deleting existing asset $EXISTING"
+            curl -fsSL -X DELETE \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              "https://api.github.com/repos/$REPO/releases/assets/$EXISTING"
+          fi
+          curl -fsSL -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Content-Type: application/zip" \
+            --data-binary "@/tmp/$ASSET" \
+            "https://uploads.github.com/repos/$REPO/releases/$RELEASE_ID/assets?name=$ASSET" \
+            >/dev/null
+          echo "Uploaded $ASSET"
+
+  add-pie-binaries-macos:
+    needs: [create-draft-release]
+    runs-on: macos-14
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.1', '8.2', '8.3', '8.4', '8.5']
+        # macOS jobs are NTS only — Homebrew PHP doesn't ship ZTS.
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+        env:
+          phpts: nts
+
+      - name: Install libv8 (macOS)
+        # NOTE: Homebrew's current `v8` formula is 14.x, which phpv8/v8js (php8
+        # branch) cannot build against yet (V8 14.6 removed Local::Holder(),
+        # changed SetAlignedPointerInInternalField, and replaced String::Write
+        # with WriteV2). Tracked: https://github.com/phpv8/v8js/issues/546.
+        # Until that's resolved, macOS cells will fail at `make` and this
+        # workflow won't publish macOS binaries. Linux cells are unaffected.
+        run: |
+          brew install v8
+          echo "V8_PREFIX=$(brew --prefix v8)" >> "$GITHUB_ENV"
+
+      - name: Build and release
+        continue-on-error: true
+        uses: php/pie-ext-binary-builder@0.0.2
+        with:
+          release-tag: ${{ github.ref_name }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          configure-flags: "--with-v8js=${{ env.V8_PREFIX }}"
