@@ -48,6 +48,49 @@ image](https://registry.hub.docker.com/r/stesie/v8js/).  It has v8, v8js and php
 so you can give it a try with PHP in "interactive mode".  There is no Apache, etc. running however.
 
 
+Installation via PIE
+--------------------
+
+For PHP 8.1+, V8Js can be installed via [PIE (PHP Installer for Extensions)](https://github.com/php/pie)
+in one command. PIE will download a matching prebuilt `.so` for your platform if one is published
+on the release, or fall back to compiling from source.
+
+```bash
+# Debian / Ubuntu (php:X.Y-cli/fpm/apache, Debian trixie, Ubuntu 25.04+):
+sudo apt-get install -y libnode-dev unzip
+pie install phpv8/v8js
+
+# Alpine (php:X.Y-cli-alpine, etc.):
+apk add --no-cache nodejs-dev unzip
+pie install phpv8/v8js
+```
+
+Do **not** pass `--with-v8js=...` on the prebuilt path — PIE refuses prebuilt binaries when configure
+options are set (it can't know whether the prebuilt was built with the flag you wanted) and falls
+back to a source build instead.
+
+For hosts where no matching prebuilt is published (e.g. macOS Apple Silicon — see issue
+[#546](https://github.com/phpv8/v8js/issues/546)) or where you want to build against a custom V8,
+pass the path explicitly to force a source build:
+
+```bash
+pie install phpv8/v8js --with-v8js=/usr                  # Debian/Ubuntu source build
+pie install phpv8/v8js --with-v8js=$(brew --prefix v8)    # macOS Homebrew (currently V8 14 — see #546)
+pie install phpv8/v8js --with-v8js=/opt/v8                # custom V8 build
+```
+
+Prebuilt binaries are attached to each tagged release for:
+
+| Platform                                       | PHP versions             | NTS  | TS   |
+|------------------------------------------------|--------------------------|------|------|
+| linux-glibc-x86_64 (Debian trixie / php:X.Y-cli) | 8.1, 8.2, 8.3, 8.4, 8.5 | ✅   | ✅   |
+| linux-glibc-arm64  (Debian trixie / php:X.Y-cli) | 8.1, 8.2, 8.3, 8.4, 8.5 | ✅   | ✅   |
+| linux-musl-x86_64  (Alpine / php:X.Y-cli-alpine) | 8.1, 8.2, 8.3, 8.4, 8.5 | ✅   | ✅   |
+
+The PIE manifest lives in [`composer.json`](composer.json); the release workflow that produces the
+prebuilt assets lives in [`.github/workflows/release.yml`](.github/workflows/release.yml).
+
+
 Compiling latest version
 ------------------------
 
